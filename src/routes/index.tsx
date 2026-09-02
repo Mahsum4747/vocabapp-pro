@@ -53,7 +53,7 @@ function Home() {
           Bugün ne çalışacaksın?
         </h1>
         <p className="mt-3 max-w-lg text-muted">
-          Kart çevir, öğren, test et, eşleştir. Setlerin bu cihazda kalır.
+         Kart çevir, öğren, test et, eşleştir. Setlerin tüm cihazlarında senkronize.
         </p>
         <div className="mt-6 flex flex-wrap gap-2">
           <Button asChild>
