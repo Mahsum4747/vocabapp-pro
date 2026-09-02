@@ -1,0 +1,140 @@
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { AppShell } from "@/components/app-shell";
+import { CardEditor, type EditorCard } from "@/components/card-editor";
+import { GenerateDialog } from "@/components/generate-dialog";
+import { ImportDialog } from "@/components/import-dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/input";
+import { SUBJECTS } from "@/lib/types";
+import { useStudyStore } from "@/lib/store";
+import { toast } from "sonner";
+
+type Search = { ai?: boolean };
+
+export const Route = createFileRoute("/create")({
+  validateSearch: (search: Record<string, unknown>): Search => ({
+    ai: search.ai === true || search.ai === "true",
+  }),
+  component: CreatePage,
+});
+
+function blankCards(): EditorCard[] {
+  return [
+    { id: crypto.randomUUID(), term: "", definition: "" },
+    { id: crypto.randomUUID(), term: "", definition: "" },
+    { id: crypto.randomUUID(), term: "", definition: "" },
+  ];
+}
+
+function CreatePage() {
+  const { ai } = Route.useSearch();
+  const navigate = useNavigate();
+  const addSet = useStudyStore((s) => s.addSet);
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [subject, setSubject] = useState("Genel");
+  const [cards, setCards] = useState<EditorCard[]>(blankCards);
+  const [aiOpenSignal, setAiOpenSignal] = useState(0);
+
+  useEffect(() => {
+    if (ai) setAiOpenSignal((n) => n + 1);
+  }, [ai]);
+
+  function save() {
+    const filled = cards.filter((c) => c.term.trim() && c.definition.trim());
+    if (!title.trim()) {
+      toast.error("Set için bir başlık yaz.");
+      return;
+    }
+    if (filled.length < 2) {
+      toast.error("En az iki kart ekle.");
+      return;
+    }
+    const id = addSet({ title, description, subject, cards: filled });
+    toast.success("Set kaydedildi.");
+    void navigate({ to: "/sets/$setId", params: { setId: id } });
+  }
+
+  return (
+    <AppShell>
+      <div className="mx-auto max-w-3xl">
+        <p className="text-sm font-medium text-muted">Yeni set</p>
+        <h1 className="mt-2 font-display text-4xl font-medium tracking-tight">Kartlarını yaz</h1>
+        <p className="mt-2 text-sm text-muted">
+          Elle ekle, metin yapıştır veya bir konudan otomatik doldur.
+        </p>
+
+        <div className="mt-6 flex flex-wrap gap-2">
+          <GenerateDialog
+            forceOpen={aiOpenSignal}
+            onGenerated={(generated) => {
+              setTitle(generated.title);
+              setDescription(generated.description ?? "");
+              setSubject(generated.subject || "Genel");
+              setCards(
+                generated.cards.map((card) => ({
+                  id: crypto.randomUUID(),
+                  term: card.term,
+                  definition: card.definition,
+                })),
+              );
+            }}
+          />
+          <ImportDialog onImport={(incoming) => setCards((prev) => [...prev.filter((c) => c.term || c.definition), ...incoming])} />
+        </div>
+
+        <form
+          className="mt-8 space-y-6"
+          onSubmit={(e) => {
+            e.preventDefault();
+            save();
+          }}
+        >
+          <div className="space-y-1.5">
+            <Label htmlFor="title">Başlık</Label>
+            <Input
+              id="title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="ör. Avrupa başkentleri"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="desc">Açıklama</Label>
+            <Textarea
+              id="desc"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Bu set ne işe yarar?"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Konu</Label>
+            <div className="flex flex-wrap gap-2">
+              {SUBJECTS.map((name) => (
+                <Button
+                  key={name}
+                  type="button"
+                  size="sm"
+                  variant={subject === name ? "default" : "secondary"}
+                  onClick={() => setSubject(name)}
+                >
+                  {name}
+                </Button>
+              ))}
+            </div>
+          </div>
+          <CardEditor cards={cards} onChange={setCards} />
+          <div className="sticky bottom-4 flex justify-end">
+            <Button type="submit" size="lg">
+              Seti kaydet
+            </Button>
+          </div>
+        </form>
+      </div>
+    </AppShell>
+  );
+}
