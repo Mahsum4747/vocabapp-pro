@@ -43,7 +43,7 @@ function CreatePage() {
     if (ai) setAiOpenSignal((n) => n + 1);
   }, [ai]);
 
-  function save() {
+  async function save() {
     const filled = cards.filter((c) => c.term.trim() && c.definition.trim());
     if (!title.trim()) {
       toast.error("Set için bir başlık yaz.");
@@ -53,7 +53,7 @@ function CreatePage() {
       toast.error("En az iki kart ekle.");
       return;
     }
-    const id = addSet({ title, description, subject, cards: filled });
+   const id = await addSet({ title, description, subject, cards: filled });
     toast.success("Set kaydedildi.");
     void navigate({ to: "/sets/$setId", params: { setId: id } });
   }
