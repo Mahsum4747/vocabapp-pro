@@ -15,6 +15,8 @@ export type StudySet = {
   updatedAt: number;
   lastStudiedAt: number | null;
   cards: Card[];
+  ownerId: string;
+  isPublic: boolean;
 };
 
 export const SUBJECTS = [

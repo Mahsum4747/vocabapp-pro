@@ -1,21 +1,15 @@
 import { create } from "zustand";
-import type { Card, StudySet } from "./types";
-import { uid } from "./utils";
-import { MASTERY_MAX } from "./types";
-import { initializeApp } from "firebase/app";
-import { getFirestore, collection, getDocs, doc, setDoc, deleteDoc, updateDoc } from "firebase/firestore";
-
-const firebaseConfig = {
-    apiKey: "AIzaSyC1imYK_UXvZ89Y1uxMCmOypr-5fqhmSiE",
-    authDomain: "vocabappmm.firebaseapp.com",
-    projectId: "vocabappmm",
-    storageBucket: "vocabappmm.firebasestorage.app",
-    messagingSenderId: "571186108874",
-    appId: "1:571186108874:web:e3ff09569f873ba91f9733"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+import type { StudySet } from "./types";
+import {
+  getMySets,
+  getPublicSets,
+  createSet,
+  updateSetMeta as updateSetMetaFn,
+  replaceCards as replaceCardsFn,
+  deleteSet as deleteSetFn,
+  togglePublic as togglePublicFn,
+  copyPublicSet as copyPublicSetFn,
+} from "./study-sets.server";
 
 type DraftCard = {
   term: string;
@@ -24,8 +18,10 @@ type DraftCard = {
 
 type StudyState = {
   sets: StudySet[];
+  publicSets: StudySet[];
   isLoaded: boolean;
   fetchSets: () => Promise<void>;
+  fetchPublicSets: () => Promise<void>;
   addSet: (input: {
     title: string;
     description: string;
@@ -44,197 +40,150 @@ type StudyState = {
   markStudied: (setId: string) => Promise<void>;
   importSet: (set: StudySet) => Promise<string>;
   restoreSeeds: () => Promise<void>;
+  togglePublic: (setId: string) => Promise<void>;
+  copyPublicSet: (setId: string) => Promise<string | null>;
 };
-
-function toCards(drafts: DraftCard[]): Card[] {
-  return drafts
-    .map((draft) => ({
-      id: uid(),
-      term: draft.term.trim(),
-      definition: draft.definition.trim(),
-      starred: false,
-      mastery: 0,
-    }))
-    .filter((card) => card.term || card.definition);
-}
 
 export const useStudyStore = create<StudyState>()((set, get) => ({
   sets: [],
+  publicSets: [],
   isLoaded: false,
 
   fetchSets: async () => {
     try {
-      const querySnapshot = await getDocs(collection(db, "study_sets"));
-      const remoteSets: StudySet[] = [];
-      querySnapshot.forEach((docSnap) => {
-        remoteSets.push({ id: docSnap.id, ...docSnap.data() } as StudySet);
-      });
-      set({ sets: remoteSets, isLoaded: true });
+      const sets = await getMySets();
+      set({ sets, isLoaded: true });
     } catch (error) {
-      console.error("Firebase'den veri çekilemedi:", error);
+      console.error("Setler çekilemedi:", error);
+      set({ sets: [], isLoaded: true });
+    }
+  },
+
+  fetchPublicSets: async () => {
+    try {
+      const publicSets = await getPublicSets();
+      set({ publicSets });
+    } catch (error) {
+      console.error("Herkese açık setler çekilemedi:", error);
     }
   },
 
   addSet: async ({ title, description, subject, cards }) => {
-    const id = uid();
-    const now = Date.now();
-    const next: StudySet = {
-      id,
-      title: title.trim() || "Adsız set",
-      description: description.trim(),
-      subject: subject.trim() || "Genel",
-      createdAt: now,
-      updatedAt: now,
-      lastStudiedAt: null,
-      cards: toCards(cards),
-    };
-
-    await setDoc(doc(db, "study_sets", id), next);
+    const next = await createSet({ data: { title, description, subject, cards } });
     set({ sets: [next, ...get().sets] });
-    return id;
+    return next.id;
   },
 
   updateSetMeta: async (id, patch) => {
+    await updateSetMetaFn({ data: { id, patch } });
     const now = Date.now();
-    const target = get().sets.find(s => s.id === id);
-    if (!target) return;
-
-    const updated = { ...target, ...patch, updatedAt: now };
-    await updateDoc(doc(db, "study_sets", id), { ...patch, updatedAt: now });
-
     set({
-      sets: get().sets.map((s) => (s.id === id ? updated : s)),
+      sets: get().sets.map((s) => (s.id === id ? { ...s, ...patch, updatedAt: now } : s)),
     });
   },
 
   replaceCards: async (id, cards) => {
-    const existing = get().sets.find((s) => s.id === id);
-    if (!existing) return;
-    const previous = new Map(existing.cards.map((card) => [card.term.trim().toLowerCase(), card]));
-    const nextCards: Card[] = toCards(cards).map((card) => {
-      const prior = previous.get(card.term.toLowerCase());
-      if (!prior) return card;
-      return {
-        ...card,
-        starred: prior.starred,
-        mastery: prior.mastery,
-      };
-    });
-
+    const nextCards = await replaceCardsFn({ data: { id, cards } });
     const now = Date.now();
-    await updateDoc(doc(db, "study_sets", id), { cards: nextCards, updatedAt: now });
-
     set({
-      sets: get().sets.map((studySet) =>
-        studySet.id === id
-          ? { ...studySet, cards: nextCards, updatedAt: now }
-          : studySet,
+      sets: get().sets.map((s) =>
+        s.id === id ? { ...s, cards: nextCards, updatedAt: now } : s,
       ),
     });
   },
 
   deleteSet: async (id) => {
-    await deleteDoc(doc(db, "study_sets", id));
-    set({ sets: get().sets.filter((studySet) => studySet.id !== id) });
+    await deleteSetFn({ data: { id } });
+    set({ sets: get().sets.filter((s) => s.id !== id) });
   },
 
   toggleStar: async (setId, cardId) => {
-    const targetSet = get().sets.find(s => s.id === setId);
+    const targetSet = get().sets.find((s) => s.id === setId);
     if (!targetSet) return;
-
     const updatedCards = targetSet.cards.map((card) =>
-      card.id === cardId ? { ...card, starred: !card.starred } : card
+      card.id === cardId ? { ...card, starred: !card.starred } : card,
     );
-
-    await updateDoc(doc(db, "study_sets", setId), { cards: updatedCards });
-
+    await replaceCardsFn({ data: { id: setId, cards: updatedCards } });
     set({
-      sets: get().sets.map((studySet) =>
-        studySet.id !== setId ? studySet : { ...studySet, cards: updatedCards }
-      ),
+      sets: get().sets.map((s) => (s.id !== setId ? s : { ...s, cards: updatedCards })),
     });
   },
 
   bumpMastery: async (setId, cardId, delta) => {
-    const targetSet = get().sets.find(s => s.id === setId);
+    const targetSet = get().sets.find((s) => s.id === setId);
     if (!targetSet) return;
-
     const updatedCards = targetSet.cards.map((card) =>
       card.id === cardId
-        ? { ...card, mastery: Math.min(MASTERY_MAX, Math.max(0, card.mastery + delta)) }
-        : card
+        ? { ...card, mastery: Math.min(5, Math.max(0, card.mastery + delta)) }
+        : card,
     );
-
-    await updateDoc(doc(db, "study_sets", setId), { cards: updatedCards });
-
+    await replaceCardsFn({ data: { id: setId, cards: updatedCards } });
     set({
-      sets: get().sets.map((studySet) =>
-        studySet.id !== setId ? studySet : { ...studySet, cards: updatedCards }
-      ),
+      sets: get().sets.map((s) => (s.id !== setId ? s : { ...s, cards: updatedCards })),
     });
   },
 
   resetMastery: async (setId) => {
-    const targetSet = get().sets.find(s => s.id === setId);
+    const targetSet = get().sets.find((s) => s.id === setId);
     if (!targetSet) return;
-
-    const now = Date.now();
     const updatedCards = targetSet.cards.map((card) => ({ ...card, mastery: 0 }));
-
-    await updateDoc(doc(db, "study_sets", setId), { cards: updatedCards, updatedAt: now });
-
+    await replaceCardsFn({ data: { id: setId, cards: updatedCards } });
+    const now = Date.now();
     set({
-      sets: get().sets.map((studySet) =>
-        studySet.id !== setId
-          ? studySet
-          : { ...studySet, updatedAt: now, cards: updatedCards }
+      sets: get().sets.map((s) =>
+        s.id !== setId ? s : { ...s, updatedAt: now, cards: updatedCards },
       ),
     });
   },
 
   markStudied: async (setId) => {
+    await updateSetMetaFn({ data: { id: setId, patch: {} } });
     const now = Date.now();
-    await updateDoc(doc(db, "study_sets", setId), { lastStudiedAt: now, updatedAt: now });
-
     set({
-      sets: get().sets.map((studySet) =>
-        studySet.id === setId
-          ? { ...studySet, lastStudiedAt: now, updatedAt: now }
-          : studySet,
+      sets: get().sets.map((s) =>
+        s.id === setId ? { ...s, lastStudiedAt: now, updatedAt: now } : s,
       ),
     });
   },
 
   importSet: async (incoming) => {
-    const id = uid();
-    const now = Date.now();
-    const cloned: StudySet = {
-      ...incoming,
-      id,
-      createdAt: now,
-      updatedAt: now,
-      lastStudiedAt: null,
-      cards: incoming.cards.map((card) => ({ ...card, id: uid() })),
-    };
+    const next = await createSet({
+      data: {
+        title: incoming.title,
+        description: incoming.description,
+        subject: incoming.subject,
+        cards: incoming.cards.map((c) => ({ term: c.term, definition: c.definition })),
+      },
+    });
+    set({ sets: [next, ...get().sets] });
+    return next.id;
+  },
 
-    await setDoc(doc(db, "study_sets", id), cloned);
+  togglePublic: async (setId) => {
+    const nextIsPublic = await togglePublicFn({ data: { id: setId } });
+    set({
+      sets: get().sets.map((s) => (s.id === setId ? { ...s, isPublic: nextIsPublic } : s)),
+    });
+  },
+
+  copyPublicSet: async (setId) => {
+    const cloned = await copyPublicSetFn({ data: { id: setId } });
     set({ sets: [cloned, ...get().sets] });
-    return id;
+    return cloned.id;
   },
 
   restoreSeeds: async () => {},
 }));
 
-// HydrationGate bileşeninin patlamasını önleyen güvenli persist köprüsü
 (useStudyStore as any).persist = {
   rehydrate: async () => {},
   hasHydrated: () => true,
   onRehydrateStorage: () => () => {},
-  clearStorage: () => {}
+  clearStorage: () => {},
 };
 
-// İlk açılışta buluttan verileri çek
 useStudyStore.getState().fetchSets();
+useStudyStore.getState().fetchPublicSets();
 
 export function useSet(id: string | undefined) {
   return useStudyStore((state) => state.sets.find((item) => item.id === id));
