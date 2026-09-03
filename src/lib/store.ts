@@ -9,7 +9,7 @@ import {
   deleteSet as deleteSetFn,
   togglePublic as togglePublicFn,
   copyPublicSet as copyPublicSetFn,
-} from "./study-sets.server";
+} from "./study-sets";
 
 type DraftCard = {
   term: string;

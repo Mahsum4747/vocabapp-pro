@@ -1,5 +1,4 @@
 import { createServerFn } from "@tanstack/react-start";
-import { getAdminFirestore } from "./firebase-admin.server";
 import { authMiddleware } from "./auth/middleware";
 import type { Card, StudySet } from "./types";
 
@@ -21,10 +20,10 @@ function toCards(drafts: DraftCard[]): Card[] {
     .filter((c) => c.term || c.definition);
 }
 
-// Kullanıcının kendi setlerini getirir
 export const getMySets = createServerFn({ method: "GET" })
   .middleware([authMiddleware])
   .handler(async ({ context }) => {
+    const { getAdminFirestore } = await import("./firebase-admin.server");
     const db = getAdminFirestore();
     const snap = await db
       .collection("study_sets")
@@ -33,9 +32,9 @@ export const getMySets = createServerFn({ method: "GET" })
     return snap.docs.map((d) => ({ id: d.id, ...d.data() })) as StudySet[];
   });
 
-// Herkese açık setleri getirir
 export const getPublicSets = createServerFn({ method: "GET" }).handler(
   async () => {
+    const { getAdminFirestore } = await import("./firebase-admin.server");
     const db = getAdminFirestore();
     const snap = await db
       .collection("study_sets")
@@ -45,7 +44,6 @@ export const getPublicSets = createServerFn({ method: "GET" }).handler(
   },
 );
 
-// Yeni set oluşturur
 export const createSet = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
   .validator(
@@ -57,6 +55,7 @@ export const createSet = createServerFn({ method: "POST" })
     }) => input,
   )
   .handler(async ({ context, data }) => {
+    const { getAdminFirestore } = await import("./firebase-admin.server");
     const db = getAdminFirestore();
     const id = uidServer();
     const now = Date.now();
@@ -76,7 +75,6 @@ export const createSet = createServerFn({ method: "POST" })
     return next;
   });
 
-// Set meta bilgisini günceller (sadece kendi seti ise)
 export const updateSetMeta = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
   .validator(
@@ -86,6 +84,7 @@ export const updateSetMeta = createServerFn({ method: "POST" })
     }) => input,
   )
   .handler(async ({ context, data }) => {
+    const { getAdminFirestore } = await import("./firebase-admin.server");
     const db = getAdminFirestore();
     const ref = db.collection("study_sets").doc(data.id);
     const doc = await ref.get();
@@ -94,13 +93,14 @@ export const updateSetMeta = createServerFn({ method: "POST" })
     }
     const now = Date.now();
     await ref.update({ ...data.patch, updatedAt: now });
+    return { ok: true };
   });
 
-// Kartları değiştirir (sadece kendi seti ise)
 export const replaceCards = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
   .validator((input: { id: string; cards: DraftCard[] }) => input)
   .handler(async ({ context, data }) => {
+    const { getAdminFirestore } = await import("./firebase-admin.server");
     const db = getAdminFirestore();
     const ref = db.collection("study_sets").doc(data.id);
     const doc = await ref.get();
@@ -121,11 +121,11 @@ export const replaceCards = createServerFn({ method: "POST" })
     return nextCards;
   });
 
-// Seti siler (sadece kendi seti ise)
 export const deleteSet = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
   .validator((input: { id: string }) => input)
   .handler(async ({ context, data }) => {
+    const { getAdminFirestore } = await import("./firebase-admin.server");
     const db = getAdminFirestore();
     const ref = db.collection("study_sets").doc(data.id);
     const doc = await ref.get();
@@ -133,13 +133,14 @@ export const deleteSet = createServerFn({ method: "POST" })
       throw new Error("Bu seti silme yetkin yok.");
     }
     await ref.delete();
+    return { ok: true };
   });
 
-// Seti herkese açık/özel yapar (sadece kendi seti ise)
 export const togglePublic = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
   .validator((input: { id: string }) => input)
   .handler(async ({ context, data }) => {
+    const { getAdminFirestore } = await import("./firebase-admin.server");
     const db = getAdminFirestore();
     const ref = db.collection("study_sets").doc(data.id);
     const doc = await ref.get();
@@ -151,11 +152,11 @@ export const togglePublic = createServerFn({ method: "POST" })
     return nextIsPublic;
   });
 
-// Herkese açık bir seti kendi kütüphanene kopyalar
 export const copyPublicSet = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
   .validator((input: { id: string }) => input)
   .handler(async ({ context, data }) => {
+    const { getAdminFirestore } = await import("./firebase-admin.server");
     const db = getAdminFirestore();
     const sourceDoc = await db.collection("study_sets").doc(data.id).get();
     if (!sourceDoc.exists || sourceDoc.data()?.isPublic !== true) {
