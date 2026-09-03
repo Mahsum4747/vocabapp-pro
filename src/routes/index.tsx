@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Plus, Search, Sparkles } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { EmptyState } from "@/components/empty-state";
 import { SetCard } from "@/components/set-card";
@@ -16,6 +16,13 @@ export const Route = createFileRoute("/")({ component: Home });
 function Home() {
   const sets = useStudyStore((s) => s.sets);
   const restoreSeeds = useStudyStore((s) => s.restoreSeeds);
+    const fetchSets = useStudyStore((s) => s.fetchSets);
+  const fetchPublicSets = useStudyStore((s) => s.fetchPublicSets);
+
+  useEffect(() => {
+    fetchSets();
+    fetchPublicSets();
+  }, [fetchSets, fetchPublicSets]);
   const [query, setQuery] = useState("");
   const [subject, setSubject] = useState<string>("Hepsi");
 

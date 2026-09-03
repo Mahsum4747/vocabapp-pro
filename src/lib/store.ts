@@ -182,8 +182,6 @@ export const useStudyStore = create<StudyState>()((set, get) => ({
   clearStorage: () => {},
 };
 
-useStudyStore.getState().fetchSets();
-useStudyStore.getState().fetchPublicSets();
 
 export function useSet(id: string | undefined) {
   return useStudyStore((state) => state.sets.find((item) => item.id === id));

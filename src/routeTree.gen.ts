@@ -11,7 +11,9 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as CreateRouteImport } from './routes/create'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as SetsSetIdRouteImport } from './routes/sets.$setId'
+import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as SetsSetIdIndexRouteImport } from './routes/sets.$setId.index'
 import { Route as SetsSetIdEditRouteImport } from './routes/sets.$setId.edit'
 import { Route as SetsSetIdFlashcardsRouteImport } from './routes/sets.$setId.flashcards'
@@ -29,9 +31,19 @@ const CreateRoute = CreateRouteImport.update({
   path: '/create',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SetsSetIdRoute = SetsSetIdRouteImport.update({
   id: '/sets/$setId',
   path: '/sets/$setId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
+  id: '/api/auth/$',
+  path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SetsSetIdIndexRoute = SetsSetIdIndexRouteImport.update({
@@ -68,7 +80,9 @@ const SetsSetIdTestRoute = SetsSetIdTestRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/create': typeof CreateRoute
+  '/login': typeof LoginRoute
   '/sets/$setId': typeof SetsSetIdRouteWithChildren
+  '/api/auth/$': typeof ApiAuthSplatRoute
   '/sets/$setId/edit': typeof SetsSetIdEditRoute
   '/sets/$setId/flashcards': typeof SetsSetIdFlashcardsRoute
   '/sets/$setId/learn': typeof SetsSetIdLearnRoute
@@ -79,6 +93,8 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/create': typeof CreateRoute
+  '/login': typeof LoginRoute
+  '/api/auth/$': typeof ApiAuthSplatRoute
   '/sets/$setId/edit': typeof SetsSetIdEditRoute
   '/sets/$setId/flashcards': typeof SetsSetIdFlashcardsRoute
   '/sets/$setId/learn': typeof SetsSetIdLearnRoute
@@ -90,7 +106,9 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/create': typeof CreateRoute
+  '/login': typeof LoginRoute
   '/sets/$setId': typeof SetsSetIdRouteWithChildren
+  '/api/auth/$': typeof ApiAuthSplatRoute
   '/sets/$setId/edit': typeof SetsSetIdEditRoute
   '/sets/$setId/flashcards': typeof SetsSetIdFlashcardsRoute
   '/sets/$setId/learn': typeof SetsSetIdLearnRoute
@@ -103,7 +121,9 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/create'
+    | '/login'
     | '/sets/$setId'
+    | '/api/auth/$'
     | '/sets/$setId/edit'
     | '/sets/$setId/flashcards'
     | '/sets/$setId/learn'
@@ -114,6 +134,8 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/create'
+    | '/login'
+    | '/api/auth/$'
     | '/sets/$setId/edit'
     | '/sets/$setId/flashcards'
     | '/sets/$setId/learn'
@@ -124,7 +146,9 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/create'
+    | '/login'
     | '/sets/$setId'
+    | '/api/auth/$'
     | '/sets/$setId/edit'
     | '/sets/$setId/flashcards'
     | '/sets/$setId/learn'
@@ -136,7 +160,9 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CreateRoute: typeof CreateRoute
+  LoginRoute: typeof LoginRoute
   SetsSetIdRoute: typeof SetsSetIdRouteWithChildren
+  ApiAuthSplatRoute: typeof ApiAuthSplatRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -155,11 +181,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CreateRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/sets/$setId': {
       id: '/sets/$setId'
       path: '/sets/$setId'
       fullPath: '/sets/$setId'
       preLoaderRoute: typeof SetsSetIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth/$': {
+      id: '/api/auth/$'
+      path: '/api/auth/$'
+      fullPath: '/api/auth/$'
+      preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sets/$setId/': {
@@ -232,7 +272,9 @@ const SetsSetIdRouteWithChildren = SetsSetIdRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CreateRoute: CreateRoute,
+  LoginRoute: LoginRoute,
   SetsSetIdRoute: SetsSetIdRouteWithChildren,
+  ApiAuthSplatRoute: ApiAuthSplatRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
