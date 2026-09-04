@@ -175,7 +175,9 @@ export default defineConfig(({ command, isPreview }) => ({
             // manifest + head-tag middleware). Nitro v3 defaults serverDir to
             // false, so removing this silently unwires /?install=1 on deploys.
             serverDir: "./server",
-          }),
+            rollupConfig: {external: ["firebase-admin", "firebase-admin/app", "firebase-admin/firestore"],
+  },
+}),
         ]
       : []),
     viteReact(),
