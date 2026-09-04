@@ -175,9 +175,16 @@ export default defineConfig(({ command, isPreview }) => ({
             // manifest + head-tag middleware). Nitro v3 defaults serverDir to
             // false, so removing this silently unwires /?install=1 on deploys.
             serverDir: "./server",
-            rollupConfig: {external: ["firebase-admin", "firebase-admin/app", "firebase-admin/firestore"],
-  },
-}),
+            // firebase-admin (and its grpc/protobufjs deps) breaks when Rollup
+            // bundles it into ESM (`__dirname is not defined`). A raw
+            // `rollupConfig.external` avoids that but skips Nitro's own
+            // trace-and-copy step, so Vercel's function never gets the
+            // package on disk ("Cannot find package 'firebase-admin'").
+            // `traceDeps` uses Nitro's externals plugin, which both
+            // externalizes AND traces+copies the package into the deployed
+            // function's node_modules.
+            traceDeps: ["firebase-admin*"],
+          }),
         ]
       : []),
     viteReact(),
