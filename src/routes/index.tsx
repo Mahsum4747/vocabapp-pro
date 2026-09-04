@@ -4,20 +4,24 @@ import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { EmptyState } from "@/components/empty-state";
 import { SetCard } from "@/components/set-card";
+import { PublicSetCard } from "@/components/public-set-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SUBJECTS } from "@/lib/types";
 import { masteryPercent } from "@/lib/quiz";
 import { useStudyStore } from "@/lib/store";
+import { useCurrentUser } from "@/lib/auth/use-current-user";
 
 export const Route = createFileRoute("/")({ component: Home });
 
 function Home() {
   const sets = useStudyStore((s) => s.sets);
+  const publicSets = useStudyStore((s) => s.publicSets);
   const restoreSeeds = useStudyStore((s) => s.restoreSeeds);
     const fetchSets = useStudyStore((s) => s.fetchSets);
   const fetchPublicSets = useStudyStore((s) => s.fetchPublicSets);
+  const currentUser = useCurrentUser();
 
   useEffect(() => {
     fetchSets();
@@ -25,6 +29,12 @@ function Home() {
   }, [fetchSets, fetchPublicSets]);
   const [query, setQuery] = useState("");
   const [subject, setSubject] = useState<string>("Hepsi");
+  const [view, setView] = useState<"mine" | "public">("mine");
+
+  const otherPublicSets = useMemo(
+    () => publicSets.filter((set) => set.ownerId !== currentUser?.id),
+    [publicSets, currentUser?.id],
+  );
 
   const continueSet = useMemo(() => {
     return [...sets]
@@ -102,59 +112,85 @@ function Home() {
       ) : null}
 
       <div className="mt-10 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <h2 className="font-display text-2xl font-medium tracking-tight">Kütüphane</h2>
-        <div className="relative w-full md:max-w-xs">
-          <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-subtle" />
-          <Input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Set veya kart ara"
-            className="pl-10"
-            aria-label="Ara"
-          />
-        </div>
-      </div>
-
-      <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
-        {subjects.map((name) => (
-          <button
-            key={name}
-            type="button"
-            onClick={() => setSubject(name)}
-            className="shrink-0"
-          >
-            <Badge tone={subject === name ? "primary" : "muted"}>{name}</Badge>
+        <div className="flex gap-2">
+          <button type="button" onClick={() => setView("mine")}>
+            <Badge tone={view === "mine" ? "primary" : "muted"}>Kütüphanem</Badge>
           </button>
-        ))}
+          <button type="button" onClick={() => setView("public")}>
+            <Badge tone={view === "public" ? "primary" : "muted"}>Herkese Açık Setler</Badge>
+          </button>
+        </div>
+        {view === "mine" ? (
+          <div className="relative w-full md:max-w-xs">
+            <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-subtle" />
+            <Input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Set veya kart ara"
+              className="pl-10"
+              aria-label="Ara"
+            />
+          </div>
+        ) : null}
       </div>
 
-      {filtered.length === 0 ? (
+      {view === "mine" ? (
+        <>
+          <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
+            {subjects.map((name) => (
+              <button
+                key={name}
+                type="button"
+                onClick={() => setSubject(name)}
+                className="shrink-0"
+              >
+                <Badge tone={subject === name ? "primary" : "muted"}>{name}</Badge>
+              </button>
+            ))}
+          </div>
+
+          {filtered.length === 0 ? (
+            <div className="mt-8">
+              <EmptyState
+                title={sets.length === 0 ? "Kütüphane boş" : "Sonuç yok"}
+                description={
+                  sets.length === 0
+                    ? "İlk setini oluştur veya örnek setleri geri yükle."
+                    : "Aramayı veya konuyu değiştir."
+                }
+                action={
+                  sets.length === 0 ? (
+                    <div className="flex flex-wrap justify-center gap-2">
+                      <Button asChild>
+                        <Link to="/create">Set oluştur</Link>
+                      </Button>
+                      <Button variant="outline" onClick={() => restoreSeeds()}>
+                        Örnekleri yükle
+                      </Button>
+                    </div>
+                  ) : undefined
+                }
+              />
+            </div>
+          ) : (
+            <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {filtered.map((set) => (
+                <SetCard key={set.id} set={set} />
+              ))}
+            </div>
+          )}
+        </>
+      ) : otherPublicSets.length === 0 ? (
         <div className="mt-8">
           <EmptyState
-            title={sets.length === 0 ? "Kütüphane boş" : "Sonuç yok"}
-            description={
-              sets.length === 0
-                ? "İlk setini oluştur veya örnek setleri geri yükle."
-                : "Aramayı veya konuyu değiştir."
-            }
-            action={
-              sets.length === 0 ? (
-                <div className="flex flex-wrap justify-center gap-2">
-                  <Button asChild>
-                    <Link to="/create">Set oluştur</Link>
-                  </Button>
-                  <Button variant="outline" onClick={() => restoreSeeds()}>
-                    Örnekleri yükle
-                  </Button>
-                </div>
-              ) : undefined
-            }
+            title="Herkese açık set yok"
+            description="Henüz kimse set paylaşmamış."
           />
         </div>
       ) : (
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((set) => (
-            <SetCard key={set.id} set={set} />
+          {otherPublicSets.map((set) => (
+            <PublicSetCard key={set.id} set={set} />
           ))}
         </div>
       )}

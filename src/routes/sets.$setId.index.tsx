@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { ArrowLeft, Download, MoreHorizontal, Pencil, Star, Trash2 } from "lucide-react";
+import { ArrowLeft, Download, Globe, Lock, MoreHorizontal, Pencil, Star, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/app-shell";
 import { ModeGrid } from "@/components/mode-grid";
@@ -38,7 +38,9 @@ function SetPage() {
   const deleteSet = useStudyStore((s) => s.deleteSet);
   const toggleStar = useStudyStore((s) => s.toggleStar);
   const resetMastery = useStudyStore((s) => s.resetMastery);
+  const togglePublic = useStudyStore((s) => s.togglePublic);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [togglingPublic, setTogglingPublic] = useState(false);
 
   if (!studySet) {
     return (
@@ -85,6 +87,9 @@ function SetPage() {
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <Badge>{studySet.subject}</Badge>
+            <Badge tone={studySet.isPublic ? "primary" : "muted"}>
+              {studySet.isPublic ? "Herkese açık" : "Özel"}
+            </Badge>
             <span className="text-sm text-muted tabular-nums">{studySet.cards.length} kart</span>
             {starred > 0 ? (
               <span className="inline-flex items-center gap-1 text-sm text-muted">
@@ -106,6 +111,22 @@ function SetPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            disabled={togglingPublic}
+            onClick={async () => {
+              setTogglingPublic(true);
+              try {
+                await togglePublic(setId);
+                toast.success(studySet.isPublic ? "Set özel yapıldı." : "Set herkese açık yapıldı.");
+              } finally {
+                setTogglingPublic(false);
+              }
+            }}
+          >
+            {studySet.isPublic ? <Lock /> : <Globe />}
+            {studySet.isPublic ? "Özel yap" : "Herkese açık yap"}
+          </Button>
           <Button asChild variant="outline">
             <Link to="/sets/$setId/edit" params={{ setId }}>
               <Pencil />
