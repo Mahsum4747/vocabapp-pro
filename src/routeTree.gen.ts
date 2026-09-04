@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as CreateRouteImport } from './routes/create'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as ApiDebugFsRouteImport } from './routes/api/debug-fs'
 import { Route as SetsSetIdRouteImport } from './routes/sets.$setId'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as SetsSetIdIndexRouteImport } from './routes/sets.$setId.index'
@@ -34,6 +35,11 @@ const CreateRoute = CreateRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiDebugFsRoute = ApiDebugFsRouteImport.update({
+  id: '/api/debug-fs',
+  path: '/api/debug-fs',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SetsSetIdRoute = SetsSetIdRouteImport.update({
@@ -81,6 +87,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/create': typeof CreateRoute
   '/login': typeof LoginRoute
+  '/api/debug-fs': typeof ApiDebugFsRoute
   '/sets/$setId': typeof SetsSetIdRouteWithChildren
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/sets/$setId/edit': typeof SetsSetIdEditRoute
@@ -94,6 +101,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/create': typeof CreateRoute
   '/login': typeof LoginRoute
+  '/api/debug-fs': typeof ApiDebugFsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/sets/$setId/edit': typeof SetsSetIdEditRoute
   '/sets/$setId/flashcards': typeof SetsSetIdFlashcardsRoute
@@ -107,6 +115,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/create': typeof CreateRoute
   '/login': typeof LoginRoute
+  '/api/debug-fs': typeof ApiDebugFsRoute
   '/sets/$setId': typeof SetsSetIdRouteWithChildren
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/sets/$setId/edit': typeof SetsSetIdEditRoute
@@ -122,6 +131,7 @@ export interface FileRouteTypes {
     | '/'
     | '/create'
     | '/login'
+    | '/api/debug-fs'
     | '/sets/$setId'
     | '/api/auth/$'
     | '/sets/$setId/edit'
@@ -135,6 +145,7 @@ export interface FileRouteTypes {
     | '/'
     | '/create'
     | '/login'
+    | '/api/debug-fs'
     | '/api/auth/$'
     | '/sets/$setId/edit'
     | '/sets/$setId/flashcards'
@@ -147,6 +158,7 @@ export interface FileRouteTypes {
     | '/'
     | '/create'
     | '/login'
+    | '/api/debug-fs'
     | '/sets/$setId'
     | '/api/auth/$'
     | '/sets/$setId/edit'
@@ -161,6 +173,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CreateRoute: typeof CreateRoute
   LoginRoute: typeof LoginRoute
+  ApiDebugFsRoute: typeof ApiDebugFsRoute
   SetsSetIdRoute: typeof SetsSetIdRouteWithChildren
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
 }
@@ -186,6 +199,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/debug-fs': {
+      id: '/api/debug-fs'
+      path: '/api/debug-fs'
+      fullPath: '/api/debug-fs'
+      preLoaderRoute: typeof ApiDebugFsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sets/$setId': {
@@ -273,6 +293,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CreateRoute: CreateRoute,
   LoginRoute: LoginRoute,
+  ApiDebugFsRoute: ApiDebugFsRoute,
   SetsSetIdRoute: SetsSetIdRouteWithChildren,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
 }
