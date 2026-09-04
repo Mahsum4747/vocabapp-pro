@@ -3,6 +3,7 @@ import { authMiddleware } from "./auth/middleware";
 import type { Card, StudySet } from "./types";
 
 type DraftCard = { term: string; definition: string };
+type DraftCardWithProgress = DraftCard & { starred?: boolean; mastery?: number };
 
 function uidServer(): string {
   return Math.random().toString(36).slice(2) + Date.now().toString(36);
@@ -30,6 +31,19 @@ export const getMySets = createServerFn({ method: "GET" })
       .where("ownerId", "==", context.userId)
       .get();
     return snap.docs.map((d) => ({ id: d.id, ...d.data() })) as StudySet[];
+  });
+
+export const getSetById = createServerFn({ method: "GET" })
+  .middleware([authMiddleware])
+  .validator((input: { id: string }) => input)
+  .handler(async ({ context, data }) => {
+    const { getAdminFirestore } = await import("./firebase-admin.server");
+    const db = getAdminFirestore();
+    const doc = await db.collection("study_sets").doc(data.id).get();
+    if (!doc.exists || doc.data()?.ownerId !== context.userId) {
+      return null;
+    }
+    return { id: doc.id, ...doc.data() } as StudySet;
   });
 
 export const getPublicSets = createServerFn({ method: "GET" }).handler(
@@ -98,7 +112,7 @@ export const updateSetMeta = createServerFn({ method: "POST" })
 
 export const replaceCards = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
-  .validator((input: { id: string; cards: DraftCard[] }) => input)
+  .validator((input: { id: string; cards: DraftCardWithProgress[] }) => input)
   .handler(async ({ context, data }) => {
     const { getAdminFirestore } = await import("./firebase-admin.server");
     const db = getAdminFirestore();
@@ -111,11 +125,21 @@ export const replaceCards = createServerFn({ method: "POST" })
     const previous = new Map(
       existing.cards.map((c) => [c.term.trim().toLowerCase(), c]),
     );
-    const nextCards = toCards(data.cards).map((c) => {
-      const prior = previous.get(c.term.toLowerCase());
-      if (!prior) return c;
-      return { ...c, starred: prior.starred, mastery: prior.mastery };
-    });
+    const nextCards = data.cards
+      .map((d) => {
+        const term = d.term.trim();
+        const definition = d.definition.trim();
+        if (!term && !definition) return null;
+        const prior = previous.get(term.toLowerCase());
+        return {
+          id: uidServer(),
+          term,
+          definition,
+          starred: d.starred ?? prior?.starred ?? false,
+          mastery: d.mastery ?? prior?.mastery ?? 0,
+        };
+      })
+      .filter((c): c is Card => c !== null);
     const now = Date.now();
     await ref.update({ cards: nextCards, updatedAt: now });
     return nextCards;

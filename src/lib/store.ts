@@ -2,6 +2,7 @@ import { create } from "zustand";
 import type { StudySet } from "./types";
 import {
   getMySets,
+  getSetById as getSetByIdFn,
   getPublicSets,
   createSet,
   updateSetMeta as updateSetMetaFn,
@@ -21,6 +22,7 @@ type StudyState = {
   publicSets: StudySet[];
   isLoaded: boolean;
   fetchSets: () => Promise<void>;
+  fetchSetById: (id: string) => Promise<StudySet | null>;
   fetchPublicSets: () => Promise<void>;
   addSet: (input: {
     title: string;
@@ -56,6 +58,23 @@ export const useStudyStore = create<StudyState>()((set, get) => ({
     } catch (error) {
       console.error("Setler çekilemedi:", error);
       set({ sets: [], isLoaded: true });
+    }
+  },
+
+  fetchSetById: async (id) => {
+    try {
+      const found = await getSetByIdFn({ data: { id } });
+      if (found) {
+        set({
+          sets: get().sets.some((s) => s.id === found.id)
+            ? get().sets.map((s) => (s.id === found.id ? found : s))
+            : [...get().sets, found],
+        });
+      }
+      return found;
+    } catch (error) {
+      console.error("Set çekilemedi:", error);
+      return null;
     }
   },
 
