@@ -11,7 +11,6 @@ import { Input } from "@/components/ui/input";
 import { SUBJECTS } from "@/lib/types";
 import { masteryPercent } from "@/lib/quiz";
 import { useStudyStore } from "@/lib/store";
-import { useCurrentUser } from "@/lib/auth/use-current-user";
 
 export const Route = createFileRoute("/")({ component: Home });
 
@@ -21,7 +20,6 @@ function Home() {
   const restoreSeeds = useStudyStore((s) => s.restoreSeeds);
     const fetchSets = useStudyStore((s) => s.fetchSets);
   const fetchPublicSets = useStudyStore((s) => s.fetchPublicSets);
-  const currentUser = useCurrentUser();
 
   useEffect(() => {
     fetchSets();
@@ -31,10 +29,14 @@ function Home() {
   const [subject, setSubject] = useState<string>("Hepsi");
   const [view, setView] = useState<"mine" | "public">("mine");
 
-  const otherPublicSets = useMemo(
-    () => publicSets.filter((set) => set.ownerId !== currentUser?.id),
-    [publicSets, currentUser?.id],
-  );
+  // `sets` only ever holds the current user's own sets (getMySets/getSetById
+  // are ownership-scoped), so excluding those ids from `publicSets` is the
+  // same as excluding "my own public sets" — without pulling the auth client
+  // into this route's bundle.
+  const otherPublicSets = useMemo(() => {
+    const ownIds = new Set(sets.map((s) => s.id));
+    return publicSets.filter((set) => !ownIds.has(set.id));
+  }, [publicSets, sets]);
 
   const continueSet = useMemo(() => {
     return [...sets]
