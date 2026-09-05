@@ -60,7 +60,13 @@ export const getPublicSets = createServerFn({ method: "GET" }).handler(async () 
 export const createSet = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
   .validator(
-    (input: { title: string; description: string; subject: string; cards: DraftCard[] }) => input,
+    (input: {
+      title: string;
+      description: string;
+      subject: string;
+      cards: DraftCard[];
+      isReference?: boolean;
+    }) => input,
   )
   .handler(async ({ context, data }) => {
     const { getAdminFirestore } = await import("./firebase-admin.server");
@@ -78,6 +84,7 @@ export const createSet = createServerFn({ method: "POST" })
       cards: toCards(data.cards),
       ownerId: context.userId,
       isPublic: false,
+      isReference: data.isReference ?? false,
     };
     await db.collection("study_sets").doc(id).set(next);
     return next;
@@ -86,8 +93,10 @@ export const createSet = createServerFn({ method: "POST" })
 export const updateSetMeta = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
   .validator(
-    (input: { id: string; patch: Partial<Pick<StudySet, "title" | "description" | "subject">> }) =>
-      input,
+    (input: {
+      id: string;
+      patch: Partial<Pick<StudySet, "title" | "description" | "subject" | "isReference">>;
+    }) => input,
   )
   .handler(async ({ context, data }) => {
     const { getAdminFirestore } = await import("./firebase-admin.server");

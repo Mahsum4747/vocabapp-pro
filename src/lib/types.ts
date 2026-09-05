@@ -19,6 +19,8 @@ export type StudySet = {
   cards: Card[];
   ownerId: string;
   isPublic: boolean;
+  /** Reference/cheat-sheet set: no study modes or mastery tracking, just a browsable list. */
+  isReference?: boolean;
 };
 
 export const SUBJECTS = [

@@ -41,6 +41,7 @@ import { masteryPercent } from "@/lib/quiz";
 import { serializeSetExport } from "@/lib/parse-cards";
 import { useSet, useStudyStore } from "@/lib/store";
 import type { Card } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/sets/$setId/")({
   component: SetPage,
@@ -136,6 +137,7 @@ function SetPage() {
             <Badge tone={studySet.isPublic ? "primary" : "muted"}>
               {studySet.isPublic ? "Public" : "Private"}
             </Badge>
+            {studySet.isReference ? <Badge tone="accent">Reference</Badge> : null}
             <span className="text-sm text-muted tabular-nums">{studySet.cards.length} cards</span>
             {starred > 0 ? (
               <span className="inline-flex items-center gap-1 text-sm text-muted">
@@ -188,14 +190,16 @@ function SetPage() {
                 Export
               </DropdownMenuItem>
               <OwnerGate ownerId={studySet.ownerId}>
-                <DropdownMenuItem
-                  onSelect={() => {
-                    resetMastery(setId);
-                    toast.success("Progress reset.");
-                  }}
-                >
-                  Reset progress
-                </DropdownMenuItem>
+                {!studySet.isReference ? (
+                  <DropdownMenuItem
+                    onSelect={() => {
+                      resetMastery(setId);
+                      toast.success("Progress reset.");
+                    }}
+                  >
+                    Reset progress
+                  </DropdownMenuItem>
+                ) : null}
                 <DropdownMenuItem className="text-danger" onSelect={() => setConfirmDelete(true)}>
                   <Trash2 className="size-4" />
                   Delete
@@ -206,23 +210,27 @@ function SetPage() {
         </div>
       </div>
 
-      <div className="mt-6 flex flex-col gap-4 rounded-xl bg-surface p-4 shadow-[var(--shadow-border)] sm:flex-row sm:items-center sm:gap-6">
-        <div className="min-w-40 flex-1">
-          <div className="flex justify-between text-xs text-muted">
-            <span>Mastery</span>
-            <span className="tabular-nums">{mastery}%</span>
+      {!studySet.isReference ? (
+        <>
+          <div className="mt-6 flex flex-col gap-4 rounded-xl bg-surface p-4 shadow-[var(--shadow-border)] sm:flex-row sm:items-center sm:gap-6">
+            <div className="min-w-40 flex-1">
+              <div className="flex justify-between text-xs text-muted">
+                <span>Mastery</span>
+                <span className="tabular-nums">{mastery}%</span>
+              </div>
+              <Progress value={mastery} className="mt-1.5" />
+            </div>
+            <LeitnerBoxes cards={studySet.cards} />
           </div>
-          <Progress value={mastery} className="mt-1.5" />
-        </div>
-        <LeitnerBoxes cards={studySet.cards} />
-      </div>
 
-      <div className="mt-4">
-        <ModeGrid setId={setId} disabled={studySet.cards.length < 2} />
-        {studySet.cards.length < 2 ? (
-          <p className="mt-3 text-sm text-muted">You need at least two cards to study.</p>
-        ) : null}
-      </div>
+          <div className="mt-4">
+            <ModeGrid setId={setId} disabled={studySet.cards.length < 2} />
+            {studySet.cards.length < 2 ? (
+              <p className="mt-3 text-sm text-muted">You need at least two cards to study.</p>
+            ) : null}
+          </div>
+        </>
+      ) : null}
 
       <div className="mt-8 mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="font-display text-2xl font-medium tracking-tight">Cards</h2>
@@ -266,7 +274,13 @@ function SetPage() {
       ) : (
         <ul className="divide-y divide-border overflow-hidden rounded-xl bg-surface shadow-[var(--shadow-border)]">
           {visibleCards.map((card) => (
-            <li key={card.id} className="flex items-start gap-3 px-4 py-3 md:px-5">
+            <li
+              key={card.id}
+              className={cn(
+                "flex items-start gap-3 px-4 py-3 md:px-5",
+                studySet.isReference && "py-4 md:py-5",
+              )}
+            >
               <button
                 type="button"
                 onClick={() => toggleStar(setId, card.id)}
@@ -275,8 +289,15 @@ function SetPage() {
               >
                 <Star className={card.starred ? "size-4 fill-fg text-fg" : "size-4"} />
               </button>
-              <div className="grid min-w-0 flex-1 gap-1 md:grid-cols-2 md:gap-6">
-                <p className="font-medium">{card.term}</p>
+              <div
+                className={cn(
+                  "grid min-w-0 flex-1 gap-1 md:grid-cols-2",
+                  studySet.isReference ? "md:gap-8" : "md:gap-6",
+                )}
+              >
+                <p className={cn("font-medium", studySet.isReference && "text-base md:text-lg")}>
+                  {card.term}
+                </p>
                 <p className="text-sm whitespace-pre-line text-muted md:text-base">
                   {card.definition}
                 </p>

@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Layers } from "lucide-react";
+import { BookOpen, Layers } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import type { Card, StudySet } from "@/lib/types";
 import { MASTERY_MAX } from "@/lib/types";
@@ -52,15 +52,26 @@ export function SetCard({ set }: { set: StudySet }) {
       <h3 className="mt-4 font-display text-xl font-medium tracking-tight group-hover:text-primary">
         {set.title}
       </h3>
-      <MiniLeitner cards={set.cards} />
-      <p className="mt-2 line-clamp-2 min-h-10 text-sm text-muted">{set.description || "No description"}</p>
-      <div className="mt-5 space-y-2">
-        <div className="flex items-center justify-between text-xs text-muted">
-          <span>Progress</span>
-          <span className="tabular-nums">{mastery}%</span>
+      {set.isReference ? (
+        <span className="mt-3 inline-flex w-fit items-center gap-1 rounded-full bg-slate/10 px-2 py-1 text-[11px] font-medium text-slate">
+          <BookOpen className="size-3" />
+          Reference
+        </span>
+      ) : (
+        <MiniLeitner cards={set.cards} />
+      )}
+      <p className="mt-2 line-clamp-2 min-h-10 text-sm text-muted">
+        {set.description || "No description"}
+      </p>
+      {set.isReference ? null : (
+        <div className="mt-5 space-y-2">
+          <div className="flex items-center justify-between text-xs text-muted">
+            <span>Progress</span>
+            <span className="tabular-nums">{mastery}%</span>
+          </div>
+          <Progress value={mastery} />
         </div>
-        <Progress value={mastery} />
-      </div>
+      )}
       <p className="mt-4 text-xs text-subtle">{when}</p>
     </Link>
   );

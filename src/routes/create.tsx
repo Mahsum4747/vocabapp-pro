@@ -37,6 +37,7 @@ function CreatePage() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [subject, setSubject] = useState("General");
+  const [isReference, setIsReference] = useState(false);
   const [cards, setCards] = useState<EditorCard[]>(blankCards);
   const [aiOpenSignal, setAiOpenSignal] = useState(0);
 
@@ -54,7 +55,7 @@ function CreatePage() {
       toast.error("Add at least two cards.");
       return;
     }
-    const id = await addSet({ title, description, subject, cards: filled });
+    const id = await addSet({ title, description, subject, cards: filled, isReference });
     toast.success("Set saved.");
     void navigate({ to: "/sets/$setId", params: { setId: id } });
   }
@@ -63,84 +64,95 @@ function CreatePage() {
     <AuthGate>
       <AppShell>
         <div className="mx-auto max-w-3xl">
-        <p className="text-sm font-medium text-muted">New set</p>
-        <h1 className="mt-2 font-display text-4xl font-medium tracking-tight">Write your cards</h1>
-        <p className="mt-2 text-sm text-muted">
-          Add cards by hand, paste text, or auto-fill from a topic.
-        </p>
+          <p className="text-sm font-medium text-muted">New set</p>
+          <h1 className="mt-2 font-display text-4xl font-medium tracking-tight">
+            Write your cards
+          </h1>
+          <p className="mt-2 text-sm text-muted">
+            Add cards by hand, paste text, or auto-fill from a topic.
+          </p>
 
-        <div className="mt-6 flex flex-wrap gap-2">
-          <GenerateDialog
-            forceOpen={aiOpenSignal}
-            onGenerated={(generated) => {
-              setTitle(generated.title);
-              setDescription(generated.description ?? "");
-              setSubject(generated.subject || "General");
-              setCards(
-                generated.cards.map((card) => ({
-                  id: crypto.randomUUID(),
-                  term: card.term,
-                  definition: card.definition,
-                })),
-              );
+          <div className="mt-6 flex flex-wrap gap-2">
+            <GenerateDialog
+              forceOpen={aiOpenSignal}
+              onGenerated={(generated) => {
+                setTitle(generated.title);
+                setDescription(generated.description ?? "");
+                setSubject(generated.subject || "General");
+                setCards(
+                  generated.cards.map((card) => ({
+                    id: crypto.randomUUID(),
+                    term: card.term,
+                    definition: card.definition,
+                  })),
+                );
+              }}
+            />
+            <ImportDialog
+              onImport={(incoming) =>
+                setCards((prev) => [...prev.filter((c) => c.term || c.definition), ...incoming])
+              }
+            />
+          </div>
+
+          <form
+            className="mt-8 space-y-6"
+            onSubmit={(e) => {
+              e.preventDefault();
+              save();
             }}
-          />
-          <ImportDialog
-            onImport={(incoming) =>
-              setCards((prev) => [...prev.filter((c) => c.term || c.definition), ...incoming])
-            }
-          />
-        </div>
-
-        <form
-          className="mt-8 space-y-6"
-          onSubmit={(e) => {
-            e.preventDefault();
-            save();
-          }}
-        >
-          <div className="space-y-1.5">
-            <Label htmlFor="title">Title</Label>
-            <Input
-              id="title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g. European capitals"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="desc">Description</Label>
-            <Textarea
-              id="desc"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="What is this set for?"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label>Subject</Label>
-            <div className="flex flex-wrap gap-2">
-              {SUBJECTS.map((name) => (
-                <Button
-                  key={name}
-                  type="button"
-                  size="sm"
-                  variant={subject === name ? "default" : "secondary"}
-                  onClick={() => setSubject(name)}
-                >
-                  {name}
-                </Button>
-              ))}
+          >
+            <div className="space-y-1.5">
+              <Label htmlFor="title">Title</Label>
+              <Input
+                id="title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="e.g. European capitals"
+              />
             </div>
-          </div>
-          <CardEditor cards={cards} onChange={setCards} />
-          <div className="sticky bottom-4 flex justify-end">
-            <Button type="submit" size="lg">
-              Save set
-            </Button>
-          </div>
-        </form>
-      </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="desc">Description</Label>
+              <Textarea
+                id="desc"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="What is this set for?"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Subject</Label>
+              <div className="flex flex-wrap gap-2">
+                {SUBJECTS.map((name) => (
+                  <Button
+                    key={name}
+                    type="button"
+                    size="sm"
+                    variant={subject === name ? "default" : "secondary"}
+                    onClick={() => setSubject(name)}
+                  >
+                    {name}
+                  </Button>
+                ))}
+              </div>
+            </div>
+            <label className="flex items-center gap-2 text-sm text-fg select-none">
+              <input
+                type="checkbox"
+                checked={isReference}
+                onChange={(e) => setIsReference(e.target.checked)}
+                className="size-4 rounded border-border accent-primary"
+              />
+              Reference set (no study modes, just a list)
+            </label>
+            <CardEditor cards={cards} onChange={setCards} />
+            <div className="sticky bottom-4 flex justify-end">
+              <Button type="submit" size="lg">
+                Save set
+              </Button>
+            </div>
+          </form>
+        </div>
       </AppShell>
     </AuthGate>
   );

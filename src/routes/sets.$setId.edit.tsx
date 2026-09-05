@@ -27,6 +27,7 @@ function EditPage() {
   const [title, setTitle] = useState(studySet?.title ?? "");
   const [description, setDescription] = useState(studySet?.description ?? "");
   const [subject, setSubject] = useState(studySet?.subject ?? "General");
+  const [isReference, setIsReference] = useState(studySet?.isReference ?? false);
   const [cards, setCards] = useState<EditorCard[]>(
     studySet?.cards.map((c) => ({
       id: c.id,
@@ -41,6 +42,7 @@ function EditPage() {
     setTitle(studySet.title);
     setDescription(studySet.description);
     setSubject(studySet.subject);
+    setIsReference(studySet.isReference ?? false);
     setCards(
       studySet.cards.map((c) => ({
         id: c.id,
@@ -77,7 +79,7 @@ function EditPage() {
       toast.error("Add at least two cards.");
       return;
     }
-    updateSetMeta(setId, { title, description, subject });
+    updateSetMeta(setId, { title, description, subject, isReference });
     replaceCards(setId, filled);
     toast.success("Changes saved.");
     void navigate({ to: "/sets/$setId", params: { setId } });
@@ -159,6 +161,15 @@ function EditPage() {
                 </Button>
               ))}
             </div>
+            <label className="flex items-center gap-2 text-sm text-fg select-none">
+              <input
+                type="checkbox"
+                checked={isReference}
+                onChange={(e) => setIsReference(e.target.checked)}
+                className="size-4 rounded border-border accent-primary"
+              />
+              Reference set (no study modes, just a list)
+            </label>
             <CardEditor cards={cards} onChange={setCards} />
             <div className="sticky bottom-4 flex justify-end gap-2">
               <Button type="button" variant="ghost" asChild>
