@@ -1,6 +1,7 @@
 import { Outlet, createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/app-shell";
+import { AuthGate } from "@/components/auth-gate";
 import { useSet, useStudyStore } from "@/lib/store";
 
 export const Route = createFileRoute("/sets/$setId")({
@@ -29,13 +30,15 @@ function SetLayout() {
     };
   }, [setId, studySet, isLoaded, fetchSetById]);
 
-  if (checking) {
-    return (
-      <AppShell>
-        <div className="py-24 text-center text-sm text-muted">Loading…</div>
-      </AppShell>
-    );
-  }
-
-  return <Outlet />;
+  return (
+    <AuthGate>
+      {checking ? (
+        <AppShell>
+          <div className="py-24 text-center text-sm text-muted">Loading…</div>
+        </AppShell>
+      ) : (
+        <Outlet />
+      )}
+    </AuthGate>
+  );
 }

@@ -46,8 +46,10 @@ function setBearerToken(token: string | null): void {
 
 /**
  * Sign out of this app's local session, clear the preview token, then redirect.
+ * Defaults to /login (not "/") since every other route is auth-gated and would
+ * otherwise just bounce back here after a page load.
  */
-export async function signOut(redirectTo = "/"): Promise<void> {
+export async function signOut(redirectTo = "/login"): Promise<void> {
   const { error } = await authClient.signOut();
   if (error) throw new Error(error.message ?? "Sign-out failed");
   setBearerToken(null);

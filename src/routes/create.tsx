@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/app-shell";
+import { AuthGate } from "@/components/auth-gate";
 import { CardEditor, type EditorCard } from "@/components/card-editor";
 import { GenerateDialog } from "@/components/generate-dialog";
 import { ImportDialog } from "@/components/import-dialog";
@@ -53,14 +54,15 @@ function CreatePage() {
       toast.error("Add at least two cards.");
       return;
     }
-   const id = await addSet({ title, description, subject, cards: filled });
+    const id = await addSet({ title, description, subject, cards: filled });
     toast.success("Set saved.");
     void navigate({ to: "/sets/$setId", params: { setId: id } });
   }
 
   return (
-    <AppShell>
-      <div className="mx-auto max-w-3xl">
+    <AuthGate>
+      <AppShell>
+        <div className="mx-auto max-w-3xl">
         <p className="text-sm font-medium text-muted">New set</p>
         <h1 className="mt-2 font-display text-4xl font-medium tracking-tight">Write your cards</h1>
         <p className="mt-2 text-sm text-muted">
@@ -83,7 +85,11 @@ function CreatePage() {
               );
             }}
           />
-          <ImportDialog onImport={(incoming) => setCards((prev) => [...prev.filter((c) => c.term || c.definition), ...incoming])} />
+          <ImportDialog
+            onImport={(incoming) =>
+              setCards((prev) => [...prev.filter((c) => c.term || c.definition), ...incoming])
+            }
+          />
         </div>
 
         <form
@@ -135,6 +141,7 @@ function CreatePage() {
           </div>
         </form>
       </div>
-    </AppShell>
+      </AppShell>
+    </AuthGate>
   );
 }

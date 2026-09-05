@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Plus, Search, Sparkles } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/app-shell";
+import { AuthGate } from "@/components/auth-gate";
 import { EmptyState } from "@/components/empty-state";
 import { SetCard } from "@/components/set-card";
 import { PublicSetCard } from "@/components/public-set-card";
@@ -20,7 +21,7 @@ function Home() {
   const publicSets = useStudyStore((s) => s.publicSets);
   const streak = useStudyStore((s) => s.streak);
   const restoreSeeds = useStudyStore((s) => s.restoreSeeds);
-    const fetchSets = useStudyStore((s) => s.fetchSets);
+  const fetchSets = useStudyStore((s) => s.fetchSets);
   const fetchPublicSets = useStudyStore((s) => s.fetchPublicSets);
   const fetchStreak = useStudyStore((s) => s.fetchStreak);
 
@@ -59,8 +60,7 @@ function Home() {
         set.subject.toLowerCase().includes(q) ||
         set.cards.some(
           (card) =>
-            card.term.toLowerCase().includes(q) ||
-            card.definition.toLowerCase().includes(q),
+            card.term.toLowerCase().includes(q) || card.definition.toLowerCase().includes(q),
         )
       );
     });
@@ -69,142 +69,141 @@ function Home() {
   const subjects = ["All", ...SUBJECTS.filter((name) => sets.some((s) => s.subject === name))];
 
   return (
-    <AppShell>
-      <section className="stagger-in">
-        <p className="text-sm font-medium text-muted">Personal library</p>
-        <h1 className="mt-2 max-w-xl font-display text-4xl font-medium tracking-tight md:text-5xl">
-          What will you study today?
-        </h1>
-        <p className="mt-3 max-w-lg text-muted">
-         Flip cards, learn, test, and match. Your sets sync across all your devices.
-        </p>
-        {streak ? (
-          <div className="mt-4">
-            <StreakIndicator days={streak.currentStreak} />
+    <AuthGate>
+      <AppShell>
+        <section className="stagger-in">
+          <p className="text-sm font-medium text-muted">Personal library</p>
+          <h1 className="mt-2 max-w-xl font-display text-4xl font-medium tracking-tight md:text-5xl">
+            What will you study today?
+          </h1>
+          <p className="mt-3 max-w-lg text-muted">
+            Flip cards, learn, test, and match. Your sets sync across all your devices.
+          </p>
+          {streak ? (
+            <div className="mt-4">
+              <StreakIndicator days={streak.currentStreak} />
+            </div>
+          ) : null}
+          <div className="mt-6 flex flex-wrap gap-2">
+            <Button asChild>
+              <Link to="/create">
+                <Plus />
+                New set
+              </Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link to="/create" search={{ ai: true }}>
+                <Sparkles />
+                Generate from topic
+              </Link>
+            </Button>
           </div>
+        </section>
+
+        {continueSet ? (
+          <Link
+            to="/sets/$setId"
+            params={{ setId: continueSet.id }}
+            className="mt-10 flex flex-col justify-between gap-4 rounded-2xl bg-primary p-6 text-primary-fg shadow-[var(--shadow-card)] md:flex-row md:items-end"
+          >
+            <div>
+              <p className="text-xs font-medium tracking-wide text-primary-fg/70 uppercase">
+                Continue where you left off
+              </p>
+              <h2 className="mt-2 font-display text-2xl font-medium tracking-tight">
+                {continueSet.title}
+              </h2>
+              <p className="mt-1 text-sm text-primary-fg/75">
+                {continueSet.cards.length} cards · {masteryPercent(continueSet.cards)}% progress
+              </p>
+            </div>
+            <span className="inline-flex h-11 items-center rounded-md bg-primary-fg px-4 text-sm font-medium text-primary">
+              Continue
+            </span>
+          </Link>
         ) : null}
-        <div className="mt-6 flex flex-wrap gap-2">
-          <Button asChild>
-            <Link to="/create">
-              <Plus />
-              New set
-            </Link>
-          </Button>
-          <Button asChild variant="outline">
-            <Link to="/create" search={{ ai: true }}>
-              <Sparkles />
-              Generate from topic
-            </Link>
-          </Button>
-        </div>
-      </section>
 
-      {continueSet ? (
-        <Link
-          to="/sets/$setId"
-          params={{ setId: continueSet.id }}
-          className="mt-10 flex flex-col justify-between gap-4 rounded-2xl bg-primary p-6 text-primary-fg shadow-[var(--shadow-card)] md:flex-row md:items-end"
-        >
-          <div>
-            <p className="text-xs font-medium tracking-wide text-primary-fg/70 uppercase">
-              Continue where you left off
-            </p>
-            <h2 className="mt-2 font-display text-2xl font-medium tracking-tight">
-              {continueSet.title}
-            </h2>
-            <p className="mt-1 text-sm text-primary-fg/75">
-              {continueSet.cards.length} cards · {masteryPercent(continueSet.cards)}% progress
-            </p>
+        <div className="mt-10 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="flex gap-2">
+            <button type="button" onClick={() => setView("mine")}>
+              <Badge tone={view === "mine" ? "primary" : "muted"}>My Library</Badge>
+            </button>
+            <button type="button" onClick={() => setView("public")}>
+              <Badge tone={view === "public" ? "primary" : "muted"}>Public Sets</Badge>
+            </button>
           </div>
-          <span className="inline-flex h-11 items-center rounded-md bg-primary-fg px-4 text-sm font-medium text-primary">
-            Continue
-          </span>
-        </Link>
-      ) : null}
-
-      <div className="mt-10 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div className="flex gap-2">
-          <button type="button" onClick={() => setView("mine")}>
-            <Badge tone={view === "mine" ? "primary" : "muted"}>My Library</Badge>
-          </button>
-          <button type="button" onClick={() => setView("public")}>
-            <Badge tone={view === "public" ? "primary" : "muted"}>Public Sets</Badge>
-          </button>
-        </div>
-        {view === "mine" ? (
-          <div className="relative w-full md:max-w-xs">
-            <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-subtle" />
-            <Input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search sets or cards"
-              className="pl-10"
-              aria-label="Search"
-            />
-          </div>
-        ) : null}
-      </div>
-
-      {view === "mine" ? (
-        <>
-          <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
-            {subjects.map((name) => (
-              <button
-                key={name}
-                type="button"
-                onClick={() => setSubject(name)}
-                className="shrink-0"
-              >
-                <Badge tone={subject === name ? "primary" : "muted"}>{name}</Badge>
-              </button>
-            ))}
-          </div>
-
-          {filtered.length === 0 ? (
-            <div className="mt-8">
-              <EmptyState
-                title={sets.length === 0 ? "Library is empty" : "No results"}
-                description={
-                  sets.length === 0
-                    ? "Create your first set or load the sample sets."
-                    : "Try a different search or subject."
-                }
-                action={
-                  sets.length === 0 ? (
-                    <div className="flex flex-wrap justify-center gap-2">
-                      <Button asChild>
-                        <Link to="/create">Create a set</Link>
-                      </Button>
-                      <Button variant="outline" onClick={() => restoreSeeds()}>
-                        Load samples
-                      </Button>
-                    </div>
-                  ) : undefined
-                }
+          {view === "mine" ? (
+            <div className="relative w-full md:max-w-xs">
+              <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-subtle" />
+              <Input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search sets or cards"
+                className="pl-10"
+                aria-label="Search"
               />
             </div>
-          ) : (
-            <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {filtered.map((set) => (
-                <SetCard key={set.id} set={set} />
+          ) : null}
+        </div>
+
+        {view === "mine" ? (
+          <>
+            <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
+              {subjects.map((name) => (
+                <button
+                  key={name}
+                  type="button"
+                  onClick={() => setSubject(name)}
+                  className="shrink-0"
+                >
+                  <Badge tone={subject === name ? "primary" : "muted"}>{name}</Badge>
+                </button>
               ))}
             </div>
-          )}
-        </>
-      ) : otherPublicSets.length === 0 ? (
-        <div className="mt-8">
-          <EmptyState
-            title="No public sets"
-            description="No one has shared a set yet."
-          />
-        </div>
-      ) : (
-        <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {otherPublicSets.map((set) => (
-            <PublicSetCard key={set.id} set={set} />
-          ))}
-        </div>
-      )}
-    </AppShell>
+
+            {filtered.length === 0 ? (
+              <div className="mt-8">
+                <EmptyState
+                  title={sets.length === 0 ? "Library is empty" : "No results"}
+                  description={
+                    sets.length === 0
+                      ? "Create your first set or load the sample sets."
+                      : "Try a different search or subject."
+                  }
+                  action={
+                    sets.length === 0 ? (
+                      <div className="flex flex-wrap justify-center gap-2">
+                        <Button asChild>
+                          <Link to="/create">Create a set</Link>
+                        </Button>
+                        <Button variant="outline" onClick={() => restoreSeeds()}>
+                          Load samples
+                        </Button>
+                      </div>
+                    ) : undefined
+                  }
+                />
+              </div>
+            ) : (
+              <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {filtered.map((set) => (
+                  <SetCard key={set.id} set={set} />
+                ))}
+              </div>
+            )}
+          </>
+        ) : otherPublicSets.length === 0 ? (
+          <div className="mt-8">
+            <EmptyState title="No public sets" description="No one has shared a set yet." />
+          </div>
+        ) : (
+          <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {otherPublicSets.map((set) => (
+              <PublicSetCard key={set.id} set={set} />
+            ))}
+          </div>
+        )}
+      </AppShell>
+    </AuthGate>
   );
 }

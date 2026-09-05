@@ -52,6 +52,28 @@ export function RedirectToSignIn({ to = SIGN_IN_PATH }: { to?: string }) {
 }
 
 /**
+ * Full-page auth guard: renders `children` once signed in, redirects to
+ * /login once we know the visitor is signed out (nothing rendered while the
+ * session is still resolving, same as `SignedOut` — no signed-out flash).
+ *
+ * Only ever import this via `React.lazy` from a route (see AppShell's
+ * `UserButton` for the pattern) — a static import here pulls the auth client
+ * (better-auth/react) into that route's eager bundle, which is what broke
+ * the Nitro/rolldown SSR chunk ("ssr_exports is not defined") the last time
+ * this happened.
+ */
+export function RequireAuth({ children }: { children: ReactNode }) {
+  return (
+    <>
+      <SignedIn>{children}</SignedIn>
+      <SignedOut>
+        <RedirectToSignIn />
+      </SignedOut>
+    </>
+  );
+}
+
+/**
  * Signed-in account menu: an initial-letter avatar that opens a dropdown with
  * the user's name, email, and a sign-out action. Sign-out is only shown when
  * auth is enabled (the disabled-auth dev user has nothing to sign out of).
