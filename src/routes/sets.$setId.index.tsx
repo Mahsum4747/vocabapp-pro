@@ -1,12 +1,14 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   ArrowLeft,
+  ArrowUpDown,
   Download,
   Globe,
   Lock,
   MoreHorizontal,
   Pencil,
+  Search,
   Star,
   Trash2,
 } from "lucide-react";
@@ -18,6 +20,7 @@ import { LeitnerBoxes } from "@/components/leitner-boxes";
 import { EmptyState } from "@/components/empty-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import {
   AlertDialog,
@@ -37,10 +40,29 @@ import {
 import { masteryPercent } from "@/lib/quiz";
 import { serializeSetExport } from "@/lib/parse-cards";
 import { useSet, useStudyStore } from "@/lib/store";
+import type { Card } from "@/lib/types";
 
 export const Route = createFileRoute("/sets/$setId/")({
   component: SetPage,
 });
+
+type SortMode = "original" | "alpha" | "mastery" | "starred";
+
+const SORT_OPTIONS: { value: SortMode; label: string }[] = [
+  { value: "original", label: "Original order" },
+  { value: "alpha", label: "Alphabetical (A–Z)" },
+  { value: "mastery", label: "Mastery: lowest first" },
+  { value: "starred", label: "Starred first" },
+];
+
+function sortCards(cards: Card[], mode: SortMode): Card[] {
+  if (mode === "original") return cards;
+  const sorted = [...cards];
+  if (mode === "alpha") sorted.sort((a, b) => a.term.localeCompare(b.term));
+  else if (mode === "mastery") sorted.sort((a, b) => a.mastery - b.mastery);
+  else if (mode === "starred") sorted.sort((a, b) => Number(b.starred) - Number(a.starred));
+  return sorted;
+}
 
 function SetPage() {
   const { setId } = Route.useParams();
@@ -52,6 +74,19 @@ function SetPage() {
   const togglePublic = useStudyStore((s) => s.togglePublic);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [togglingPublic, setTogglingPublic] = useState(false);
+  const [query, setQuery] = useState("");
+  const [sortMode, setSortMode] = useState<SortMode>("original");
+
+  const visibleCards = useMemo(() => {
+    if (!studySet) return [];
+    const q = query.trim().toLowerCase();
+    const filtered = q
+      ? studySet.cards.filter(
+          (c) => c.term.toLowerCase().includes(q) || c.definition.toLowerCase().includes(q),
+        )
+      : studySet.cards;
+    return sortCards(filtered, sortMode);
+  }, [studySet, query, sortMode]);
 
   if (!studySet) {
     return (
@@ -189,25 +224,65 @@ function SetPage() {
         ) : null}
       </div>
 
-      <h2 className="mt-8 mb-4 font-display text-2xl font-medium tracking-tight">Cards</h2>
-      <ul className="divide-y divide-border overflow-hidden rounded-xl bg-surface shadow-[var(--shadow-border)]">
-        {studySet.cards.map((card) => (
-          <li key={card.id} className="flex items-start gap-3 px-4 py-3 md:px-5">
-            <button
-              type="button"
-              onClick={() => toggleStar(setId, card.id)}
-              className="mt-0.5 grid size-11 shrink-0 place-items-center rounded-md text-muted hover:bg-surface-2 hover:text-fg"
-              aria-label={card.starred ? "Unstar" : "Star"}
-            >
-              <Star className={card.starred ? "size-4 fill-fg text-fg" : "size-4"} />
-            </button>
-            <div className="grid min-w-0 flex-1 gap-1 md:grid-cols-2 md:gap-6">
-              <p className="font-medium">{card.term}</p>
-              <p className="text-sm text-muted md:text-base">{card.definition}</p>
-            </div>
-          </li>
-        ))}
-      </ul>
+      <div className="mt-8 mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <h2 className="font-display text-2xl font-medium tracking-tight">Cards</h2>
+        <div className="flex items-center gap-2">
+          <div className="relative w-full sm:w-56">
+            <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-subtle" />
+            <Input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search cards"
+              className="h-9 pl-9 text-sm"
+              aria-label="Search cards"
+            />
+          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm">
+                <ArrowUpDown className="size-4" />
+                Sort
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {SORT_OPTIONS.map((option) => (
+                <DropdownMenuItem
+                  key={option.value}
+                  onSelect={() => setSortMode(option.value)}
+                  className={option.value === sortMode ? "bg-surface-2 font-medium" : undefined}
+                >
+                  {option.label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
+
+      {visibleCards.length === 0 ? (
+        <div className="rounded-xl bg-surface px-4 py-8 text-center text-sm text-muted shadow-[var(--shadow-border)]">
+          No cards match your search.
+        </div>
+      ) : (
+        <ul className="divide-y divide-border overflow-hidden rounded-xl bg-surface shadow-[var(--shadow-border)]">
+          {visibleCards.map((card) => (
+            <li key={card.id} className="flex items-start gap-3 px-4 py-3 md:px-5">
+              <button
+                type="button"
+                onClick={() => toggleStar(setId, card.id)}
+                className="mt-0.5 grid size-11 shrink-0 place-items-center rounded-md text-muted hover:bg-surface-2 hover:text-fg"
+                aria-label={card.starred ? "Unstar" : "Star"}
+              >
+                <Star className={card.starred ? "size-4 fill-fg text-fg" : "size-4"} />
+              </button>
+              <div className="grid min-w-0 flex-1 gap-1 md:grid-cols-2 md:gap-6">
+                <p className="font-medium">{card.term}</p>
+                <p className="text-sm text-muted md:text-base">{card.definition}</p>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
 
       <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
         <AlertDialogContent>
