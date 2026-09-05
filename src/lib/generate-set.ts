@@ -23,7 +23,11 @@ const payloadSchema = z.object({
 
 export type GeneratedSet = z.infer<typeof payloadSchema>;
 
-const GEMINI_MODEL = "gemini-2.5-flash";
+// gemini-2.5-flash was retired for new API keys; gemini-3.6-flash is the
+// current GA Flash model and keeps the same generateContent/responseSchema
+// contract (custom temperature/top-K/top-P are silently ignored on this
+// model, so we don't send one).
+const GEMINI_MODEL = "gemini-3.6-flash";
 
 // Gemini's `responseSchema` is a restricted OpenAPI-3.0-style schema — plain
 // object, not a zod schema — that forces the model's JSON output to match it,
@@ -111,7 +115,6 @@ export const generateStudySet = createServerFn({ method: "POST" })
           body: JSON.stringify({
             contents: [{ role: "user", parts: [{ text: buildPrompt(data) }] }],
             generationConfig: {
-              temperature: 0.6,
               responseMimeType: "application/json",
               responseSchema: RESPONSE_SCHEMA,
             },
