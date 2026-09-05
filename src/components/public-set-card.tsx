@@ -28,7 +28,7 @@ export function PublicSetCard({ set }: { set: StudySet }) {
   return (
     <div className="flex flex-col rounded-xl bg-surface p-5 shadow-[var(--shadow-border)]">
       <div className="flex items-center justify-between gap-3">
-        <Badge>{set.subject}</Badge>
+        <Badge tone="accent">{set.subject}</Badge>
         <span className="inline-flex items-center gap-1 text-xs text-muted tabular-nums">
           <Layers className="size-3.5" />
           {set.cards.length} cards

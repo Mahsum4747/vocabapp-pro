@@ -130,7 +130,7 @@ function Home() {
             <Badge tone={view === "mine" ? "primary" : "muted"}>My Library</Badge>
           </button>
           <button type="button" onClick={() => setView("public")}>
-            <Badge tone={view === "public" ? "primary" : "muted"}>Public Sets</Badge>
+            <Badge tone={view === "public" ? "accent" : "muted"}>Public Sets</Badge>
           </button>
         </div>
         {view === "mine" ? (

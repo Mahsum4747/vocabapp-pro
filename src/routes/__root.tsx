@@ -15,7 +15,7 @@ export const Route = createRootRoute({
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: APP_NAME },
       { name: "description", content: "Learn with flashcards — your personal study sets." },
-      { name: "theme-color", content: "#F3EFE7" },
+      { name: "theme-color", content: "#F7F4EF" },
     ],
     links: [
       { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
@@ -26,7 +26,7 @@ export const Route = createRootRoute({
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,400..700;1,400..700&family=Fraunces:ital,opsz,wght@0,9..144,500..700;1,9..144,500..700&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,400..700;1,400..700&family=Geist:wght@400..700&display=swap",
       },
     ],
   }),
@@ -48,7 +48,7 @@ function Root() {
             </HydrationGate>
             <Toaster
               position="bottom-center"
-              theme="light"
+              theme="system"
               toastOptions={{
                 className: "font-sans",
               }}
