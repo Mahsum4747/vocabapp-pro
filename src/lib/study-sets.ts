@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { authMiddleware } from "./auth/middleware";
 import type { Card, StudySet } from "./types";
 
-type DraftCard = { term: string; definition: string };
+type DraftCard = { term: string; definition: string; imageUrl?: string | null };
 type DraftCardWithProgress = DraftCard & { starred?: boolean; mastery?: number };
 
 function uidServer(): string {
@@ -17,6 +17,7 @@ function toCards(drafts: DraftCard[]): Card[] {
       definition: d.definition.trim(),
       starred: false,
       mastery: 0,
+      imageUrl: d.imageUrl || null,
     }))
     .filter((c) => c.term || c.definition);
 }
@@ -137,6 +138,7 @@ export const replaceCards = createServerFn({ method: "POST" })
           definition,
           starred: d.starred ?? prior?.starred ?? false,
           mastery: d.mastery ?? prior?.mastery ?? 0,
+          imageUrl: d.imageUrl || null,
         };
       })
       .filter((c): c is Card => c !== null);

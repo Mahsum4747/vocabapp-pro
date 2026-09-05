@@ -27,7 +27,12 @@ function EditPage() {
   const [description, setDescription] = useState(studySet?.description ?? "");
   const [subject, setSubject] = useState(studySet?.subject ?? "General");
   const [cards, setCards] = useState<EditorCard[]>(
-    studySet?.cards.map((c) => ({ id: c.id, term: c.term, definition: c.definition })) ?? [],
+    studySet?.cards.map((c) => ({
+      id: c.id,
+      term: c.term,
+      definition: c.definition,
+      imageUrl: c.imageUrl,
+    })) ?? [],
   );
 
   useEffect(() => {
@@ -35,7 +40,14 @@ function EditPage() {
     setTitle(studySet.title);
     setDescription(studySet.description);
     setSubject(studySet.subject);
-    setCards(studySet.cards.map((c) => ({ id: c.id, term: c.term, definition: c.definition })));
+    setCards(
+      studySet.cards.map((c) => ({
+        id: c.id,
+        term: c.term,
+        definition: c.definition,
+        imageUrl: c.imageUrl,
+      })),
+    );
   }, [studySet]);
 
   if (!studySet) {

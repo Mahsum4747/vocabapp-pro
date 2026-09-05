@@ -9,6 +9,7 @@ export type McQuestion = {
   promptSide: "term" | "definition";
   options: string[];
   answer: string;
+  imageUrl?: string | null;
 };
 
 export type WrittenQuestion = {
@@ -16,6 +17,7 @@ export type WrittenQuestion = {
   cardId: string;
   prompt: string;
   answer: string;
+  imageUrl?: string | null;
 };
 
 export type TfQuestion = {
@@ -24,6 +26,7 @@ export type TfQuestion = {
   prompt: string;
   statement: string;
   answer: boolean;
+  imageUrl?: string | null;
 };
 
 export type TestQuestion = McQuestion | WrittenQuestion | TfQuestion;
@@ -47,6 +50,7 @@ export function multipleChoice(
     promptSide: ask,
     options,
     answer,
+    imageUrl: card.imageUrl,
   };
 }
 
@@ -56,6 +60,7 @@ export function writtenQuestion(card: Card, ask: "term" | "definition" = "defini
     cardId: card.id,
     prompt: ask === "definition" ? card.definition : card.term,
     answer: ask === "definition" ? card.term : card.definition,
+    imageUrl: card.imageUrl,
   };
 }
 
@@ -70,6 +75,7 @@ export function trueFalse(cards: Card[], card: Card): TfQuestion {
     prompt: "Is this pairing correct?",
     statement,
     answer: !lie,
+    imageUrl: card.imageUrl,
   };
 }
 

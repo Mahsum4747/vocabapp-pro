@@ -3,11 +3,13 @@ import { cn } from "@/lib/utils";
 export function FlashCard({
   term,
   definition,
+  imageUrl,
   flipped,
   onFlip,
 }: {
   term: string;
   definition: string;
+  imageUrl?: string | null;
   flipped: boolean;
   onFlip: () => void;
 }) {
@@ -29,6 +31,13 @@ export function FlashCard({
       >
         {flipped ? "Definition" : "Term"}
       </span>
+      {imageUrl ? (
+        <img
+          src={imageUrl}
+          alt=""
+          className="mx-auto max-h-28 rounded-lg object-contain md:max-h-36"
+        />
+      ) : null}
       <span
         className={cn(
           "text-balance",

@@ -20,6 +20,7 @@ import {
 type DraftCard = {
   term: string;
   definition: string;
+  imageUrl?: string | null;
 };
 
 type StudyState = {

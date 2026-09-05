@@ -21,6 +21,7 @@ function cards(pairs: [string, string][]) {
     definition,
     starred: false,
     mastery: 0,
+    imageUrl: null,
   }));
 }
 

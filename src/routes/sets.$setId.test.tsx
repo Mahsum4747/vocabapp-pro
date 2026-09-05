@@ -149,6 +149,13 @@ function TestPage() {
       <p className="text-xs font-medium tracking-wide text-muted uppercase">
         {q.type === "mc" ? "Multiple choice" : q.type === "written" ? "Written" : "True / false"}
       </p>
+      {q.imageUrl ? (
+        <img
+          src={q.imageUrl}
+          alt=""
+          className="mt-3 max-h-48 rounded-lg object-contain shadow-[var(--shadow-border)]"
+        />
+      ) : null}
       <h2 className="mt-3 font-display text-3xl font-medium tracking-tight text-balance">{q.prompt}</h2>
 
       {q.type === "mc" ? (

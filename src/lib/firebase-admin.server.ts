@@ -1,5 +1,8 @@
 import { initializeApp, getApps, cert } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
+import { getStorage } from "firebase-admin/storage";
+
+const PROJECT_ID = "vocabappmm";
 
 function getAdminApp() {
   const existing = getApps();
@@ -7,7 +10,6 @@ function getAdminApp() {
 
   const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
   const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n");
-  const projectId = "vocabappmm";
 
   if (!clientEmail || !privateKey) {
     throw new Error(
@@ -16,10 +18,20 @@ function getAdminApp() {
   }
 
   return initializeApp({
-    credential: cert({ projectId, clientEmail, privateKey }),
+    credential: cert({ projectId: PROJECT_ID, clientEmail, privateKey }),
   });
 }
 
 export function getAdminFirestore() {
   return getFirestore(getAdminApp());
+}
+
+/**
+ * The default Storage bucket. Override with FIREBASE_STORAGE_BUCKET if the
+ * project's bucket doesn't follow the `<projectId>.appspot.com` convention
+ * (newer Firebase projects use `<projectId>.firebasestorage.app` instead).
+ */
+export function getAdminStorage() {
+  const bucketName = process.env.FIREBASE_STORAGE_BUCKET || `${PROJECT_ID}.appspot.com`;
+  return getStorage(getAdminApp()).bucket(bucketName);
 }

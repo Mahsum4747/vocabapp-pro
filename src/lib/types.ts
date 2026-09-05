@@ -4,6 +4,8 @@ export type Card = {
   definition: string;
   starred: boolean;
   mastery: number;
+  /** Optional card image (Firebase Storage download URL). Null = no image. */
+  imageUrl: string | null;
 };
 
 export type StudySet = {

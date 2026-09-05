@@ -173,6 +173,7 @@ function FlashcardsPage() {
       <FlashCard
         term={card.term}
         definition={card.definition}
+        imageUrl={card.imageUrl}
         flipped={flipped}
         onFlip={() => setFlipped((f) => !f)}
       />
