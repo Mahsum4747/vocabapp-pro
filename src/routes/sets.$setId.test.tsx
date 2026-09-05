@@ -156,7 +156,9 @@ function TestPage() {
           className="mt-3 max-h-48 rounded-lg object-contain shadow-[var(--shadow-border)]"
         />
       ) : null}
-      <h2 className="mt-3 font-display text-3xl font-medium tracking-tight text-balance">{q.prompt}</h2>
+      <h2 className="mt-3 font-display text-3xl font-medium tracking-tight text-balance whitespace-pre-line">
+        {q.prompt}
+      </h2>
 
       {q.type === "mc" ? (
         <div className="mt-8 grid gap-2">
@@ -214,7 +216,7 @@ function TestPage() {
 
       {q.type === "tf" ? (
         <div className="mt-8 space-y-4">
-          <p className="rounded-lg bg-surface px-4 py-4 text-lg shadow-[var(--shadow-border)]">
+          <p className="rounded-lg bg-surface px-4 py-4 text-lg whitespace-pre-line shadow-[var(--shadow-border)]">
             {q.statement}
           </p>
           <div className="grid grid-cols-2 gap-2">

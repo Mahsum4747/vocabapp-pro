@@ -42,7 +42,7 @@ export function FlashCard({
         className={cn(
           "text-balance",
           flipped
-            ? "text-xl leading-snug md:text-2xl"
+            ? "text-xl leading-snug whitespace-pre-line md:text-2xl"
             : "font-display text-3xl font-semibold tracking-tight md:text-4xl",
         )}
       >

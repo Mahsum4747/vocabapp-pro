@@ -277,7 +277,9 @@ function SetPage() {
               </button>
               <div className="grid min-w-0 flex-1 gap-1 md:grid-cols-2 md:gap-6">
                 <p className="font-medium">{card.term}</p>
-                <p className="text-sm text-muted md:text-base">{card.definition}</p>
+                <p className="text-sm whitespace-pre-line text-muted md:text-base">
+                  {card.definition}
+                </p>
               </div>
             </li>
           ))}

@@ -135,7 +135,9 @@ function LearnPage() {
           className="mt-3 max-h-48 rounded-lg object-contain shadow-[var(--shadow-border)]"
         />
       ) : null}
-      <h2 className="mt-3 font-display text-3xl font-medium tracking-tight text-balance">{item.prompt}</h2>
+      <h2 className="mt-3 font-display text-3xl font-medium tracking-tight text-balance whitespace-pre-line">
+        {item.prompt}
+      </h2>
 
       {isMc ? (
         <div className="mt-8 grid gap-2">

@@ -47,7 +47,13 @@ const RESPONSE_SCHEMA = {
         type: "OBJECT",
         properties: {
           term: { type: "STRING" },
-          definition: { type: "STRING" },
+          definition: {
+            type: "STRING",
+            description:
+              "Two lines separated by a single newline character: line 1 is the term's " +
+              "meaning; line 2 is a short example sentence that uses the term, in quotes. " +
+              "No other lines, no labels.",
+          },
         },
         required: ["term", "definition"],
       },
@@ -56,10 +62,16 @@ const RESPONSE_SCHEMA = {
   required: ["title", "cards"],
 };
 
+// Bump when the prompt/response shape changes in a way that makes previously
+// cached results stale (e.g. the definition format below) — old cache entries
+// under the previous version are simply never looked up again.
+const CACHE_VERSION = "v2";
+
 /** Deterministic cache key for one (topic, count, term/definition language) request. */
 async function cacheKeyFor(data: z.infer<typeof inputSchema>): Promise<string> {
   const { createHash } = await import("node:crypto");
   const normalized = [
+    CACHE_VERSION,
     data.topic.trim().toLowerCase(),
     data.count,
     data.termLanguage.trim().toLowerCase(),
@@ -71,9 +83,14 @@ async function cacheKeyFor(data: z.infer<typeof inputSchema>): Promise<string> {
 function buildPrompt(data: z.infer<typeof inputSchema>): string {
   return [
     `Create exactly ${data.count} high-quality flashcards about: ${data.topic}.`,
-    `Write each card's "term" in ${data.termLanguage} and its "definition" in ${data.definitionLanguage}.`,
-    "Each definition is one or two short, clear sentences. Do not number the terms.",
-    "Pick a fitting \"subject\" from: Language, Science, History, Geography, Software, General.",
+    `Write each card's "term" in ${data.termLanguage}.`,
+    'Write each card\'s "definition" as exactly two lines, separated by one newline character:',
+    `  1. The term's meaning, in ${data.definitionLanguage}.`,
+    `  2. A short example sentence in ${data.termLanguage} that uses the term naturally, wrapped in quotes.`,
+    `Example, if term language is German and definition language is English, for the term "zurückgeben":`,
+    '  to give back\n  "Kannst du mir das Buch zurückgeben?"',
+    "Do not add any other lines, labels, or numbering to the definition or the term.",
+    'Pick a fitting "subject" from: Language, Science, History, Geography, Software, General.',
   ].join("\n");
 }
 
