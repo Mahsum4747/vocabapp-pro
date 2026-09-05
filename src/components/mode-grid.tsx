@@ -4,26 +4,26 @@ import { GraduationCap, Layers, LayoutGrid, ListChecks } from "lucide-react";
 const MODES = [
   {
     to: "/sets/$setId/flashcards" as const,
-    title: "Kartlar",
-    copy: "Çevir, yıldızla, kendi hızında tekrarla.",
+    title: "Flashcards",
+    copy: "Flip, star, and go at your own pace.",
     icon: Layers,
   },
   {
     to: "/sets/$setId/learn" as const,
-    title: "Öğren",
-    copy: "Seçmeli ve yazılı sorularla pekiştir.",
+    title: "Learn",
+    copy: "Reinforce with multiple-choice and written questions.",
     icon: GraduationCap,
   },
   {
     to: "/sets/$setId/test" as const,
     title: "Test",
-    copy: "Karışık soru tipleriyle kendini ölç.",
+    copy: "Quiz yourself with mixed question types.",
     icon: ListChecks,
   },
   {
     to: "/sets/$setId/match" as const,
-    title: "Eşleştir",
-    copy: "Terim ve tanımı hızla yakala.",
+    title: "Match",
+    copy: "Match terms to definitions fast.",
     icon: LayoutGrid,
   },
 ];

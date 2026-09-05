@@ -1,6 +1,10 @@
 import { useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { authClient } from "@/lib/auth/client";
+import { Logo } from "@/components/logo";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 export const Route = createFileRoute("/login")({
   component: LoginPage,
@@ -26,115 +30,112 @@ function LoginPage() {
           password,
           name: name.trim() || email.split("@")[0],
         });
-        if (err) throw new Error(err.message ?? "Kayıt başarısız oldu.");
+        if (err) throw new Error(err.message ?? "Sign up failed.");
       } else {
         const { error: err } = await authClient.signIn.email({
           email,
           password,
         });
-        if (err) throw new Error(err.message ?? "Giriş başarısız oldu.");
+        if (err) throw new Error(err.message ?? "Sign in failed.");
       }
       navigate({ to: "/" });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Bir şeyler ters gitti.");
+      setError(err instanceof Error ? err.message : "Something went wrong.");
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#f5f1e8] px-4">
-      <div className="w-full max-w-sm rounded-2xl bg-white p-8 shadow-sm">
-        <h1 className="mb-1 text-2xl font-bold">
-          {mode === "signin" ? "Giriş yap" : "Hesap oluştur"}
-        </h1>
-        <p className="mb-6 text-sm text-gray-500">
-          {mode === "signin"
-            ? "Kelime setlerine erişmek için giriş yap."
-            : "Ücretsiz bir hesap oluştur."}
-        </p>
+    <div className="flex min-h-dvh items-center justify-center bg-bg px-4 text-fg">
+      <div className="w-full max-w-sm">
+        <div className="mb-6 flex justify-center">
+          <Logo />
+        </div>
+        <div className="rounded-2xl bg-surface p-8 shadow-[var(--shadow-card)]">
+          <h1 className="mb-1 font-display text-2xl font-medium tracking-tight">
+            {mode === "signin" ? "Sign in" : "Create an account"}
+          </h1>
+          <p className="mb-6 text-sm text-muted">
+            {mode === "signin"
+              ? "Sign in to access your study sets."
+              : "Create a free account to get started."}
+          </p>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          {mode === "signup" && (
-            <div>
-              <label className="mb-1 block text-sm font-medium">Ad</label>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-                placeholder="Adın"
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            {mode === "signup" && (
+              <div className="space-y-1.5">
+                <Label htmlFor="name">Name</Label>
+                <Input
+                  id="name"
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Your name"
+                />
+              </div>
+            )}
+            <div className="space-y-1.5">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
               />
             </div>
-          )}
-          <div>
-            <label className="mb-1 block text-sm font-medium">E-posta</label>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-              placeholder="ornek@mail.com"
-            />
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium">Şifre</label>
-            <input
-              type="password"
-              required
-              minLength={8}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-              placeholder="En az 8 karakter"
-            />
-          </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                required
+                minLength={8}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="At least 8 characters"
+              />
+            </div>
 
-          {error && (
-            <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
-              {error}
-            </p>
-          )}
+            {error && (
+              <p className="rounded-lg bg-danger-soft px-3 py-2 text-sm text-danger">
+                {error}
+              </p>
+            )}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="mt-2 rounded-lg bg-[#1f2b3a] px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
-          >
-            {loading
-              ? "Bekleyin…"
-              : mode === "signin"
-                ? "Giriş yap"
-                : "Kayıt ol"}
-          </button>
-        </form>
+            <Button type="submit" disabled={loading} className="mt-2 w-full">
+              {loading ? "Please wait…" : mode === "signin" ? "Sign in" : "Sign up"}
+            </Button>
+          </form>
 
-        <p className="mt-6 text-center text-sm text-gray-500">
-          {mode === "signin" ? (
-            <>
-              Hesabın yok mu?{" "}
-              <button
-                type="button"
-                onClick={() => setMode("signup")}
-                className="font-medium text-[#1f2b3a] underline"
-              >
-                Kayıt ol
-              </button>
-            </>
-          ) : (
-            <>
-              Zaten hesabın var mı?{" "}
-              <button
-                type="button"
-                onClick={() => setMode("signin")}
-                className="font-medium text-[#1f2b3a] underline"
-              >
-                Giriş yap
-              </button>
-            </>
-          )}
-        </p>
+          <p className="mt-6 text-center text-sm text-muted">
+            {mode === "signin" ? (
+              <>
+                Don't have an account?{" "}
+                <button
+                  type="button"
+                  onClick={() => setMode("signup")}
+                  className="font-medium text-fg underline underline-offset-2"
+                >
+                  Sign up
+                </button>
+              </>
+            ) : (
+              <>
+                Already have an account?{" "}
+                <button
+                  type="button"
+                  onClick={() => setMode("signin")}
+                  className="font-medium text-fg underline underline-offset-2"
+                >
+                  Sign in
+                </button>
+              </>
+            )}
+          </p>
+        </div>
       </div>
     </div>
   );

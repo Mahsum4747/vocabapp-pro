@@ -77,13 +77,13 @@ function LearnPage() {
     return (
       <AppShell>
         <EmptyState
-          title="Set bulunamadı"
+          title="Set not found"
           action={
             <Button asChild>
-              <Link to="/">Kütüphaneye dön</Link>
+              <Link to="/">Back to library</Link>
             </Button>
           }
-          description="Bu set yok."
+          description="This set doesn't exist."
         />
       </AppShell>
     );
@@ -91,8 +91,8 @@ function LearnPage() {
 
   if (items.length === 0) {
     return (
-      <StudyChrome setId={setId} title={studySet.title} mode="Öğren" index={0} total={0}>
-        <EmptyState title="Kart yok" description="Öğrenmek için kart ekle." />
+      <StudyChrome setId={setId} title={studySet.title} mode="Learn" index={0} total={0}>
+        <EmptyState title="No cards" description="Add cards to start learning." />
       </StudyChrome>
     );
   }
@@ -100,18 +100,18 @@ function LearnPage() {
   if (done) {
     const pct = Math.round((correctCount / items.length) * 100);
     return (
-      <StudyChrome setId={setId} title={studySet.title} mode="Öğren" index={items.length} total={items.length}>
+      <StudyChrome setId={setId} title={studySet.title} mode="Learn" index={items.length} total={items.length}>
         <div className="mx-auto max-w-md rounded-xl bg-surface p-8 text-center shadow-[var(--shadow-border)]">
-          <p className="text-sm text-muted">Tur sonucu</p>
+          <p className="text-sm text-muted">Round result</p>
           <p className="mt-2 font-display text-5xl font-medium tracking-tight tabular-nums">{pct}%</p>
           <p className="mt-2 text-sm text-muted">
-            {correctCount} / {items.length} doğru
+            {correctCount} / {items.length} correct
           </p>
           <div className="mt-6 flex flex-col gap-2">
-            <Button onClick={restart}>Tekrar öğren</Button>
+            <Button onClick={restart}>Learn again</Button>
             <Button asChild variant="outline">
               <Link to="/sets/$setId" params={{ setId }}>
-                Sete dön
+                Back to set
               </Link>
             </Button>
           </div>
@@ -126,8 +126,8 @@ function LearnPage() {
   const isCorrect = isMc ? selected === item.answer : answersMatch(written, item.answer);
 
   return (
-    <StudyChrome setId={setId} title={studySet.title} mode="Öğren" index={index} total={items.length}>
-      <p className="text-xs font-medium tracking-wide text-muted uppercase">Tanımı karşılayan terim</p>
+    <StudyChrome setId={setId} title={studySet.title} mode="Learn" index={index} total={items.length}>
+      <p className="text-xs font-medium tracking-wide text-muted uppercase">Term matching the definition</p>
       <h2 className="mt-3 font-display text-3xl font-medium tracking-tight text-balance">{item.prompt}</h2>
 
       {isMc ? (
@@ -168,24 +168,24 @@ function LearnPage() {
           <Input
             value={written}
             onChange={(e) => setWritten(e.target.value)}
-            placeholder="Terimi yaz"
+            placeholder="Type the term"
             disabled={revealed}
             autoFocus
           />
           {revealed ? (
             <p className={cn("text-sm", isCorrect ? "text-success" : "text-danger")}>
-              {isCorrect ? "Doğru" : `Doğrusu: ${item.answer}`}
+              {isCorrect ? "Correct" : `Correct answer: ${item.answer}`}
             </p>
           ) : null}
           <Button type="submit" className="w-full">
-            {revealed ? "Devam" : "Kontrol et"}
+            {revealed ? "Continue" : "Check"}
           </Button>
         </form>
       )}
 
       {revealed && isMc ? (
         <Button className="mt-6 w-full" onClick={next}>
-          Devam
+          Continue
         </Button>
       ) : null}
     </StudyChrome>

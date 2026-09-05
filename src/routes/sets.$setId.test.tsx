@@ -81,11 +81,11 @@ function TestPage() {
     return (
       <AppShell>
         <EmptyState
-          title="Set bulunamadı"
-          description="Test açılmıyor."
+          title="Set not found"
+          description="The test won't open."
           action={
             <Button asChild>
-              <Link to="/">Kütüphaneye dön</Link>
+              <Link to="/">Back to library</Link>
             </Button>
           }
         />
@@ -96,7 +96,7 @@ function TestPage() {
   if (questions.length === 0) {
     return (
       <StudyChrome setId={setId} title={studySet.title} mode="Test" index={0} total={0}>
-        <EmptyState title="Kart yok" description="Test için kart ekle." />
+        <EmptyState title="No cards" description="Add cards to take a test." />
       </StudyChrome>
     );
   }
@@ -112,14 +112,14 @@ function TestPage() {
         total={questions.length}
       >
         <div className="mx-auto max-w-md rounded-xl bg-surface p-8 text-center shadow-[var(--shadow-border)]">
-          <p className="text-sm text-muted">Test sonucu</p>
+          <p className="text-sm text-muted">Test result</p>
           <p className="mt-2 font-display text-5xl font-medium tracking-tight tabular-nums">{pct}%</p>
           <p className="mt-2 text-sm text-muted">
-            {score} / {questions.length} doğru
+            {score} / {questions.length} correct
           </p>
           {missed.length > 0 ? (
             <div className="mt-6 text-left">
-              <p className="text-xs font-medium tracking-wide text-muted uppercase">Kaçırılanlar</p>
+              <p className="text-xs font-medium tracking-wide text-muted uppercase">Missed</p>
               <ul className="mt-2 space-y-1 text-sm">
                 {missed.map((term) => (
                   <li key={term}>{term}</li>
@@ -127,13 +127,13 @@ function TestPage() {
               </ul>
             </div>
           ) : (
-            <p className="mt-4 text-sm text-success">Hepsi yerinde.</p>
+            <p className="mt-4 text-sm text-success">All correct.</p>
           )}
           <div className="mt-6 flex flex-col gap-2">
-            <Button onClick={restart}>Yeni test</Button>
+            <Button onClick={restart}>New test</Button>
             <Button asChild variant="outline">
               <Link to="/sets/$setId" params={{ setId }}>
-                Sete dön
+                Back to set
               </Link>
             </Button>
           </div>
@@ -147,7 +147,7 @@ function TestPage() {
   return (
     <StudyChrome setId={setId} title={studySet.title} mode="Test" index={index} total={questions.length}>
       <p className="text-xs font-medium tracking-wide text-muted uppercase">
-        {q.type === "mc" ? "Çoktan seçmeli" : q.type === "written" ? "Yazılı" : "Doğru / yanlış"}
+        {q.type === "mc" ? "Multiple choice" : q.type === "written" ? "Written" : "True / false"}
       </p>
       <h2 className="mt-3 font-display text-3xl font-medium tracking-tight text-balance">{q.prompt}</h2>
 
@@ -190,17 +190,17 @@ function TestPage() {
           <Input
             value={written}
             onChange={(e) => setWritten(e.target.value)}
-            placeholder="Yanıtın"
+            placeholder="Your answer"
             disabled={revealed}
             autoFocus
           />
           {revealed ? (
             <p className={cn("text-sm", answersMatch(written, q.answer) ? "text-success" : "text-danger")}>
-              {answersMatch(written, q.answer) ? "Doğru" : `Doğrusu: ${q.answer}`}
+              {answersMatch(written, q.answer) ? "Correct" : `Correct answer: ${q.answer}`}
             </p>
           ) : null}
           <Button type="submit" className="w-full">
-            {revealed ? "Devam" : "Kontrol et"}
+            {revealed ? "Continue" : "Check"}
           </Button>
         </form>
       ) : null}
@@ -212,7 +212,7 @@ function TestPage() {
           </p>
           <div className="grid grid-cols-2 gap-2">
             {[true, false].map((value) => {
-              const label = value ? "Doğru" : "Yanlış";
+              const label = value ? "True" : "False";
               const chosen = tf === value;
               const show = revealed && (value === q.answer || chosen);
               return (
@@ -240,7 +240,7 @@ function TestPage() {
 
       {revealed && q.type !== "written" ? (
         <Button className="mt-6 w-full" onClick={next}>
-          Devam
+          Continue
         </Button>
       ) : null}
     </StudyChrome>

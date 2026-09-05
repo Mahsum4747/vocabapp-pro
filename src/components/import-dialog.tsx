@@ -18,12 +18,12 @@ export function ImportDialog({
   function apply() {
     const parsed = parseCardText(text);
     if (parsed.length === 0) {
-      toast.error("Satır bulunamadı.");
+      toast.error("No lines found.");
       return;
     }
     onImport(parsed.map((card) => ({ id: crypto.randomUUID(), ...card })));
     setOpen(false);
-    toast.success(`${parsed.length} kart eklendi.`);
+    toast.success(`${parsed.length} cards added.`);
   }
 
   return (
@@ -31,22 +31,22 @@ export function ImportDialog({
       <DialogTrigger asChild>
         <Button type="button" variant="ghost" size="sm">
           <FileUp />
-          Yapıştır
+          Paste
         </Button>
       </DialogTrigger>
-      <DialogContent title="Kartları yapıştır" className="space-y-4">
+      <DialogContent title="Paste cards" className="space-y-4">
         <p className="text-sm text-muted">
-          Her satır bir kart. Quizlet dışa aktarımı gibi sekme ile, veya{" "}
-          <span className="font-medium text-fg">terim - tanım</span> yaz.
+          One card per line. Tab-separated like a Quizlet export, or write{" "}
+          <span className="font-medium text-fg">term - definition</span>.
         </p>
         <Textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder={"mitokondri\tHücrenin enerji santrali\nanyway - her neyse"}
+          placeholder={"mitochondria\tThe cell's energy powerhouse\nubiquitous - present everywhere"}
           className="min-h-40 font-mono text-sm"
         />
         <Button type="button" className="w-full" onClick={apply}>
-          Kartlara ekle
+          Add to cards
         </Button>
       </DialogContent>
     </Dialog>

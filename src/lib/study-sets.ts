@@ -75,9 +75,9 @@ export const createSet = createServerFn({ method: "POST" })
     const now = Date.now();
     const next: StudySet = {
       id,
-      title: data.title.trim() || "Adsız set",
+      title: data.title.trim() || "Untitled set",
       description: data.description.trim(),
-      subject: data.subject.trim() || "Genel",
+      subject: data.subject.trim() || "General",
       createdAt: now,
       updatedAt: now,
       lastStudiedAt: null,
@@ -103,7 +103,7 @@ export const updateSetMeta = createServerFn({ method: "POST" })
     const ref = db.collection("study_sets").doc(data.id);
     const doc = await ref.get();
     if (!doc.exists || doc.data()?.ownerId !== context.userId) {
-      throw new Error("Bu seti düzenleme yetkin yok.");
+      throw new Error("You don't have permission to edit this set.");
     }
     const now = Date.now();
     await ref.update({ ...data.patch, updatedAt: now });
@@ -119,7 +119,7 @@ export const replaceCards = createServerFn({ method: "POST" })
     const ref = db.collection("study_sets").doc(data.id);
     const doc = await ref.get();
     if (!doc.exists || doc.data()?.ownerId !== context.userId) {
-      throw new Error("Bu seti düzenleme yetkin yok.");
+      throw new Error("You don't have permission to edit this set.");
     }
     const existing = doc.data() as StudySet;
     const previous = new Map(
@@ -154,7 +154,7 @@ export const deleteSet = createServerFn({ method: "POST" })
     const ref = db.collection("study_sets").doc(data.id);
     const doc = await ref.get();
     if (!doc.exists || doc.data()?.ownerId !== context.userId) {
-      throw new Error("Bu seti silme yetkin yok.");
+      throw new Error("You don't have permission to delete this set.");
     }
     await ref.delete();
     return { ok: true };
@@ -169,7 +169,7 @@ export const togglePublic = createServerFn({ method: "POST" })
     const ref = db.collection("study_sets").doc(data.id);
     const doc = await ref.get();
     if (!doc.exists || doc.data()?.ownerId !== context.userId) {
-      throw new Error("Bu seti değiştirme yetkin yok.");
+      throw new Error("You don't have permission to change this set.");
     }
     const nextIsPublic = !doc.data()?.isPublic;
     await ref.update({ isPublic: nextIsPublic });
@@ -184,7 +184,7 @@ export const copyPublicSet = createServerFn({ method: "POST" })
     const db = getAdminFirestore();
     const sourceDoc = await db.collection("study_sets").doc(data.id).get();
     if (!sourceDoc.exists || sourceDoc.data()?.isPublic !== true) {
-      throw new Error("Bu set herkese açık değil.");
+      throw new Error("This set isn't public.");
     }
     const source = sourceDoc.data() as StudySet;
     const id = uidServer();

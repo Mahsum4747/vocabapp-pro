@@ -7,9 +7,9 @@ export function AppErrorComponent({ error }: ErrorComponentProps) {
       <span className="text-danger" aria-hidden="true">
         <TriangleAlert className="size-10" strokeWidth={2} />
       </span>
-      <h1 className="font-display text-lg font-medium">Bir şeyler ters gitti</h1>
+      <h1 className="font-display text-lg font-medium">Something went wrong</h1>
       <p className="max-w-md text-sm break-words text-muted">
-        {error.message || "Beklenmeyen bir hata. Sayfayı yenilemeyi dene."}
+        {error.message || "An unexpected error occurred. Try refreshing the page."}
       </p>
     </main>
   );

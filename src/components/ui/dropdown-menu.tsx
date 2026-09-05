@@ -38,3 +38,15 @@ export function DropdownMenuItem({
     />
   );
 }
+
+export function DropdownMenuSeparator({
+  className,
+  ...props
+}: ComponentProps<typeof DropdownMenuPrimitive.Separator>) {
+  return (
+    <DropdownMenuPrimitive.Separator
+      className={cn("my-1 h-px bg-border", className)}
+      {...props}
+    />
+  );
+}

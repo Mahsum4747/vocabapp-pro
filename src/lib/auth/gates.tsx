@@ -1,5 +1,12 @@
 import { useState, type ReactNode } from "react";
 import { Navigate } from "@tanstack/react-router";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { authEnabled, signOut } from "./client";
 import { useCurrentUser, useCurrentUserState } from "./use-current-user";
 
@@ -45,9 +52,9 @@ export function RedirectToSignIn({ to = SIGN_IN_PATH }: { to?: string }) {
 }
 
 /**
- * Minimal signed-in identity chip + sign-out. Restyle freely (see the
- * `design-ui` skill). Sign-out is only shown when auth is enabled (the
- * disabled-auth dev user has nothing to sign out of).
+ * Signed-in account menu: an initial-letter avatar that opens a dropdown with
+ * the user's name, email, and a sign-out action. Sign-out is only shown when
+ * auth is enabled (the disabled-auth dev user has nothing to sign out of).
  */
 export function UserButton() {
   const user = useCurrentUser();
@@ -56,34 +63,46 @@ export function UserButton() {
   const [signingOut, setSigningOut] = useState(false);
   if (!user) return null;
   const label = user.displayName ?? user.primaryEmail ?? "Account";
+  const initial = label.charAt(0).toUpperCase();
+
   return (
-    <div className="flex items-center gap-2">
-      {user.profileImageUrl ? (
-        <img
-          src={user.profileImageUrl}
-          alt=""
-          className="h-8 w-8 rounded-full object-cover"
-        />
-      ) : (
-        <span className="grid h-8 w-8 place-items-center rounded-full bg-black/10 text-sm font-medium dark:bg-white/20">
-          {label.charAt(0).toUpperCase()}
-        </span>
-      )}
-      <span className="text-sm font-medium">{label}</span>
-      {authEnabled && (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
         <button
           type="button"
-          disabled={signingOut}
-          onClick={() => {
-            setSigningOut(true);
-            // Success navigates away; on failure re-enable so it can be retried.
-            void signOut().catch(() => setSigningOut(false));
-          }}
-          className="cursor-pointer text-sm underline-offset-4 opacity-70 hover:underline disabled:cursor-wait disabled:no-underline"
+          aria-label="Account menu"
+          className="grid size-9 shrink-0 place-items-center overflow-hidden rounded-full bg-primary text-sm font-medium text-primary-fg outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
         >
-          {signingOut ? "Signing out…" : "Sign out"}
+          {user.profileImageUrl ? (
+            <img src={user.profileImageUrl} alt="" className="size-9 object-cover" />
+          ) : (
+            initial
+          )}
         </button>
-      )}
-    </div>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <div className="px-3 py-2">
+          <p className="truncate text-sm font-medium text-fg">{label}</p>
+          {user.primaryEmail ? (
+            <p className="truncate text-xs text-muted">{user.primaryEmail}</p>
+          ) : null}
+        </div>
+        {authEnabled && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              disabled={signingOut}
+              onSelect={() => {
+                setSigningOut(true);
+                // Success navigates away; on failure re-enable so it can be retried.
+                void signOut().catch(() => setSigningOut(false));
+              }}
+            >
+              {signingOut ? "Signing out…" : "Sign out"}
+            </DropdownMenuItem>
+          </>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

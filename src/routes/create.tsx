@@ -35,7 +35,7 @@ function CreatePage() {
   const addSet = useStudyStore((s) => s.addSet);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [subject, setSubject] = useState("Genel");
+  const [subject, setSubject] = useState("General");
   const [cards, setCards] = useState<EditorCard[]>(blankCards);
   const [aiOpenSignal, setAiOpenSignal] = useState(0);
 
@@ -46,25 +46,25 @@ function CreatePage() {
   async function save() {
     const filled = cards.filter((c) => c.term.trim() && c.definition.trim());
     if (!title.trim()) {
-      toast.error("Set için bir başlık yaz.");
+      toast.error("Write a title for the set.");
       return;
     }
     if (filled.length < 2) {
-      toast.error("En az iki kart ekle.");
+      toast.error("Add at least two cards.");
       return;
     }
    const id = await addSet({ title, description, subject, cards: filled });
-    toast.success("Set kaydedildi.");
+    toast.success("Set saved.");
     void navigate({ to: "/sets/$setId", params: { setId: id } });
   }
 
   return (
     <AppShell>
       <div className="mx-auto max-w-3xl">
-        <p className="text-sm font-medium text-muted">Yeni set</p>
-        <h1 className="mt-2 font-display text-4xl font-medium tracking-tight">Kartlarını yaz</h1>
+        <p className="text-sm font-medium text-muted">New set</p>
+        <h1 className="mt-2 font-display text-4xl font-medium tracking-tight">Write your cards</h1>
         <p className="mt-2 text-sm text-muted">
-          Elle ekle, metin yapıştır veya bir konudan otomatik doldur.
+          Add cards by hand, paste text, or auto-fill from a topic.
         </p>
 
         <div className="mt-6 flex flex-wrap gap-2">
@@ -73,7 +73,7 @@ function CreatePage() {
             onGenerated={(generated) => {
               setTitle(generated.title);
               setDescription(generated.description ?? "");
-              setSubject(generated.subject || "Genel");
+              setSubject(generated.subject || "General");
               setCards(
                 generated.cards.map((card) => ({
                   id: crypto.randomUUID(),
@@ -94,25 +94,25 @@ function CreatePage() {
           }}
         >
           <div className="space-y-1.5">
-            <Label htmlFor="title">Başlık</Label>
+            <Label htmlFor="title">Title</Label>
             <Input
               id="title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="ör. Avrupa başkentleri"
+              placeholder="e.g. European capitals"
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="desc">Açıklama</Label>
+            <Label htmlFor="desc">Description</Label>
             <Textarea
               id="desc"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Bu set ne işe yarar?"
+              placeholder="What is this set for?"
             />
           </div>
           <div className="space-y-1.5">
-            <Label>Konu</Label>
+            <Label>Subject</Label>
             <div className="flex flex-wrap gap-2">
               {SUBJECTS.map((name) => (
                 <Button
@@ -130,7 +130,7 @@ function CreatePage() {
           <CardEditor cards={cards} onChange={setCards} />
           <div className="sticky bottom-4 flex justify-end">
             <Button type="submit" size="lg">
-              Seti kaydet
+              Save set
             </Button>
           </div>
         </form>

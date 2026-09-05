@@ -25,7 +25,7 @@ export function shuffle<T>(items: T[]): T[] {
 export function normalizeAnswer(value: string) {
   return value
     .trim()
-    .toLocaleLowerCase("tr")
+    .toLowerCase()
     .normalize("NFD")
     .replace(/\p{M}/gu, "")
     .replace(/[^\p{L}\p{N}\s]/gu, "")

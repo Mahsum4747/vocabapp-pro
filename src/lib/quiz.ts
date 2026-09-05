@@ -66,7 +66,7 @@ export function trueFalse(cards: Card[], card: Card): TfQuestion {
   return {
     type: "tf",
     cardId: card.id,
-    prompt: "Bu eşleşme doğru mu?",
+    prompt: "Is this pairing correct?",
     statement,
     answer: !lie,
   };

@@ -8,9 +8,9 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 
 const LANGS = [
-  { id: "tr" as const, label: "Türkçe" },
+  { id: "tr" as const, label: "Turkish" },
   { id: "en" as const, label: "English" },
-  { id: "mixed" as const, label: "EN terim / TR tanım" },
+  { id: "mixed" as const, label: "EN term / TR definition" },
 ];
 
 export function GenerateDialog({
@@ -32,7 +32,7 @@ export function GenerateDialog({
 
   async function run() {
     if (topic.trim().length < 2) {
-      toast.error("Bir konu yaz.");
+      toast.error("Enter a topic.");
       return;
     }
     setLoading(true);
@@ -46,9 +46,9 @@ export function GenerateDialog({
       }
       onGenerated(result.set);
       setOpen(false);
-      toast.success("Set hazır, kartları gözden geçir.");
+      toast.success("Set is ready, review the cards.");
     } catch {
-      toast.error("Bir şeyler ters gitti.");
+      toast.error("Something went wrong.");
     } finally {
       setLoading(false);
     }
@@ -59,27 +59,27 @@ export function GenerateDialog({
       <DialogTrigger asChild>
         <Button type="button" variant="outline">
           <Sparkles />
-          Konudan oluştur
+          Generate from topic
         </Button>
       </DialogTrigger>
-      <DialogContent title="Konudan set oluştur" className="space-y-4">
+      <DialogContent title="Generate a set from a topic" className="space-y-4">
         <p className="text-sm text-muted">
-          Bir konu yaz, kartlar senin için doldurulsun. Kaydetmeden önce düzenleyebilirsin.
+          Write a topic and the cards will be filled in for you. You can edit them before saving.
         </p>
         <div className="space-y-1.5">
-          <Label htmlFor="topic">Konu</Label>
+          <Label htmlFor="topic">Topic</Label>
           <Input
             id="topic"
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
-            placeholder="ör. Osmanlı padişahları, A2 fiiller, CSS flexbox"
+            placeholder="e.g. Ottoman sultans, A2 verbs, CSS flexbox"
             onKeyDown={(e) => {
               if (e.key === "Enter") void run();
             }}
           />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="count">Kart sayısı · {count}</Label>
+          <Label htmlFor="count">Number of cards · {count}</Label>
           <input
             id="count"
             type="range"
@@ -104,7 +104,7 @@ export function GenerateDialog({
           ))}
         </div>
         <Button type="button" className="w-full" onClick={() => void run()} disabled={loading}>
-          {loading ? "Hazırlanıyor…" : "Oluştur"}
+          {loading ? "Generating…" : "Generate"}
         </Button>
       </DialogContent>
     </Dialog>

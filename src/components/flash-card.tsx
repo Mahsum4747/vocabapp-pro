@@ -19,7 +19,7 @@ export function FlashCard({
         "flex h-80 w-full flex-col justify-between rounded-2xl p-8 text-left shadow-[var(--shadow-card)] transition-[background-color,color,transform] duration-200 ease-[var(--ease-smooth-out)] md:h-96",
         flipped ? "bg-primary text-primary-fg" : "bg-surface text-fg",
       )}
-      aria-label={flipped ? "Terimi göster" : "Tanımı göster"}
+      aria-label={flipped ? "Show term" : "Show definition"}
     >
       <span
         className={cn(
@@ -27,7 +27,7 @@ export function FlashCard({
           flipped ? "text-primary-fg/70" : "text-muted",
         )}
       >
-        {flipped ? "Tanım" : "Terim"}
+        {flipped ? "Definition" : "Term"}
       </span>
       <span
         className={cn(
@@ -40,7 +40,7 @@ export function FlashCard({
         {flipped ? definition : term}
       </span>
       <span className={cn("text-sm", flipped ? "text-primary-fg/70" : "text-subtle")}>
-        Çevirmek için dokun
+        Tap to flip
       </span>
     </button>
   );

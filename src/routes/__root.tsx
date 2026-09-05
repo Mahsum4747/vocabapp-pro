@@ -14,7 +14,7 @@ export const Route = createRootRoute({
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: APP_NAME },
-      { name: "description", content: "Kartlarla öğren — kişisel çalışma setleri." },
+      { name: "description", content: "Learn with flashcards — your personal study sets." },
       { name: "theme-color", content: "#F3EFE7" },
     ],
     links: [
@@ -35,7 +35,7 @@ export const Route = createRootRoute({
 
 function Root() {
   return (
-    <html lang="tr" className="antialiased" suppressHydrationWarning>
+    <html lang="en" className="antialiased" suppressHydrationWarning>
       <head>
         <HeadContent />
       </head>

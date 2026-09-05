@@ -29,7 +29,7 @@ export function StudyChrome({
             to="/sets/$setId"
             params={{ setId }}
             className="inline-flex size-11 items-center justify-center rounded-md text-muted transition-colors hover:bg-surface-2 hover:text-fg"
-            aria-label="Sete dön"
+            aria-label="Back to set"
           >
             <ArrowLeft className="size-5" />
           </Link>

@@ -78,11 +78,11 @@ function FlashcardsPage() {
     return (
       <AppShell>
         <EmptyState
-          title="Set bulunamadı"
-          description="Bu kartlar artık yok."
+          title="Set not found"
+          description="These cards no longer exist."
           action={
             <Button asChild>
-              <Link to="/">Kütüphaneye dön</Link>
+              <Link to="/">Back to library</Link>
             </Button>
           }
         />
@@ -92,10 +92,10 @@ function FlashcardsPage() {
 
   if (done) {
     return (
-      <StudyChrome setId={setId} title={studySet.title} mode="Kartlar" index={order.length} total={order.length}>
+      <StudyChrome setId={setId} title={studySet.title} mode="Flashcards" index={order.length} total={order.length}>
         <div className="mx-auto max-w-md rounded-xl bg-surface p-8 text-center shadow-[var(--shadow-border)]">
-          <h2 className="font-display text-3xl font-medium tracking-tight">Tur bitti</h2>
-          <p className="mt-2 text-sm text-muted">{order.length} kartı çevirdin.</p>
+          <h2 className="font-display text-3xl font-medium tracking-tight">Round over</h2>
+          <p className="mt-2 text-sm text-muted">You flipped {order.length} cards.</p>
           <div className="mt-6 flex flex-col gap-2">
             <Button
               onClick={() => {
@@ -104,11 +104,11 @@ function FlashcardsPage() {
                 setDone(false);
               }}
             >
-              Baştan
+              Start over
             </Button>
             <Button asChild variant="outline">
               <Link to="/sets/$setId" params={{ setId }}>
-                Sete dön
+                Back to set
               </Link>
             </Button>
           </div>
@@ -119,8 +119,8 @@ function FlashcardsPage() {
 
   if (!card) {
     return (
-      <StudyChrome setId={setId} title={studySet.title} mode="Kartlar" index={0} total={0}>
-        <EmptyState title="Kart yok" description="Bu sette çalışacak kart bulunmuyor." />
+      <StudyChrome setId={setId} title={studySet.title} mode="Flashcards" index={0} total={0}>
+        <EmptyState title="No cards" description="There are no cards to study in this set." />
       </StudyChrome>
     );
   }
@@ -129,7 +129,7 @@ function FlashcardsPage() {
     <StudyChrome
       setId={setId}
       title={studySet.title}
-      mode="Kartlar"
+      mode="Flashcards"
       index={index}
       total={order.length}
       headerRight={
@@ -138,14 +138,14 @@ function FlashcardsPage() {
             variant={starredOnly ? "secondary" : "ghost"}
             size="icon-sm"
             onClick={() => setStarredOnly((v) => !v)}
-            aria-label="Yalnız yıldızlılar"
+            aria-label="Starred only"
           >
             <Star className={starredOnly ? "size-4 fill-fg" : "size-4"} />
           </Button>
           <Button
             variant="ghost"
             size="icon-sm"
-            aria-label="Karıştır"
+            aria-label="Shuffle"
             onClick={() => {
               setOrder(shuffle(order));
               setIndex(0);
@@ -166,13 +166,13 @@ function FlashcardsPage() {
       />
       <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
         <Button variant="outline" onClick={() => go(-1)} disabled={index === 0}>
-          Önceki
+          Previous
         </Button>
         <Button
           variant="ghost"
           size="icon"
           onClick={() => toggleStar(setId, card.id)}
-          aria-label="Yıldızla"
+          aria-label="Star"
         >
           <Star className={card.starred ? "size-5 fill-fg text-fg" : "size-5"} />
         </Button>
@@ -183,7 +183,7 @@ function FlashcardsPage() {
             go(1);
           }}
         >
-          Tekrar
+          Study again
         </Button>
         <Button
           onClick={() => {
@@ -191,11 +191,11 @@ function FlashcardsPage() {
             go(1);
           }}
         >
-          Biliyorum
+          I know it
         </Button>
       </div>
       <p className="mt-6 text-center text-xs text-subtle">
-        Boşluk çevirir · ok tuşları gezer · S yıldızlar
+        Space to flip · arrow keys to move · S to star
       </p>
     </StudyChrome>
   );

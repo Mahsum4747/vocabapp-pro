@@ -46,11 +46,11 @@ function SetPage() {
     return (
       <AppShell>
         <EmptyState
-          title="Set bulunamadı"
-          description="Silinmiş veya bu cihazda yok."
+          title="Set not found"
+          description="It was deleted or isn't on this device."
           action={
             <Button asChild>
-              <Link to="/">Kütüphaneye dön</Link>
+              <Link to="/">Back to library</Link>
             </Button>
           }
         />
@@ -70,7 +70,7 @@ function SetPage() {
     a.download = `${studySet.title.replace(/\s+/g, "-").toLowerCase()}.karta.json`;
     a.click();
     URL.revokeObjectURL(url);
-    toast.success("Set indirildi.");
+    toast.success("Set downloaded.");
   }
 
   return (
@@ -80,7 +80,7 @@ function SetPage() {
         className="inline-flex items-center gap-1 text-sm text-muted transition-colors hover:text-fg"
       >
         <ArrowLeft className="size-4" />
-        Kütüphane
+        Library
       </Link>
 
       <div className="mt-5 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
@@ -88,9 +88,9 @@ function SetPage() {
           <div className="flex flex-wrap items-center gap-2">
             <Badge>{studySet.subject}</Badge>
             <Badge tone={studySet.isPublic ? "primary" : "muted"}>
-              {studySet.isPublic ? "Herkese açık" : "Özel"}
+              {studySet.isPublic ? "Public" : "Private"}
             </Badge>
-            <span className="text-sm text-muted tabular-nums">{studySet.cards.length} kart</span>
+            <span className="text-sm text-muted tabular-nums">{studySet.cards.length} cards</span>
             {starred > 0 ? (
               <span className="inline-flex items-center gap-1 text-sm text-muted">
                 <Star className="size-3.5 fill-fg" />
@@ -104,7 +104,7 @@ function SetPage() {
           ) : null}
           <div className="mt-5 max-w-sm space-y-2">
             <div className="flex justify-between text-xs text-muted">
-              <span>Ustalık</span>
+              <span>Mastery</span>
               <span className="tabular-nums">{mastery}%</span>
             </div>
             <Progress value={mastery} />
@@ -118,56 +118,56 @@ function SetPage() {
               setTogglingPublic(true);
               try {
                 await togglePublic(setId);
-                toast.success(studySet.isPublic ? "Set özel yapıldı." : "Set herkese açık yapıldı.");
+                toast.success(studySet.isPublic ? "Set made private." : "Set made public.");
               } finally {
                 setTogglingPublic(false);
               }
             }}
           >
             {studySet.isPublic ? <Lock /> : <Globe />}
-            {studySet.isPublic ? "Özel yap" : "Herkese açık yap"}
+            {studySet.isPublic ? "Make private" : "Make public"}
           </Button>
           <Button asChild variant="outline">
             <Link to="/sets/$setId/edit" params={{ setId }}>
               <Pencil />
-              Düzenle
+              Edit
             </Link>
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" aria-label="Diğer">
+              <Button variant="ghost" size="icon" aria-label="More">
                 <MoreHorizontal />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onSelect={exportJson}>
                 <Download className="size-4" />
-                Dışa aktar
+                Export
               </DropdownMenuItem>
               <DropdownMenuItem
                 onSelect={() => {
                   resetMastery(setId);
-                  toast.success("İlerleme sıfırlandı.");
+                  toast.success("Progress reset.");
                 }}
               >
-                İlerlemeyi sıfırla
+                Reset progress
               </DropdownMenuItem>
               <DropdownMenuItem className="text-danger" onSelect={() => setConfirmDelete(true)}>
                 <Trash2 className="size-4" />
-                Sil
+                Delete
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
       </div>
 
-      <h2 className="mt-10 mb-4 font-display text-2xl font-medium tracking-tight">Çalış</h2>
+      <h2 className="mt-10 mb-4 font-display text-2xl font-medium tracking-tight">Study</h2>
       <ModeGrid setId={setId} disabled={studySet.cards.length < 2} />
       {studySet.cards.length < 2 ? (
-        <p className="mt-3 text-sm text-muted">Çalışmak için en az iki kart gerekir.</p>
+        <p className="mt-3 text-sm text-muted">You need at least two cards to study.</p>
       ) : null}
 
-      <h2 className="mt-12 mb-4 font-display text-2xl font-medium tracking-tight">Kartlar</h2>
+      <h2 className="mt-12 mb-4 font-display text-2xl font-medium tracking-tight">Cards</h2>
       <ul className="divide-y divide-border overflow-hidden rounded-xl bg-surface shadow-[var(--shadow-border)]">
         {studySet.cards.map((card) => (
           <li key={card.id} className="flex items-start gap-3 px-4 py-3 md:px-5">
@@ -175,7 +175,7 @@ function SetPage() {
               type="button"
               onClick={() => toggleStar(setId, card.id)}
               className="mt-0.5 grid size-11 shrink-0 place-items-center rounded-md text-muted hover:bg-surface-2 hover:text-fg"
-              aria-label={card.starred ? "Yıldızı kaldır" : "Yıldızla"}
+              aria-label={card.starred ? "Unstar" : "Star"}
             >
               <Star className={card.starred ? "size-4 fill-fg text-fg" : "size-4"} />
             </button>
@@ -189,20 +189,20 @@ function SetPage() {
 
       <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
         <AlertDialogContent>
-          <AlertDialogTitle>Set silinsin mi?</AlertDialogTitle>
+          <AlertDialogTitle>Delete this set?</AlertDialogTitle>
           <AlertDialogDescription>
-            {studySet.title} kalıcı olarak kalkar. Bu işlem geri alınamaz.
+            {studySet.title} will be permanently removed. This can't be undone.
           </AlertDialogDescription>
           <AlertDialogFooter>
-            <AlertDialogCancel>Vazgeç</AlertDialogCancel>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
                 deleteSet(setId);
-                toast.success("Set silindi.");
+                toast.success("Set deleted.");
                 void navigate({ to: "/" });
               }}
             >
-              Sil
+              Delete
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -26,7 +26,7 @@ function Home() {
     fetchPublicSets();
   }, [fetchSets, fetchPublicSets]);
   const [query, setQuery] = useState("");
-  const [subject, setSubject] = useState<string>("Hepsi");
+  const [subject, setSubject] = useState<string>("All");
   const [view, setView] = useState<"mine" | "public">("mine");
 
   // `sets` only ever holds the current user's own sets (getMySets/getSetById
@@ -45,46 +45,46 @@ function Home() {
   }, [sets]);
 
   const filtered = useMemo(() => {
-    const q = query.trim().toLocaleLowerCase("tr");
+    const q = query.trim().toLowerCase();
     return sets.filter((set) => {
-      if (subject !== "Hepsi" && set.subject !== subject) return false;
+      if (subject !== "All" && set.subject !== subject) return false;
       if (!q) return true;
       return (
-        set.title.toLocaleLowerCase("tr").includes(q) ||
-        set.description.toLocaleLowerCase("tr").includes(q) ||
-        set.subject.toLocaleLowerCase("tr").includes(q) ||
+        set.title.toLowerCase().includes(q) ||
+        set.description.toLowerCase().includes(q) ||
+        set.subject.toLowerCase().includes(q) ||
         set.cards.some(
           (card) =>
-            card.term.toLocaleLowerCase("tr").includes(q) ||
-            card.definition.toLocaleLowerCase("tr").includes(q),
+            card.term.toLowerCase().includes(q) ||
+            card.definition.toLowerCase().includes(q),
         )
       );
     });
   }, [sets, query, subject]);
 
-  const subjects = ["Hepsi", ...SUBJECTS.filter((name) => sets.some((s) => s.subject === name))];
+  const subjects = ["All", ...SUBJECTS.filter((name) => sets.some((s) => s.subject === name))];
 
   return (
     <AppShell>
       <section className="stagger-in">
-        <p className="text-sm font-medium text-muted">Kişisel kütüphane</p>
+        <p className="text-sm font-medium text-muted">Personal library</p>
         <h1 className="mt-2 max-w-xl font-display text-4xl font-medium tracking-tight md:text-5xl">
-          Bugün ne çalışacaksın?
+          What will you study today?
         </h1>
         <p className="mt-3 max-w-lg text-muted">
-         Kart çevir, öğren, test et, eşleştir. Setlerin tüm cihazlarında senkronize.
+         Flip cards, learn, test, and match. Your sets sync across all your devices.
         </p>
         <div className="mt-6 flex flex-wrap gap-2">
           <Button asChild>
             <Link to="/create">
               <Plus />
-              Yeni set
+              New set
             </Link>
           </Button>
           <Button asChild variant="outline">
             <Link to="/create" search={{ ai: true }}>
               <Sparkles />
-              Konudan oluştur
+              Generate from topic
             </Link>
           </Button>
         </div>
@@ -98,17 +98,17 @@ function Home() {
         >
           <div>
             <p className="text-xs font-medium tracking-wide text-primary-fg/70 uppercase">
-              Kaldığın yer
+              Continue where you left off
             </p>
             <h2 className="mt-2 font-display text-2xl font-medium tracking-tight">
               {continueSet.title}
             </h2>
             <p className="mt-1 text-sm text-primary-fg/75">
-              {continueSet.cards.length} kart · %{masteryPercent(continueSet.cards)} ilerleme
+              {continueSet.cards.length} cards · {masteryPercent(continueSet.cards)}% progress
             </p>
           </div>
           <span className="inline-flex h-11 items-center rounded-md bg-primary-fg px-4 text-sm font-medium text-primary">
-            Devam et
+            Continue
           </span>
         </Link>
       ) : null}
@@ -116,10 +116,10 @@ function Home() {
       <div className="mt-10 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="flex gap-2">
           <button type="button" onClick={() => setView("mine")}>
-            <Badge tone={view === "mine" ? "primary" : "muted"}>Kütüphanem</Badge>
+            <Badge tone={view === "mine" ? "primary" : "muted"}>My Library</Badge>
           </button>
           <button type="button" onClick={() => setView("public")}>
-            <Badge tone={view === "public" ? "primary" : "muted"}>Herkese Açık Setler</Badge>
+            <Badge tone={view === "public" ? "primary" : "muted"}>Public Sets</Badge>
           </button>
         </div>
         {view === "mine" ? (
@@ -128,9 +128,9 @@ function Home() {
             <Input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Set veya kart ara"
+              placeholder="Search sets or cards"
               className="pl-10"
-              aria-label="Ara"
+              aria-label="Search"
             />
           </div>
         ) : null}
@@ -154,20 +154,20 @@ function Home() {
           {filtered.length === 0 ? (
             <div className="mt-8">
               <EmptyState
-                title={sets.length === 0 ? "Kütüphane boş" : "Sonuç yok"}
+                title={sets.length === 0 ? "Library is empty" : "No results"}
                 description={
                   sets.length === 0
-                    ? "İlk setini oluştur veya örnek setleri geri yükle."
-                    : "Aramayı veya konuyu değiştir."
+                    ? "Create your first set or load the sample sets."
+                    : "Try a different search or subject."
                 }
                 action={
                   sets.length === 0 ? (
                     <div className="flex flex-wrap justify-center gap-2">
                       <Button asChild>
-                        <Link to="/create">Set oluştur</Link>
+                        <Link to="/create">Create a set</Link>
                       </Button>
                       <Button variant="outline" onClick={() => restoreSeeds()}>
-                        Örnekleri yükle
+                        Load samples
                       </Button>
                     </div>
                   ) : undefined
@@ -185,8 +185,8 @@ function Home() {
       ) : otherPublicSets.length === 0 ? (
         <div className="mt-8">
           <EmptyState
-            title="Herkese açık set yok"
-            description="Henüz kimse set paylaşmamış."
+            title="No public sets"
+            description="No one has shared a set yet."
           />
         </div>
       ) : (

@@ -1,8 +1,15 @@
 import { Link } from "@tanstack/react-router";
 import { Plus } from "lucide-react";
-import type { ReactNode } from "react";
+import { lazy, Suspense, type ReactNode } from "react";
 import { Logo } from "./logo";
 import { Button } from "./ui/button";
+
+// Lazy: this pulls in the auth client (better-auth/react), which must stay out
+// of every route's eager bundle graph — see the "ssr_exports" incident where
+// importing it eagerly here corrupted an unrelated Nitro SSR chunk.
+const UserButton = lazy(() =>
+  import("@/lib/auth/gates").then((m) => ({ default: m.UserButton })),
+);
 
 export function AppShell({
   children,
@@ -21,9 +28,12 @@ export function AppShell({
             <Button asChild size="sm">
               <Link to="/create">
                 <Plus />
-                Yeni set
+                New set
               </Link>
             </Button>
+            <Suspense fallback={<div className="size-9" />}>
+              <UserButton />
+            </Suspense>
           </div>
         </div>
       </header>

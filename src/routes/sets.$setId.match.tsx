@@ -96,11 +96,11 @@ function MatchPage() {
     return (
       <AppShell>
         <EmptyState
-          title="Set bulunamadı"
-          description="Eşleştirme açılamıyor."
+          title="Set not found"
+          description="Match can't open."
           action={
             <Button asChild>
-              <Link to="/">Kütüphaneye dön</Link>
+              <Link to="/">Back to library</Link>
             </Button>
           }
         />
@@ -110,8 +110,8 @@ function MatchPage() {
 
   if (tiles.length < 4) {
     return (
-      <StudyChrome setId={setId} title={studySet.title} mode="Eşleştir" index={0} total={0}>
-        <EmptyState title="Kart yetmiyor" description="Eşleştirme için en az iki kart gerekir." />
+      <StudyChrome setId={setId} title={studySet.title} mode="Match" index={0} total={0}>
+        <EmptyState title="Not enough cards" description="Match needs at least two cards." />
       </StudyChrome>
     );
   }
@@ -123,22 +123,22 @@ function MatchPage() {
     <StudyChrome
       setId={setId}
       title={studySet.title}
-      mode="Eşleştir"
+      mode="Match"
       index={matched.size / 2}
       total={totalPairs}
       headerRight={<span className="text-sm tabular-nums text-muted">{mm}:{ss}</span>}
     >
       {done ? (
         <div className="mx-auto max-w-md rounded-xl bg-surface p-8 text-center shadow-[var(--shadow-border)]">
-          <h2 className="font-display text-3xl font-medium tracking-tight">Tamam</h2>
+          <h2 className="font-display text-3xl font-medium tracking-tight">Done</h2>
           <p className="mt-2 text-sm text-muted">
-            {totalPairs} eşleşme · {mm}:{ss}
+            {totalPairs} matches · {mm}:{ss}
           </p>
           <div className="mt-6 flex flex-col gap-2">
-            <Button onClick={restart}>Yeniden</Button>
+            <Button onClick={restart}>Restart</Button>
             <Button asChild variant="outline">
               <Link to="/sets/$setId" params={{ setId }}>
-                Sete dön
+                Back to set
               </Link>
             </Button>
           </div>
@@ -164,7 +164,7 @@ function MatchPage() {
                 )}
               >
                 <span className="mb-1 block text-xs font-medium tracking-wide uppercase opacity-70">
-                  {tile.kind === "term" ? "Terim" : "Tanım"}
+                  {tile.kind === "term" ? "Term" : "Definition"}
                 </span>
                 {tile.text}
               </button>

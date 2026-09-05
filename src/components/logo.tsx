@@ -6,7 +6,7 @@ export function Logo({ className, compact = false }: { className?: string; compa
     <Link
       to="/"
       className={cn("flex items-center gap-2.5 text-fg no-underline", className)}
-      aria-label="Karta ana sayfa"
+      aria-label="Karta home"
     >
       <span className="relative grid size-8 place-items-center">
         <span className="absolute top-0.5 left-1.5 size-5 rounded-sm bg-surface-2 shadow-[var(--shadow-border)]" />

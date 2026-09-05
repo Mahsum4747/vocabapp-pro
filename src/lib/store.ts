@@ -56,7 +56,7 @@ export const useStudyStore = create<StudyState>()((set, get) => ({
       const sets = await getMySets();
       set({ sets, isLoaded: true });
     } catch (error) {
-      console.error("Setler çekilemedi:", error);
+      console.error("Failed to fetch sets:", error);
       set({ sets: [], isLoaded: true });
     }
   },
@@ -73,7 +73,7 @@ export const useStudyStore = create<StudyState>()((set, get) => ({
       }
       return found;
     } catch (error) {
-      console.error("Set çekilemedi:", error);
+      console.error("Failed to fetch set:", error);
       return null;
     }
   },
@@ -83,7 +83,7 @@ export const useStudyStore = create<StudyState>()((set, get) => ({
       const publicSets = await getPublicSets();
       set({ publicSets });
     } catch (error) {
-      console.error("Herkese açık setler çekilemedi:", error);
+      console.error("Failed to fetch public sets:", error);
     }
   },
 

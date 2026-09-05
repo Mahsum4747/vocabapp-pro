@@ -15,7 +15,7 @@ const cardSchema = z.object({
 const payloadSchema = z.object({
   title: z.string().min(1).max(120),
   description: z.string().max(280).optional().default(""),
-  subject: z.string().max(40).optional().default("Genel"),
+  subject: z.string().max(40).optional().default("General"),
   cards: z.array(cardSchema).min(4).max(20),
 });
 
@@ -26,7 +26,7 @@ function extractJson(text: string) {
   const raw = fenced?.[1] ?? text;
   const start = raw.indexOf("{");
   const end = raw.lastIndexOf("}");
-  if (start === -1 || end === -1) throw new Error("JSON bulunamadı");
+  if (start === -1 || end === -1) throw new Error("JSON not found");
   return JSON.parse(raw.slice(start, end + 1)) as unknown;
 }
 
@@ -35,7 +35,7 @@ export const generateStudySet = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const apiKey = process.env.XAI_API_KEY;
     if (!apiKey) {
-      return { ok: false as const, error: "Yapay zekâ bu ortamda kullanılamıyor." };
+      return { ok: false as const, error: "AI generation isn't available in this environment." };
     }
 
     const languageLine =
@@ -66,7 +66,7 @@ export const generateStudySet = createServerFn({ method: "POST" })
             content: [
               `Create ${data.count} high-quality flashcards about: ${data.topic}.`,
               languageLine,
-              'JSON shape: {"title":"","description":"","subject":"Dil|Fen|Tarih|Coğrafya|Yazılım|Genel","cards":[{"term":"","definition":""}]}',
+              'JSON shape: {"title":"","description":"","subject":"Language|Science|History|Geography|Software|General","cards":[{"term":"","definition":""}]}',
               "Each definition is one or two short sentences. No numbering in terms.",
             ].join("\n"),
           },
@@ -75,7 +75,7 @@ export const generateStudySet = createServerFn({ method: "POST" })
     });
 
     if (!res.ok) {
-      return { ok: false as const, error: "Set oluşturulamadı, tekrar dene." };
+      return { ok: false as const, error: "Couldn't generate the set, try again." };
     }
 
     const body = (await res.json()) as {
@@ -86,6 +86,6 @@ export const generateStudySet = createServerFn({ method: "POST" })
       const parsed = payloadSchema.parse(extractJson(text));
       return { ok: true as const, set: parsed };
     } catch {
-      return { ok: false as const, error: "Yanıt okunamadı, tekrar dene." };
+      return { ok: false as const, error: "Couldn't read the response, try again." };
     }
   });

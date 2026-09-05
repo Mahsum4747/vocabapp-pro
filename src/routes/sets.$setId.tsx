@@ -32,7 +32,7 @@ function SetLayout() {
   if (checking) {
     return (
       <AppShell>
-        <div className="py-24 text-center text-sm text-muted">Yükleniyor...</div>
+        <div className="py-24 text-center text-sm text-muted">Loading…</div>
       </AppShell>
     );
   }

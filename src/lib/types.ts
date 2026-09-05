@@ -20,12 +20,12 @@ export type StudySet = {
 };
 
 export const SUBJECTS = [
-  "Dil",
-  "Fen",
-  "Tarih",
-  "Coğrafya",
-  "Yazılım",
-  "Genel",
+  "Language",
+  "Science",
+  "History",
+  "Geography",
+  "Software",
+  "General",
 ] as const;
 
 export type Subject = (typeof SUBJECTS)[number];

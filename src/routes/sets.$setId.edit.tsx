@@ -25,7 +25,7 @@ function EditPage() {
 
   const [title, setTitle] = useState(studySet?.title ?? "");
   const [description, setDescription] = useState(studySet?.description ?? "");
-  const [subject, setSubject] = useState(studySet?.subject ?? "Genel");
+  const [subject, setSubject] = useState(studySet?.subject ?? "General");
   const [cards, setCards] = useState<EditorCard[]>(
     studySet?.cards.map((c) => ({ id: c.id, term: c.term, definition: c.definition })) ?? [],
   );
@@ -42,11 +42,11 @@ function EditPage() {
     return (
       <AppShell>
         <EmptyState
-          title="Set bulunamadı"
-          description="Düzenlenecek bir set yok."
+          title="Set not found"
+          description="There's no set to edit."
           action={
             <Button asChild>
-              <Link to="/">Kütüphaneye dön</Link>
+              <Link to="/">Back to library</Link>
             </Button>
           }
         />
@@ -57,23 +57,23 @@ function EditPage() {
   function save() {
     const filled = cards.filter((c) => c.term.trim() && c.definition.trim());
     if (!title.trim()) {
-      toast.error("Başlık gerekli.");
+      toast.error("Title is required.");
       return;
     }
     if (filled.length < 2) {
-      toast.error("En az iki kart ekle.");
+      toast.error("Add at least two cards.");
       return;
     }
     updateSetMeta(setId, { title, description, subject });
     replaceCards(setId, filled);
-    toast.success("Değişiklikler kaydedildi.");
+    toast.success("Changes saved.");
     void navigate({ to: "/sets/$setId", params: { setId } });
   }
 
   return (
     <AppShell>
       <div className="mx-auto max-w-3xl">
-        <p className="text-sm font-medium text-muted">Düzenle</p>
+        <p className="text-sm font-medium text-muted">Edit</p>
         <h1 className="mt-2 font-display text-4xl font-medium tracking-tight">{studySet.title}</h1>
         <div className="mt-6 flex flex-wrap gap-2">
           <GenerateDialog
@@ -104,11 +104,11 @@ function EditPage() {
           }}
         >
           <div className="space-y-1.5">
-            <Label htmlFor="title">Başlık</Label>
+            <Label htmlFor="title">Title</Label>
             <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="desc">Açıklama</Label>
+            <Label htmlFor="desc">Description</Label>
             <Textarea id="desc" value={description} onChange={(e) => setDescription(e.target.value)} />
           </div>
           <div className="flex flex-wrap gap-2">
@@ -128,11 +128,11 @@ function EditPage() {
           <div className="sticky bottom-4 flex justify-end gap-2">
             <Button type="button" variant="ghost" asChild>
               <Link to="/sets/$setId" params={{ setId }}>
-                Vazgeç
+                Cancel
               </Link>
             </Button>
             <Button type="submit" size="lg">
-              Kaydet
+              Save
             </Button>
           </div>
         </form>

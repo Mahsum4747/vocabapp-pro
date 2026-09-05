@@ -38,28 +38,28 @@ export function CardEditor({
               variant="ghost"
               size="icon-sm"
               onClick={() => remove(card.id)}
-              aria-label="Kartı sil"
+              aria-label="Delete card"
             >
               <Trash2 className="size-4" />
             </Button>
           </div>
           <div className="grid gap-3 md:grid-cols-2">
             <div className="space-y-1.5">
-              <Label htmlFor={`term-${card.id}`}>Terim</Label>
+              <Label htmlFor={`term-${card.id}`}>Term</Label>
               <Input
                 id={`term-${card.id}`}
                 value={card.term}
                 onChange={(e) => update(card.id, { term: e.target.value })}
-                placeholder="ör. mitokondri"
+                placeholder="e.g. mitochondria"
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor={`def-${card.id}`}>Tanım</Label>
+              <Label htmlFor={`def-${card.id}`}>Definition</Label>
               <Textarea
                 id={`def-${card.id}`}
                 value={card.definition}
                 onChange={(e) => update(card.id, { definition: e.target.value })}
-                placeholder="Kısa, net bir tanım"
+                placeholder="A short, clear definition"
                 className="min-h-11 md:min-h-20"
               />
             </div>
@@ -68,7 +68,7 @@ export function CardEditor({
       ))}
       <Button type="button" variant="outline" className="w-full" onClick={add}>
         <Plus />
-        Kart ekle
+        Add card
       </Button>
     </div>
   );
