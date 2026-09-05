@@ -1,9 +1,12 @@
 import { lazy, Suspense, type ReactNode } from "react";
 
-// Lazy: RequireOwner pulls in the auth client (better-auth/react), which must
-// stay out of every route's eager bundle graph — see AuthGate for why.
+// Lazy: RequireOwner/OwnershipStatus pull in the auth client (better-auth/react),
+// which must stay out of every route's eager bundle graph — see AuthGate for why.
 const RequireOwner = lazy(() =>
   import("@/lib/auth/gates").then((m) => ({ default: m.RequireOwner })),
+);
+const OwnershipStatusImpl = lazy(() =>
+  import("@/lib/auth/gates").then((m) => ({ default: m.OwnershipStatus })),
 );
 
 /**
@@ -25,6 +28,27 @@ export function OwnerGate({
       <RequireOwner ownerId={ownerId} fallback={fallback}>
         {children}
       </RequireOwner>
+    </Suspense>
+  );
+}
+
+/**
+ * Render-prop variant for UI that's shared between the owner and other
+ * viewers but varies a detail or two by ownership — pass a function that
+ * receives `isOwner` and renders accordingly. Unlike `OwnerGate`, nothing is
+ * held back while the session resolves; ownership just starts `false` and
+ * may flip to `true` a moment later.
+ */
+export function OwnershipStatus({
+  ownerId,
+  children,
+}: {
+  ownerId: string;
+  children: (isOwner: boolean) => ReactNode;
+}) {
+  return (
+    <Suspense fallback={children(false)}>
+      <OwnershipStatusImpl ownerId={ownerId}>{children}</OwnershipStatusImpl>
     </Suspense>
   );
 }

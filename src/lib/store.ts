@@ -10,6 +10,8 @@ import {
   deleteSet as deleteSetFn,
   togglePublic as togglePublicFn,
   copyPublicSet as copyPublicSetFn,
+  copyCardsToSet as copyCardsToSetFn,
+  moveCardsToSet as moveCardsToSetFn,
 } from "./study-sets";
 import {
   getStreak as getStreakFn,
@@ -53,6 +55,16 @@ type StudyState = {
   restoreSeeds: () => Promise<void>;
   togglePublic: (setId: string) => Promise<void>;
   copyPublicSet: (setId: string) => Promise<string | null>;
+  /**
+   * Load the caller's own sets for a "copy/move cards to…" picker, merging
+   * them into `sets` without discarding what's already there (e.g. a public
+   * set currently being viewed). Returns the caller's own sets, or `null`
+   * when the fetch failed (most likely signed out) — the picker uses that to
+   * send the visitor to sign in instead of showing an empty list.
+   */
+  fetchMySetsForTransfer: () => Promise<StudySet[] | null>;
+  copyCardsToSet: (sourceSetId: string, targetSetId: string, cardIds: string[]) => Promise<number>;
+  moveCardsToSet: (sourceSetId: string, targetSetId: string, cardIds: string[]) => Promise<number>;
 };
 
 export const useStudyStore = create<StudyState>()((set, get) => ({
@@ -231,6 +243,41 @@ export const useStudyStore = create<StudyState>()((set, get) => ({
     const cloned = await copyPublicSetFn({ data: { id: setId } });
     set({ sets: [cloned, ...get().sets] });
     return cloned.id;
+  },
+
+  fetchMySetsForTransfer: async () => {
+    try {
+      const mySets = await getMySets();
+      set((state) => {
+        const byId = new Map(state.sets.map((s) => [s.id, s]));
+        for (const s of mySets) byId.set(s.id, s);
+        return { sets: Array.from(byId.values()), isLoaded: true };
+      });
+      return mySets;
+    } catch (error) {
+      console.error("Failed to load your sets:", error);
+      return null;
+    }
+  },
+
+  copyCardsToSet: async (sourceSetId, targetSetId, cardIds) => {
+    const result = await copyCardsToSetFn({ data: { sourceSetId, targetSetId, cardIds } });
+    set({
+      sets: get().sets.map((s) => (s.id === targetSetId ? { ...s, cards: result.targetCards } : s)),
+    });
+    return result.addedCount;
+  },
+
+  moveCardsToSet: async (sourceSetId, targetSetId, cardIds) => {
+    const result = await moveCardsToSetFn({ data: { sourceSetId, targetSetId, cardIds } });
+    set({
+      sets: get().sets.map((s) => {
+        if (s.id === targetSetId) return { ...s, cards: result.targetCards };
+        if (s.id === sourceSetId) return { ...s, cards: result.sourceCards };
+        return s;
+      }),
+    });
+    return result.addedCount;
   },
 
   restoreSeeds: async () => {},

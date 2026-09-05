@@ -2,7 +2,9 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import {
   ArrowLeft,
+  ArrowRightLeft,
   ArrowUpDown,
+  Copy,
   Download,
   Globe,
   Lock,
@@ -14,10 +16,11 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/app-shell";
-import { OwnerGate } from "@/components/owner-gate";
+import { OwnerGate, OwnershipStatus } from "@/components/owner-gate";
 import { ModeGrid } from "@/components/mode-grid";
 import { LeitnerBoxes } from "@/components/leitner-boxes";
 import { EmptyState } from "@/components/empty-state";
+import { TransferCardsDialog, type TransferMode } from "@/components/transfer-cards-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -77,6 +80,8 @@ function SetPage() {
   const [togglingPublic, setTogglingPublic] = useState(false);
   const [query, setQuery] = useState("");
   const [sortMode, setSortMode] = useState<SortMode>("original");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [transferMode, setTransferMode] = useState<TransferMode | null>(null);
 
   const visibleCards = useMemo(() => {
     if (!studySet) return [];
@@ -107,6 +112,23 @@ function SetPage() {
 
   const mastery = masteryPercent(studySet.cards);
   const starred = studySet.cards.filter((c) => c.starred).length;
+
+  function toggleSelect(cardId: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(cardId)) next.delete(cardId);
+      else next.add(cardId);
+      return next;
+    });
+  }
+
+  function selectAll() {
+    setSelectedIds(new Set(visibleCards.map((c) => c.id)));
+  }
+
+  function clearSelection() {
+    setSelectedIds(new Set());
+  }
 
   function exportJson() {
     if (!studySet) return;
@@ -267,6 +289,52 @@ function SetPage() {
         </div>
       </div>
 
+      {visibleCards.length > 0 ? (
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-3 text-sm">
+            <button
+              type="button"
+              className="text-muted underline-offset-2 hover:text-fg hover:underline"
+              onClick={selectAll}
+            >
+              Select all
+            </button>
+            {selectedIds.size > 0 ? (
+              <button
+                type="button"
+                className="text-muted underline-offset-2 hover:text-fg hover:underline"
+                onClick={clearSelection}
+              >
+                Clear selection
+              </button>
+            ) : null}
+          </div>
+          {selectedIds.size > 0 ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs text-muted tabular-nums">
+                {selectedIds.size} card{selectedIds.size === 1 ? "" : "s"} selected
+              </span>
+              <OwnershipStatus ownerId={studySet.ownerId}>
+                {(isOwner) => (
+                  <>
+                    <Button size="sm" variant="outline" onClick={() => setTransferMode("copy")}>
+                      <Copy className="size-4" />
+                      {isOwner ? "Copy to set…" : "Copy to my set…"}
+                    </Button>
+                    {isOwner ? (
+                      <Button size="sm" variant="outline" onClick={() => setTransferMode("move")}>
+                        <ArrowRightLeft className="size-4" />
+                        Move to set…
+                      </Button>
+                    ) : null}
+                  </>
+                )}
+              </OwnershipStatus>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+
       {visibleCards.length === 0 ? (
         <div className="rounded-xl bg-surface px-4 py-8 text-center text-sm text-muted shadow-[var(--shadow-border)]">
           No cards match your search.
@@ -281,6 +349,13 @@ function SetPage() {
                 studySet.isReference && "py-4 md:py-5",
               )}
             >
+              <input
+                type="checkbox"
+                checked={selectedIds.has(card.id)}
+                onChange={() => toggleSelect(card.id)}
+                aria-label={`Select ${card.term || "card"}`}
+                className="mt-3.5 size-4 shrink-0 rounded border-border accent-primary"
+              />
               <button
                 type="button"
                 onClick={() => toggleStar(setId, card.id)}
@@ -306,6 +381,21 @@ function SetPage() {
           ))}
         </ul>
       )}
+
+      {transferMode ? (
+        <TransferCardsDialog
+          mode={transferMode}
+          sourceSetId={setId}
+          cardIds={Array.from(selectedIds)}
+          onOpenChange={(open) => {
+            if (!open) setTransferMode(null);
+          }}
+          onDone={() => {
+            setTransferMode(null);
+            clearSelection();
+          }}
+        />
+      ) : null}
 
       <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
         <AlertDialogContent>

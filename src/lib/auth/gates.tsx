@@ -99,6 +99,29 @@ export function RequireOwner({
   return <>{children}</>;
 }
 
+/**
+ * Render-prop variant of `RequireOwner` — for UI that's mostly shared between
+ * the owner and other viewers but varies one or two details by ownership
+ * (e.g. a "Move to set…" button that only makes sense for the owner, next to
+ * a "Copy" button everyone gets). Reports `isOwner: false` while the session
+ * is still resolving, rather than hiding `children` outright, so shared
+ * content isn't held back waiting on auth — an owner-only detail may pop in
+ * a moment later instead.
+ *
+ * Only ever import this via `React.lazy` — see `RequireAuth` above for why.
+ */
+export function OwnershipStatus({
+  ownerId,
+  children,
+}: {
+  ownerId: string;
+  children: (isOwner: boolean) => ReactNode;
+}) {
+  const { user, isPending } = useCurrentUserState();
+  const isOwner = !isPending && user?.id === ownerId;
+  return <>{children(isOwner)}</>;
+}
+
 /** Shared dropdown body for both the header avatar and the mobile nav's Account tab. */
 function AccountMenuContent({ user }: { user: AppUser }) {
   // Sign-out can take a moment (and can fail when deployed), so the control

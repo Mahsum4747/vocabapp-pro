@@ -202,3 +202,72 @@ export const copyPublicSet = createServerFn({ method: "POST" })
     await db.collection("study_sets").doc(id).set(cloned);
     return cloned;
   });
+
+type TransferCardsInput = { sourceSetId: string; targetSetId: string; cardIds: string[] };
+
+/**
+ * Shared by `copyCardsToSet` and `moveCardsToSet`: add the selected cards
+ * (as fresh copies, mastery/starred reset) to `targetSetId`, which must be
+ * owned by the caller. For a move, the cards are also removed from
+ * `sourceSetId`, which must then be owned by the caller too; for a copy the
+ * source only needs to be readable (own set, or someone else's public set —
+ * same rule as `getSetById`).
+ */
+async function transferCards(userId: string, data: TransferCardsInput, removeFromSource: boolean) {
+  const { getAdminFirestore } = await import("./firebase-admin.server");
+  const db = getAdminFirestore();
+  const sourceRef = db.collection("study_sets").doc(data.sourceSetId);
+  const targetRef = db.collection("study_sets").doc(data.targetSetId);
+  const [sourceDoc, targetDoc] = await Promise.all([sourceRef.get(), targetRef.get()]);
+
+  if (!targetDoc.exists || targetDoc.data()?.ownerId !== userId) {
+    throw new Error("You don't have permission to add cards to that set.");
+  }
+  if (!sourceDoc.exists) {
+    throw new Error("The source set no longer exists.");
+  }
+  const source = sourceDoc.data() as StudySet;
+  if (removeFromSource && source.ownerId !== userId) {
+    throw new Error("You don't have permission to remove cards from that set.");
+  }
+  if (!removeFromSource && source.ownerId !== userId && !source.isPublic) {
+    throw new Error("You don't have permission to read that set.");
+  }
+
+  const idSet = new Set(data.cardIds);
+  const selected = source.cards.filter((c) => idSet.has(c.id));
+  if (selected.length === 0) {
+    throw new Error("No matching cards found.");
+  }
+
+  const target = targetDoc.data() as StudySet;
+  const addedCards: Card[] = selected.map((c) => ({
+    id: uidServer(),
+    term: c.term,
+    definition: c.definition,
+    starred: false,
+    mastery: 0,
+    imageUrl: c.imageUrl,
+  }));
+  const now = Date.now();
+  const targetCards = [...target.cards, ...addedCards];
+  await targetRef.update({ cards: targetCards, updatedAt: now });
+
+  let sourceCards = source.cards;
+  if (removeFromSource) {
+    sourceCards = source.cards.filter((c) => !idSet.has(c.id));
+    await sourceRef.update({ cards: sourceCards, updatedAt: now });
+  }
+
+  return { addedCount: addedCards.length, targetCards, sourceCards };
+}
+
+export const copyCardsToSet = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
+  .validator((input: TransferCardsInput) => input)
+  .handler(({ context, data }) => transferCards(context.userId, data, false));
+
+export const moveCardsToSet = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
+  .validator((input: TransferCardsInput) => input)
+  .handler(({ context, data }) => transferCards(context.userId, data, true));
