@@ -30,7 +30,11 @@ function FlashcardsPage() {
     if (!studySet) return [];
     const cards = starredOnly ? studySet.cards.filter((c) => c.starred) : studySet.cards;
     return cards.length > 0 ? cards : studySet.cards;
-  }, [studySet, starredOnly]);
+    // Keyed on the set id (not the studySet object) so starring/mastery
+    // updates during a round — which replace `studySet` with a new object —
+    // don't re-trigger the reset effect below and snap back to card 0.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [studySet?.id, starredOnly]);
 
   useEffect(() => {
     setOrder(source.map((c) => c.id));
