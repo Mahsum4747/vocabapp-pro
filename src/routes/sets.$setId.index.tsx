@@ -4,6 +4,7 @@ import { ArrowLeft, Download, Globe, Lock, MoreHorizontal, Pencil, Star, Trash2 
 import { toast } from "sonner";
 import { AppShell } from "@/components/app-shell";
 import { ModeGrid } from "@/components/mode-grid";
+import { LeitnerBoxes } from "@/components/leitner-boxes";
 import { EmptyState } from "@/components/empty-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -166,6 +167,9 @@ function SetPage() {
       {studySet.cards.length < 2 ? (
         <p className="mt-3 text-sm text-muted">You need at least two cards to study.</p>
       ) : null}
+
+      <h2 className="mt-12 mb-4 font-display text-2xl font-medium tracking-tight">Leitner boxes</h2>
+      <LeitnerBoxes cards={studySet.cards} />
 
       <h2 className="mt-12 mb-4 font-display text-2xl font-medium tracking-tight">Cards</h2>
       <ul className="divide-y divide-border overflow-hidden rounded-xl bg-surface shadow-[var(--shadow-border)]">
