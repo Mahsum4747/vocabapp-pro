@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { createFileRoute } from "@tanstack/react-router";
 import { authClient } from "@/lib/auth/client";
 import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
@@ -11,13 +11,26 @@ export const Route = createFileRoute("/login")({
 });
 
 function LoginPage() {
-  const navigate = useNavigate();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // The browser can restore this exact page (with whatever was typed) from
+  // back/forward cache when the user navigates back to /login — clear the
+  // password (and any in-flight state) so it never lingers in a cached page.
+  useEffect(() => {
+    function onPageShow(e: PageTransitionEvent) {
+      if (!e.persisted) return;
+      setPassword("");
+      setError(null);
+      setLoading(false);
+    }
+    window.addEventListener("pageshow", onPageShow);
+    return () => window.removeEventListener("pageshow", onPageShow);
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -38,10 +51,16 @@ function LoginPage() {
         });
         if (err) throw new Error(err.message ?? "Sign in failed.");
       }
-      navigate({ to: "/" });
+      // A full navigation (not the router's client-side navigate) so the
+      // next page's session check starts from a clean client — better-auth's
+      // reactive session store can otherwise still be showing "signed out"
+      // for a few milliseconds after sign-in resolves (its own listeners are
+      // notified via a short internal setTimeout), which raced the /login
+      // redirect on the very first sign-in attempt. Mirrors signOut()'s
+      // existing hard-redirect for the same reason, in the other direction.
+      window.location.href = "/";
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
-    } finally {
       setLoading(false);
     }
   }
@@ -69,6 +88,7 @@ function LoginPage() {
                 <Input
                   id="name"
                   type="text"
+                  autoComplete="name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Your name"
@@ -80,6 +100,7 @@ function LoginPage() {
               <Input
                 id="email"
                 type="email"
+                autoComplete="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -91,6 +112,7 @@ function LoginPage() {
               <Input
                 id="password"
                 type="password"
+                autoComplete={mode === "signin" ? "current-password" : "new-password"}
                 required
                 minLength={8}
                 value={password}

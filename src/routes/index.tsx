@@ -32,7 +32,9 @@ function Home() {
   }, [fetchSets, fetchPublicSets, fetchStreak]);
   const [query, setQuery] = useState("");
   const [subject, setSubject] = useState<string>("All");
-  const [view, setView] = useState<"mine" | "public">("mine");
+  // Defaults to "public" — this page is reachable signed out, and Public
+  // Sets is the only tab that works without an account (see AuthGate below).
+  const [view, setView] = useState<"mine" | "public">("public");
 
   // `sets` only ever holds the current user's own sets (getMySets/getSetById
   // are ownership-scoped), so excluding those ids from `publicSets` is the
@@ -69,70 +71,70 @@ function Home() {
   const subjects = ["All", ...SUBJECTS.filter((name) => sets.some((s) => s.subject === name))];
 
   return (
-    <AuthGate>
-      <AppShell>
-        <section className="stagger-in">
-          <p className="text-sm font-medium text-muted">Personal library</p>
-          <h1 className="mt-2 max-w-xl font-display text-4xl font-medium tracking-tight md:text-5xl">
-            What will you study today?
-          </h1>
-          <p className="mt-3 max-w-lg text-muted">
-            Flip cards, learn, test, and match. Your sets sync across all your devices.
-          </p>
-          {streak ? (
-            <div className="mt-4">
-              <StreakIndicator days={streak.currentStreak} />
-            </div>
-          ) : null}
-          <div className="mt-6 flex flex-wrap gap-2">
-            <Button asChild>
-              <Link to="/create">
-                <Plus />
-                New set
-              </Link>
-            </Button>
-            <Button asChild variant="outline">
-              <Link to="/create" search={{ ai: true }}>
-                <Sparkles />
-                Generate from topic
-              </Link>
-            </Button>
+    <AppShell>
+      <section className="stagger-in">
+        <p className="text-sm font-medium text-muted">Personal library</p>
+        <h1 className="mt-2 max-w-xl font-display text-4xl font-medium tracking-tight md:text-5xl">
+          What will you study today?
+        </h1>
+        <p className="mt-3 max-w-lg text-muted">
+          Flip cards, learn, test, and match. Your sets sync across all your devices.
+        </p>
+        {streak ? (
+          <div className="mt-4">
+            <StreakIndicator days={streak.currentStreak} />
           </div>
-        </section>
-
-        {continueSet ? (
-          <Link
-            to="/sets/$setId"
-            params={{ setId: continueSet.id }}
-            className="mt-10 flex flex-col justify-between gap-4 rounded-2xl bg-primary p-6 text-primary-fg shadow-[var(--shadow-card)] md:flex-row md:items-end"
-          >
-            <div>
-              <p className="text-xs font-medium tracking-wide text-primary-fg/70 uppercase">
-                Continue where you left off
-              </p>
-              <h2 className="mt-2 font-display text-2xl font-medium tracking-tight">
-                {continueSet.title}
-              </h2>
-              <p className="mt-1 text-sm text-primary-fg/75">
-                {continueSet.cards.length} cards · {masteryPercent(continueSet.cards)}% progress
-              </p>
-            </div>
-            <span className="inline-flex h-11 items-center rounded-md bg-primary-fg px-4 text-sm font-medium text-primary">
-              Continue
-            </span>
-          </Link>
         ) : null}
+        <div className="mt-6 flex flex-wrap gap-2">
+          <Button asChild>
+            <Link to="/create">
+              <Plus />
+              New set
+            </Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link to="/create" search={{ ai: true }}>
+              <Sparkles />
+              Generate from topic
+            </Link>
+          </Button>
+        </div>
+      </section>
 
-        <div className="mt-10 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div className="flex gap-2">
-            <button type="button" onClick={() => setView("mine")}>
-              <Badge tone={view === "mine" ? "primary" : "muted"}>My Library</Badge>
-            </button>
-            <button type="button" onClick={() => setView("public")}>
-              <Badge tone={view === "public" ? "primary" : "muted"}>Public Sets</Badge>
-            </button>
+      {continueSet ? (
+        <Link
+          to="/sets/$setId"
+          params={{ setId: continueSet.id }}
+          className="mt-10 flex flex-col justify-between gap-4 rounded-2xl bg-primary p-6 text-primary-fg shadow-[var(--shadow-card)] md:flex-row md:items-end"
+        >
+          <div>
+            <p className="text-xs font-medium tracking-wide text-primary-fg/70 uppercase">
+              Continue where you left off
+            </p>
+            <h2 className="mt-2 font-display text-2xl font-medium tracking-tight">
+              {continueSet.title}
+            </h2>
+            <p className="mt-1 text-sm text-primary-fg/75">
+              {continueSet.cards.length} cards · {masteryPercent(continueSet.cards)}% progress
+            </p>
           </div>
-          {view === "mine" ? (
+          <span className="inline-flex h-11 items-center rounded-md bg-primary-fg px-4 text-sm font-medium text-primary">
+            Continue
+          </span>
+        </Link>
+      ) : null}
+
+      <div className="mt-10 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div className="flex gap-2">
+          <button type="button" onClick={() => setView("mine")}>
+            <Badge tone={view === "mine" ? "primary" : "muted"}>My Library</Badge>
+          </button>
+          <button type="button" onClick={() => setView("public")}>
+            <Badge tone={view === "public" ? "primary" : "muted"}>Public Sets</Badge>
+          </button>
+        </div>
+        {view === "mine" ? (
+          <AuthGate>
             <div className="relative w-full md:max-w-xs">
               <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-subtle" />
               <Input
@@ -143,10 +145,14 @@ function Home() {
                 aria-label="Search"
               />
             </div>
-          ) : null}
-        </div>
+          </AuthGate>
+        ) : null}
+      </div>
 
-        {view === "mine" ? (
+      {view === "mine" ? (
+        // My Library is personal data — AuthGate redirects to /login when
+        // signed out (e.g. a visitor who came for Public Sets clicks this tab).
+        <AuthGate>
           <>
             <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
               {subjects.map((name) => (
@@ -192,18 +198,18 @@ function Home() {
               </div>
             )}
           </>
-        ) : otherPublicSets.length === 0 ? (
-          <div className="mt-8">
-            <EmptyState title="No public sets" description="No one has shared a set yet." />
-          </div>
-        ) : (
-          <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {otherPublicSets.map((set) => (
-              <PublicSetCard key={set.id} set={set} />
-            ))}
-          </div>
-        )}
-      </AppShell>
-    </AuthGate>
+        </AuthGate>
+      ) : otherPublicSets.length === 0 ? (
+        <div className="mt-8">
+          <EmptyState title="No public sets" description="No one has shared a set yet." />
+        </div>
+      ) : (
+        <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {otherPublicSets.map((set) => (
+            <PublicSetCard key={set.id} set={set} />
+          ))}
+        </div>
+      )}
+    </AppShell>
   );
 }
