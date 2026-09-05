@@ -8,6 +8,12 @@ import { Label } from "./ui/label";
 
 export type EditorCard = { id: string; term: string; definition: string; imageUrl?: string | null };
 
+// Card images need Firebase Storage on a paid plan, which we're not on yet.
+// The upload/display code stays in place (card-images.ts, FlashCard, the
+// learn/test question renderers) — this just hides the editor's upload
+// control until Storage billing is sorted out. Flip back to `true` then.
+const IMAGE_UPLOAD_ENABLED = false;
+
 const MAX_IMAGE_MB = MAX_IMAGE_BYTES / (1024 * 1024);
 
 export function CardEditor({
@@ -68,6 +74,7 @@ export function CardEditor({
               size="icon-sm"
               onClick={() => remove(card.id)}
               aria-label="Delete card"
+              tabIndex={-1}
             >
               <Trash2 className="size-4" />
             </Button>
@@ -93,49 +100,51 @@ export function CardEditor({
               />
             </div>
           </div>
-          <div className="mt-3">
-            {card.imageUrl ? (
-              <div className="relative inline-block">
-                <img
-                  src={card.imageUrl}
-                  alt=""
-                  className="h-20 w-20 rounded-lg object-cover shadow-[var(--shadow-border)]"
-                />
-                <button
-                  type="button"
-                  onClick={() => update(card.id, { imageUrl: null })}
-                  aria-label="Remove image"
-                  className="absolute -top-2 -right-2 grid size-6 place-items-center rounded-full bg-danger text-primary-fg shadow-[var(--shadow-border)]"
+          {IMAGE_UPLOAD_ENABLED && (
+            <div className="mt-3">
+              {card.imageUrl ? (
+                <div className="relative inline-block">
+                  <img
+                    src={card.imageUrl}
+                    alt=""
+                    className="h-20 w-20 rounded-lg object-cover shadow-[var(--shadow-border)]"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => update(card.id, { imageUrl: null })}
+                    aria-label="Remove image"
+                    className="absolute -top-2 -right-2 grid size-6 place-items-center rounded-full bg-danger text-primary-fg shadow-[var(--shadow-border)]"
+                  >
+                    <X className="size-3.5" />
+                  </button>
+                </div>
+              ) : (
+                <Label
+                  htmlFor={`image-${card.id}`}
+                  className="inline-flex h-9 cursor-pointer items-center gap-2 rounded-md bg-surface-2 px-3 text-sm font-medium text-fg hover:bg-border"
                 >
-                  <X className="size-3.5" />
-                </button>
-              </div>
-            ) : (
-              <Label
-                htmlFor={`image-${card.id}`}
-                className="inline-flex h-9 cursor-pointer items-center gap-2 rounded-md bg-surface-2 px-3 text-sm font-medium text-fg hover:bg-border"
-              >
-                {uploadingId === card.id ? (
-                  <Loader2 className="size-4 animate-spin" />
-                ) : (
-                  <ImagePlus className="size-4" />
-                )}
-                {uploadingId === card.id ? "Uploading…" : "Add image"}
-                <input
-                  id={`image-${card.id}`}
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp"
-                  className="hidden"
-                  disabled={uploadingId !== null}
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    e.target.value = "";
-                    if (file) void uploadImage(card.id, file);
-                  }}
-                />
-              </Label>
-            )}
-          </div>
+                  {uploadingId === card.id ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <ImagePlus className="size-4" />
+                  )}
+                  {uploadingId === card.id ? "Uploading…" : "Add image"}
+                  <input
+                    id={`image-${card.id}`}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    className="hidden"
+                    disabled={uploadingId !== null}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      e.target.value = "";
+                      if (file) void uploadImage(card.id, file);
+                    }}
+                  />
+                </Label>
+              )}
+            </div>
+          )}
         </div>
       ))}
       <Button type="button" variant="outline" className="w-full" onClick={add}>

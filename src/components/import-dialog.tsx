@@ -36,8 +36,9 @@ export function ImportDialog({
       </DialogTrigger>
       <DialogContent title="Paste cards" className="space-y-4">
         <p className="text-sm text-muted">
-          One card per line. Tab-separated like a Quizlet export, or write{" "}
-          <span className="font-medium text-fg">term - definition</span>.
+          One card per line, separated by a tab or{" "}
+          <span className="font-medium text-fg">term - definition</span> (dash or comma also
+          work).
         </p>
         <Textarea
           value={text}
