@@ -1,8 +1,18 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { ArrowLeft, Download, Globe, Lock, MoreHorizontal, Pencil, Star, Trash2 } from "lucide-react";
+import {
+  ArrowLeft,
+  Download,
+  Globe,
+  Lock,
+  MoreHorizontal,
+  Pencil,
+  Star,
+  Trash2,
+} from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/app-shell";
+import { OwnerGate } from "@/components/owner-gate";
 import { ModeGrid } from "@/components/mode-grid";
 import { LeitnerBoxes } from "@/components/leitner-boxes";
 import { EmptyState } from "@/components/empty-state";
@@ -99,34 +109,38 @@ function SetPage() {
               </span>
             ) : null}
           </div>
-          <h1 className="mt-3 font-display text-4xl font-medium tracking-tight">{studySet.title}</h1>
+          <h1 className="mt-3 font-display text-4xl font-medium tracking-tight">
+            {studySet.title}
+          </h1>
           {studySet.description ? (
             <p className="mt-2 max-w-2xl text-muted">{studySet.description}</p>
           ) : null}
         </div>
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            disabled={togglingPublic}
-            onClick={async () => {
-              setTogglingPublic(true);
-              try {
-                await togglePublic(setId);
-                toast.success(studySet.isPublic ? "Set made private." : "Set made public.");
-              } finally {
-                setTogglingPublic(false);
-              }
-            }}
-          >
-            {studySet.isPublic ? <Lock /> : <Globe />}
-            {studySet.isPublic ? "Make private" : "Make public"}
-          </Button>
-          <Button asChild variant="outline">
-            <Link to="/sets/$setId/edit" params={{ setId }}>
-              <Pencil />
-              Edit
-            </Link>
-          </Button>
+          <OwnerGate ownerId={studySet.ownerId}>
+            <Button
+              variant="outline"
+              disabled={togglingPublic}
+              onClick={async () => {
+                setTogglingPublic(true);
+                try {
+                  await togglePublic(setId);
+                  toast.success(studySet.isPublic ? "Set made private." : "Set made public.");
+                } finally {
+                  setTogglingPublic(false);
+                }
+              }}
+            >
+              {studySet.isPublic ? <Lock /> : <Globe />}
+              {studySet.isPublic ? "Make private" : "Make public"}
+            </Button>
+            <Button asChild variant="outline">
+              <Link to="/sets/$setId/edit" params={{ setId }}>
+                <Pencil />
+                Edit
+              </Link>
+            </Button>
+          </OwnerGate>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" aria-label="More">
@@ -138,18 +152,20 @@ function SetPage() {
                 <Download className="size-4" />
                 Export
               </DropdownMenuItem>
-              <DropdownMenuItem
-                onSelect={() => {
-                  resetMastery(setId);
-                  toast.success("Progress reset.");
-                }}
-              >
-                Reset progress
-              </DropdownMenuItem>
-              <DropdownMenuItem className="text-danger" onSelect={() => setConfirmDelete(true)}>
-                <Trash2 className="size-4" />
-                Delete
-              </DropdownMenuItem>
+              <OwnerGate ownerId={studySet.ownerId}>
+                <DropdownMenuItem
+                  onSelect={() => {
+                    resetMastery(setId);
+                    toast.success("Progress reset.");
+                  }}
+                >
+                  Reset progress
+                </DropdownMenuItem>
+                <DropdownMenuItem className="text-danger" onSelect={() => setConfirmDelete(true)}>
+                  <Trash2 className="size-4" />
+                  Delete
+                </DropdownMenuItem>
+              </OwnerGate>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

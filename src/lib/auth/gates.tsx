@@ -75,6 +75,30 @@ export function RequireAuth({ children }: { children: ReactNode }) {
   );
 }
 
+/**
+ * Render `children` only for the signed-in owner of `ownerId`, `fallback`
+ * otherwise (signed out, or signed in as someone else) — nothing while the
+ * session is still resolving. For gating owner-only actions (edit, delete,
+ * make public/private) on a set that a non-owner may otherwise legitimately
+ * view, e.g. someone else's public set.
+ *
+ * Only ever import this via `React.lazy` — see `RequireAuth` above for why.
+ */
+export function RequireOwner({
+  ownerId,
+  fallback,
+  children,
+}: {
+  ownerId: string;
+  fallback: ReactNode;
+  children: ReactNode;
+}) {
+  const { user, isPending } = useCurrentUserState();
+  if (isPending) return null;
+  if (!user || user.id !== ownerId) return <>{fallback}</>;
+  return <>{children}</>;
+}
+
 /** Shared dropdown body for both the header avatar and the mobile nav's Account tab. */
 function AccountMenuContent({ user }: { user: AppUser }) {
   // Sign-out can take a moment (and can fail when deployed), so the control

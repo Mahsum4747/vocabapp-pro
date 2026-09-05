@@ -1,7 +1,6 @@
 import { Outlet, createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/app-shell";
-import { AuthGate } from "@/components/auth-gate";
 import { useSet, useStudyStore } from "@/lib/store";
 
 export const Route = createFileRoute("/sets/$setId")({
@@ -30,15 +29,18 @@ function SetLayout() {
     };
   }, [setId, studySet, isLoaded, fetchSetById]);
 
-  return (
-    <AuthGate>
-      {checking ? (
-        <AppShell>
-          <div className="py-24 text-center text-sm text-muted">Loading…</div>
-        </AppShell>
-      ) : (
-        <Outlet />
-      )}
-    </AuthGate>
+  // No blanket AuthGate here: this layout also serves someone else's public
+  // set, which a signed-out visitor must be able to read and study. Each leaf
+  // route (flashcards/learn/test/match/index) already renders "Set not found"
+  // when `studySet` is undefined — which `getSetById` now returns for both a
+  // truly missing set and a private one the caller can't see, so there's
+  // nothing to leak either way. Owner-only actions (edit, delete, make
+  // public/private) are gated separately, close to where they're rendered.
+  return checking ? (
+    <AppShell>
+      <div className="py-24 text-center text-sm text-muted">Loading…</div>
+    </AppShell>
+  ) : (
+    <Outlet />
   );
 }

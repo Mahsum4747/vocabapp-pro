@@ -123,9 +123,7 @@ export const useStudyStore = create<StudyState>()((set, get) => ({
     const nextCards = await replaceCardsFn({ data: { id, cards } });
     const now = Date.now();
     set({
-      sets: get().sets.map((s) =>
-        s.id === id ? { ...s, cards: nextCards, updatedAt: now } : s,
-      ),
+      sets: get().sets.map((s) => (s.id === id ? { ...s, cards: nextCards, updatedAt: now } : s)),
     });
   },
 
@@ -134,16 +132,25 @@ export const useStudyStore = create<StudyState>()((set, get) => ({
     set({ sets: get().sets.filter((s) => s.id !== id) });
   },
 
+  // Starring/mastery are per-card progress on the set's own document — only
+  // its owner can persist them (server-enforced). Studying someone else's
+  // public set still updates this tab's view optimistically so the mode
+  // itself works end-to-end; it just doesn't stick past a reload for a
+  // non-owner, which is expected since it isn't "your" set to track.
   toggleStar: async (setId, cardId) => {
     const targetSet = get().sets.find((s) => s.id === setId);
     if (!targetSet) return;
     const updatedCards = targetSet.cards.map((card) =>
       card.id === cardId ? { ...card, starred: !card.starred } : card,
     );
-    await replaceCardsFn({ data: { id: setId, cards: updatedCards } });
     set({
       sets: get().sets.map((s) => (s.id !== setId ? s : { ...s, cards: updatedCards })),
     });
+    try {
+      await replaceCardsFn({ data: { id: setId, cards: updatedCards } });
+    } catch (error) {
+      console.error("Failed to save star:", error);
+    }
   },
 
   bumpMastery: async (setId, cardId, delta) => {
@@ -154,10 +161,14 @@ export const useStudyStore = create<StudyState>()((set, get) => ({
         ? { ...card, mastery: Math.min(5, Math.max(0, card.mastery + delta)) }
         : card,
     );
-    await replaceCardsFn({ data: { id: setId, cards: updatedCards } });
     set({
       sets: get().sets.map((s) => (s.id !== setId ? s : { ...s, cards: updatedCards })),
     });
+    try {
+      await replaceCardsFn({ data: { id: setId, cards: updatedCards } });
+    } catch (error) {
+      console.error("Failed to save mastery:", error);
+    }
   },
 
   resetMastery: async (setId) => {
@@ -174,13 +185,19 @@ export const useStudyStore = create<StudyState>()((set, get) => ({
   },
 
   markStudied: async (setId) => {
-    await updateSetMetaFn({ data: { id: setId, patch: {} } });
     const now = Date.now();
     set({
       sets: get().sets.map((s) =>
         s.id === setId ? { ...s, lastStudiedAt: now, updatedAt: now } : s,
       ),
     });
+    try {
+      // Only the owner can persist `updatedAt` on the set's own document —
+      // studying someone else's public set still counts for YOUR streak below.
+      await updateSetMetaFn({ data: { id: setId, patch: {} } });
+    } catch (error) {
+      console.error("Failed to record set activity:", error);
+    }
     try {
       const streak = await recordStudyActivityFn();
       set({ streak });
@@ -224,7 +241,6 @@ export const useStudyStore = create<StudyState>()((set, get) => ({
   onRehydrateStorage: () => () => {},
   clearStorage: () => {},
 };
-
 
 export function useSet(id: string | undefined) {
   return useStudyStore((state) => state.sets.find((item) => item.id === id));

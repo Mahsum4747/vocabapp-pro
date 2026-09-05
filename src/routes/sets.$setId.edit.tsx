@@ -6,6 +6,7 @@ import { CardEditor, type EditorCard } from "@/components/card-editor";
 import { EmptyState } from "@/components/empty-state";
 import { GenerateDialog } from "@/components/generate-dialog";
 import { ImportDialog } from "@/components/import-dialog";
+import { OwnerGate } from "@/components/owner-gate";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -84,71 +85,94 @@ function EditPage() {
 
   return (
     <AppShell>
-      <div className="mx-auto max-w-3xl">
-        <p className="text-sm font-medium text-muted">Edit</p>
-        <h1 className="mt-2 font-display text-4xl font-medium tracking-tight">{studySet.title}</h1>
-        <div className="mt-6 flex flex-wrap gap-2">
-          <GenerateDialog
-            onGenerated={(generated) => {
-              setTitle(generated.title);
-              setDescription(generated.description ?? "");
-              setSubject(generated.subject || subject);
-              setCards(
-                generated.cards.map((card) => ({
-                  id: crypto.randomUUID(),
-                  term: card.term,
-                  definition: card.definition,
-                })),
-              );
-            }}
-          />
-          <ImportDialog
-            onImport={(incoming) =>
-              setCards((prev) => [...prev.filter((c) => c.term || c.definition), ...incoming])
+      <OwnerGate
+        ownerId={studySet.ownerId}
+        fallback={
+          <EmptyState
+            title="You can't edit this set"
+            description="Only the set's owner can make changes."
+            action={
+              <Button asChild>
+                <Link to="/sets/$setId" params={{ setId }}>
+                  Back to set
+                </Link>
+              </Button>
             }
           />
-        </div>
-        <form
-          className="mt-8 space-y-6"
-          onSubmit={(e) => {
-            e.preventDefault();
-            save();
-          }}
-        >
-          <div className="space-y-1.5">
-            <Label htmlFor="title">Title</Label>
-            <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} />
+        }
+      >
+        <div className="mx-auto max-w-3xl">
+          <p className="text-sm font-medium text-muted">Edit</p>
+          <h1 className="mt-2 font-display text-4xl font-medium tracking-tight">
+            {studySet.title}
+          </h1>
+          <div className="mt-6 flex flex-wrap gap-2">
+            <GenerateDialog
+              onGenerated={(generated) => {
+                setTitle(generated.title);
+                setDescription(generated.description ?? "");
+                setSubject(generated.subject || subject);
+                setCards(
+                  generated.cards.map((card) => ({
+                    id: crypto.randomUUID(),
+                    term: card.term,
+                    definition: card.definition,
+                  })),
+                );
+              }}
+            />
+            <ImportDialog
+              onImport={(incoming) =>
+                setCards((prev) => [...prev.filter((c) => c.term || c.definition), ...incoming])
+              }
+            />
           </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="desc">Description</Label>
-            <Textarea id="desc" value={description} onChange={(e) => setDescription(e.target.value)} />
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {SUBJECTS.map((name) => (
-              <Button
-                key={name}
-                type="button"
-                size="sm"
-                variant={subject === name ? "default" : "secondary"}
-                onClick={() => setSubject(name)}
-              >
-                {name}
+          <form
+            className="mt-8 space-y-6"
+            onSubmit={(e) => {
+              e.preventDefault();
+              save();
+            }}
+          >
+            <div className="space-y-1.5">
+              <Label htmlFor="title">Title</Label>
+              <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="desc">Description</Label>
+              <Textarea
+                id="desc"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+              />
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {SUBJECTS.map((name) => (
+                <Button
+                  key={name}
+                  type="button"
+                  size="sm"
+                  variant={subject === name ? "default" : "secondary"}
+                  onClick={() => setSubject(name)}
+                >
+                  {name}
+                </Button>
+              ))}
+            </div>
+            <CardEditor cards={cards} onChange={setCards} />
+            <div className="sticky bottom-4 flex justify-end gap-2">
+              <Button type="button" variant="ghost" asChild>
+                <Link to="/sets/$setId" params={{ setId }}>
+                  Cancel
+                </Link>
               </Button>
-            ))}
-          </div>
-          <CardEditor cards={cards} onChange={setCards} />
-          <div className="sticky bottom-4 flex justify-end gap-2">
-            <Button type="button" variant="ghost" asChild>
-              <Link to="/sets/$setId" params={{ setId }}>
-                Cancel
-              </Link>
-            </Button>
-            <Button type="submit" size="lg">
-              Save
-            </Button>
-          </div>
-        </form>
-      </div>
+              <Button type="submit" size="lg">
+                Save
+              </Button>
+            </div>
+          </form>
+        </div>
+      </OwnerGate>
     </AppShell>
   );
 }

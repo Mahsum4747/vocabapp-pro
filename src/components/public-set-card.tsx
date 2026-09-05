@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { Layers, Plus } from "lucide-react";
 import { toast } from "sonner";
 import type { StudySet } from "@/lib/types";
@@ -12,7 +12,9 @@ export function PublicSetCard({ set }: { set: StudySet }) {
   const navigate = useNavigate();
   const [copying, setCopying] = useState(false);
 
-  async function addToLibrary() {
+  async function addToLibrary(e: React.MouseEvent) {
+    e.preventDefault(); // the card itself is a Link to view the set
+    e.stopPropagation();
     setCopying(true);
     try {
       const id = await copyPublicSet(set.id);
@@ -20,13 +22,24 @@ export function PublicSetCard({ set }: { set: StudySet }) {
         toast.success("Set added to your library.");
         void navigate({ to: "/sets/$setId", params: { setId: id } });
       }
+    } catch (error) {
+      if (error instanceof Error && error.message === "Unauthorized") {
+        toast.error("Sign in to add this set to your library.");
+        void navigate({ to: "/login" });
+      } else {
+        toast.error("Couldn't add this set. Try again.");
+      }
     } finally {
       setCopying(false);
     }
   }
 
   return (
-    <div className="flex flex-col rounded-xl bg-surface p-5 shadow-[var(--shadow-border)]">
+    <Link
+      to="/sets/$setId"
+      params={{ setId: set.id }}
+      className="group flex flex-col rounded-xl bg-surface p-5 shadow-[var(--shadow-border)] transition-[transform,box-shadow] duration-200 ease-[var(--ease-smooth-out)] hover:-translate-y-0.5 hover:shadow-[var(--shadow-border-hover)]"
+    >
       <div className="flex items-center justify-between gap-3">
         <Badge tone="accent">{set.subject}</Badge>
         <span className="inline-flex items-center gap-1 text-xs text-muted tabular-nums">
@@ -34,12 +47,16 @@ export function PublicSetCard({ set }: { set: StudySet }) {
           {set.cards.length} cards
         </span>
       </div>
-      <h3 className="mt-4 font-display text-xl font-medium tracking-tight">{set.title}</h3>
-      <p className="mt-2 line-clamp-2 min-h-10 text-sm text-muted">{set.description || "No description"}</p>
+      <h3 className="mt-4 font-display text-xl font-medium tracking-tight group-hover:text-primary">
+        {set.title}
+      </h3>
+      <p className="mt-2 line-clamp-2 min-h-10 text-sm text-muted">
+        {set.description || "No description"}
+      </p>
       <Button className="mt-5 w-full" variant="outline" onClick={addToLibrary} disabled={copying}>
         <Plus />
         Add to my library
       </Button>
-    </div>
+    </Link>
   );
 }

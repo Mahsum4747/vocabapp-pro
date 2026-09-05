@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { authMiddleware } from "./auth/middleware";
+import { authMiddleware, optionalAuthMiddleware } from "./auth/middleware";
 import type { Card, StudySet } from "./types";
 
 type DraftCard = { term: string; definition: string; imageUrl?: string | null };
@@ -27,47 +27,40 @@ export const getMySets = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { getAdminFirestore } = await import("./firebase-admin.server");
     const db = getAdminFirestore();
-    const snap = await db
-      .collection("study_sets")
-      .where("ownerId", "==", context.userId)
-      .get();
+    const snap = await db.collection("study_sets").where("ownerId", "==", context.userId).get();
     return snap.docs.map((d) => ({ id: d.id, ...d.data() })) as StudySet[];
   });
 
+/**
+ * Fetch a set by id, for both reading and studying it. A signed-out visitor
+ * may call this too (`context.userId` is `null` then) — anyone can read a
+ * set that's `isPublic: true`; a private set is only returned to its owner.
+ * Editing/deleting/toggling-public stay owner-only, checked separately below.
+ */
 export const getSetById = createServerFn({ method: "GET" })
-  .middleware([authMiddleware])
+  .middleware([optionalAuthMiddleware])
   .validator((input: { id: string }) => input)
   .handler(async ({ context, data }) => {
     const { getAdminFirestore } = await import("./firebase-admin.server");
     const db = getAdminFirestore();
     const doc = await db.collection("study_sets").doc(data.id).get();
-    if (!doc.exists || doc.data()?.ownerId !== context.userId) {
-      return null;
-    }
-    return { id: doc.id, ...doc.data() } as StudySet;
+    if (!doc.exists) return null;
+    const set = { id: doc.id, ...doc.data() } as StudySet;
+    if (set.ownerId !== context.userId && !set.isPublic) return null;
+    return set;
   });
 
-export const getPublicSets = createServerFn({ method: "GET" }).handler(
-  async () => {
-    const { getAdminFirestore } = await import("./firebase-admin.server");
-    const db = getAdminFirestore();
-    const snap = await db
-      .collection("study_sets")
-      .where("isPublic", "==", true)
-      .get();
-    return snap.docs.map((d) => ({ id: d.id, ...d.data() })) as StudySet[];
-  },
-);
+export const getPublicSets = createServerFn({ method: "GET" }).handler(async () => {
+  const { getAdminFirestore } = await import("./firebase-admin.server");
+  const db = getAdminFirestore();
+  const snap = await db.collection("study_sets").where("isPublic", "==", true).get();
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() })) as StudySet[];
+});
 
 export const createSet = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
   .validator(
-    (input: {
-      title: string;
-      description: string;
-      subject: string;
-      cards: DraftCard[];
-    }) => input,
+    (input: { title: string; description: string; subject: string; cards: DraftCard[] }) => input,
   )
   .handler(async ({ context, data }) => {
     const { getAdminFirestore } = await import("./firebase-admin.server");
@@ -93,10 +86,8 @@ export const createSet = createServerFn({ method: "POST" })
 export const updateSetMeta = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
   .validator(
-    (input: {
-      id: string;
-      patch: Partial<Pick<StudySet, "title" | "description" | "subject">>;
-    }) => input,
+    (input: { id: string; patch: Partial<Pick<StudySet, "title" | "description" | "subject">> }) =>
+      input,
   )
   .handler(async ({ context, data }) => {
     const { getAdminFirestore } = await import("./firebase-admin.server");
@@ -123,9 +114,7 @@ export const replaceCards = createServerFn({ method: "POST" })
       throw new Error("You don't have permission to edit this set.");
     }
     const existing = doc.data() as StudySet;
-    const previous = new Map(
-      existing.cards.map((c) => [c.term.trim().toLowerCase(), c]),
-    );
+    const previous = new Map(existing.cards.map((c) => [c.term.trim().toLowerCase(), c]));
     const nextCards = data.cards
       .map((d) => {
         const term = d.term.trim();
