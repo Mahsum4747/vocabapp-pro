@@ -7,12 +7,6 @@ import { Dialog, DialogContent, DialogTrigger } from "./ui/dialog";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 
-const LANGS = [
-  { id: "tr" as const, label: "Turkish" },
-  { id: "en" as const, label: "English" },
-  { id: "mixed" as const, label: "EN term / TR definition" },
-];
-
 export function GenerateDialog({
   onGenerated,
   forceOpen = 0,
@@ -23,7 +17,8 @@ export function GenerateDialog({
   const [open, setOpen] = useState(false);
   const [topic, setTopic] = useState("");
   const [count, setCount] = useState(12);
-  const [language, setLanguage] = useState<(typeof LANGS)[number]["id"]>("tr");
+  const [termLanguage, setTermLanguage] = useState("German");
+  const [definitionLanguage, setDefinitionLanguage] = useState("English");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -35,10 +30,19 @@ export function GenerateDialog({
       toast.error("Enter a topic.");
       return;
     }
+    if (!termLanguage.trim() || !definitionLanguage.trim()) {
+      toast.error("Enter both languages.");
+      return;
+    }
     setLoading(true);
     try {
       const result = await generateStudySet({
-        data: { topic: topic.trim(), count, language },
+        data: {
+          topic: topic.trim(),
+          count,
+          termLanguage: termLanguage.trim(),
+          definitionLanguage: definitionLanguage.trim(),
+        },
       });
       if (!result.ok) {
         toast.error(result.error);
@@ -78,30 +82,37 @@ export function GenerateDialog({
             }}
           />
         </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <Label htmlFor="term-lang">Term language</Label>
+            <Input
+              id="term-lang"
+              value={termLanguage}
+              onChange={(e) => setTermLanguage(e.target.value)}
+              placeholder="e.g. German"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="def-lang">Definition language</Label>
+            <Input
+              id="def-lang"
+              value={definitionLanguage}
+              onChange={(e) => setDefinitionLanguage(e.target.value)}
+              placeholder="e.g. English"
+            />
+          </div>
+        </div>
         <div className="space-y-1.5">
           <Label htmlFor="count">Number of cards · {count}</Label>
           <input
             id="count"
             type="range"
             min={6}
-            max={20}
+            max={50}
             value={count}
             onChange={(e) => setCount(Number(e.target.value))}
             className="w-full accent-primary"
           />
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {LANGS.map((lang) => (
-            <Button
-              key={lang.id}
-              type="button"
-              size="sm"
-              variant={language === lang.id ? "default" : "secondary"}
-              onClick={() => setLanguage(lang.id)}
-            >
-              {lang.label}
-            </Button>
-          ))}
         </div>
         <Button type="button" className="w-full" onClick={() => void run()} disabled={loading}>
           {loading ? "Generating…" : "Generate"}
