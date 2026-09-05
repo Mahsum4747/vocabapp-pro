@@ -5,6 +5,7 @@ import { AppShell } from "@/components/app-shell";
 import { EmptyState } from "@/components/empty-state";
 import { SetCard } from "@/components/set-card";
 import { PublicSetCard } from "@/components/public-set-card";
+import { StreakIndicator } from "@/components/streak-indicator";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,14 +18,17 @@ export const Route = createFileRoute("/")({ component: Home });
 function Home() {
   const sets = useStudyStore((s) => s.sets);
   const publicSets = useStudyStore((s) => s.publicSets);
+  const streak = useStudyStore((s) => s.streak);
   const restoreSeeds = useStudyStore((s) => s.restoreSeeds);
     const fetchSets = useStudyStore((s) => s.fetchSets);
   const fetchPublicSets = useStudyStore((s) => s.fetchPublicSets);
+  const fetchStreak = useStudyStore((s) => s.fetchStreak);
 
   useEffect(() => {
     fetchSets();
     fetchPublicSets();
-  }, [fetchSets, fetchPublicSets]);
+    fetchStreak();
+  }, [fetchSets, fetchPublicSets, fetchStreak]);
   const [query, setQuery] = useState("");
   const [subject, setSubject] = useState<string>("All");
   const [view, setView] = useState<"mine" | "public">("mine");
@@ -74,6 +78,11 @@ function Home() {
         <p className="mt-3 max-w-lg text-muted">
          Flip cards, learn, test, and match. Your sets sync across all your devices.
         </p>
+        {streak ? (
+          <div className="mt-4">
+            <StreakIndicator days={streak.currentStreak} />
+          </div>
+        ) : null}
         <div className="mt-6 flex flex-wrap gap-2">
           <Button asChild>
             <Link to="/create">

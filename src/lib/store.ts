@@ -11,6 +11,11 @@ import {
   togglePublic as togglePublicFn,
   copyPublicSet as copyPublicSetFn,
 } from "./study-sets";
+import {
+  getStreak as getStreakFn,
+  recordStudyActivity as recordStudyActivityFn,
+  type StreakInfo,
+} from "./streak";
 
 type DraftCard = {
   term: string;
@@ -21,9 +26,11 @@ type StudyState = {
   sets: StudySet[];
   publicSets: StudySet[];
   isLoaded: boolean;
+  streak: StreakInfo | null;
   fetchSets: () => Promise<void>;
   fetchSetById: (id: string) => Promise<StudySet | null>;
   fetchPublicSets: () => Promise<void>;
+  fetchStreak: () => Promise<void>;
   addSet: (input: {
     title: string;
     description: string;
@@ -50,6 +57,7 @@ export const useStudyStore = create<StudyState>()((set, get) => ({
   sets: [],
   publicSets: [],
   isLoaded: false,
+  streak: null,
 
   fetchSets: async () => {
     try {
@@ -84,6 +92,15 @@ export const useStudyStore = create<StudyState>()((set, get) => ({
       set({ publicSets });
     } catch (error) {
       console.error("Failed to fetch public sets:", error);
+    }
+  },
+
+  fetchStreak: async () => {
+    try {
+      const streak = await getStreakFn();
+      set({ streak });
+    } catch (error) {
+      console.error("Failed to fetch streak:", error);
     }
   },
 
@@ -163,6 +180,12 @@ export const useStudyStore = create<StudyState>()((set, get) => ({
         s.id === setId ? { ...s, lastStudiedAt: now, updatedAt: now } : s,
       ),
     });
+    try {
+      const streak = await recordStudyActivityFn();
+      set({ streak });
+    } catch (error) {
+      console.error("Failed to record study activity:", error);
+    }
   },
 
   importSet: async (incoming) => {
