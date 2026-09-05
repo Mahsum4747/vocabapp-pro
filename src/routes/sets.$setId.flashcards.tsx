@@ -5,6 +5,7 @@ import { AppShell } from "@/components/app-shell";
 import { EmptyState } from "@/components/empty-state";
 import { FlashCard } from "@/components/flash-card";
 import { StudyChrome } from "@/components/study-chrome";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useSet, useStudyStore } from "@/lib/store";
 import { shuffle } from "@/lib/utils";
@@ -25,6 +26,9 @@ function FlashcardsPage() {
   const [flipped, setFlipped] = useState(false);
   const [starredOnly, setStarredOnly] = useState(false);
   const [done, setDone] = useState(false);
+  // Session-only tally of grades given this visit — not persisted, resets on reload.
+  const [stillLearningCount, setStillLearningCount] = useState(0);
+  const [knowCount, setKnowCount] = useState(0);
 
   const source = useMemo(() => {
     if (!studySet) return [];
@@ -162,6 +166,10 @@ function FlashcardsPage() {
         </div>
       }
     >
+      <div className="mb-4 flex items-center justify-center gap-2">
+        <Badge tone="primary">Still learning: {stillLearningCount}</Badge>
+        <Badge tone="success">Know: {knowCount}</Badge>
+      </div>
       <FlashCard
         term={card.term}
         definition={card.definition}
@@ -184,6 +192,7 @@ function FlashcardsPage() {
           variant="outline"
           onClick={() => {
             bumpMastery(setId, card.id, -1);
+            setStillLearningCount((n) => n + 1);
             go(1);
           }}
         >
@@ -192,6 +201,7 @@ function FlashcardsPage() {
         <Button
           onClick={() => {
             bumpMastery(setId, card.id, 1);
+            setKnowCount((n) => n + 1);
             go(1);
           }}
         >
