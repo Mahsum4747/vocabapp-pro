@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { Plus } from "lucide-react";
 import { lazy, Suspense, type ReactNode } from "react";
 import { Logo } from "./logo";
+import { MobileNav } from "./mobile-nav";
 import { Button } from "./ui/button";
 
 // Lazy: this pulls in the auth client (better-auth/react), which must stay out
@@ -31,13 +32,16 @@ export function AppShell({
                 New set
               </Link>
             </Button>
-            <Suspense fallback={<div className="size-9" />}>
-              <UserButton />
-            </Suspense>
+            <div className="hidden md:block">
+              <Suspense fallback={<div className="size-9" />}>
+                <UserButton />
+              </Suspense>
+            </div>
           </div>
         </div>
       </header>
-      <main className="mx-auto w-full max-w-6xl px-4 py-8 pb-16">{children}</main>
+      <main className="mx-auto w-full max-w-6xl px-4 py-8 pb-24 md:pb-16">{children}</main>
+      <MobileNav />
     </div>
   );
 }

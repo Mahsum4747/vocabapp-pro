@@ -5,16 +5,14 @@ export function LeitnerBoxes({ cards }: { cards: Card[] }) {
   const counts = leitnerBoxCounts(cards);
 
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="flex gap-1.5">
       {counts.map((count, box) => (
         <div
           key={box}
-          className="min-w-28 flex-1 rounded-lg bg-surface px-3 py-2.5 text-center shadow-[var(--shadow-border)]"
+          className="flex min-w-10 flex-col items-center gap-0.5 rounded-lg bg-surface-2 px-2 py-1.5"
         >
-          <p className="text-xs font-medium tracking-wide text-muted uppercase">Box {box}</p>
-          <p className="mt-0.5 text-sm font-medium tabular-nums">
-            {count} {count === 1 ? "word" : "words"}
-          </p>
+          <p className="text-[9px] font-medium tracking-wide text-muted uppercase">B{box}</p>
+          <p className="text-xs font-medium tabular-nums">{count}</p>
         </div>
       ))}
     </div>

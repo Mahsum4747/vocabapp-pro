@@ -103,13 +103,6 @@ function SetPage() {
           {studySet.description ? (
             <p className="mt-2 max-w-2xl text-muted">{studySet.description}</p>
           ) : null}
-          <div className="mt-5 max-w-sm space-y-2">
-            <div className="flex justify-between text-xs text-muted">
-              <span>Mastery</span>
-              <span className="tabular-nums">{mastery}%</span>
-            </div>
-            <Progress value={mastery} />
-          </div>
         </div>
         <div className="flex items-center gap-2">
           <Button
@@ -162,16 +155,25 @@ function SetPage() {
         </div>
       </div>
 
-      <h2 className="mt-10 mb-4 font-display text-2xl font-medium tracking-tight">Study</h2>
-      <ModeGrid setId={setId} disabled={studySet.cards.length < 2} />
-      {studySet.cards.length < 2 ? (
-        <p className="mt-3 text-sm text-muted">You need at least two cards to study.</p>
-      ) : null}
+      <div className="mt-6 flex flex-col gap-4 rounded-xl bg-surface p-4 shadow-[var(--shadow-border)] sm:flex-row sm:items-center sm:gap-6">
+        <div className="min-w-40 flex-1">
+          <div className="flex justify-between text-xs text-muted">
+            <span>Mastery</span>
+            <span className="tabular-nums">{mastery}%</span>
+          </div>
+          <Progress value={mastery} className="mt-1.5" />
+        </div>
+        <LeitnerBoxes cards={studySet.cards} />
+      </div>
 
-      <h2 className="mt-12 mb-4 font-display text-2xl font-medium tracking-tight">Leitner boxes</h2>
-      <LeitnerBoxes cards={studySet.cards} />
+      <div className="mt-4">
+        <ModeGrid setId={setId} disabled={studySet.cards.length < 2} />
+        {studySet.cards.length < 2 ? (
+          <p className="mt-3 text-sm text-muted">You need at least two cards to study.</p>
+        ) : null}
+      </div>
 
-      <h2 className="mt-12 mb-4 font-display text-2xl font-medium tracking-tight">Cards</h2>
+      <h2 className="mt-8 mb-4 font-display text-2xl font-medium tracking-tight">Cards</h2>
       <ul className="divide-y divide-border overflow-hidden rounded-xl bg-surface shadow-[var(--shadow-border)]">
         {studySet.cards.map((card) => (
           <li key={card.id} className="flex items-start gap-3 px-4 py-3 md:px-5">

@@ -14,7 +14,14 @@ import { SUBJECTS } from "@/lib/types";
 import { masteryPercent } from "@/lib/quiz";
 import { useStudyStore } from "@/lib/store";
 
-export const Route = createFileRoute("/")({ component: Home });
+type Search = { view?: "mine" | "public" };
+
+export const Route = createFileRoute("/")({
+  validateSearch: (search: Record<string, unknown>): Search => ({
+    view: search.view === "mine" ? "mine" : undefined,
+  }),
+  component: Home,
+});
 
 function Home() {
   const sets = useStudyStore((s) => s.sets);
@@ -30,11 +37,19 @@ function Home() {
     fetchPublicSets();
     fetchStreak();
   }, [fetchSets, fetchPublicSets, fetchStreak]);
+  const { view: viewParam } = Route.useSearch();
   const [query, setQuery] = useState("");
   const [subject, setSubject] = useState<string>("All");
   // Defaults to "public" — this page is reachable signed out, and Public
   // Sets is the only tab that works without an account (see AuthGate below).
-  const [view, setView] = useState<"mine" | "public">("public");
+  const [view, setView] = useState<"mine" | "public">(viewParam ?? "public");
+
+  // The mobile bottom nav's "My Library" tab navigates here with ?view=mine;
+  // pick that up even when this component is already mounted (a client-side
+  // navigation doesn't remount, so the useState initializer above only runs once).
+  useEffect(() => {
+    if (viewParam) setView(viewParam);
+  }, [viewParam]);
 
   // `sets` only ever holds the current user's own sets (getMySets/getSetById
   // are ownership-scoped), so excluding those ids from `publicSets` is the

@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from "react";
-import { Navigate } from "@tanstack/react-router";
+import { Link, Navigate } from "@tanstack/react-router";
+import { User } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -7,8 +8,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
 import { authEnabled, signOut } from "./client";
-import { useCurrentUser, useCurrentUserState } from "./use-current-user";
+import { useCurrentUser, useCurrentUserState, type AppUser } from "./use-current-user";
 
 /**
  * Auth state components — plain wrappers around `useCurrentUserState()`.
@@ -73,6 +75,40 @@ export function RequireAuth({ children }: { children: ReactNode }) {
   );
 }
 
+/** Shared dropdown body for both the header avatar and the mobile nav's Account tab. */
+function AccountMenuContent({ user }: { user: AppUser }) {
+  // Sign-out can take a moment (and can fail when deployed), so the control
+  // shows it is working and cannot be fired twice.
+  const [signingOut, setSigningOut] = useState(false);
+  const label = user.displayName ?? user.primaryEmail ?? "Account";
+
+  return (
+    <DropdownMenuContent align="end">
+      <div className="px-3 py-2">
+        <p className="truncate text-sm font-medium text-fg">{label}</p>
+        {user.primaryEmail ? (
+          <p className="truncate text-xs text-muted">{user.primaryEmail}</p>
+        ) : null}
+      </div>
+      {authEnabled && (
+        <>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            disabled={signingOut}
+            onSelect={() => {
+              setSigningOut(true);
+              // Success navigates away; on failure re-enable so it can be retried.
+              void signOut().catch(() => setSigningOut(false));
+            }}
+          >
+            {signingOut ? "Signing out…" : "Sign out"}
+          </DropdownMenuItem>
+        </>
+      )}
+    </DropdownMenuContent>
+  );
+}
+
 /**
  * Signed-in account menu: an initial-letter avatar that opens a dropdown with
  * the user's name, email, and a sign-out action. Sign-out is only shown when
@@ -80,9 +116,6 @@ export function RequireAuth({ children }: { children: ReactNode }) {
  */
 export function UserButton() {
   const user = useCurrentUser();
-  // Sign-out can take a moment (and can fail when deployed), so the control
-  // shows it is working and cannot be fired twice.
-  const [signingOut, setSigningOut] = useState(false);
   if (!user) return null;
   const label = user.displayName ?? user.primaryEmail ?? "Account";
   const initial = label.charAt(0).toUpperCase();
@@ -102,29 +135,44 @@ export function UserButton() {
           )}
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <div className="px-3 py-2">
-          <p className="truncate text-sm font-medium text-fg">{label}</p>
-          {user.primaryEmail ? (
-            <p className="truncate text-xs text-muted">{user.primaryEmail}</p>
-          ) : null}
-        </div>
-        {authEnabled && (
-          <>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              disabled={signingOut}
-              onSelect={() => {
-                setSigningOut(true);
-                // Success navigates away; on failure re-enable so it can be retried.
-                void signOut().catch(() => setSigningOut(false));
-              }}
-            >
-              {signingOut ? "Signing out…" : "Sign out"}
-            </DropdownMenuItem>
-          </>
-        )}
-      </DropdownMenuContent>
+      <AccountMenuContent user={user} />
+    </DropdownMenu>
+  );
+}
+
+/**
+ * Account tab for the mobile bottom nav — same account menu as `UserButton`,
+ * styled as an icon+label nav item instead of a circular avatar. Signed-out
+ * visitors get a plain link to `/login` instead of a dropdown.
+ */
+export function AccountNavItem({ className }: { className?: string }) {
+  const { user, isPending } = useCurrentUserState();
+  if (isPending) return null;
+
+  if (!user) {
+    return (
+      <Link to={SIGN_IN_PATH} className={className}>
+        <User className="size-5" />
+        Account
+      </Link>
+    );
+  }
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button type="button" className={cn(className, "outline-none")}>
+          <span className="grid size-5 shrink-0 place-items-center overflow-hidden rounded-full bg-primary text-[10px] font-medium text-primary-fg">
+            {user.profileImageUrl ? (
+              <img src={user.profileImageUrl} alt="" className="size-5 object-cover" />
+            ) : (
+              (user.displayName ?? user.primaryEmail ?? "A").charAt(0).toUpperCase()
+            )}
+          </span>
+          Account
+        </button>
+      </DropdownMenuTrigger>
+      <AccountMenuContent user={user} />
     </DropdownMenu>
   );
 }
