@@ -9,6 +9,7 @@ import {
   Globe,
   Lock,
   MoreHorizontal,
+  MoreVertical,
   Pencil,
   Search,
   Star,
@@ -20,6 +21,7 @@ import { OwnerGate, OwnershipStatus } from "@/components/owner-gate";
 import { ModeGrid } from "@/components/mode-grid";
 import { LeitnerBoxes } from "@/components/leitner-boxes";
 import { EmptyState } from "@/components/empty-state";
+import { SpeakButton } from "@/components/speak-button";
 import { TransferCardsDialog, type TransferMode } from "@/components/transfer-cards-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -43,7 +45,7 @@ import {
 import { masteryPercent } from "@/lib/quiz";
 import { serializeSetExport } from "@/lib/parse-cards";
 import { useSet, useStudyStore } from "@/lib/store";
-import type { Card } from "@/lib/types";
+import type { Card, CardStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/sets/$setId/")({
@@ -76,23 +78,28 @@ function SetPage() {
   const toggleStar = useStudyStore((s) => s.toggleStar);
   const resetMastery = useStudyStore((s) => s.resetMastery);
   const togglePublic = useStudyStore((s) => s.togglePublic);
+  const setCardStatus = useStudyStore((s) => s.setCardStatus);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [togglingPublic, setTogglingPublic] = useState(false);
   const [query, setQuery] = useState("");
   const [sortMode, setSortMode] = useState<SortMode>("original");
+  const [cardView, setCardView] = useState<"active" | "archived">("active");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [transferMode, setTransferMode] = useState<TransferMode | null>(null);
 
   const visibleCards = useMemo(() => {
     if (!studySet) return [];
+    const base = studySet.cards.filter((c) =>
+      cardView === "archived" ? c.status === "archived" : c.status !== "archived",
+    );
     const q = query.trim().toLowerCase();
     const filtered = q
-      ? studySet.cards.filter(
+      ? base.filter(
           (c) => c.term.toLowerCase().includes(q) || c.definition.toLowerCase().includes(q),
         )
-      : studySet.cards;
+      : base;
     return sortCards(filtered, sortMode);
-  }, [studySet, query, sortMode]);
+  }, [studySet, query, sortMode, cardView]);
 
   if (!studySet) {
     return (
@@ -112,6 +119,12 @@ function SetPage() {
 
   const mastery = masteryPercent(studySet.cards);
   const starred = studySet.cards.filter((c) => c.starred).length;
+  const archivedCount = studySet.cards.filter((c) => c.status === "archived").length;
+
+  function switchView(view: "active" | "archived") {
+    setCardView(view);
+    setSelectedIds(new Set());
+  }
 
   function toggleSelect(cardId: string) {
     setSelectedIds((prev) => {
@@ -254,69 +267,82 @@ function SetPage() {
         </>
       ) : null}
 
-      <div className="mt-8 mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h2 className="font-display text-2xl font-medium tracking-tight">Cards</h2>
-        <div className="flex items-center gap-2">
-          <div className="relative w-full sm:w-56">
-            <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-subtle" />
-            <Input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search cards"
-              className="h-9 pl-9 text-sm"
-              aria-label="Search cards"
-            />
-          </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
-                <ArrowUpDown className="size-4" />
-                Sort
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {SORT_OPTIONS.map((option) => (
-                <DropdownMenuItem
-                  key={option.value}
-                  onSelect={() => setSortMode(option.value)}
-                  className={option.value === sortMode ? "bg-surface-2 font-medium" : undefined}
-                >
-                  {option.label}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </div>
+      <OwnershipStatus ownerId={studySet.ownerId}>
+        {(isOwner) => (
+          <>
+            <div className="mt-8 mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-2">
+                <button type="button" onClick={() => switchView("active")}>
+                  <Badge tone={cardView === "active" ? "primary" : "muted"}>Cards</Badge>
+                </button>
+                {isOwner ? (
+                  <button type="button" onClick={() => switchView("archived")}>
+                    <Badge tone={cardView === "archived" ? "primary" : "muted"}>
+                      Archived{archivedCount > 0 ? ` (${archivedCount})` : ""}
+                    </Badge>
+                  </button>
+                ) : null}
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="relative w-full sm:w-56">
+                  <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-subtle" />
+                  <Input
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder="Search cards"
+                    className="h-9 pl-9 text-sm"
+                    aria-label="Search cards"
+                  />
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <ArrowUpDown className="size-4" />
+                      Sort
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    {SORT_OPTIONS.map((option) => (
+                      <DropdownMenuItem
+                        key={option.value}
+                        onSelect={() => setSortMode(option.value)}
+                        className={
+                          option.value === sortMode ? "bg-surface-2 font-medium" : undefined
+                        }
+                      >
+                        {option.label}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </div>
 
-      {visibleCards.length > 0 ? (
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-3 text-sm">
-            <button
-              type="button"
-              className="text-muted underline-offset-2 hover:text-fg hover:underline"
-              onClick={selectAll}
-            >
-              Select all
-            </button>
-            {selectedIds.size > 0 ? (
-              <button
-                type="button"
-                className="text-muted underline-offset-2 hover:text-fg hover:underline"
-                onClick={clearSelection}
-              >
-                Clear selection
-              </button>
-            ) : null}
-          </div>
-          {selectedIds.size > 0 ? (
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs text-muted tabular-nums">
-                {selectedIds.size} card{selectedIds.size === 1 ? "" : "s"} selected
-              </span>
-              <OwnershipStatus ownerId={studySet.ownerId}>
-                {(isOwner) => (
-                  <>
+            {visibleCards.length > 0 ? (
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-3 text-sm">
+                  <button
+                    type="button"
+                    className="text-muted underline-offset-2 hover:text-fg hover:underline"
+                    onClick={selectAll}
+                  >
+                    Select all
+                  </button>
+                  {selectedIds.size > 0 ? (
+                    <button
+                      type="button"
+                      className="text-muted underline-offset-2 hover:text-fg hover:underline"
+                      onClick={clearSelection}
+                    >
+                      Clear selection
+                    </button>
+                  ) : null}
+                </div>
+                {selectedIds.size > 0 ? (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-xs text-muted tabular-nums">
+                      {selectedIds.size} card{selectedIds.size === 1 ? "" : "s"} selected
+                    </span>
                     <Button size="sm" variant="outline" onClick={() => setTransferMode("copy")}>
                       <Copy className="size-4" />
                       {isOwner ? "Copy to set…" : "Copy to my set…"}
@@ -327,60 +353,115 @@ function SetPage() {
                         Move to set…
                       </Button>
                     ) : null}
-                  </>
-                )}
-              </OwnershipStatus>
-            </div>
-          ) : null}
-        </div>
-      ) : null}
-
-      {visibleCards.length === 0 ? (
-        <div className="rounded-xl bg-surface px-4 py-8 text-center text-sm text-muted shadow-[var(--shadow-border)]">
-          No cards match your search.
-        </div>
-      ) : (
-        <ul className="divide-y divide-border overflow-hidden rounded-xl bg-surface shadow-[var(--shadow-border)]">
-          {visibleCards.map((card) => (
-            <li
-              key={card.id}
-              className={cn(
-                "flex items-start gap-3 px-4 py-3 md:px-5",
-                studySet.isReference && "py-4 md:py-5",
-              )}
-            >
-              <input
-                type="checkbox"
-                checked={selectedIds.has(card.id)}
-                onChange={() => toggleSelect(card.id)}
-                aria-label={`Select ${card.term || "card"}`}
-                className="mt-3.5 size-4 shrink-0 rounded border-border accent-primary"
-              />
-              <button
-                type="button"
-                onClick={() => toggleStar(setId, card.id)}
-                className="mt-0.5 grid size-11 shrink-0 place-items-center rounded-md text-muted hover:bg-surface-2 hover:text-fg"
-                aria-label={card.starred ? "Unstar" : "Star"}
-              >
-                <Star className={card.starred ? "size-4 fill-fg text-fg" : "size-4"} />
-              </button>
-              <div
-                className={cn(
-                  "grid min-w-0 flex-1 gap-1 md:grid-cols-2",
-                  studySet.isReference ? "md:gap-8" : "md:gap-6",
-                )}
-              >
-                <p className={cn("font-medium", studySet.isReference && "text-base md:text-lg")}>
-                  {card.term}
-                </p>
-                <p className="text-sm whitespace-pre-line text-muted md:text-base">
-                  {card.definition}
-                </p>
+                  </div>
+                ) : null}
               </div>
-            </li>
-          ))}
-        </ul>
-      )}
+            ) : null}
+
+            {visibleCards.length === 0 ? (
+              <div className="rounded-xl bg-surface px-4 py-8 text-center text-sm text-muted shadow-[var(--shadow-border)]">
+                {cardView === "archived" ? "No archived cards." : "No cards match your search."}
+              </div>
+            ) : (
+              <ul className="divide-y divide-border overflow-hidden rounded-xl bg-surface shadow-[var(--shadow-border)]">
+                {visibleCards.map((card) => {
+                  const isExcluded = card.status === "excluded";
+                  return (
+                    <li
+                      key={card.id}
+                      className={cn(
+                        "flex items-start gap-3 px-4 py-3 md:px-5",
+                        studySet.isReference && "py-4 md:py-5",
+                        isExcluded && "opacity-50",
+                      )}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.has(card.id)}
+                        onChange={() => toggleSelect(card.id)}
+                        aria-label={`Select ${card.term || "card"}`}
+                        className="mt-3.5 size-4 shrink-0 rounded border-border accent-primary"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => toggleStar(setId, card.id)}
+                        className="mt-0.5 grid size-11 shrink-0 place-items-center rounded-md text-muted hover:bg-surface-2 hover:text-fg"
+                        aria-label={card.starred ? "Unstar" : "Star"}
+                      >
+                        <Star className={card.starred ? "size-4 fill-fg text-fg" : "size-4"} />
+                      </button>
+                      <div
+                        className={cn(
+                          "grid min-w-0 flex-1 gap-1 md:grid-cols-2",
+                          studySet.isReference ? "md:gap-8" : "md:gap-6",
+                        )}
+                      >
+                        <div className="flex items-center gap-1">
+                          <p
+                            className={cn(
+                              "font-medium",
+                              studySet.isReference && "text-base md:text-lg",
+                            )}
+                          >
+                            {card.term}
+                          </p>
+                          <SpeakButton text={card.term} language={studySet.termLanguage} />
+                          {isExcluded ? (
+                            <span className="rounded-full bg-surface-2 px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-muted uppercase">
+                              Excluded
+                            </span>
+                          ) : null}
+                        </div>
+                        <p className="text-sm whitespace-pre-line text-muted md:text-base">
+                          {card.definition}
+                        </p>
+                      </div>
+                      {isOwner ? (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
+                              aria-label="Card status"
+                              className="mt-0.5 shrink-0"
+                            >
+                              <MoreVertical className="size-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            {(
+                              [
+                                { value: "active", label: "Active" },
+                                { value: "excluded", label: "Exclude from study" },
+                                { value: "archived", label: "Archive" },
+                              ] satisfies { value: CardStatus; label: string }[]
+                            ).map((option) => {
+                              const current = card.status ?? "active";
+                              return (
+                                <DropdownMenuItem
+                                  key={option.value}
+                                  onSelect={() => setCardStatus(setId, card.id, option.value)}
+                                  className={
+                                    current === option.value
+                                      ? "bg-surface-2 font-medium"
+                                      : undefined
+                                  }
+                                >
+                                  {option.label}
+                                </DropdownMenuItem>
+                              );
+                            })}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      ) : null}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </>
+        )}
+      </OwnershipStatus>
 
       {transferMode ? (
         <TransferCardsDialog

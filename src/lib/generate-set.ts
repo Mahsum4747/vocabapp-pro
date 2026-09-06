@@ -21,7 +21,7 @@ const payloadSchema = z.object({
   cards: z.array(cardSchema).min(4).max(50),
 });
 
-export type GeneratedSet = z.infer<typeof payloadSchema>;
+export type GeneratedSet = z.infer<typeof payloadSchema> & { termLanguage: string };
 
 // gemini-2.5-flash was retired for new API keys; gemini-3.6-flash is the
 // current GA Flash model and keeps the same generateContent/responseSchema
@@ -107,7 +107,9 @@ export const generateStudySet = createServerFn({ method: "POST" })
       const cached = await cacheRef.get();
       if (cached.exists) {
         const parsed = payloadSchema.safeParse(cached.data()?.result);
-        if (parsed.success) return { ok: true as const, set: parsed.data };
+        if (parsed.success) {
+          return { ok: true as const, set: { ...parsed.data, termLanguage: data.termLanguage } };
+        }
       }
     } catch (error) {
       // Cache is a nice-to-have — a Firestore hiccup shouldn't block generation.
@@ -161,7 +163,7 @@ export const generateStudySet = createServerFn({ method: "POST" })
       return { ok: false as const, error: "Couldn't generate the set, try again." };
     }
 
-    let parsed: GeneratedSet;
+    let parsed: z.infer<typeof payloadSchema>;
     try {
       parsed = payloadSchema.parse(JSON.parse(text));
     } catch (error) {
@@ -182,5 +184,5 @@ export const generateStudySet = createServerFn({ method: "POST" })
       console.error("Failed to write AI cache:", error);
     }
 
-    return { ok: true as const, set: parsed };
+    return { ok: true as const, set: { ...parsed, termLanguage: data.termLanguage } };
   });

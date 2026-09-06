@@ -38,6 +38,7 @@ function CreatePage() {
   const [description, setDescription] = useState("");
   const [subject, setSubject] = useState("General");
   const [isReference, setIsReference] = useState(false);
+  const [termLanguage, setTermLanguage] = useState<string | undefined>(undefined);
   const [cards, setCards] = useState<EditorCard[]>(blankCards);
   const [aiOpenSignal, setAiOpenSignal] = useState(0);
 
@@ -55,7 +56,14 @@ function CreatePage() {
       toast.error("Add at least two cards.");
       return;
     }
-    const id = await addSet({ title, description, subject, cards: filled, isReference });
+    const id = await addSet({
+      title,
+      description,
+      subject,
+      cards: filled,
+      isReference,
+      termLanguage,
+    });
     toast.success("Set saved.");
     void navigate({ to: "/sets/$setId", params: { setId: id } });
   }
@@ -79,6 +87,7 @@ function CreatePage() {
                 setTitle(generated.title);
                 setDescription(generated.description ?? "");
                 setSubject(generated.subject || "General");
+                setTermLanguage(generated.termLanguage);
                 setCards(
                   generated.cards.map((card) => ({
                     id: crypto.randomUUID(),

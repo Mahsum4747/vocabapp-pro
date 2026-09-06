@@ -8,6 +8,7 @@ import { StudyChrome } from "@/components/study-chrome";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useSet, useStudyStore } from "@/lib/store";
+import { isCardActive } from "@/lib/types";
 import { shuffle } from "@/lib/utils";
 
 export const Route = createFileRoute("/sets/$setId/flashcards")({
@@ -32,8 +33,9 @@ function FlashcardsPage() {
 
   const source = useMemo(() => {
     if (!studySet) return [];
-    const cards = starredOnly ? studySet.cards.filter((c) => c.starred) : studySet.cards;
-    return cards.length > 0 ? cards : studySet.cards;
+    const active = studySet.cards.filter(isCardActive);
+    const cards = starredOnly ? active.filter((c) => c.starred) : active;
+    return cards.length > 0 ? cards : active;
     // Keyed on the set id (not the studySet object) so starring/mastery
     // updates during a round — which replace `studySet` with a new object —
     // don't re-trigger the reset effect below and snap back to card 0.
@@ -100,7 +102,13 @@ function FlashcardsPage() {
 
   if (done) {
     return (
-      <StudyChrome setId={setId} title={studySet.title} mode="Flashcards" index={order.length} total={order.length}>
+      <StudyChrome
+        setId={setId}
+        title={studySet.title}
+        mode="Flashcards"
+        index={order.length}
+        total={order.length}
+      >
         <div className="mx-auto max-w-md rounded-xl bg-surface p-8 text-center shadow-[var(--shadow-border)]">
           <h2 className="font-display text-3xl font-medium tracking-tight">Round over</h2>
           <p className="mt-2 text-sm text-muted">You flipped {order.length} cards.</p>
@@ -174,6 +182,7 @@ function FlashcardsPage() {
         term={card.term}
         definition={card.definition}
         imageUrl={card.imageUrl}
+        termLanguage={studySet.termLanguage}
         flipped={flipped}
         onFlip={() => setFlipped((f) => !f)}
       />

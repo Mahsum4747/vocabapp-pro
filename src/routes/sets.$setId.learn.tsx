@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { multipleChoice, writtenQuestion, type McQuestion, type WrittenQuestion } from "@/lib/quiz";
 import { useSet, useStudyStore } from "@/lib/store";
+import { isCardActive } from "@/lib/types";
 import { answersMatch, shuffle, cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/sets/$setId/learn")({
@@ -24,9 +25,10 @@ function LearnPage() {
 
   const items = useMemo<Item[]>(() => {
     if (!studySet) return [];
-    const cards = shuffle(studySet.cards.filter((c) => c.term && c.definition));
+    const active = studySet.cards.filter(isCardActive);
+    const cards = shuffle(active.filter((c) => c.term && c.definition));
     return cards.map((card) =>
-      card.mastery >= 2 ? writtenQuestion(card) : multipleChoice(studySet.cards, card),
+      card.mastery >= 2 ? writtenQuestion(card) : multipleChoice(active, card),
     );
     // round forces a fresh shuffle
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -100,10 +102,18 @@ function LearnPage() {
   if (done) {
     const pct = Math.round((correctCount / items.length) * 100);
     return (
-      <StudyChrome setId={setId} title={studySet.title} mode="Learn" index={items.length} total={items.length}>
+      <StudyChrome
+        setId={setId}
+        title={studySet.title}
+        mode="Learn"
+        index={items.length}
+        total={items.length}
+      >
         <div className="mx-auto max-w-md rounded-xl bg-surface p-8 text-center shadow-[var(--shadow-border)]">
           <p className="text-sm text-muted">Round result</p>
-          <p className="mt-2 font-display text-5xl font-medium tracking-tight tabular-nums">{pct}%</p>
+          <p className="mt-2 font-display text-5xl font-medium tracking-tight tabular-nums">
+            {pct}%
+          </p>
           <p className="mt-2 text-sm text-muted">
             {correctCount} / {items.length} correct
           </p>
@@ -126,8 +136,16 @@ function LearnPage() {
   const isCorrect = isMc ? selected === item.answer : answersMatch(written, item.answer);
 
   return (
-    <StudyChrome setId={setId} title={studySet.title} mode="Learn" index={index} total={items.length}>
-      <p className="text-xs font-medium tracking-wide text-muted uppercase">Term matching the definition</p>
+    <StudyChrome
+      setId={setId}
+      title={studySet.title}
+      mode="Learn"
+      index={index}
+      total={items.length}
+    >
+      <p className="text-xs font-medium tracking-wide text-muted uppercase">
+        Term matching the definition
+      </p>
       {item.imageUrl ? (
         <img
           src={item.imageUrl}

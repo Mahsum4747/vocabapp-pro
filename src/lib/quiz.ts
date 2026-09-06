@@ -1,5 +1,5 @@
 import type { Card } from "./types";
-import { MASTERY_MAX } from "./types";
+import { isCardActive, MASTERY_MAX } from "./types";
 import { shuffle } from "./utils";
 
 export type McQuestion = {
@@ -54,7 +54,10 @@ export function multipleChoice(
   };
 }
 
-export function writtenQuestion(card: Card, ask: "term" | "definition" = "definition"): WrittenQuestion {
+export function writtenQuestion(
+  card: Card,
+  ask: "term" | "definition" = "definition",
+): WrittenQuestion {
   return {
     type: "written",
     cardId: card.id,
@@ -90,16 +93,20 @@ export function buildTest(cards: Card[], limit = 12): TestQuestion[] {
   });
 }
 
+// Excluded/archived cards aren't part of the working set — they don't count
+// toward mastery or Leitner box totals.
 export function masteryPercent(cards: Card[]) {
-  if (cards.length === 0) return 0;
-  const sum = cards.reduce((acc, card) => acc + card.mastery, 0);
-  return Math.round((sum / (cards.length * 5)) * 100);
+  const active = cards.filter(isCardActive);
+  if (active.length === 0) return 0;
+  const sum = active.reduce((acc, card) => acc + card.mastery, 0);
+  return Math.round((sum / (active.length * 5)) * 100);
 }
 
-/** Leitner box counts: index N is how many cards sit at mastery level N (0..MASTERY_MAX). */
+/** Leitner box counts: index N is how many active cards sit at mastery level N (0..MASTERY_MAX). */
 export function leitnerBoxCounts(cards: Card[]): number[] {
   const counts = new Array(MASTERY_MAX + 1).fill(0) as number[];
   for (const card of cards) {
+    if (!isCardActive(card)) continue;
     const box = Math.min(Math.max(Math.round(card.mastery), 0), MASTERY_MAX);
     counts[box] += 1;
   }

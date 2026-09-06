@@ -5,6 +5,7 @@ import { EmptyState } from "@/components/empty-state";
 import { StudyChrome } from "@/components/study-chrome";
 import { Button } from "@/components/ui/button";
 import { useSet, useStudyStore } from "@/lib/store";
+import { isCardActive } from "@/lib/types";
 import { cn, shuffle } from "@/lib/utils";
 
 export const Route = createFileRoute("/sets/$setId/match")({
@@ -27,7 +28,9 @@ function MatchPage() {
 
   const tiles = useMemo<Tile[]>(() => {
     if (!studySet) return [];
-    const picked = shuffle(studySet.cards.filter((c) => c.term && c.definition)).slice(0, 6);
+    const picked = shuffle(
+      studySet.cards.filter((c) => isCardActive(c) && c.term && c.definition),
+    ).slice(0, 6);
     const both: Tile[] = picked.flatMap((card) => [
       { id: `${card.id}-t`, cardId: card.id, text: card.term, kind: "term" as const },
       { id: `${card.id}-d`, cardId: card.id, text: card.definition, kind: "definition" as const },
@@ -126,7 +129,11 @@ function MatchPage() {
       mode="Match"
       index={matched.size / 2}
       total={totalPairs}
-      headerRight={<span className="text-sm tabular-nums text-muted">{mm}:{ss}</span>}
+      headerRight={
+        <span className="text-sm tabular-nums text-muted">
+          {mm}:{ss}
+        </span>
+      }
     >
       {done ? (
         <div className="mx-auto max-w-md rounded-xl bg-surface p-8 text-center shadow-[var(--shadow-border)]">

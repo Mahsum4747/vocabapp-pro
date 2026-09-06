@@ -3,7 +3,11 @@ import { authMiddleware, optionalAuthMiddleware } from "./auth/middleware";
 import type { Card, StudySet } from "./types";
 
 type DraftCard = { term: string; definition: string; imageUrl?: string | null };
-type DraftCardWithProgress = DraftCard & { starred?: boolean; mastery?: number };
+type DraftCardWithProgress = DraftCard & {
+  starred?: boolean;
+  mastery?: number;
+  status?: Card["status"];
+};
 
 function uidServer(): string {
   return Math.random().toString(36).slice(2) + Date.now().toString(36);
@@ -66,6 +70,7 @@ export const createSet = createServerFn({ method: "POST" })
       subject: string;
       cards: DraftCard[];
       isReference?: boolean;
+      termLanguage?: string;
     }) => input,
   )
   .handler(async ({ context, data }) => {
@@ -85,6 +90,7 @@ export const createSet = createServerFn({ method: "POST" })
       ownerId: context.userId,
       isPublic: false,
       isReference: data.isReference ?? false,
+      ...(data.termLanguage ? { termLanguage: data.termLanguage } : {}),
     };
     await db.collection("study_sets").doc(id).set(next);
     return next;
@@ -95,7 +101,9 @@ export const updateSetMeta = createServerFn({ method: "POST" })
   .validator(
     (input: {
       id: string;
-      patch: Partial<Pick<StudySet, "title" | "description" | "subject" | "isReference">>;
+      patch: Partial<
+        Pick<StudySet, "title" | "description" | "subject" | "isReference" | "termLanguage">
+      >;
     }) => input,
   )
   .handler(async ({ context, data }) => {
@@ -107,7 +115,13 @@ export const updateSetMeta = createServerFn({ method: "POST" })
       throw new Error("You don't have permission to edit this set.");
     }
     const now = Date.now();
-    await ref.update({ ...data.patch, updatedAt: now });
+    // Firestore's update() rejects an explicit `undefined` field value —
+    // drop any patch keys left `undefined` (e.g. a set with no termLanguage)
+    // instead of sending them through.
+    const cleanPatch = Object.fromEntries(
+      Object.entries(data.patch).filter(([, value]) => value !== undefined),
+    );
+    await ref.update({ ...cleanPatch, updatedAt: now });
     return { ok: true };
   });
 
@@ -130,6 +144,7 @@ export const replaceCards = createServerFn({ method: "POST" })
         const definition = d.definition.trim();
         if (!term && !definition) return null;
         const prior = previous.get(term.toLowerCase());
+        const status = d.status ?? prior?.status;
         return {
           id: uidServer(),
           term,
@@ -137,6 +152,7 @@ export const replaceCards = createServerFn({ method: "POST" })
           starred: d.starred ?? prior?.starred ?? false,
           mastery: d.mastery ?? prior?.mastery ?? 0,
           imageUrl: d.imageUrl || null,
+          ...(status ? { status } : {}),
         };
       })
       .filter((c): c is Card => c !== null);

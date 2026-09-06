@@ -1,15 +1,18 @@
+import { SpeakButton } from "./speak-button";
 import { cn } from "@/lib/utils";
 
 export function FlashCard({
   term,
   definition,
   imageUrl,
+  termLanguage,
   flipped,
   onFlip,
 }: {
   term: string;
   definition: string;
   imageUrl?: string | null;
+  termLanguage?: string;
   flipped: boolean;
   onFlip: () => void;
 }) {
@@ -23,14 +26,23 @@ export function FlashCard({
       )}
       aria-label={flipped ? "Show term" : "Show definition"}
     >
-      <span
-        className={cn(
-          "text-xs font-medium tracking-wide uppercase",
-          flipped ? "text-primary-fg/70" : "text-muted",
-        )}
-      >
-        {flipped ? "Definition" : "Term"}
-      </span>
+      <div className="flex items-center justify-between">
+        <span
+          className={cn(
+            "text-xs font-medium tracking-wide uppercase",
+            flipped ? "text-primary-fg/70" : "text-muted",
+          )}
+        >
+          {flipped ? "Definition" : "Term"}
+        </span>
+        <SpeakButton
+          text={flipped ? definition : term}
+          language={flipped ? undefined : termLanguage}
+          className={
+            flipped ? "text-primary-fg/70 hover:bg-primary-fg/10 hover:text-primary-fg" : undefined
+          }
+        />
+      </div>
       {imageUrl ? (
         <img
           src={imageUrl}

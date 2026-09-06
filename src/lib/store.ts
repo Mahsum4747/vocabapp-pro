@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { StudySet } from "./types";
+import type { CardStatus, StudySet } from "./types";
 import {
   getMySets,
   getSetById as getSetByIdFn,
@@ -40,16 +40,20 @@ type StudyState = {
     subject: string;
     cards: DraftCard[];
     isReference?: boolean;
+    termLanguage?: string;
   }) => Promise<string>;
   updateSetMeta: (
     id: string,
-    patch: Partial<Pick<StudySet, "title" | "description" | "subject" | "isReference">>,
+    patch: Partial<
+      Pick<StudySet, "title" | "description" | "subject" | "isReference" | "termLanguage">
+    >,
   ) => Promise<void>;
   replaceCards: (id: string, cards: DraftCard[]) => Promise<void>;
   deleteSet: (id: string) => Promise<void>;
   toggleStar: (setId: string, cardId: string) => Promise<void>;
   bumpMastery: (setId: string, cardId: string, delta: number) => Promise<void>;
   resetMastery: (setId: string) => Promise<void>;
+  setCardStatus: (setId: string, cardId: string, status: CardStatus) => Promise<void>;
   markStudied: (setId: string) => Promise<void>;
   importSet: (set: StudySet) => Promise<string>;
   restoreSeeds: () => Promise<void>;
@@ -118,8 +122,10 @@ export const useStudyStore = create<StudyState>()((set, get) => ({
     }
   },
 
-  addSet: async ({ title, description, subject, cards, isReference }) => {
-    const next = await createSet({ data: { title, description, subject, cards, isReference } });
+  addSet: async ({ title, description, subject, cards, isReference, termLanguage }) => {
+    const next = await createSet({
+      data: { title, description, subject, cards, isReference, termLanguage },
+    });
     set({ sets: [next, ...get().sets] });
     return next.id;
   },
@@ -194,6 +200,20 @@ export const useStudyStore = create<StudyState>()((set, get) => ({
       sets: get().sets.map((s) =>
         s.id !== setId ? s : { ...s, updatedAt: now, cards: updatedCards },
       ),
+    });
+  },
+
+  // Curation, not progress — owner-only in the UI, so unlike toggleStar/
+  // bumpMastery this doesn't need to tolerate a non-owner viewer.
+  setCardStatus: async (setId, cardId, status) => {
+    const targetSet = get().sets.find((s) => s.id === setId);
+    if (!targetSet) return;
+    const updatedCards = targetSet.cards.map((card) =>
+      card.id === cardId ? { ...card, status } : card,
+    );
+    const nextCards = await replaceCardsFn({ data: { id: setId, cards: updatedCards } });
+    set({
+      sets: get().sets.map((s) => (s.id !== setId ? s : { ...s, cards: nextCards })),
     });
   },
 

@@ -28,6 +28,7 @@ function EditPage() {
   const [description, setDescription] = useState(studySet?.description ?? "");
   const [subject, setSubject] = useState(studySet?.subject ?? "General");
   const [isReference, setIsReference] = useState(studySet?.isReference ?? false);
+  const [termLanguage, setTermLanguage] = useState(studySet?.termLanguage);
   const [cards, setCards] = useState<EditorCard[]>(
     studySet?.cards.map((c) => ({
       id: c.id,
@@ -43,6 +44,7 @@ function EditPage() {
     setDescription(studySet.description);
     setSubject(studySet.subject);
     setIsReference(studySet.isReference ?? false);
+    setTermLanguage(studySet.termLanguage);
     setCards(
       studySet.cards.map((c) => ({
         id: c.id,
@@ -79,7 +81,7 @@ function EditPage() {
       toast.error("Add at least two cards.");
       return;
     }
-    updateSetMeta(setId, { title, description, subject, isReference });
+    updateSetMeta(setId, { title, description, subject, isReference, termLanguage });
     replaceCards(setId, filled);
     toast.success("Changes saved.");
     void navigate({ to: "/sets/$setId", params: { setId } });
@@ -114,6 +116,7 @@ function EditPage() {
                 setTitle(generated.title);
                 setDescription(generated.description ?? "");
                 setSubject(generated.subject || subject);
+                setTermLanguage(generated.termLanguage);
                 setCards(
                   generated.cards.map((card) => ({
                     id: crypto.randomUUID(),

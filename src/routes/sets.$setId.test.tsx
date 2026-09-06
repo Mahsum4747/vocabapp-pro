@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { buildTest, type TestQuestion } from "@/lib/quiz";
 import { useSet, useStudyStore } from "@/lib/store";
+import { isCardActive } from "@/lib/types";
 import { answersMatch, cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/sets/$setId/test")({
@@ -20,12 +21,13 @@ function TestPage() {
   const markStudied = useStudyStore((s) => s.markStudied);
   const [round, setRound] = useState(0);
 
-  const questions = useMemo<TestQuestion[]>(
-    () => (studySet ? buildTest(studySet.cards, Math.min(12, studySet.cards.length)) : []),
+  const questions = useMemo<TestQuestion[]>(() => {
+    if (!studySet) return [];
+    const active = studySet.cards.filter(isCardActive);
+    return buildTest(active, Math.min(12, active.length));
     // snapshot per round so grading doesn't reshuffle
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [studySet?.id, round],
-  );
+  }, [studySet?.id, round]);
 
   const [index, setIndex] = useState(0);
   const [picked, setPicked] = useState<string | null>(null);
@@ -113,7 +115,9 @@ function TestPage() {
       >
         <div className="mx-auto max-w-md rounded-xl bg-surface p-8 text-center shadow-[var(--shadow-border)]">
           <p className="text-sm text-muted">Test result</p>
-          <p className="mt-2 font-display text-5xl font-medium tracking-tight tabular-nums">{pct}%</p>
+          <p className="mt-2 font-display text-5xl font-medium tracking-tight tabular-nums">
+            {pct}%
+          </p>
           <p className="mt-2 text-sm text-muted">
             {score} / {questions.length} correct
           </p>
@@ -145,7 +149,13 @@ function TestPage() {
   if (!q) return null;
 
   return (
-    <StudyChrome setId={setId} title={studySet.title} mode="Test" index={index} total={questions.length}>
+    <StudyChrome
+      setId={setId}
+      title={studySet.title}
+      mode="Test"
+      index={index}
+      total={questions.length}
+    >
       <p className="text-xs font-medium tracking-wide text-muted uppercase">
         {q.type === "mc" ? "Multiple choice" : q.type === "written" ? "Written" : "True / false"}
       </p>
@@ -204,7 +214,12 @@ function TestPage() {
             autoFocus
           />
           {revealed ? (
-            <p className={cn("text-sm", answersMatch(written, q.answer) ? "text-success" : "text-danger")}>
+            <p
+              className={cn(
+                "text-sm",
+                answersMatch(written, q.answer) ? "text-success" : "text-danger",
+              )}
+            >
               {answersMatch(written, q.answer) ? "Correct" : `Correct answer: ${q.answer}`}
             </p>
           ) : null}
