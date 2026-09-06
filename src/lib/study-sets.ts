@@ -71,6 +71,7 @@ export const createSet = createServerFn({ method: "POST" })
       cards: DraftCard[];
       isReference?: boolean;
       termLanguage?: string;
+      folder?: string;
     }) => input,
   )
   .handler(async ({ context, data }) => {
@@ -78,6 +79,7 @@ export const createSet = createServerFn({ method: "POST" })
     const db = getAdminFirestore();
     const id = uidServer();
     const now = Date.now();
+    const folder = data.folder?.trim();
     const next: StudySet = {
       id,
       title: data.title.trim() || "Untitled set",
@@ -91,6 +93,7 @@ export const createSet = createServerFn({ method: "POST" })
       isPublic: false,
       isReference: data.isReference ?? false,
       ...(data.termLanguage ? { termLanguage: data.termLanguage } : {}),
+      ...(folder ? { folder } : {}),
     };
     await db.collection("study_sets").doc(id).set(next);
     return next;
@@ -102,7 +105,10 @@ export const updateSetMeta = createServerFn({ method: "POST" })
     (input: {
       id: string;
       patch: Partial<
-        Pick<StudySet, "title" | "description" | "subject" | "isReference" | "termLanguage">
+        Pick<
+          StudySet,
+          "title" | "description" | "subject" | "isReference" | "termLanguage" | "folder"
+        >
       >;
     }) => input,
   )

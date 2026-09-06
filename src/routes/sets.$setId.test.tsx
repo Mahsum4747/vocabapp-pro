@@ -5,29 +5,44 @@ import { EmptyState } from "@/components/empty-state";
 import { StudyChrome } from "@/components/study-chrome";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { buildTest, type TestQuestion } from "@/lib/quiz";
+import { buildTest, leitnerBoxOf, type TestQuestion } from "@/lib/quiz";
 import { useSet, useStudyStore } from "@/lib/store";
 import { isCardActive } from "@/lib/types";
-import { answersMatch, cn } from "@/lib/utils";
+import { answersMatch, parseIntSearchParam, cn } from "@/lib/utils";
+
+type Search = { box?: number };
 
 export const Route = createFileRoute("/sets/$setId/test")({
+  validateSearch: (search: Record<string, unknown>): Search => ({
+    box: parseIntSearchParam(search.box),
+  }),
   component: TestPage,
 });
 
 function TestPage() {
   const { setId } = Route.useParams();
+  const { box } = Route.useSearch();
   const studySet = useSet(setId);
   const bumpMastery = useStudyStore((s) => s.bumpMastery);
   const markStudied = useStudyStore((s) => s.markStudied);
   const [round, setRound] = useState(0);
 
-  const questions = useMemo<TestQuestion[]>(() => {
+  const boxCards = useMemo(() => {
     if (!studySet) return [];
     const active = studySet.cards.filter(isCardActive);
-    return buildTest(active, Math.min(12, active.length));
+    return box !== undefined ? active.filter((c) => leitnerBoxOf(c) === box) : active;
+  }, [studySet, box]);
+
+  const questions = useMemo<TestQuestion[]>(() => {
+    return buildTest(boxCards, Math.min(12, boxCards.length));
     // snapshot per round so grading doesn't reshuffle
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [studySet?.id, round]);
+  }, [studySet?.id, box, round]);
+
+  const filterLabel =
+    box !== undefined
+      ? `Box ${box} · ${boxCards.length} card${boxCards.length === 1 ? "" : "s"}`
+      : undefined;
 
   const [index, setIndex] = useState(0);
   const [picked, setPicked] = useState<string | null>(null);
@@ -97,7 +112,14 @@ function TestPage() {
 
   if (questions.length === 0) {
     return (
-      <StudyChrome setId={setId} title={studySet.title} mode="Test" index={0} total={0}>
+      <StudyChrome
+        setId={setId}
+        title={studySet.title}
+        mode="Test"
+        index={0}
+        total={0}
+        filterLabel={filterLabel}
+      >
         <EmptyState title="No cards" description="Add cards to take a test." />
       </StudyChrome>
     );
@@ -112,6 +134,7 @@ function TestPage() {
         mode="Test"
         index={questions.length}
         total={questions.length}
+        filterLabel={filterLabel}
       >
         <div className="mx-auto max-w-md rounded-xl bg-surface p-8 text-center shadow-[var(--shadow-border)]">
           <p className="text-sm text-muted">Test result</p>
@@ -155,6 +178,7 @@ function TestPage() {
       mode="Test"
       index={index}
       total={questions.length}
+      filterLabel={filterLabel}
     >
       <p className="text-xs font-medium tracking-wide text-muted uppercase">
         {q.type === "mc" ? "Multiple choice" : q.type === "written" ? "Written" : "True / false"}

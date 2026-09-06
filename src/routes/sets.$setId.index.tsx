@@ -86,6 +86,7 @@ function SetPage() {
   const [cardView, setCardView] = useState<"active" | "archived">("active");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [transferMode, setTransferMode] = useState<TransferMode | null>(null);
+  const [selectedBox, setSelectedBox] = useState<number | null>(null);
 
   const visibleCards = useMemo(() => {
     if (!studySet) return [];
@@ -255,11 +256,31 @@ function SetPage() {
               </div>
               <Progress value={mastery} className="mt-1.5" />
             </div>
-            <LeitnerBoxes cards={studySet.cards} />
+            <LeitnerBoxes
+              cards={studySet.cards}
+              selectedBox={selectedBox}
+              onSelectBox={setSelectedBox}
+            />
           </div>
 
           <div className="mt-4">
-            <ModeGrid setId={setId} disabled={studySet.cards.length < 2} />
+            {selectedBox !== null ? (
+              <p className="mb-2 flex items-center gap-2 text-sm text-muted">
+                Studying Box {selectedBox} only
+                <button
+                  type="button"
+                  onClick={() => setSelectedBox(null)}
+                  className="text-primary underline-offset-2 hover:underline"
+                >
+                  Clear
+                </button>
+              </p>
+            ) : null}
+            <ModeGrid
+              setId={setId}
+              box={selectedBox ?? undefined}
+              disabled={studySet.cards.length < 2}
+            />
             {studySet.cards.length < 2 ? (
               <p className="mt-3 text-sm text-muted">You need at least two cards to study.</p>
             ) : null}

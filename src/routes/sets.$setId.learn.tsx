@@ -5,12 +5,23 @@ import { EmptyState } from "@/components/empty-state";
 import { StudyChrome } from "@/components/study-chrome";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { multipleChoice, writtenQuestion, type McQuestion, type WrittenQuestion } from "@/lib/quiz";
+import {
+  leitnerBoxOf,
+  multipleChoice,
+  writtenQuestion,
+  type McQuestion,
+  type WrittenQuestion,
+} from "@/lib/quiz";
 import { useSet, useStudyStore } from "@/lib/store";
 import { isCardActive } from "@/lib/types";
-import { answersMatch, shuffle, cn } from "@/lib/utils";
+import { answersMatch, parseIntSearchParam, shuffle, cn } from "@/lib/utils";
+
+type Search = { box?: number };
 
 export const Route = createFileRoute("/sets/$setId/learn")({
+  validateSearch: (search: Record<string, unknown>): Search => ({
+    box: parseIntSearchParam(search.box),
+  }),
   component: LearnPage,
 });
 
@@ -18,21 +29,31 @@ type Item = McQuestion | WrittenQuestion;
 
 function LearnPage() {
   const { setId } = Route.useParams();
+  const { box } = Route.useSearch();
   const studySet = useSet(setId);
   const bumpMastery = useStudyStore((s) => s.bumpMastery);
   const markStudied = useStudyStore((s) => s.markStudied);
   const [round, setRound] = useState(0);
 
-  const items = useMemo<Item[]>(() => {
+  const boxCards = useMemo(() => {
     if (!studySet) return [];
     const active = studySet.cards.filter(isCardActive);
-    const cards = shuffle(active.filter((c) => c.term && c.definition));
+    return box !== undefined ? active.filter((c) => leitnerBoxOf(c) === box) : active;
+  }, [studySet, box]);
+
+  const items = useMemo<Item[]>(() => {
+    const cards = shuffle(boxCards.filter((c) => c.term && c.definition));
     return cards.map((card) =>
-      card.mastery >= 2 ? writtenQuestion(card) : multipleChoice(active, card),
+      card.mastery >= 2 ? writtenQuestion(card) : multipleChoice(boxCards, card),
     );
     // round forces a fresh shuffle
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [studySet?.id, round]);
+  }, [studySet?.id, box, round]);
+
+  const filterLabel =
+    box !== undefined
+      ? `Box ${box} · ${boxCards.length} card${boxCards.length === 1 ? "" : "s"}`
+      : undefined;
 
   const [index, setIndex] = useState(0);
   const [selected, setSelected] = useState<string | null>(null);
@@ -93,7 +114,14 @@ function LearnPage() {
 
   if (items.length === 0) {
     return (
-      <StudyChrome setId={setId} title={studySet.title} mode="Learn" index={0} total={0}>
+      <StudyChrome
+        setId={setId}
+        title={studySet.title}
+        mode="Learn"
+        index={0}
+        total={0}
+        filterLabel={filterLabel}
+      >
         <EmptyState title="No cards" description="Add cards to start learning." />
       </StudyChrome>
     );
@@ -108,6 +136,7 @@ function LearnPage() {
         mode="Learn"
         index={items.length}
         total={items.length}
+        filterLabel={filterLabel}
       >
         <div className="mx-auto max-w-md rounded-xl bg-surface p-8 text-center shadow-[var(--shadow-border)]">
           <p className="text-sm text-muted">Round result</p>
@@ -142,6 +171,7 @@ function LearnPage() {
       mode="Learn"
       index={index}
       total={items.length}
+      filterLabel={filterLabel}
     >
       <p className="text-xs font-medium tracking-wide text-muted uppercase">
         Term matching the definition

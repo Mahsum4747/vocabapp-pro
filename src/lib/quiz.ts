@@ -102,13 +102,17 @@ export function masteryPercent(cards: Card[]) {
   return Math.round((sum / (active.length * 5)) * 100);
 }
 
+/** Which Leitner box (0..MASTERY_MAX) a card's mastery level sits in. */
+export function leitnerBoxOf(card: Card): number {
+  return Math.min(Math.max(Math.round(card.mastery), 0), MASTERY_MAX);
+}
+
 /** Leitner box counts: index N is how many active cards sit at mastery level N (0..MASTERY_MAX). */
 export function leitnerBoxCounts(cards: Card[]): number[] {
   const counts = new Array(MASTERY_MAX + 1).fill(0) as number[];
   for (const card of cards) {
     if (!isCardActive(card)) continue;
-    const box = Math.min(Math.max(Math.round(card.mastery), 0), MASTERY_MAX);
-    counts[box] += 1;
+    counts[leitnerBoxOf(card)] += 1;
   }
   return counts;
 }

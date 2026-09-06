@@ -35,3 +35,10 @@ export function normalizeAnswer(value: string) {
 export function answersMatch(a: string, b: string) {
   return normalizeAnswer(a) === normalizeAnswer(b) && normalizeAnswer(a).length > 0;
 }
+
+/** Parse a route search param that should be a whole number (e.g. `?box=2`) — query strings arrive as strings, a client-side Link `search` object as a number. */
+export function parseIntSearchParam(value: unknown): number | undefined {
+  if (value === undefined || value === null || value === "") return undefined;
+  const n = Number(value);
+  return Number.isFinite(n) ? Math.trunc(n) : undefined;
+}

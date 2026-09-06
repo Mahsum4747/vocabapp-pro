@@ -25,14 +25,25 @@ const MODES = [
   },
 ];
 
-export function ModeGrid({ setId, disabled }: { setId: string; disabled?: boolean }) {
+export function ModeGrid({
+  setId,
+  box,
+  disabled,
+}: {
+  setId: string;
+  /** Restrict the study session to just this Leitner box (0..MASTERY_MAX). */
+  box?: number;
+  disabled?: boolean;
+}) {
   return (
     <div className="flex flex-wrap gap-2">
       {MODES.map((mode) => {
         const Icon = mode.icon;
         const className = cn(
           "flex min-w-28 flex-1 items-center justify-center gap-2 rounded-xl bg-surface px-4 py-3 text-sm font-medium shadow-[var(--shadow-border)] transition-[transform,box-shadow] duration-200 ease-[var(--ease-smooth-out)]",
-          disabled ? "opacity-50" : "hover:-translate-y-0.5 hover:shadow-[var(--shadow-border-hover)]",
+          disabled
+            ? "opacity-50"
+            : "hover:-translate-y-0.5 hover:shadow-[var(--shadow-border-hover)]",
         );
         const inner = (
           <>
@@ -48,7 +59,13 @@ export function ModeGrid({ setId, disabled }: { setId: string; disabled?: boolea
           );
         }
         return (
-          <Link key={mode.title} to={mode.to} params={{ setId }} className={className}>
+          <Link
+            key={mode.title}
+            to={mode.to}
+            params={{ setId }}
+            search={box !== undefined ? { box } : {}}
+            className={className}
+          >
             {inner}
           </Link>
         );

@@ -41,11 +41,15 @@ type StudyState = {
     cards: DraftCard[];
     isReference?: boolean;
     termLanguage?: string;
+    folder?: string;
   }) => Promise<string>;
   updateSetMeta: (
     id: string,
     patch: Partial<
-      Pick<StudySet, "title" | "description" | "subject" | "isReference" | "termLanguage">
+      Pick<
+        StudySet,
+        "title" | "description" | "subject" | "isReference" | "termLanguage" | "folder"
+      >
     >,
   ) => Promise<void>;
   replaceCards: (id: string, cards: DraftCard[]) => Promise<void>;
@@ -122,9 +126,9 @@ export const useStudyStore = create<StudyState>()((set, get) => ({
     }
   },
 
-  addSet: async ({ title, description, subject, cards, isReference, termLanguage }) => {
+  addSet: async ({ title, description, subject, cards, isReference, termLanguage, folder }) => {
     const next = await createSet({
-      data: { title, description, subject, cards, isReference, termLanguage },
+      data: { title, description, subject, cards, isReference, termLanguage, folder },
     });
     set({ sets: [next, ...get().sets] });
     return next.id;

@@ -36,6 +36,8 @@ export type StudySet = {
   isReference?: boolean;
   /** Language the terms are written in (e.g. "German") — set when generated via AI. Drives text-to-speech accent; absent means use the browser's default voice. */
   termLanguage?: string;
+  /** Optional single-level grouping label (e.g. "A1", "İş Almancası") — free text, not nested. */
+  folder?: string;
 };
 
 export const SUBJECTS = [

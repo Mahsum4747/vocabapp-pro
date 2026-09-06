@@ -9,14 +9,21 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useSet, useStudyStore } from "@/lib/store";
 import { isCardActive } from "@/lib/types";
-import { shuffle } from "@/lib/utils";
+import { leitnerBoxOf } from "@/lib/quiz";
+import { parseIntSearchParam, shuffle } from "@/lib/utils";
+
+type Search = { box?: number };
 
 export const Route = createFileRoute("/sets/$setId/flashcards")({
+  validateSearch: (search: Record<string, unknown>): Search => ({
+    box: parseIntSearchParam(search.box),
+  }),
   component: FlashcardsPage,
 });
 
 function FlashcardsPage() {
   const { setId } = Route.useParams();
+  const { box } = Route.useSearch();
   const studySet = useSet(setId);
   const toggleStar = useStudyStore((s) => s.toggleStar);
   const bumpMastery = useStudyStore((s) => s.bumpMastery);
@@ -31,16 +38,25 @@ function FlashcardsPage() {
   const [stillLearningCount, setStillLearningCount] = useState(0);
   const [knowCount, setKnowCount] = useState(0);
 
-  const source = useMemo(() => {
+  const boxCards = useMemo(() => {
     if (!studySet) return [];
     const active = studySet.cards.filter(isCardActive);
-    const cards = starredOnly ? active.filter((c) => c.starred) : active;
-    return cards.length > 0 ? cards : active;
+    return box !== undefined ? active.filter((c) => leitnerBoxOf(c) === box) : active;
+  }, [studySet, box]);
+
+  const source = useMemo(() => {
+    const cards = starredOnly ? boxCards.filter((c) => c.starred) : boxCards;
+    return cards.length > 0 ? cards : boxCards;
     // Keyed on the set id (not the studySet object) so starring/mastery
     // updates during a round — which replace `studySet` with a new object —
     // don't re-trigger the reset effect below and snap back to card 0.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [studySet?.id, starredOnly]);
+  }, [studySet?.id, box, starredOnly]);
+
+  const filterLabel =
+    box !== undefined
+      ? `Box ${box} · ${boxCards.length} card${boxCards.length === 1 ? "" : "s"}`
+      : undefined;
 
   useEffect(() => {
     setOrder(source.map((c) => c.id));
@@ -108,6 +124,7 @@ function FlashcardsPage() {
         mode="Flashcards"
         index={order.length}
         total={order.length}
+        filterLabel={filterLabel}
       >
         <div className="mx-auto max-w-md rounded-xl bg-surface p-8 text-center shadow-[var(--shadow-border)]">
           <h2 className="font-display text-3xl font-medium tracking-tight">Round over</h2>
@@ -135,7 +152,14 @@ function FlashcardsPage() {
 
   if (!card) {
     return (
-      <StudyChrome setId={setId} title={studySet.title} mode="Flashcards" index={0} total={0}>
+      <StudyChrome
+        setId={setId}
+        title={studySet.title}
+        mode="Flashcards"
+        index={0}
+        total={0}
+        filterLabel={filterLabel}
+      >
         <EmptyState title="No cards" description="There are no cards to study in this set." />
       </StudyChrome>
     );
@@ -148,6 +172,7 @@ function FlashcardsPage() {
       mode="Flashcards"
       index={index}
       total={order.length}
+      filterLabel={filterLabel}
       headerRight={
         <div className="flex items-center gap-1">
           <Button

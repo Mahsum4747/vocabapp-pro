@@ -34,13 +34,19 @@ function CreatePage() {
   const { ai } = Route.useSearch();
   const navigate = useNavigate();
   const addSet = useStudyStore((s) => s.addSet);
+  const sets = useStudyStore((s) => s.sets);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [subject, setSubject] = useState("General");
   const [isReference, setIsReference] = useState(false);
   const [termLanguage, setTermLanguage] = useState<string | undefined>(undefined);
+  const [folder, setFolder] = useState("");
   const [cards, setCards] = useState<EditorCard[]>(blankCards);
   const [aiOpenSignal, setAiOpenSignal] = useState(0);
+
+  const folderOptions = Array.from(
+    new Set(sets.map((s) => s.folder?.trim()).filter((f): f is string => !!f)),
+  ).sort((a, b) => a.localeCompare(b));
 
   useEffect(() => {
     if (ai) setAiOpenSignal((n) => n + 1);
@@ -63,6 +69,7 @@ function CreatePage() {
       cards: filled,
       isReference,
       termLanguage,
+      folder: folder.trim() || undefined,
     });
     toast.success("Set saved.");
     void navigate({ to: "/sets/$setId", params: { setId: id } });
@@ -128,6 +135,21 @@ function CreatePage() {
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="What is this set for?"
               />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="folder">Folder</Label>
+              <Input
+                id="folder"
+                list="folder-options"
+                value={folder}
+                onChange={(e) => setFolder(e.target.value)}
+                placeholder="e.g. A1, İş Almancası (optional)"
+              />
+              <datalist id="folder-options">
+                {folderOptions.map((name) => (
+                  <option key={name} value={name} />
+                ))}
+              </datalist>
             </div>
             <div className="space-y-1.5">
               <Label>Subject</Label>

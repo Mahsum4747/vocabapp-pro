@@ -9,6 +9,7 @@ export function StudyChrome({
   mode,
   index,
   total,
+  filterLabel,
   headerRight,
   children,
 }: {
@@ -17,6 +18,8 @@ export function StudyChrome({
   mode: string;
   index: number;
   total: number;
+  /** Extra context shown next to the mode name, e.g. "Box 2 · 8 cards". */
+  filterLabel?: string;
   headerRight?: ReactNode;
   children: ReactNode;
 }) {
@@ -37,6 +40,7 @@ export function StudyChrome({
             <p className="truncate text-sm font-medium">{title}</p>
             <p className="text-xs text-muted">
               {mode}
+              {filterLabel ? ` · ${filterLabel}` : null}
               {total > 0 ? (
                 <span className="tabular-nums">
                   {" "}

@@ -23,12 +23,14 @@ function EditPage() {
   const navigate = useNavigate();
   const updateSetMeta = useStudyStore((s) => s.updateSetMeta);
   const replaceCards = useStudyStore((s) => s.replaceCards);
+  const sets = useStudyStore((s) => s.sets);
 
   const [title, setTitle] = useState(studySet?.title ?? "");
   const [description, setDescription] = useState(studySet?.description ?? "");
   const [subject, setSubject] = useState(studySet?.subject ?? "General");
   const [isReference, setIsReference] = useState(studySet?.isReference ?? false);
   const [termLanguage, setTermLanguage] = useState(studySet?.termLanguage);
+  const [folder, setFolder] = useState(studySet?.folder ?? "");
   const [cards, setCards] = useState<EditorCard[]>(
     studySet?.cards.map((c) => ({
       id: c.id,
@@ -45,6 +47,7 @@ function EditPage() {
     setSubject(studySet.subject);
     setIsReference(studySet.isReference ?? false);
     setTermLanguage(studySet.termLanguage);
+    setFolder(studySet.folder ?? "");
     setCards(
       studySet.cards.map((c) => ({
         id: c.id,
@@ -54,6 +57,10 @@ function EditPage() {
       })),
     );
   }, [studySet]);
+
+  const folderOptions = Array.from(
+    new Set(sets.map((s) => s.folder?.trim()).filter((f): f is string => !!f)),
+  ).sort((a, b) => a.localeCompare(b));
 
   if (!studySet) {
     return (
@@ -81,7 +88,14 @@ function EditPage() {
       toast.error("Add at least two cards.");
       return;
     }
-    updateSetMeta(setId, { title, description, subject, isReference, termLanguage });
+    updateSetMeta(setId, {
+      title,
+      description,
+      subject,
+      isReference,
+      termLanguage,
+      folder: folder.trim(),
+    });
     replaceCards(setId, filled);
     toast.success("Changes saved.");
     void navigate({ to: "/sets/$setId", params: { setId } });
@@ -150,6 +164,21 @@ function EditPage() {
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
               />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="folder">Folder</Label>
+              <Input
+                id="folder"
+                list="folder-options"
+                value={folder}
+                onChange={(e) => setFolder(e.target.value)}
+                placeholder="e.g. A1, İş Almancası (optional)"
+              />
+              <datalist id="folder-options">
+                {folderOptions.map((name) => (
+                  <option key={name} value={name} />
+                ))}
+              </datalist>
             </div>
             <div className="flex flex-wrap gap-2">
               {SUBJECTS.map((name) => (

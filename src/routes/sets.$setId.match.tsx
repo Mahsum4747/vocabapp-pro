@@ -4,11 +4,17 @@ import { AppShell } from "@/components/app-shell";
 import { EmptyState } from "@/components/empty-state";
 import { StudyChrome } from "@/components/study-chrome";
 import { Button } from "@/components/ui/button";
+import { leitnerBoxOf } from "@/lib/quiz";
 import { useSet, useStudyStore } from "@/lib/store";
 import { isCardActive } from "@/lib/types";
-import { cn, shuffle } from "@/lib/utils";
+import { cn, parseIntSearchParam, shuffle } from "@/lib/utils";
+
+type Search = { box?: number };
 
 export const Route = createFileRoute("/sets/$setId/match")({
+  validateSearch: (search: Record<string, unknown>): Search => ({
+    box: parseIntSearchParam(search.box),
+  }),
   component: MatchPage,
 });
 
@@ -21,23 +27,32 @@ type Tile = {
 
 function MatchPage() {
   const { setId } = Route.useParams();
+  const { box } = Route.useSearch();
   const studySet = useSet(setId);
   const bumpMastery = useStudyStore((s) => s.bumpMastery);
   const markStudied = useStudyStore((s) => s.markStudied);
   const [round, setRound] = useState(0);
 
-  const tiles = useMemo<Tile[]>(() => {
+  const boxCards = useMemo(() => {
     if (!studySet) return [];
-    const picked = shuffle(
-      studySet.cards.filter((c) => isCardActive(c) && c.term && c.definition),
-    ).slice(0, 6);
+    const active = studySet.cards.filter(isCardActive);
+    return box !== undefined ? active.filter((c) => leitnerBoxOf(c) === box) : active;
+  }, [studySet, box]);
+
+  const tiles = useMemo<Tile[]>(() => {
+    const picked = shuffle(boxCards.filter((c) => c.term && c.definition)).slice(0, 6);
     const both: Tile[] = picked.flatMap((card) => [
       { id: `${card.id}-t`, cardId: card.id, text: card.term, kind: "term" as const },
       { id: `${card.id}-d`, cardId: card.id, text: card.definition, kind: "definition" as const },
     ]);
     return shuffle(both);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [studySet?.id, round]);
+  }, [studySet?.id, box, round]);
+
+  const filterLabel =
+    box !== undefined
+      ? `Box ${box} · ${boxCards.length} card${boxCards.length === 1 ? "" : "s"}`
+      : undefined;
 
   const [matched, setMatched] = useState<Set<string>>(new Set());
   const [selected, setSelected] = useState<Tile | null>(null);
@@ -113,7 +128,14 @@ function MatchPage() {
 
   if (tiles.length < 4) {
     return (
-      <StudyChrome setId={setId} title={studySet.title} mode="Match" index={0} total={0}>
+      <StudyChrome
+        setId={setId}
+        title={studySet.title}
+        mode="Match"
+        index={0}
+        total={0}
+        filterLabel={filterLabel}
+      >
         <EmptyState title="Not enough cards" description="Match needs at least two cards." />
       </StudyChrome>
     );
@@ -129,6 +151,7 @@ function MatchPage() {
       mode="Match"
       index={matched.size / 2}
       total={totalPairs}
+      filterLabel={filterLabel}
       headerRight={
         <span className="text-sm tabular-nums text-muted">
           {mm}:{ss}

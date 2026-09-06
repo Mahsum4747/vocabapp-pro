@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Plus, Search, Sparkles } from "lucide-react";
+import { ChevronDown, ChevronRight, Plus, Search, Sparkles } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { AuthGate } from "@/components/auth-gate";
@@ -40,6 +40,7 @@ function Home() {
   const { view: viewParam } = Route.useSearch();
   const [query, setQuery] = useState("");
   const [subject, setSubject] = useState<string>("All");
+  const [collapsedFolders, setCollapsedFolders] = useState<Set<string>>(new Set());
   // Defaults to "public" — this page is reachable signed out, and Public
   // Sets is the only tab that works without an account (see AuthGate below).
   const [view, setView] = useState<"mine" | "public">(viewParam ?? "public");
@@ -84,6 +85,31 @@ function Home() {
   }, [sets, query, subject]);
 
   const subjects = ["All", ...SUBJECTS.filter((name) => sets.some((s) => s.subject === name))];
+
+  const UNCATEGORIZED = "Uncategorized";
+  const folderGroups = useMemo(() => {
+    const groups = new Map<string, typeof filtered>();
+    for (const set of filtered) {
+      const key = set.folder?.trim() || UNCATEGORIZED;
+      const list = groups.get(key);
+      if (list) list.push(set);
+      else groups.set(key, [set]);
+    }
+    const names = Array.from(groups.keys())
+      .filter((name) => name !== UNCATEGORIZED)
+      .sort((a, b) => a.localeCompare(b));
+    if (groups.has(UNCATEGORIZED)) names.push(UNCATEGORIZED);
+    return names.map((name) => ({ name, sets: groups.get(name)! }));
+  }, [filtered]);
+
+  function toggleFolder(name: string) {
+    setCollapsedFolders((prev) => {
+      const next = new Set(prev);
+      if (next.has(name)) next.delete(name);
+      else next.add(name);
+      return next;
+    });
+  }
 
   return (
     <AppShell>
@@ -206,10 +232,34 @@ function Home() {
                 />
               </div>
             ) : (
-              <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {filtered.map((set) => (
-                  <SetCard key={set.id} set={set} />
-                ))}
+              <div className="mt-6 space-y-6">
+                {folderGroups.map((group) => {
+                  const collapsed = collapsedFolders.has(group.name);
+                  return (
+                    <div key={group.name}>
+                      <button
+                        type="button"
+                        onClick={() => toggleFolder(group.name)}
+                        className="flex items-center gap-1.5 text-sm font-medium text-muted hover:text-fg"
+                      >
+                        {collapsed ? (
+                          <ChevronRight className="size-4" />
+                        ) : (
+                          <ChevronDown className="size-4" />
+                        )}
+                        {group.name}
+                        <span className="tabular-nums">({group.sets.length})</span>
+                      </button>
+                      {!collapsed ? (
+                        <div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                          {group.sets.map((set) => (
+                            <SetCard key={set.id} set={set} />
+                          ))}
+                        </div>
+                      ) : null}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </>
