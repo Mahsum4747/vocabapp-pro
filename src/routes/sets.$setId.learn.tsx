@@ -16,6 +16,7 @@ import {
 import { useSet, useStudyStore } from "@/lib/store";
 import { isCardActive } from "@/lib/types";
 import { answersMatch, parseIntSearchParam, shuffle, cn } from "@/lib/utils";
+import { upsertCardProgress, appendReviewEvent, upsertDailyStats } from "@/lib/study-sets";
 
 type Search = { box?: number };
 
@@ -79,12 +80,52 @@ function LearnPage() {
 
   const item = items[index];
 
-  function grade(ok: boolean) {
+  const grade = async (ok: boolean) => {
     if (!item) return;
     setRevealed(true);
     if (ok) setCorrectCount((n) => n + 1);
     bumpMastery(setId, item.cardId, ok ? 1 : -1);
-  }
+
+    const card = studySet?.cards.find((c) => c.id === item.cardId);
+
+    // Background sync with Phase 0.5 persistence layer
+    try {
+      const now = Date.now();
+      const currentScore = (card?.mastery ?? 0) * 20;
+      const masteryScore = ok ? Math.min(100, currentScore + 20) : Math.max(0, currentScore - 20);
+      const state = masteryScore === 100 ? "mastered" : masteryScore > 0 ? "learning" : "new";
+      const dateStr = new Date().toISOString().split("T")[0];
+
+      await upsertCardProgress({
+        cardId: item.cardId,
+        setId: setId,
+        state,
+        masteryScore,
+        totalReviews: 1,
+        correctReviews: ok ? 1 : 0,
+        consecutiveCorrect: ok ? (card?.mastery ?? 0) + 1 : 0,
+        lastReviewedAt: now,
+        nextReviewAt: null,
+      } as any);
+
+      await appendReviewEvent({
+        cardId: item.cardId,
+        setId: setId,
+        rating: ok ? "good" : "again",
+        reviewedAt: now,
+        responseTimeMs: 0,
+      } as any);
+
+      await upsertDailyStats({
+        date: dateStr,
+        reviewsCount: 1,
+        correctCount: ok ? 1 : 0,
+        studyTimeMs: 0,
+      } as any);
+    } catch (err) {
+      console.error("Failed to sync progress:", err);
+    }
+  };
 
   function next() {
     setSelected(null);
