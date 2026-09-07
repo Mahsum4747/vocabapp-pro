@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Layers, Plus } from "lucide-react";
+import { Copy, Layers, Plus } from "lucide-react";
 import { toast } from "sonner";
 import type { StudySet } from "@/lib/types";
 import { useStudyStore } from "@/lib/store";
@@ -37,15 +37,25 @@ export function PublicSetCard({ set }: { set: StudySet }) {
   return (
     <Link
       to="/sets/$setId"
-      params={{ setId: set.id }}
+      // Prefer the share id so browsing public sets doesn't expose document
+      // ids; sets predating the shareId backfill still link by document id.
+      params={{ setId: set.shareId ?? set.id }}
       className="group flex flex-col rounded-xl bg-surface p-5 shadow-[var(--shadow-border)] transition-[transform,box-shadow] duration-200 ease-[var(--ease-smooth-out)] hover:-translate-y-0.5 hover:shadow-[var(--shadow-border-hover)]"
     >
       <div className="flex items-center justify-between gap-3">
         <Badge tone="accent">{set.subject}</Badge>
-        <span className="inline-flex items-center gap-1 text-xs text-muted tabular-nums">
-          <Layers className="size-3.5" />
-          {set.cards.length} cards
-        </span>
+        <div className="flex items-center gap-3">
+          {set.copyCount ? (
+            <span className="inline-flex items-center gap-1 text-xs text-muted tabular-nums">
+              <Copy className="size-3.5" />
+              {set.copyCount} {set.copyCount === 1 ? "copy" : "copies"}
+            </span>
+          ) : null}
+          <span className="inline-flex items-center gap-1 text-xs text-muted tabular-nums">
+            <Layers className="size-3.5" />
+            {set.cards.length} cards
+          </span>
+        </div>
       </div>
       <h3 className="mt-4 font-display text-xl font-medium tracking-tight group-hover:text-primary">
         {set.title}

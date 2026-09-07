@@ -22,6 +22,7 @@ import { ModeGrid } from "@/components/mode-grid";
 import { LeitnerBoxes } from "@/components/leitner-boxes";
 import { EmptyState } from "@/components/empty-state";
 import { ExampleLine } from "@/components/example-line";
+import { ShareLink } from "@/components/share-link";
 import { SpeakButton } from "@/components/speak-button";
 import { TransferCardsDialog, type TransferMode } from "@/components/transfer-cards-dialog";
 import { Badge } from "@/components/ui/badge";
@@ -249,6 +250,12 @@ function SetPage() {
           </DropdownMenu>
         </div>
       </div>
+
+      {studySet.isPublic && studySet.shareId ? (
+        <OwnerGate ownerId={studySet.ownerId}>
+          <ShareLink shareId={studySet.shareId} />
+        </OwnerGate>
+      ) : null}
 
       {!studySet.isReference ? (
         <>

@@ -76,6 +76,15 @@ type StudyState = {
   moveCardsToSet: (sourceSetId: string, targetSetId: string, cardIds: string[]) => Promise<number>;
 };
 
+/**
+ * A route param is either a set's document id or its public `shareId`
+ * (/sets/{shareId} share links), so every client-side lookup accepts both.
+ * Server functions always take the resolved document id.
+ */
+function findSet(sets: StudySet[], idOrShareId: string): StudySet | undefined {
+  return sets.find((s) => s.id === idOrShareId || s.shareId === idOrShareId);
+}
+
 export const useStudyStore = create<StudyState>()((set, get) => ({
   sets: [],
   publicSets: [],
@@ -136,24 +145,29 @@ export const useStudyStore = create<StudyState>()((set, get) => ({
   },
 
   updateSetMeta: async (id, patch) => {
-    await updateSetMetaFn({ data: { id, patch } });
+    const setId = findSet(get().sets, id)?.id ?? id;
+    await updateSetMetaFn({ data: { id: setId, patch } });
     const now = Date.now();
     set({
-      sets: get().sets.map((s) => (s.id === id ? { ...s, ...patch, updatedAt: now } : s)),
+      sets: get().sets.map((s) => (s.id === setId ? { ...s, ...patch, updatedAt: now } : s)),
     });
   },
 
   replaceCards: async (id, cards) => {
-    const nextCards = await replaceCardsFn({ data: { id, cards } });
+    const setId = findSet(get().sets, id)?.id ?? id;
+    const nextCards = await replaceCardsFn({ data: { id: setId, cards } });
     const now = Date.now();
     set({
-      sets: get().sets.map((s) => (s.id === id ? { ...s, cards: nextCards, updatedAt: now } : s)),
+      sets: get().sets.map((s) =>
+        s.id === setId ? { ...s, cards: nextCards, updatedAt: now } : s,
+      ),
     });
   },
 
   deleteSet: async (id) => {
-    await deleteSetFn({ data: { id } });
-    set({ sets: get().sets.filter((s) => s.id !== id) });
+    const setId = findSet(get().sets, id)?.id ?? id;
+    await deleteSetFn({ data: { id: setId } });
+    set({ sets: get().sets.filter((s) => s.id !== setId) });
   },
 
   // Starring/mastery are per-card progress on the set's own document — only
@@ -162,23 +176,23 @@ export const useStudyStore = create<StudyState>()((set, get) => ({
   // itself works end-to-end; it just doesn't stick past a reload for a
   // non-owner, which is expected since it isn't "your" set to track.
   toggleStar: async (setId, cardId) => {
-    const targetSet = get().sets.find((s) => s.id === setId);
+    const targetSet = findSet(get().sets, setId);
     if (!targetSet) return;
     const updatedCards = targetSet.cards.map((card) =>
       card.id === cardId ? { ...card, starred: !card.starred } : card,
     );
     set({
-      sets: get().sets.map((s) => (s.id !== setId ? s : { ...s, cards: updatedCards })),
+      sets: get().sets.map((s) => (s.id !== targetSet.id ? s : { ...s, cards: updatedCards })),
     });
     try {
-      await replaceCardsFn({ data: { id: setId, cards: updatedCards } });
+      await replaceCardsFn({ data: { id: targetSet.id, cards: updatedCards } });
     } catch (error) {
       console.error("Failed to save star:", error);
     }
   },
 
   bumpMastery: async (setId, cardId, delta) => {
-    const targetSet = get().sets.find((s) => s.id === setId);
+    const targetSet = findSet(get().sets, setId);
     if (!targetSet) return;
     const updatedCards = targetSet.cards.map((card) =>
       card.id === cardId
@@ -186,24 +200,24 @@ export const useStudyStore = create<StudyState>()((set, get) => ({
         : card,
     );
     set({
-      sets: get().sets.map((s) => (s.id !== setId ? s : { ...s, cards: updatedCards })),
+      sets: get().sets.map((s) => (s.id !== targetSet.id ? s : { ...s, cards: updatedCards })),
     });
     try {
-      await replaceCardsFn({ data: { id: setId, cards: updatedCards } });
+      await replaceCardsFn({ data: { id: targetSet.id, cards: updatedCards } });
     } catch (error) {
       console.error("Failed to save mastery:", error);
     }
   },
 
   resetMastery: async (setId) => {
-    const targetSet = get().sets.find((s) => s.id === setId);
+    const targetSet = findSet(get().sets, setId);
     if (!targetSet) return;
     const updatedCards = targetSet.cards.map((card) => ({ ...card, mastery: 0 }));
-    await replaceCardsFn({ data: { id: setId, cards: updatedCards } });
+    await replaceCardsFn({ data: { id: targetSet.id, cards: updatedCards } });
     const now = Date.now();
     set({
       sets: get().sets.map((s) =>
-        s.id !== setId ? s : { ...s, updatedAt: now, cards: updatedCards },
+        s.id !== targetSet.id ? s : { ...s, updatedAt: now, cards: updatedCards },
       ),
     });
   },
@@ -211,28 +225,29 @@ export const useStudyStore = create<StudyState>()((set, get) => ({
   // Curation, not progress — owner-only in the UI, so unlike toggleStar/
   // bumpMastery this doesn't need to tolerate a non-owner viewer.
   setCardStatus: async (setId, cardId, status) => {
-    const targetSet = get().sets.find((s) => s.id === setId);
+    const targetSet = findSet(get().sets, setId);
     if (!targetSet) return;
     const updatedCards = targetSet.cards.map((card) =>
       card.id === cardId ? { ...card, status } : card,
     );
-    const nextCards = await replaceCardsFn({ data: { id: setId, cards: updatedCards } });
+    const nextCards = await replaceCardsFn({ data: { id: targetSet.id, cards: updatedCards } });
     set({
-      sets: get().sets.map((s) => (s.id !== setId ? s : { ...s, cards: nextCards })),
+      sets: get().sets.map((s) => (s.id !== targetSet.id ? s : { ...s, cards: nextCards })),
     });
   },
 
   markStudied: async (setId) => {
+    const resolvedId = findSet(get().sets, setId)?.id ?? setId;
     const now = Date.now();
     set({
       sets: get().sets.map((s) =>
-        s.id === setId ? { ...s, lastStudiedAt: now, updatedAt: now } : s,
+        s.id === resolvedId ? { ...s, lastStudiedAt: now, updatedAt: now } : s,
       ),
     });
     try {
       // Only the owner can persist `updatedAt` on the set's own document —
       // studying someone else's public set still counts for YOUR streak below.
-      await updateSetMetaFn({ data: { id: setId, patch: {} } });
+      await updateSetMetaFn({ data: { id: resolvedId, patch: {} } });
     } catch (error) {
       console.error("Failed to record set activity:", error);
     }
@@ -262,15 +277,24 @@ export const useStudyStore = create<StudyState>()((set, get) => ({
   },
 
   togglePublic: async (setId) => {
-    const nextIsPublic = await togglePublicFn({ data: { id: setId } });
+    const resolvedId = findSet(get().sets, setId)?.id ?? setId;
+    const nextIsPublic = await togglePublicFn({ data: { id: resolvedId } });
     set({
-      sets: get().sets.map((s) => (s.id === setId ? { ...s, isPublic: nextIsPublic } : s)),
+      sets: get().sets.map((s) => (s.id === resolvedId ? { ...s, isPublic: nextIsPublic } : s)),
     });
   },
 
   copyPublicSet: async (setId) => {
-    const cloned = await copyPublicSetFn({ data: { id: setId } });
-    set({ sets: [cloned, ...get().sets] });
+    const resolvedId = findSet(get().sets, setId)?.id ?? setId;
+    const cloned = await copyPublicSetFn({ data: { id: resolvedId } });
+    set({
+      sets: [cloned, ...get().sets],
+      // Mirror the server's counter bump so the source card's "N copies"
+      // updates without a refetch.
+      publicSets: get().publicSets.map((s) =>
+        s.id === resolvedId ? { ...s, copyCount: (s.copyCount ?? 0) + 1 } : s,
+      ),
+    });
     return cloned.id;
   },
 
@@ -290,19 +314,27 @@ export const useStudyStore = create<StudyState>()((set, get) => ({
   },
 
   copyCardsToSet: async (sourceSetId, targetSetId, cardIds) => {
-    const result = await copyCardsToSetFn({ data: { sourceSetId, targetSetId, cardIds } });
+    const source = findSet(get().sets, sourceSetId)?.id ?? sourceSetId;
+    const target = findSet(get().sets, targetSetId)?.id ?? targetSetId;
+    const result = await copyCardsToSetFn({
+      data: { sourceSetId: source, targetSetId: target, cardIds },
+    });
     set({
-      sets: get().sets.map((s) => (s.id === targetSetId ? { ...s, cards: result.targetCards } : s)),
+      sets: get().sets.map((s) => (s.id === target ? { ...s, cards: result.targetCards } : s)),
     });
     return result.addedCount;
   },
 
   moveCardsToSet: async (sourceSetId, targetSetId, cardIds) => {
-    const result = await moveCardsToSetFn({ data: { sourceSetId, targetSetId, cardIds } });
+    const source = findSet(get().sets, sourceSetId)?.id ?? sourceSetId;
+    const target = findSet(get().sets, targetSetId)?.id ?? targetSetId;
+    const result = await moveCardsToSetFn({
+      data: { sourceSetId: source, targetSetId: target, cardIds },
+    });
     set({
       sets: get().sets.map((s) => {
-        if (s.id === targetSetId) return { ...s, cards: result.targetCards };
-        if (s.id === sourceSetId) return { ...s, cards: result.sourceCards };
+        if (s.id === target) return { ...s, cards: result.targetCards };
+        if (s.id === source) return { ...s, cards: result.sourceCards };
         return s;
       }),
     });
@@ -320,5 +352,5 @@ export const useStudyStore = create<StudyState>()((set, get) => ({
 };
 
 export function useSet(id: string | undefined) {
-  return useStudyStore((state) => state.sets.find((item) => item.id === id));
+  return useStudyStore((state) => (id ? findSet(state.sets, id) : undefined));
 }

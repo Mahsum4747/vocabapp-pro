@@ -38,6 +38,16 @@ export type StudySet = {
   cards: Card[];
   ownerId: string;
   isPublic: boolean;
+  /**
+   * Short, unguessable public identifier used in share links (/sets/{shareId})
+   * so the Firestore document id never has to be handed out. Optional only
+   * because sets created before this existed are backfilled by a migration.
+   */
+  shareId?: string;
+  /** How many times this set has been copied into someone else's library. */
+  copyCount?: number;
+  /** Set on a copy, pointing back at the public set it came from. */
+  copiedFrom?: { setId: string; ownerId: string; title: string };
   /** Reference/cheat-sheet set: no study modes or mastery tracking, just a browsable list. */
   isReference?: boolean;
   /** Language the terms are written in (e.g. "German") — set when generated via AI. Drives text-to-speech accent; absent means use the browser's default voice. */

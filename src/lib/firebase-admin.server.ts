@@ -2,6 +2,11 @@ import { initializeApp, getApps, cert } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import { getStorage } from "firebase-admin/storage";
 
+// Re-exported so callers get atomic field operations (e.g. FieldValue.increment)
+// from this module's dynamic import, without a second firebase-admin import
+// that Nitro would have to externalize separately.
+export { FieldValue } from "firebase-admin/firestore";
+
 const PROJECT_ID = "vocabappmm";
 
 function getAdminApp() {

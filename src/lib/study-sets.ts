@@ -18,6 +18,26 @@ function uidServer(): string {
   return Math.random().toString(36).slice(2) + Date.now().toString(36);
 }
 
+/**
+ * 64 URL-safe characters — a power of two, so taking each random byte modulo
+ * the alphabet length introduces no bias.
+ */
+const SHARE_ID_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+const SHARE_ID_LENGTH = 10;
+
+/**
+ * A short, unguessable id for share links (~60 bits of entropy). Unlike the
+ * document id this is safe to hand out, and unlike a sequential id it can't be
+ * walked to enumerate other people's sets.
+ */
+function shareIdServer(): string {
+  const bytes = new Uint8Array(SHARE_ID_LENGTH);
+  crypto.getRandomValues(bytes);
+  let out = "";
+  for (const byte of bytes) out += SHARE_ID_ALPHABET[byte % SHARE_ID_ALPHABET.length];
+  return out;
+}
+
 function toCards(drafts: DraftCard[]): Card[] {
   return drafts
     .map((d) => ({
@@ -46,6 +66,9 @@ export const getMySets = createServerFn({ method: "GET" })
  * may call this too (`context.userId` is `null` then) — anyone can read a
  * set that's `isPublic: true`; a private set is only returned to its owner.
  * Editing/deleting/toggling-public stay owner-only, checked separately below.
+ *
+ * `id` is either the document id or the set's `shareId`, so a /sets/{shareId}
+ * link resolves through the same page as an owner's own /sets/{docId} link.
  */
 export const getSetById = createServerFn({ method: "GET" })
   .middleware([optionalAuthMiddleware])
@@ -53,8 +76,15 @@ export const getSetById = createServerFn({ method: "GET" })
   .handler(async ({ context, data }) => {
     const { getAdminFirestore } = await import("./firebase-admin.server");
     const db = getAdminFirestore();
-    const doc = await db.collection("study_sets").doc(data.id).get();
-    if (!doc.exists) return null;
+    const collection = db.collection("study_sets");
+
+    let doc = await collection.doc(data.id).get();
+    if (!doc.exists) {
+      const bySnap = await collection.where("shareId", "==", data.id).limit(1).get();
+      if (bySnap.empty) return null;
+      doc = bySnap.docs[0];
+    }
+
     const set = { id: doc.id, ...doc.data() } as StudySet;
     if (set.ownerId !== context.userId && !set.isPublic) return null;
     return set;
@@ -97,6 +127,8 @@ export const createSet = createServerFn({ method: "POST" })
       cards: toCards(data.cards),
       ownerId: context.userId,
       isPublic: false,
+      shareId: shareIdServer(),
+      copyCount: 0,
       isReference: data.isReference ?? false,
       ...(data.termLanguage ? { termLanguage: data.termLanguage } : {}),
       ...(folder ? { folder } : {}),
@@ -227,12 +259,31 @@ export const copyPublicSet = createServerFn({ method: "POST" })
       id,
       ownerId: context.userId,
       isPublic: false,
+      // A copy is its own set: fresh share link, its own (zero) copy count,
+      // and a pointer back to where it came from.
+      shareId: shareIdServer(),
+      copyCount: 0,
+      copiedFrom: {
+        setId: sourceDoc.id,
+        ownerId: source.ownerId,
+        title: source.title,
+      },
       createdAt: now,
       updatedAt: now,
       lastStudiedAt: null,
       cards: source.cards.map((c) => ({ ...c, id: uidServer() })),
     };
     await db.collection("study_sets").doc(id).set(cloned);
+
+    // Best-effort: the copy already succeeded, so a failed counter bump must
+    // not fail the call. `increment` keeps concurrent copies from racing.
+    try {
+      const { FieldValue } = await import("./firebase-admin.server");
+      await sourceDoc.ref.update({ copyCount: FieldValue.increment(1) });
+    } catch (error) {
+      console.error("Failed to bump copyCount:", error);
+    }
+
     return cloned;
   });
 

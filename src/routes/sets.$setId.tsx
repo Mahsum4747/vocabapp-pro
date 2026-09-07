@@ -9,13 +9,17 @@ export const Route = createFileRoute("/sets/$setId")({
 
 function SetLayout() {
   const { setId } = Route.useParams();
+  // `setId` is either a document id or a share id — `useSet` matches both.
   const studySet = useSet(setId);
-  const isLoaded = useStudyStore((s) => s.isLoaded);
   const fetchSetById = useStudyStore((s) => s.fetchSetById);
   const [checking, setChecking] = useState(!studySet);
 
   useEffect(() => {
-    if (studySet || isLoaded) {
+    // Only having the set already is a reason to skip the fetch. `isLoaded`
+    // isn't: it means "your own library loaded", which says nothing about a
+    // set reached by share link or from Public Sets — those live outside
+    // `sets` and would otherwise render "Set not found" without ever asking.
+    if (studySet) {
       setChecking(false);
       return;
     }
@@ -27,7 +31,7 @@ function SetLayout() {
     return () => {
       cancelled = true;
     };
-  }, [setId, studySet, isLoaded, fetchSetById]);
+  }, [setId, studySet, fetchSetById]);
 
   // No blanket AuthGate here: this layout also serves someone else's public
   // set, which a signed-out visitor must be able to read and study. Each leaf
