@@ -8,6 +8,7 @@ import { leitnerBoxOf } from "@/lib/quiz";
 import { useSet, useStudyStore } from "@/lib/store";
 import { isCardActive } from "@/lib/types";
 import { cn, parseIntSearchParam, shuffle } from "@/lib/utils";
+import { upsertCardProgress, appendReviewEvent, upsertDailyStats } from "@/lib/study-sets";
 
 type Search = { box?: number };
 
@@ -85,7 +86,47 @@ function MatchPage() {
     setRound((n) => n + 1);
   }
 
-  function onTile(tile: Tile) {
+  const recordMatchEvent = async (cardId: string, ok: boolean) => {
+    const card = studySet?.cards.find((c) => c.id === cardId);
+    try {
+      const now = Date.now();
+      const currentScore = (card?.mastery ?? 0) * 20;
+      const masteryScore = ok ? Math.min(100, currentScore + 20) : Math.max(0, currentScore - 20);
+      const state = masteryScore === 100 ? "mastered" : masteryScore > 0 ? "learning" : "new";
+      const dateStr = new Date().toISOString().split("T")[0];
+
+      await upsertCardProgress({
+        cardId: cardId,
+        setId: setId,
+        state,
+        masteryScore,
+        totalReviews: 1,
+        correctReviews: ok ? 1 : 0,
+        consecutiveCorrect: ok ? (card?.mastery ?? 0) + 1 : 0,
+        lastReviewedAt: now,
+        nextReviewAt: null,
+      } as any);
+
+      await appendReviewEvent({
+        cardId: cardId,
+        setId: setId,
+        rating: ok ? "good" : "again",
+        reviewedAt: now,
+        responseTimeMs: 0,
+      } as any);
+
+      await upsertDailyStats({
+        date: dateStr,
+        reviewsCount: 1,
+        correctCount: ok ? 1 : 0,
+        studyTimeMs: 0,
+      } as any);
+    } catch (err) {
+      console.error("Failed to sync match progress:", err);
+    }
+  };
+
+  async function onTile(tile: Tile) {
     if (matched.has(tile.id) || wrong.length) return;
     if (!selected) {
       setSelected(tile);
@@ -100,9 +141,11 @@ function MatchPage() {
       setMatched((prev) => new Set([...prev, selected.id, tile.id]));
       bumpMastery(setId, tile.cardId, 1);
       setSelected(null);
+      await recordMatchEvent(tile.cardId, true);
     } else {
       setWrong([selected.id, tile.id]);
       bumpMastery(setId, selected.cardId, -1);
+      await recordMatchEvent(selected.cardId, false);
       window.setTimeout(() => {
         setWrong([]);
         setSelected(null);
