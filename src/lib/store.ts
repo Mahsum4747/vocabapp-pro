@@ -23,6 +23,7 @@ type DraftCard = {
   term: string;
   definition: string;
   imageUrl?: string | null;
+  example?: string | null;
 };
 
 type StudyState = {
@@ -249,7 +250,11 @@ export const useStudyStore = create<StudyState>()((set, get) => ({
         title: incoming.title,
         description: incoming.description,
         subject: incoming.subject,
-        cards: incoming.cards.map((c) => ({ term: c.term, definition: c.definition })),
+        cards: incoming.cards.map((c) => ({
+          term: c.term,
+          definition: c.definition,
+          example: c.example ?? null,
+        })),
       },
     });
     set({ sets: [next, ...get().sets] });

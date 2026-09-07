@@ -206,6 +206,7 @@ function FlashcardsPage() {
       <FlashCard
         term={card.term}
         definition={card.definition}
+        example={card.example}
         imageUrl={card.imageUrl}
         termLanguage={studySet.termLanguage}
         flipped={flipped}

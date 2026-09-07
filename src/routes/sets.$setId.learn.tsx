@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { EmptyState } from "@/components/empty-state";
+import { ExampleLine } from "@/components/example-line";
 import { StudyChrome } from "@/components/study-chrome";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -239,6 +240,11 @@ function LearnPage() {
           </Button>
         </form>
       )}
+
+      {/* Only after grading — the example contains the term, i.e. the answer. */}
+      {revealed ? (
+        <ExampleLine example={item.example} termLanguage={studySet.termLanguage} className="mt-4" />
+      ) : null}
 
       {revealed && isMc ? (
         <Button className="mt-6 w-full" onClick={next}>

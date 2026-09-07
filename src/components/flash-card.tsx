@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 export function FlashCard({
   term,
   definition,
+  example,
   imageUrl,
   termLanguage,
   flipped,
@@ -11,6 +12,7 @@ export function FlashCard({
 }: {
   term: string;
   definition: string;
+  example?: string | null;
   imageUrl?: string | null;
   termLanguage?: string;
   flipped: boolean;
@@ -50,16 +52,30 @@ export function FlashCard({
           className="mx-auto max-h-28 rounded-lg object-contain md:max-h-36"
         />
       ) : null}
-      <span
-        className={cn(
-          "text-balance",
-          flipped
-            ? "text-xl leading-snug whitespace-pre-line md:text-2xl"
-            : "font-display text-3xl font-semibold tracking-tight md:text-4xl",
-        )}
-      >
-        {flipped ? definition : term}
-      </span>
+      <div className="flex flex-col gap-3">
+        <span
+          className={cn(
+            "text-balance",
+            flipped
+              ? "text-xl leading-snug whitespace-pre-line md:text-2xl"
+              : "font-display text-3xl font-semibold tracking-tight md:text-4xl",
+          )}
+        >
+          {flipped ? definition : term}
+        </span>
+        {/* The example is in the term language, so it belongs with the answer side. */}
+        {flipped && example ? (
+          <span className="flex items-start gap-1">
+            <span className="text-sm italic text-primary-fg/70 md:text-base">{example}</span>
+            <SpeakButton
+              text={example}
+              language={termLanguage}
+              label="Listen to the example"
+              className="text-primary-fg/70 hover:bg-primary-fg/10 hover:text-primary-fg"
+            />
+          </span>
+        ) : null}
+      </div>
       <span className={cn("text-sm", flipped ? "text-primary-fg/70" : "text-subtle")}>
         Tap to flip
       </span>

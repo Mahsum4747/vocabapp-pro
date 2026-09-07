@@ -14,6 +14,12 @@ export type Card = {
   mastery: number;
   /** Optional card image (Firebase Storage download URL). Null = no image. */
   imageUrl: string | null;
+  /**
+   * Optional example sentence using the term, written in the set's term
+   * language. Kept separate from `definition` (which is the meaning, in the
+   * definition language) so each can be shown, searched, and spoken on its own.
+   */
+  example?: string | null;
   status?: CardStatus;
 };
 

@@ -6,7 +6,13 @@ import { Button } from "./ui/button";
 import { Input, Textarea } from "./ui/input";
 import { Label } from "./ui/label";
 
-export type EditorCard = { id: string; term: string; definition: string; imageUrl?: string | null };
+export type EditorCard = {
+  id: string;
+  term: string;
+  definition: string;
+  imageUrl?: string | null;
+  example?: string | null;
+};
 
 // Card images need Firebase Storage on a paid plan, which we're not on yet.
 // The upload/display code stays in place (card-images.ts, FlashCard, the
@@ -99,6 +105,15 @@ export function CardEditor({
                 className="min-h-11 md:min-h-20"
               />
             </div>
+          </div>
+          <div className="mt-3 space-y-1.5">
+            <Label htmlFor={`example-${card.id}`}>Example sentence (optional)</Label>
+            <Input
+              id={`example-${card.id}`}
+              value={card.example ?? ""}
+              onChange={(e) => update(card.id, { example: e.target.value })}
+              placeholder="A sentence using the term"
+            />
           </div>
           {IMAGE_UPLOAD_ENABLED && (
             <div className="mt-3">

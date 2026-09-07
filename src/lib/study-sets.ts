@@ -2,7 +2,12 @@ import { createServerFn } from "@tanstack/react-start";
 import { authMiddleware, optionalAuthMiddleware } from "./auth/middleware";
 import type { Card, StudySet } from "./types";
 
-type DraftCard = { term: string; definition: string; imageUrl?: string | null };
+type DraftCard = {
+  term: string;
+  definition: string;
+  imageUrl?: string | null;
+  example?: string | null;
+};
 type DraftCardWithProgress = DraftCard & {
   starred?: boolean;
   mastery?: number;
@@ -22,6 +27,7 @@ function toCards(drafts: DraftCard[]): Card[] {
       starred: false,
       mastery: 0,
       imageUrl: d.imageUrl || null,
+      example: d.example?.trim() || null,
     }))
     .filter((c) => c.term || c.definition);
 }
@@ -145,12 +151,16 @@ export const replaceCards = createServerFn({ method: "POST" })
     const existing = doc.data() as StudySet;
     const previous = new Map(existing.cards.map((c) => [c.term.trim().toLowerCase(), c]));
     const nextCards = data.cards
-      .map((d) => {
+      .map((d): Card | null => {
         const term = d.term.trim();
         const definition = d.definition.trim();
         if (!term && !definition) return null;
         const prior = previous.get(term.toLowerCase());
         const status = d.status ?? prior?.status;
+        // An editor that knows about examples always sends the field (empty
+        // string = cleared); one that doesn't omits it, so keep what's there.
+        const example =
+          d.example !== undefined ? d.example?.trim() || null : (prior?.example ?? null);
         return {
           id: uidServer(),
           term,
@@ -158,6 +168,7 @@ export const replaceCards = createServerFn({ method: "POST" })
           starred: d.starred ?? prior?.starred ?? false,
           mastery: d.mastery ?? prior?.mastery ?? 0,
           imageUrl: d.imageUrl || null,
+          example,
           ...(status ? { status } : {}),
         };
       })
@@ -270,6 +281,7 @@ async function transferCards(userId: string, data: TransferCardsInput, removeFro
     starred: false,
     mastery: 0,
     imageUrl: c.imageUrl,
+    example: c.example ?? null,
   }));
   const now = Date.now();
   const targetCards = [...target.cards, ...addedCards];

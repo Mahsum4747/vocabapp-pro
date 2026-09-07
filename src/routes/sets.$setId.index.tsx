@@ -21,6 +21,7 @@ import { OwnerGate, OwnershipStatus } from "@/components/owner-gate";
 import { ModeGrid } from "@/components/mode-grid";
 import { LeitnerBoxes } from "@/components/leitner-boxes";
 import { EmptyState } from "@/components/empty-state";
+import { ExampleLine } from "@/components/example-line";
 import { SpeakButton } from "@/components/speak-button";
 import { TransferCardsDialog, type TransferMode } from "@/components/transfer-cards-dialog";
 import { Badge } from "@/components/ui/badge";
@@ -96,7 +97,10 @@ function SetPage() {
     const q = query.trim().toLowerCase();
     const filtered = q
       ? base.filter(
-          (c) => c.term.toLowerCase().includes(q) || c.definition.toLowerCase().includes(q),
+          (c) =>
+            c.term.toLowerCase().includes(q) ||
+            c.definition.toLowerCase().includes(q) ||
+            (c.example ?? "").toLowerCase().includes(q),
         )
       : base;
     return sortCards(filtered, sortMode);
@@ -433,9 +437,15 @@ function SetPage() {
                             </span>
                           ) : null}
                         </div>
-                        <p className="text-sm whitespace-pre-line text-muted md:text-base">
-                          {card.definition}
-                        </p>
+                        <div className="space-y-1">
+                          <p className="text-sm whitespace-pre-line text-muted md:text-base">
+                            {card.definition}
+                          </p>
+                          <ExampleLine
+                            example={card.example}
+                            termLanguage={studySet.termLanguage}
+                          />
+                        </div>
                       </div>
                       {isOwner ? (
                         <DropdownMenu>

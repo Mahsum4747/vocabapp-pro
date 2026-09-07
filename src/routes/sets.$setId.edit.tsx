@@ -37,6 +37,7 @@ function EditPage() {
       term: c.term,
       definition: c.definition,
       imageUrl: c.imageUrl,
+      example: c.example,
     })) ?? [],
   );
 
@@ -54,6 +55,7 @@ function EditPage() {
         term: c.term,
         definition: c.definition,
         imageUrl: c.imageUrl,
+        example: c.example,
       })),
     );
   }, [studySet]);
@@ -136,6 +138,7 @@ function EditPage() {
                     id: crypto.randomUUID(),
                     term: card.term,
                     definition: card.definition,
+                    example: card.example,
                   })),
                 );
               }}

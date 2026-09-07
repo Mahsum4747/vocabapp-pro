@@ -10,6 +10,8 @@ export type McQuestion = {
   options: string[];
   answer: string;
   imageUrl?: string | null;
+  /** The card's example sentence — it contains the term, so only ever shown after the answer is revealed. */
+  example?: string | null;
 };
 
 export type WrittenQuestion = {
@@ -18,6 +20,7 @@ export type WrittenQuestion = {
   prompt: string;
   answer: string;
   imageUrl?: string | null;
+  example?: string | null;
 };
 
 export type TfQuestion = {
@@ -27,6 +30,7 @@ export type TfQuestion = {
   statement: string;
   answer: boolean;
   imageUrl?: string | null;
+  example?: string | null;
 };
 
 export type TestQuestion = McQuestion | WrittenQuestion | TfQuestion;
@@ -51,6 +55,7 @@ export function multipleChoice(
     options,
     answer,
     imageUrl: card.imageUrl,
+    example: card.example,
   };
 }
 
@@ -64,6 +69,7 @@ export function writtenQuestion(
     prompt: ask === "definition" ? card.definition : card.term,
     answer: ask === "definition" ? card.term : card.definition,
     imageUrl: card.imageUrl,
+    example: card.example,
   };
 }
 
@@ -79,6 +85,7 @@ export function trueFalse(cards: Card[], card: Card): TfQuestion {
     statement,
     answer: !lie,
     imageUrl: card.imageUrl,
+    example: card.example,
   };
 }
 

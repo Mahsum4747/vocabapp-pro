@@ -100,6 +100,7 @@ function CreatePage() {
                     id: crypto.randomUUID(),
                     term: card.term,
                     definition: card.definition,
+                    example: card.example,
                   })),
                 );
               }}
