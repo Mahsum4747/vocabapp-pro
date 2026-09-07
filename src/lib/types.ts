@@ -67,4 +67,45 @@ export const SUBJECTS = [
 
 export type Subject = (typeof SUBJECTS)[number];
 
+
 export const MASTERY_MAX = 5;
+export type LearningState = "new" | "learning" | "review" | "mastered";
+
+export type ReviewRating = "again" | "hard" | "good" | "easy";
+
+export type CardProgress = {
+  userId: string;
+  cardId: string;
+  setId: string;
+  state: LearningState;
+  masteryScore: number;
+  totalReviews: number;
+  correctReviews: number;
+  consecutiveCorrect: number;
+  lastReviewedAt: number | null;
+  nextReviewAt: number | null;
+  stability?: number;
+  difficulty?: number;
+};
+
+export type ReviewEvent = {
+  id?: string;
+  userId: string;
+  cardId: string;
+  setId: string;
+  rating: ReviewRating;
+  reviewedAt: number;
+  responseTimeMs?: number;
+  previousState?: LearningState;
+  newState?: LearningState;
+  previousMasteryScore?: number;
+  newMasteryScore?: number;
+};
+
+export type DailyStats = {
+  date: string;
+  reviews: number;
+  uniqueWords: number;
+  mastered: number;
+  studySeconds: number;
+};

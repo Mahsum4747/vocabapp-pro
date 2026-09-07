@@ -356,3 +356,71 @@ export const moveCardsToSet = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
   .validator((input: TransferCardsInput) => input)
   .handler(({ context, data }) => transferCards(context.userId, data, true));
+
+  import type { CardProgress, ReviewEvent, DailyStats } from "./types";
+
+export const getCardProgress = createServerFn({ method: "GET" })
+  .middleware([authMiddleware])
+  .validator((input: { cardId: string }) => input)
+  .handler(async ({ context, data }) => {
+    const { getAdminFirestore } = await import("./firebase-admin.server");
+    const db = getAdminFirestore();
+    const doc = await db
+      .collection("users")
+      .doc(context.userId)
+      .collection("cardProgress")
+      .doc(data.cardId)
+      .get();
+    if (!doc.exists) return null;
+    return doc.data() as CardProgress;
+  });
+
+export const upsertCardProgress = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
+  .validator((input: CardProgress) => input)
+  .handler(async ({ context, data }) => {
+    const { getAdminFirestore } = await import("./firebase-admin.server");
+    const db = getAdminFirestore();
+    const ref = db
+      .collection("users")
+      .doc(context.userId)
+      .collection("cardProgress")
+      .doc(data.cardId);
+    await ref.set({ ...data, userId: context.userId }, { merge: true });
+    return { ok: true };
+  });
+
+export const appendReviewEvent = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
+  .validator((input: Omit<ReviewEvent, "userId">) => input)
+  .handler(async ({ context, data }) => {
+    const { getAdminFirestore } = await import("./firebase-admin.server");
+    const db = getAdminFirestore();
+    const eventsRef = db
+      .collection("users")
+      .doc(context.userId)
+      .collection("reviewEvents");
+    const newDocRef = eventsRef.doc();
+    const eventData: ReviewEvent = {
+      ...data,
+      id: newDocRef.id,
+      userId: context.userId,
+    };
+    await newDocRef.set(eventData);
+    return eventData;
+  });
+
+export const upsertDailyStats = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
+  .validator((input: DailyStats) => input)
+  .handler(async ({ context, data }) => {
+    const { getAdminFirestore } = await import("./firebase-admin.server");
+    const db = getAdminFirestore();
+    const ref = db
+      .collection("users")
+      .doc(context.userId)
+      .collection("dailyStats")
+      .doc(data.date);
+    await ref.set(data, { merge: true });
+    return data;
+  });
