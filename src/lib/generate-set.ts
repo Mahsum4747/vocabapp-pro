@@ -137,6 +137,17 @@ export const generateStudySet = createServerFn({ method: "POST" })
               responseMimeType: "application/json",
               responseSchema: RESPONSE_SCHEMA,
             },
+            // Flashcard generation is benign educational content, but Gemini's
+            // default safety thresholds can over-block a prompt just for
+            // naming a minority/ethnic language (e.g. Kurdish) — relax them so
+            // a legitimate language name doesn't get the whole request
+            // silently filtered before any cards come back.
+            safetySettings: [
+              { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_ONLY_HIGH" },
+              { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_ONLY_HIGH" },
+              { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_ONLY_HIGH" },
+              { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_ONLY_HIGH" },
+            ],
           }),
         },
       );
@@ -154,13 +165,19 @@ export const generateStudySet = createServerFn({ method: "POST" })
     }
 
     const body = (await res.json()) as {
-      candidates?: { content?: { parts?: { text?: string }[] } }[];
+      candidates?: { content?: { parts?: { text?: string }[] }; finishReason?: string }[];
       promptFeedback?: { blockReason?: string };
     };
     const text = body.candidates?.[0]?.content?.parts?.[0]?.text;
     if (!text) {
-      console.error("Gemini returned no candidates:", body.promptFeedback);
-      return { ok: false as const, error: "Couldn't generate the set, try again." };
+      const blockReason = body.promptFeedback?.blockReason ?? body.candidates?.[0]?.finishReason;
+      console.error("Gemini returned no usable content:", blockReason, body.promptFeedback);
+      return {
+        ok: false as const,
+        error: blockReason
+          ? "The AI declined this topic/language combination. Try rephrasing the topic."
+          : "Couldn't generate the set, try again.",
+      };
     }
 
     let parsed: z.infer<typeof payloadSchema>;

@@ -34,6 +34,12 @@ const LANGUAGE_TAGS: Record<string, string> = {
   czech: "cs-CZ",
   romanian: "ro-RO",
   hungarian: "hu-HU",
+  kurdish: "ku",
+  kurmanci: "ku",
+  kurmancî: "ku",
+  kürtçe: "ku",
+  sorani: "ckb",
+  soranî: "ckb",
 };
 
 function toBcp47(language?: string): string | undefined {
