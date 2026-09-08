@@ -1,6 +1,36 @@
 import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
+// Type-only, so no firebase-admin code reaches the client bundle.
+import type { PartialWithFieldValue } from "firebase-admin/firestore";
 import { authMiddleware, optionalAuthMiddleware } from "./auth/middleware";
-import type { Card, StudySet } from "./types";
+import { isCorrectRating } from "./types";
+import type { Card, CardProgress, DailyStats, ReviewEvent, StudySet } from "./types";
+
+/** Firestore ids and the date key are path segments — keep them tight. */
+const idSchema = z.string().trim().min(1).max(200);
+
+const recordReviewSchema = z.object({
+  cardId: idSchema,
+  setId: idSchema,
+  rating: z.enum(["again", "hard", "good", "easy"]),
+  /**
+   * The viewer's LOCAL calendar day. The server can't derive it — deriving it
+   * from the server clock would file an evening review under tomorrow for
+   * anyone east of UTC. The strict shape also keeps it usable as a document
+   * id: Firestore reads "a/b/c" as a nested path, so an unvalidated string
+   * here would let a caller write outside the dailyStats collection.
+   */
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "date must be YYYY-MM-DD"),
+  /** Capped at an hour — a longer "response" is a tab left open, not study time. */
+  responseTimeMs: z
+    .number()
+    .int()
+    .min(0)
+    .max(60 * 60 * 1000)
+    .optional(),
+});
+
+const cardProgressQuerySchema = z.object({ cardId: idSchema });
 
 type DraftCard = {
   term: string;
@@ -357,11 +387,85 @@ export const moveCardsToSet = createServerFn({ method: "POST" })
   .validator((input: TransferCardsInput) => input)
   .handler(({ context, data }) => transferCards(context.userId, data, true));
 
-  import type { CardProgress, ReviewEvent, DailyStats } from "./types";
+/**
+ * Record one graded review: append the raw event, roll the card's counters
+ * forward, and add to the day's totals — one round trip, one transaction.
+ *
+ * The three collections live under `users/{userId}/`, where the id always
+ * comes from the verified session, never from the request body, so a caller
+ * can only ever write their own history.
+ *
+ * None of this touches mastery: `Card.mastery` on the set document stays the
+ * single authority for the mastery percentage and the Leitner boxes.
+ */
+export const recordReview = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
+  .validator((input: unknown) => recordReviewSchema.parse(input))
+  .handler(async ({ context, data }) => {
+    const { getAdminFirestore, FieldValue } = await import("./firebase-admin.server");
+    const db = getAdminFirestore();
 
+    // A review only makes sense against a set the caller can actually open —
+    // same rule as `getSetById`. Without this, any card/set id pair would be
+    // accepted and quietly fill the history with rows for sets that the
+    // caller can't see, or that don't exist at all.
+    const setDoc = await db.collection("study_sets").doc(data.setId).get();
+    if (!setDoc.exists) throw new Error("That set no longer exists.");
+    const studySet = setDoc.data() as StudySet;
+    if (studySet.ownerId !== context.userId && !studySet.isPublic) {
+      throw new Error("You don't have permission to study that set.");
+    }
+
+    const now = Date.now();
+    const correct = isCorrectRating(data.rating);
+    const userRef = db.collection("users").doc(context.userId);
+    const progressRef = userRef.collection("cardProgress").doc(data.cardId);
+    const eventRef = userRef.collection("reviewEvents").doc();
+    const dailyRef = userRef.collection("dailyStats").doc(data.date);
+
+    const event: ReviewEvent = {
+      id: eventRef.id,
+      userId: context.userId,
+      cardId: data.cardId,
+      setId: data.setId,
+      rating: data.rating,
+      reviewedAt: now,
+      ...(data.responseTimeMs !== undefined ? { responseTimeMs: data.responseTimeMs } : {}),
+    };
+
+    await db.runTransaction(async (tx) => {
+      // A streak has to be read before it can be extended or broken;
+      // everything else is an increment that needs no prior value.
+      const previous = (await tx.get(progressRef)).data() as CardProgress | undefined;
+
+      const progress: PartialWithFieldValue<CardProgress> = {
+        userId: context.userId,
+        cardId: data.cardId,
+        setId: data.setId,
+        totalReviews: FieldValue.increment(1),
+        correctReviews: FieldValue.increment(correct ? 1 : 0),
+        consecutiveCorrect: correct ? (previous?.consecutiveCorrect ?? 0) + 1 : 0,
+        lastReviewedAt: now,
+      };
+      const daily: PartialWithFieldValue<DailyStats> = {
+        date: data.date,
+        reviews: FieldValue.increment(1),
+        correctReviews: FieldValue.increment(correct ? 1 : 0),
+        studySeconds: FieldValue.increment(Math.round((data.responseTimeMs ?? 0) / 1000)),
+      };
+
+      tx.set(progressRef, progress, { merge: true });
+      tx.set(eventRef, event);
+      tx.set(dailyRef, daily, { merge: true });
+    });
+
+    return { ok: true as const, reviewedAt: now };
+  });
+
+/** One card's review counters for the signed-in user, or null if never reviewed. */
 export const getCardProgress = createServerFn({ method: "GET" })
   .middleware([authMiddleware])
-  .validator((input: { cardId: string }) => input)
+  .validator((input: unknown) => cardProgressQuerySchema.parse(input))
   .handler(async ({ context, data }) => {
     const { getAdminFirestore } = await import("./firebase-admin.server");
     const db = getAdminFirestore();
@@ -373,54 +477,4 @@ export const getCardProgress = createServerFn({ method: "GET" })
       .get();
     if (!doc.exists) return null;
     return doc.data() as CardProgress;
-  });
-
-export const upsertCardProgress = createServerFn({ method: "POST" })
-  .middleware([authMiddleware])
-  .validator((input: CardProgress) => input)
-  .handler(async ({ context, data }) => {
-    const { getAdminFirestore } = await import("./firebase-admin.server");
-    const db = getAdminFirestore();
-    const ref = db
-      .collection("users")
-      .doc(context.userId)
-      .collection("cardProgress")
-      .doc(data.cardId);
-    await ref.set({ ...data, userId: context.userId }, { merge: true });
-    return { ok: true };
-  });
-
-export const appendReviewEvent = createServerFn({ method: "POST" })
-  .middleware([authMiddleware])
-  .validator((input: Omit<ReviewEvent, "userId">) => input)
-  .handler(async ({ context, data }) => {
-    const { getAdminFirestore } = await import("./firebase-admin.server");
-    const db = getAdminFirestore();
-    const eventsRef = db
-      .collection("users")
-      .doc(context.userId)
-      .collection("reviewEvents");
-    const newDocRef = eventsRef.doc();
-    const eventData: ReviewEvent = {
-      ...data,
-      id: newDocRef.id,
-      userId: context.userId,
-    };
-    await newDocRef.set(eventData);
-    return eventData;
-  });
-
-export const upsertDailyStats = createServerFn({ method: "POST" })
-  .middleware([authMiddleware])
-  .validator((input: DailyStats) => input)
-  .handler(async ({ context, data }) => {
-    const { getAdminFirestore } = await import("./firebase-admin.server");
-    const db = getAdminFirestore();
-    const ref = db
-      .collection("users")
-      .doc(context.userId)
-      .collection("dailyStats")
-      .doc(data.date);
-    await ref.set(data, { merge: true });
-    return data;
   });

@@ -42,3 +42,14 @@ export function parseIntSearchParam(value: unknown): number | undefined {
   const n = Number(value);
   return Number.isFinite(n) ? Math.trunc(n) : undefined;
 }
+
+/**
+ * Today as YYYY-MM-DD in the viewer's own timezone, for keying per-day stats.
+ * Deliberately not `toISOString().slice(0, 10)`, which is UTC: that files an
+ * evening review under tomorrow's date for anyone east of UTC.
+ */
+export function localDateKey(date = new Date()): string {
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${date.getFullYear()}-${month}-${day}`;
+}

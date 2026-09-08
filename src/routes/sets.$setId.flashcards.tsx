@@ -11,7 +11,7 @@ import { useSet, useStudyStore } from "@/lib/store";
 import { isCardActive } from "@/lib/types";
 import { leitnerBoxOf } from "@/lib/quiz";
 import { parseIntSearchParam, shuffle } from "@/lib/utils";
-import { upsertCardProgress, appendReviewEvent, upsertDailyStats } from "@/lib/study-sets";
+import { logReview } from "@/lib/review-log";
 
 type Search = { box?: number };
 
@@ -87,57 +87,17 @@ function FlashcardsPage() {
     [order.length],
   );
 
-  const handleGrade = async (grade: -1 | 1) => {
-    if (!card) return;
+  function handleGrade(grade: -1 | 1) {
+    if (!card || !studySet) return;
 
     const isCorrect = grade === 1;
-    if (isCorrect) {
-      bumpMastery(setId, card.id, 1);
-      setKnowCount((n) => n + 1);
-    } else {
-      bumpMastery(setId, card.id, -1);
-      setStillLearningCount((n) => n + 1);
-    }
+    bumpMastery(setId, card.id, isCorrect ? 1 : -1);
+    if (isCorrect) setKnowCount((n) => n + 1);
+    else setStillLearningCount((n) => n + 1);
     go(1);
 
-    // Background sync with Phase 0.5 persistence layer
-    try {
-      const now = Date.now();
-      const currentScore = (card.mastery ?? 0) * 20;
-      const masteryScore = isCorrect ? Math.min(100, currentScore + 20) : Math.max(0, currentScore - 20);
-      const state = masteryScore === 100 ? "mastered" : masteryScore > 0 ? "learning" : "new";
-      const dateStr = new Date().toISOString().split("T")[0];
-
-      await upsertCardProgress({
-        cardId: card.id,
-        setId: setId,
-        state,
-        masteryScore,
-        totalReviews: 1,
-        correctReviews: isCorrect ? 1 : 0,
-        consecutiveCorrect: isCorrect ? (card.mastery ?? 0) + 1 : 0,
-        lastReviewedAt: now,
-        nextReviewAt: null,
-      } as any);
-
-      await appendReviewEvent({
-        cardId: card.id,
-        setId: setId,
-        rating: isCorrect ? "good" : "again",
-        reviewedAt: now,
-        responseTimeMs: 0,
-      } as any);
-
-      await upsertDailyStats({
-        date: dateStr,
-        reviewsCount: 1,
-        correctCount: isCorrect ? 1 : 0,
-        studyTimeMs: 0,
-      } as any);
-    } catch (err) {
-      console.error("Failed to sync progress:", err);
-    }
-  };
+    logReview({ setId: studySet.id, cardId: card.id, correct: isCorrect });
+  }
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -277,17 +237,10 @@ function FlashcardsPage() {
         >
           <Star className={card.starred ? "size-5 fill-fg text-fg" : "size-5"} />
         </Button>
-        <Button
-          variant="outline"
-          onClick={() => handleGrade(-1)}
-        >
+        <Button variant="outline" onClick={() => handleGrade(-1)}>
           Study again
         </Button>
-        <Button
-          onClick={() => handleGrade(1)}
-        >
-          I know it
-        </Button>
+        <Button onClick={() => handleGrade(1)}>I know it</Button>
       </div>
       <p className="mt-6 text-center text-xs text-subtle">
         Space to flip · arrow keys to move · S to star

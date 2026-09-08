@@ -67,45 +67,52 @@ export const SUBJECTS = [
 
 export type Subject = (typeof SUBJECTS)[number];
 
-
 export const MASTERY_MAX = 5;
-export type LearningState = "new" | "learning" | "review" | "mastered";
 
+/**
+ * How well a card went in one review. Only "again" counts as a failure; the
+ * other three are degrees of success.
+ */
 export type ReviewRating = "again" | "hard" | "good" | "easy";
 
+export function isCorrectRating(rating: ReviewRating): boolean {
+  return rating !== "again";
+}
+
+/**
+ * Per-card review history, derived from `reviewEvents` — counters only.
+ *
+ * Deliberately holds NO mastery of its own: `Card.mastery` (0..MASTERY_MAX)
+ * stays the single authority for mastery percentage and Leitner boxes. Two
+ * places computing "how well is this card known" would inevitably drift.
+ */
 export type CardProgress = {
   userId: string;
   cardId: string;
   setId: string;
-  state: LearningState;
-  masteryScore: number;
   totalReviews: number;
   correctReviews: number;
+  /** Reviews correct in a row, reset to 0 by a wrong answer. */
   consecutiveCorrect: number;
   lastReviewedAt: number | null;
-  nextReviewAt: number | null;
-  stability?: number;
-  difficulty?: number;
 };
 
+/** One graded review. The raw, append-only log everything else is derived from. */
 export type ReviewEvent = {
-  id?: string;
+  id: string;
   userId: string;
   cardId: string;
   setId: string;
   rating: ReviewRating;
+  /** Server clock, not the browser's. */
   reviewedAt: number;
   responseTimeMs?: number;
-  previousState?: LearningState;
-  newState?: LearningState;
-  previousMasteryScore?: number;
-  newMasteryScore?: number;
 };
 
+/** Per-day totals, keyed by the viewer's local calendar day (YYYY-MM-DD). */
 export type DailyStats = {
   date: string;
   reviews: number;
-  uniqueWords: number;
-  mastered: number;
+  correctReviews: number;
   studySeconds: number;
 };

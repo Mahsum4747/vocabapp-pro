@@ -1,3 +1,24 @@
+#!/usr/bin/env node
+/**
+ * One-off migration: create a zeroed `cardProgress` row for every existing
+ * card, so the review counters have somewhere to accumulate.
+ *
+ * These rows hold counters ONLY (totalReviews, correctReviews,
+ * consecutiveCorrect, lastReviewedAt). Mastery is not copied here:
+ * `Card.mastery` on the set document stays the single authority for the
+ * mastery percentage and the Leitner boxes.
+ *
+ * Strictly speaking this backfill is optional — `recordReview` creates the
+ * row on first review with a merge write. It exists so the collection
+ * reflects the full card inventory up front.
+ *
+ * DRY RUN BY DEFAULT — it only reports. Pass `--apply` to actually write.
+ *
+ *   node scripts/migrate-card-progress.mjs            # report only
+ *   node scripts/migrate-card-progress.mjs --apply    # write the changes
+ *
+ * Needs FIREBASE_CLIENT_EMAIL and FIREBASE_PRIVATE_KEY in the environment.
+ */
 import { initializeApp, cert } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 
@@ -21,26 +42,28 @@ initializeApp({
 const db = getFirestore();
 const isApply = process.argv.includes("--apply");
 
-// Mapping function: 0-5 to 0-100
-function mapMasteryToScore(mastery) {
-  const m = typeof mastery === "number" ? mastery : 0;
-  switch (Math.min(5, Math.max(0, m))) {
-    case 1: return 20;
-    case 2: return 40;
-    case 3: return 60;
-    case 4: return 80;
-    case 5: return 100;
-    default: return 0;
-  }
-}
-
 async function runMigration() {
   console.log(`🚀 Starting CardProgress migration (Dry-run: ${!isApply})...\n`);
 
   const setsSnapshot = await db.collection("study_sets").get();
   let totalSets = 0;
   let totalCardsProcessed = 0;
-  let progressDocsToWrite = [];
+  let skippedExisting = 0;
+  const progressDocsToWrite = [];
+
+  // Which cards already have a progress row, per owner. Writing a zeroed row
+  // over a card that has since been reviewed would reset real counters, and
+  // this script has to stay safe to re-run.
+  const existingByOwner = new Map();
+  async function existingFor(ownerId) {
+    let existing = existingByOwner.get(ownerId);
+    if (!existing) {
+      const snap = await db.collection("users").doc(ownerId).collection("cardProgress").get();
+      existing = new Set(snap.docs.map((d) => d.id));
+      existingByOwner.set(ownerId, existing);
+    }
+    return existing;
+  }
 
   for (const doc of setsSnapshot.docs) {
     const data = doc.data();
@@ -49,36 +72,45 @@ async function runMigration() {
 
     if (!ownerId || !Array.isArray(cards)) continue;
     totalSets++;
+    const existing = await existingFor(ownerId);
 
     for (const card of cards) {
       if (!card.id) continue;
       totalCardsProcessed++;
 
-      const masteryScore = mapMasteryToScore(card.mastery);
-      const state = masteryScore === 100 ? "mastered" : masteryScore > 0 ? "learning" : "new";
+      if (existing.has(card.id)) {
+        skippedExisting++;
+        continue;
+      }
 
+      // Counters start at zero. There is no review history for these cards —
+      // only Card.mastery, which stays where it is and remains the authority
+      // for mastery and Leitner boxes. Deriving "12 reviews, all correct"
+      // from a mastery level would invent a past that never happened and
+      // poison anything later built on these numbers.
       progressDocsToWrite.push({
         userId: ownerId,
         cardId: card.id,
         setId: doc.id,
-        state,
-        masteryScore,
-        totalReviews: card.mastery ? card.mastery * 2 : 0,
-        correctReviews: card.mastery ? card.mastery * 2 : 0,
-        consecutiveCorrect: card.mastery || 0,
+        totalReviews: 0,
+        correctReviews: 0,
+        consecutiveCorrect: 0,
         lastReviewedAt: null,
-        nextReviewAt: null,
       });
     }
   }
 
   console.log(`📊 Scanned ${totalSets} sets and ${totalCardsProcessed} cards.`);
+  console.log(`⏭️  Skipped ${skippedExisting} card(s) that already have progress.`);
   console.log(`📝 Prepared ${progressDocsToWrite.length} CardProgress records to migrate.`);
 
   // Show 5 sample records
   console.log("\n--- Sample Migrations (First 5) ---");
   progressDocsToWrite.slice(0, 5).forEach((p, idx) => {
-    console.log(`[${idx + 1}] User: ${p.userId} | Card: ${p.cardId} | Score: ${p.masteryScore}% | State: ${p.state}`);
+    console.log(
+      `[${idx + 1}] User: ${p.userId} | Card: ${p.cardId} | Set: ${p.setId} | ` +
+        `reviews: ${p.totalReviews} | correct: ${p.correctReviews} | streak: ${p.consecutiveCorrect}`,
+    );
   });
   console.log("------------------------------------\n");
 
