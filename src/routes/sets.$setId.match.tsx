@@ -5,10 +5,11 @@ import { EmptyState } from "@/components/empty-state";
 import { StudyChrome } from "@/components/study-chrome";
 import { Button } from "@/components/ui/button";
 import { leitnerBoxOf } from "@/lib/quiz";
-import { useSet, useStudyStore } from "@/lib/store";
+import { useSet, useSetProgress, useStudyStore } from "@/lib/store";
 import { isCardActive } from "@/lib/types";
 import { cn, parseIntSearchParam, shuffle } from "@/lib/utils";
-import { logReview } from "@/lib/review-log";
+import { queuedCards } from "@/lib/srs";
+import { ratingForOutcome, useReviewLogger } from "@/lib/review-log";
 
 type Search = { box?: number };
 
@@ -30,18 +31,24 @@ function MatchPage() {
   const { setId } = Route.useParams();
   const { box } = Route.useSearch();
   const studySet = useSet(setId);
-  const bumpMastery = useStudyStore((s) => s.bumpMastery);
+  const progress = useSetProgress(setId);
   const markStudied = useStudyStore((s) => s.markStudied);
+  const logReview = useReviewLogger();
   const [round, setRound] = useState(0);
 
   const boxCards = useMemo(() => {
     if (!studySet) return [];
     const active = studySet.cards.filter(isCardActive);
-    return box !== undefined ? active.filter((c) => leitnerBoxOf(c) === box) : active;
-  }, [studySet, box]);
+    return box !== undefined ? active.filter((c) => leitnerBoxOf(c, progress) === box) : active;
+  }, [studySet, box, progress]);
 
   const tiles = useMemo<Tile[]>(() => {
-    const picked = shuffle(boxCards.filter((c) => c.term && c.definition)).slice(0, 6);
+    // Take the six highest-priority cards, then shuffle only their tiles.
+    const picked = queuedCards(
+      boxCards.filter((c) => c.term && c.definition),
+      progress,
+      { now: Date.now() },
+    ).slice(0, 6);
     const both: Tile[] = picked.flatMap((card) => [
       { id: `${card.id}-t`, cardId: card.id, text: card.term, kind: "term" as const },
       { id: `${card.id}-d`, cardId: card.id, text: card.definition, kind: "definition" as const },
@@ -99,13 +106,15 @@ function MatchPage() {
     const ok = selected.cardId === tile.cardId && selected.kind !== tile.kind;
     if (ok) {
       setMatched((prev) => new Set([...prev, selected.id, tile.id]));
-      bumpMastery(setId, tile.cardId, 1);
       setSelected(null);
-      if (studySet) logReview({ setId: studySet.id, cardId: tile.cardId, correct: true });
+      if (studySet) {
+        logReview({ setId: studySet.id, cardId: tile.cardId, rating: ratingForOutcome(true) });
+      }
     } else {
       setWrong([selected.id, tile.id]);
-      bumpMastery(setId, selected.cardId, -1);
-      if (studySet) logReview({ setId: studySet.id, cardId: selected.cardId, correct: false });
+      if (studySet) {
+        logReview({ setId: studySet.id, cardId: selected.cardId, rating: ratingForOutcome(false) });
+      }
       window.setTimeout(() => {
         setWrong([]);
         setSelected(null);

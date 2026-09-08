@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SUBJECTS } from "@/lib/types";
 import { masteryPercent } from "@/lib/quiz";
-import { useStudyStore } from "@/lib/store";
+import { useProgress, useStudyStore } from "@/lib/store";
 
 type Search = { view?: "mine" | "public" };
 
@@ -31,12 +31,17 @@ function Home() {
   const fetchSets = useStudyStore((s) => s.fetchSets);
   const fetchPublicSets = useStudyStore((s) => s.fetchPublicSets);
   const fetchStreak = useStudyStore((s) => s.fetchStreak);
+  const fetchAllProgress = useStudyStore((s) => s.fetchAllProgress);
+  const progress = useProgress();
 
   useEffect(() => {
     fetchSets();
     fetchPublicSets();
     fetchStreak();
-  }, [fetchSets, fetchPublicSets, fetchStreak]);
+    // One query for the whole library, so every set card can show real
+    // mastery without a request per set.
+    fetchAllProgress();
+  }, [fetchSets, fetchPublicSets, fetchStreak, fetchAllProgress]);
   const { view: viewParam } = Route.useSearch();
   const [query, setQuery] = useState("");
   const [subject, setSubject] = useState<string>("All");
@@ -156,7 +161,8 @@ function Home() {
               {continueSet.title}
             </h2>
             <p className="mt-1 text-sm text-primary-fg/75">
-              {continueSet.cards.length} cards · {masteryPercent(continueSet.cards)}% progress
+              {continueSet.cards.length} cards · {masteryPercent(continueSet.cards, progress)}%
+              progress
             </p>
           </div>
           <span className="inline-flex h-11 items-center rounded-md bg-primary-fg px-4 text-sm font-medium text-primary">

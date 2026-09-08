@@ -13,10 +13,11 @@ import {
   type McQuestion,
   type WrittenQuestion,
 } from "@/lib/quiz";
-import { useSet, useStudyStore } from "@/lib/store";
+import { useSet, useSetProgress, useStudyStore } from "@/lib/store";
 import { isCardActive } from "@/lib/types";
-import { answersMatch, parseIntSearchParam, shuffle, cn } from "@/lib/utils";
-import { logReview } from "@/lib/review-log";
+import { answersMatch, parseIntSearchParam, cn } from "@/lib/utils";
+import { queuedCards } from "@/lib/srs";
+import { ratingForOutcome, useReviewLogger } from "@/lib/review-log";
 
 type Search = { box?: number };
 
@@ -33,21 +34,31 @@ function LearnPage() {
   const { setId } = Route.useParams();
   const { box } = Route.useSearch();
   const studySet = useSet(setId);
-  const bumpMastery = useStudyStore((s) => s.bumpMastery);
+  const progress = useSetProgress(setId);
   const markStudied = useStudyStore((s) => s.markStudied);
+  const logReview = useReviewLogger();
   const [round, setRound] = useState(0);
 
   const boxCards = useMemo(() => {
     if (!studySet) return [];
     const active = studySet.cards.filter(isCardActive);
-    return box !== undefined ? active.filter((c) => leitnerBoxOf(c) === box) : active;
-  }, [studySet, box]);
+    return box !== undefined ? active.filter((c) => leitnerBoxOf(c, progress) === box) : active;
+  }, [studySet, box, progress]);
 
   const items = useMemo<Item[]>(() => {
-    const cards = shuffle(boxCards.filter((c) => c.term && c.definition));
-    return cards.map((card) =>
-      card.mastery >= 2 ? writtenQuestion(card) : multipleChoice(boxCards, card),
+    // Queue order (overdue → due → weak → new) rather than a plain shuffle.
+    const cards = queuedCards(
+      boxCards.filter((c) => c.term && c.definition),
+      progress,
+      { now: Date.now() },
     );
+    return cards.map((card) => {
+      // A card the scheduler considers established is asked by recall
+      // (type the term); anything still being learned gets multiple choice.
+      const state = progress[card.id]?.state;
+      const established = state === "review" || state === "mastered";
+      return established ? writtenQuestion(card) : multipleChoice(boxCards, card);
+    });
     // round forces a fresh shuffle
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [studySet?.id, box, round]);
@@ -63,6 +74,7 @@ function LearnPage() {
   const [revealed, setRevealed] = useState(false);
   const [correctCount, setCorrectCount] = useState(0);
   const [done, setDone] = useState(false);
+  const [shownAt, setShownAt] = useState(() => Date.now());
 
   useEffect(() => {
     markStudied(setId);
@@ -84,15 +96,20 @@ function LearnPage() {
     if (!item || !studySet) return;
     setRevealed(true);
     if (ok) setCorrectCount((n) => n + 1);
-    bumpMastery(setId, item.cardId, ok ? 1 : -1);
 
-    logReview({ setId: studySet.id, cardId: item.cardId, correct: ok });
+    logReview({
+      setId: studySet.id,
+      cardId: item.cardId,
+      rating: ratingForOutcome(ok),
+      responseTimeMs: Date.now() - shownAt,
+    });
   }
 
   function next() {
     setSelected(null);
     setWritten("");
     setRevealed(false);
+    setShownAt(Date.now());
     if (index + 1 >= items.length) {
       setDone(true);
       return;

@@ -7,11 +7,12 @@ import { FlashCard } from "@/components/flash-card";
 import { StudyChrome } from "@/components/study-chrome";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useSet, useStudyStore } from "@/lib/store";
-import { isCardActive } from "@/lib/types";
+import { useSet, useSetProgress, useStudyStore } from "@/lib/store";
+import { isCardActive, type ReviewRating } from "@/lib/types";
 import { leitnerBoxOf } from "@/lib/quiz";
+import { queuedCards } from "@/lib/srs";
 import { parseIntSearchParam, shuffle } from "@/lib/utils";
-import { logReview } from "@/lib/review-log";
+import { useReviewLogger } from "@/lib/review-log";
 
 type Search = { box?: number };
 
@@ -26,9 +27,10 @@ function FlashcardsPage() {
   const { setId } = Route.useParams();
   const { box } = Route.useSearch();
   const studySet = useSet(setId);
+  const progress = useSetProgress(setId);
   const toggleStar = useStudyStore((s) => s.toggleStar);
-  const bumpMastery = useStudyStore((s) => s.bumpMastery);
   const markStudied = useStudyStore((s) => s.markStudied);
+  const logReview = useReviewLogger();
 
   const [order, setOrder] = useState<string[]>([]);
   const [index, setIndex] = useState(0);
@@ -38,19 +40,25 @@ function FlashcardsPage() {
   // Session-only tally of grades given this visit — not persisted, resets on reload.
   const [stillLearningCount, setStillLearningCount] = useState(0);
   const [knowCount, setKnowCount] = useState(0);
+  // When the current card was first shown, for the scheduler's response time.
+  const [shownAt, setShownAt] = useState(() => Date.now());
 
   const boxCards = useMemo(() => {
     if (!studySet) return [];
     const active = studySet.cards.filter(isCardActive);
-    return box !== undefined ? active.filter((c) => leitnerBoxOf(c) === box) : active;
-  }, [studySet, box]);
+    return box !== undefined ? active.filter((c) => leitnerBoxOf(c, progress) === box) : active;
+  }, [studySet, box, progress]);
 
   const source = useMemo(() => {
-    const cards = starredOnly ? boxCards.filter((c) => c.starred) : boxCards;
-    return cards.length > 0 ? cards : boxCards;
-    // Keyed on the set id (not the studySet object) so starring/mastery
-    // updates during a round — which replace `studySet` with a new object —
-    // don't re-trigger the reset effect below and snap back to card 0.
+    const pool = starredOnly ? boxCards.filter((c) => c.starred) : boxCards;
+    const cards = pool.length > 0 ? pool : boxCards;
+    // Overdue first, then due, then weak, then new — the queue orders, the
+    // scheduler decided the due dates it reads.
+    return queuedCards(cards, progress, { now: Date.now() });
+    // Keyed on the set id (not the studySet object, and not `progress`) so a
+    // review landing mid-round — which replaces both with new objects — does
+    // not rebuild the queue and snap back to card 0. The queue is a snapshot
+    // taken when the round starts.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [studySet?.id, box, starredOnly]);
 
@@ -87,16 +95,20 @@ function FlashcardsPage() {
     [order.length],
   );
 
-  function handleGrade(grade: -1 | 1) {
+  function handleGrade(rating: ReviewRating) {
     if (!card || !studySet) return;
 
-    const isCorrect = grade === 1;
-    bumpMastery(setId, card.id, isCorrect ? 1 : -1);
-    if (isCorrect) setKnowCount((n) => n + 1);
-    else setStillLearningCount((n) => n + 1);
-    go(1);
+    if (rating === "again") setStillLearningCount((n) => n + 1);
+    else setKnowCount((n) => n + 1);
 
-    logReview({ setId: studySet.id, cardId: card.id, correct: isCorrect });
+    logReview({
+      setId: studySet.id,
+      cardId: card.id,
+      rating,
+      responseTimeMs: Date.now() - shownAt,
+    });
+    setShownAt(Date.now());
+    go(1);
   }
 
   useEffect(() => {
@@ -237,10 +249,21 @@ function FlashcardsPage() {
         >
           <Star className={card.starred ? "size-5 fill-fg text-fg" : "size-5"} />
         </Button>
-        <Button variant="outline" onClick={() => handleGrade(-1)}>
-          Study again
+      </div>
+      {/* The four FSRS ratings. How hard the recall felt is real information —
+          it is what lets the scheduler separate "barely remembered" from
+          "instant", so it is worth the extra buttons here. */}
+      <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <Button variant="outline" onClick={() => handleGrade("again")}>
+          Again
         </Button>
-        <Button onClick={() => handleGrade(1)}>I know it</Button>
+        <Button variant="outline" onClick={() => handleGrade("hard")}>
+          Hard
+        </Button>
+        <Button variant="secondary" onClick={() => handleGrade("good")}>
+          Good
+        </Button>
+        <Button onClick={() => handleGrade("easy")}>Easy</Button>
       </div>
       <p className="mt-6 text-center text-xs text-subtle">
         Space to flip · arrow keys to move · S to star

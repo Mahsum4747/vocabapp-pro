@@ -37,34 +37,37 @@ export const getStreak = createServerFn({ method: "GET" })
   });
 
 /**
- * Records a study session for today (UTC). Call once per study mode visit.
+ * Records study activity for today (UTC) for one user.
+ *
  * Same-day calls are idempotent; a gap of exactly one day extends the streak;
  * any longer gap (or no prior record) restarts it at 1.
+ *
+ * Server-side helper rather than a server function, because the caller is
+ * `recordReview` — a streak day is earned by actually completing a review, not
+ * by opening a study mode and walking away.
  */
-export const recordStudyActivity = createServerFn({ method: "POST" })
-  .middleware([authMiddleware])
-  .handler(async ({ context }): Promise<StreakInfo> => {
-    const { getAdminFirestore } = await import("./firebase-admin.server");
-    const db = getAdminFirestore();
-    const ref = db.collection("user_streaks").doc(context.userId);
-    const doc = await ref.get();
-    const today = todayUTC();
-    const previous = doc.exists
-      ? (doc.data() as { lastStudiedDate: string; currentStreak: number })
-      : null;
+export async function recordStudyActivityFor(userId: string): Promise<StreakInfo> {
+  const { getAdminFirestore } = await import("./firebase-admin.server");
+  const db = getAdminFirestore();
+  const ref = db.collection("user_streaks").doc(userId);
+  const doc = await ref.get();
+  const today = todayUTC();
+  const previous = doc.exists
+    ? (doc.data() as { lastStudiedDate: string; currentStreak: number })
+    : null;
 
-    let currentStreak: number;
-    if (!previous) {
-      currentStreak = 1;
-    } else if (previous.lastStudiedDate === today) {
-      currentStreak = previous.currentStreak;
-    } else if (daysBetween(today, previous.lastStudiedDate) === 1) {
-      currentStreak = previous.currentStreak + 1;
-    } else {
-      currentStreak = 1;
-    }
+  let currentStreak: number;
+  if (!previous) {
+    currentStreak = 1;
+  } else if (previous.lastStudiedDate === today) {
+    currentStreak = previous.currentStreak;
+  } else if (daysBetween(today, previous.lastStudiedDate) === 1) {
+    currentStreak = previous.currentStreak + 1;
+  } else {
+    currentStreak = 1;
+  }
 
-    const next: StreakInfo = { currentStreak, lastStudiedDate: today };
-    await ref.set(next);
-    return next;
-  });
+  const next: StreakInfo = { currentStreak, lastStudiedDate: today };
+  await ref.set(next);
+  return next;
+}

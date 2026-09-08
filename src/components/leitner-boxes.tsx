@@ -1,17 +1,19 @@
-import { leitnerBoxCounts } from "@/lib/quiz";
+import { leitnerBoxCounts, type ProgressMap } from "@/lib/quiz";
 import type { Card } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 export function LeitnerBoxes({
   cards,
+  progress,
   selectedBox,
   onSelectBox,
 }: {
   cards: Card[];
+  progress: ProgressMap;
   selectedBox: number | null;
   onSelectBox: (box: number | null) => void;
 }) {
-  const counts = leitnerBoxCounts(cards);
+  const counts = leitnerBoxCounts(cards, progress);
 
   return (
     <div className="flex gap-1.5">

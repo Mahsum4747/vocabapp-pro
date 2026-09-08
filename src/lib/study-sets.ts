@@ -3,8 +3,11 @@ import { z } from "zod";
 // Type-only, so no firebase-admin code reaches the client bundle.
 import type { PartialWithFieldValue } from "firebase-admin/firestore";
 import { authMiddleware, optionalAuthMiddleware } from "./auth/middleware";
+import { recordStudyActivityFor, type StreakInfo } from "./streak";
+import { defaultScheduler as scheduler } from "./srs";
+import { planReview } from "./review-plan";
 import { freshCardCopy, isCorrectRating } from "./types";
-import type { Card, CardProgress, DailyStats, ReviewEvent, StudySet } from "./types";
+import type { Card, CardProgress, DailyStats, StudySet } from "./types";
 
 /** Firestore ids and the date key are path segments — keep them tight. */
 const idSchema = z.string().trim().min(1).max(200);
@@ -31,6 +34,7 @@ const recordReviewSchema = z.object({
 });
 
 const cardProgressQuerySchema = z.object({ cardId: idSchema });
+const setProgressQuerySchema = z.object({ setId: idSchema });
 
 type DraftCard = {
   term: string;
@@ -40,7 +44,6 @@ type DraftCard = {
 };
 type DraftCardWithProgress = DraftCard & {
   starred?: boolean;
-  mastery?: number;
   status?: Card["status"];
 };
 
@@ -75,7 +78,6 @@ function toCards(drafts: DraftCard[]): Card[] {
       term: d.term.trim(),
       definition: d.definition.trim(),
       starred: false,
-      mastery: 0,
       imageUrl: d.imageUrl || null,
       example: d.example?.trim() || null,
     }))
@@ -212,6 +214,10 @@ export const replaceCards = createServerFn({ method: "POST" })
     }
     const existing = doc.data() as StudySet;
     const previous = new Map(existing.cards.map((c) => [c.term.trim().toLowerCase(), c]));
+    // Learning progress is keyed by card id, so a card that survives an edit
+    // has to keep its id — minting a new one on every save would orphan the
+    // user's whole review history for that card.
+    const usedIds = new Set<string>();
     const nextCards = data.cards
       .map((d): Card | null => {
         const term = d.term.trim();
@@ -219,16 +225,18 @@ export const replaceCards = createServerFn({ method: "POST" })
         if (!term && !definition) return null;
         const prior = previous.get(term.toLowerCase());
         const status = d.status ?? prior?.status;
+        // Two cards can share a term; only the first inherits the id.
+        const keptId = prior && !usedIds.has(prior.id) ? prior.id : uidServer();
+        usedIds.add(keptId);
         // An editor that knows about examples always sends the field (empty
         // string = cleared); one that doesn't omits it, so keep what's there.
         const example =
           d.example !== undefined ? d.example?.trim() || null : (prior?.example ?? null);
         return {
-          id: uidServer(),
+          id: keptId,
           term,
           definition,
           starred: d.starred ?? prior?.starred ?? false,
-          mastery: d.mastery ?? prior?.mastery ?? 0,
           imageUrl: d.imageUrl || null,
           example,
           ...(status ? { status } : {}),
@@ -382,15 +390,18 @@ export const moveCardsToSet = createServerFn({ method: "POST" })
   .handler(({ context, data }) => transferCards(context.userId, data, true));
 
 /**
- * Record one graded review: append the raw event, roll the card's counters
- * forward, and add to the day's totals — one round trip, one transaction.
+ * Record one graded review: append the raw event, advance the scheduler, roll
+ * the card's counters, and add to the day's totals — one round trip, one
+ * transaction.
  *
- * The three collections live under `users/{userId}/`, where the id always
- * comes from the verified session, never from the request body, so a caller
- * can only ever write their own history.
+ * This is the ONLY path that writes learning progress. The three collections
+ * live under `users/{userId}/`, where the id always comes from the verified
+ * session, never from the request body, so a caller can only ever write their
+ * own history.
  *
- * None of this touches mastery: `Card.mastery` on the set document stays the
- * single authority for the mastery percentage and the Leitner boxes.
+ * Scheduling happens here rather than on the client: the client can't be
+ * trusted to compute a due date, and running it inside the transaction means
+ * the next interval is always derived from the state actually stored.
  */
 export const recordReview = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
@@ -417,46 +428,61 @@ export const recordReview = createServerFn({ method: "POST" })
     const eventRef = userRef.collection("reviewEvents").doc();
     const dailyRef = userRef.collection("dailyStats").doc(data.date);
 
-    const event: ReviewEvent = {
-      id: eventRef.id,
-      userId: context.userId,
-      cardId: data.cardId,
-      setId: data.setId,
-      rating: data.rating,
-      reviewedAt: now,
-      ...(data.responseTimeMs !== undefined ? { responseTimeMs: data.responseTimeMs } : {}),
-    };
-
-    await db.runTransaction(async (tx) => {
-      // A streak has to be read before it can be extended or broken;
-      // everything else is an increment that needs no prior value.
+    const progress = await db.runTransaction(async (tx) => {
+      // The scheduler needs the state it is advancing from, and a streak of
+      // correct answers has to be read before it can be extended or broken.
       const previous = (await tx.get(progressRef)).data() as CardProgress | undefined;
 
-      const progress: PartialWithFieldValue<CardProgress> = {
+      const plan = planReview({
         userId: context.userId,
         cardId: data.cardId,
         setId: data.setId,
+        eventId: eventRef.id,
+        rating: data.rating,
+        date: data.date,
+        responseTimeMs: data.responseTimeMs,
+        previous: previous ?? null,
+        now,
+        scheduler,
+      });
+
+      // The counters are stored as increments so concurrent reviews of
+      // different cards can't clobber each other's totals; the resolved values
+      // in `plan.progress` are what gets returned to the client.
+      const update: PartialWithFieldValue<CardProgress> = {
+        ...plan.progress,
         totalReviews: FieldValue.increment(1),
         correctReviews: FieldValue.increment(correct ? 1 : 0),
-        consecutiveCorrect: correct ? (previous?.consecutiveCorrect ?? 0) + 1 : 0,
-        lastReviewedAt: now,
       };
       const daily: PartialWithFieldValue<DailyStats> = {
-        date: data.date,
-        reviews: FieldValue.increment(1),
-        correctReviews: FieldValue.increment(correct ? 1 : 0),
-        studySeconds: FieldValue.increment(Math.round((data.responseTimeMs ?? 0) / 1000)),
+        date: plan.daily.date,
+        reviews: FieldValue.increment(plan.daily.reviews),
+        correctReviews: FieldValue.increment(plan.daily.correctReviews),
+        studySeconds: FieldValue.increment(plan.daily.studySeconds),
       };
 
-      tx.set(progressRef, progress, { merge: true });
-      tx.set(eventRef, event);
+      tx.set(progressRef, update, { merge: true });
+      // A fresh document id every time: the log is append-only, never updated.
+      tx.set(eventRef, plan.event);
       tx.set(dailyRef, daily, { merge: true });
+
+      return plan.progress;
     });
 
-    return { ok: true as const, reviewedAt: now };
+    // A completed review is the study activity a streak should count — not
+    // merely opening a study mode. Best-effort: the review is already stored,
+    // so a streak hiccup must not fail the call.
+    let streak: StreakInfo | null = null;
+    try {
+      streak = await recordStudyActivityFor(context.userId);
+    } catch (error) {
+      console.error("Failed to record streak activity:", error);
+    }
+
+    return { ok: true as const, progress, streak };
   });
 
-/** One card's review counters for the signed-in user, or null if never reviewed. */
+/** One card's progress for the signed-in user, or null if never reviewed. */
 export const getCardProgress = createServerFn({ method: "GET" })
   .middleware([authMiddleware])
   .validator((input: unknown) => cardProgressQuerySchema.parse(input))
@@ -471,4 +497,70 @@ export const getCardProgress = createServerFn({ method: "GET" })
       .get();
     if (!doc.exists) return null;
     return doc.data() as CardProgress;
+  });
+
+/**
+ * Every progress row the signed-in user has for one set — the read path the
+ * study modes, the Leitner boxes and the mastery bar all run on.
+ *
+ * Scoped by `setId` rather than fetching the whole collection so opening a set
+ * costs one query regardless of how much history the user has elsewhere.
+ */
+export const getSetProgress = createServerFn({ method: "GET" })
+  .middleware([authMiddleware])
+  .validator((input: unknown) => setProgressQuerySchema.parse(input))
+  .handler(async ({ context, data }): Promise<CardProgress[]> => {
+    const { getAdminFirestore } = await import("./firebase-admin.server");
+    const db = getAdminFirestore();
+    const snap = await db
+      .collection("users")
+      .doc(context.userId)
+      .collection("cardProgress")
+      .where("setId", "==", data.setId)
+      .get();
+    return snap.docs.map((d) => d.data() as CardProgress);
+  });
+
+/**
+ * Every progress row the signed-in user has, across all their sets.
+ *
+ * One query for the whole library grid, instead of one per set card. Bounded
+ * by cards actually reviewed, not by cards owned.
+ */
+export const getAllProgress = createServerFn({ method: "GET" })
+  .middleware([authMiddleware])
+  .handler(async ({ context }): Promise<CardProgress[]> => {
+    const { getAdminFirestore } = await import("./firebase-admin.server");
+    const db = getAdminFirestore();
+    const snap = await db.collection("users").doc(context.userId).collection("cardProgress").get();
+    return snap.docs.map((d) => d.data() as CardProgress);
+  });
+
+/**
+ * Forget everything the signed-in user has learned about one set: their
+ * progress rows go, the set's content does not.
+ *
+ * The review event log is deliberately left alone — it is an append-only
+ * record of what actually happened, and resetting progress doesn't unhappen it.
+ */
+export const resetSetProgress = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
+  .validator((input: unknown) => setProgressQuerySchema.parse(input))
+  .handler(async ({ context, data }) => {
+    const { getAdminFirestore } = await import("./firebase-admin.server");
+    const db = getAdminFirestore();
+    const snap = await db
+      .collection("users")
+      .doc(context.userId)
+      .collection("cardProgress")
+      .where("setId", "==", data.setId)
+      .get();
+
+    // Firestore caps a batch at 500 writes.
+    for (let i = 0; i < snap.docs.length; i += 400) {
+      const batch = db.batch();
+      for (const doc of snap.docs.slice(i, i + 400)) batch.delete(doc.ref);
+      await batch.commit();
+    }
+    return { ok: true as const, cleared: snap.size };
   });

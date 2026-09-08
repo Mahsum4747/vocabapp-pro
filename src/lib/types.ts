@@ -1,3 +1,5 @@
+import type { SchedulerState } from "./srs/scheduler.ts";
+
 /**
  * "active" (default, absent = active) shows everywhere; "excluded" is
  * skipped by study modes but still listed (faded) — "I already know this,
@@ -6,12 +8,19 @@
  */
 export type CardStatus = "active" | "excluded" | "archived";
 
+/**
+ * Card CONTENT. Shared and copyable — a card means the same thing to every
+ * user who has it, so nothing user-specific belongs here. How well *you* know
+ * a card lives in `CardProgress`, under your own user id.
+ *
+ * (`starred` is the one remaining per-user flag; it is a bookmark on the set
+ * you own rather than learning state, and copies reset it.)
+ */
 export type Card = {
   id: string;
   term: string;
   definition: string;
   starred: boolean;
-  mastery: number;
   /** Optional card image (Firebase Storage download URL). Null = no image. */
   imageUrl: string | null;
   /**
@@ -29,9 +38,10 @@ export function isCardActive(card: Card): boolean {
 
 /**
  * A card as it should land in someone else's library: the same content, none
- * of the original owner's progress or curation. Mastery and starring reset,
- * and the status goes back to active (absent = active), so a copied set is
- * never pre-marked as learned, starred, excluded or archived.
+ * of the original owner's curation. Starring resets and the status goes back
+ * to active (absent = active), so a copied set is never pre-marked as starred,
+ * excluded or archived. Learning progress needs no resetting here — it lives
+ * under each user's own id, so a copier simply has none yet.
  *
  * Shared by both copy paths — a whole public set, and individual cards moved
  * or copied between sets — so the two can't drift apart again.
@@ -47,7 +57,6 @@ export function freshCardCopy(card: Card, id: string): Card {
     imageUrl: card.imageUrl,
     example: card.example ?? null,
     starred: false,
-    mastery: 0,
   };
 }
 
@@ -104,13 +113,14 @@ export function isCorrectRating(rating: ReviewRating): boolean {
 }
 
 /**
- * Per-card review history, derived from `reviewEvents` — counters only.
+ * One user's progress on one card: the scheduler's memory state, the review
+ * counters derived from `reviewEvents`, and the mastery score shown in the UI.
  *
- * Deliberately holds NO mastery of its own: `Card.mastery` (0..MASTERY_MAX)
- * stays the single authority for mastery percentage and Leitner boxes. Two
- * places computing "how well is this card known" would inevitably drift.
+ * This is the single authority for how well a card is known. Card content is
+ * shared and copyable; this is not — it is stored under the user's own id, so
+ * two people studying the same public set have entirely separate progress.
  */
-export type CardProgress = {
+export type CardProgress = SchedulerState & {
   userId: string;
   cardId: string;
   setId: string;
@@ -119,7 +129,37 @@ export type CardProgress = {
   /** Reviews correct in a row, reset to 0 by a wrong answer. */
   consecutiveCorrect: number;
   lastReviewedAt: number | null;
+  /**
+   * 0..100, derived from scheduler state for display and the Leitner boxes.
+   * A product metric only: the scheduler never reads it back, so it cannot
+   * influence when a card is next shown.
+   */
+  masteryScore: number;
+  /** Which scheduler produced the state above, so stored rows stay traceable. */
+  scheduler: string;
 };
+
+/** Progress for a card that has never been reviewed. */
+export function initialProgress(
+  userId: string,
+  cardId: string,
+  setId: string,
+  state: SchedulerState,
+  scheduler: string,
+): CardProgress {
+  return {
+    ...state,
+    userId,
+    cardId,
+    setId,
+    totalReviews: 0,
+    correctReviews: 0,
+    consecutiveCorrect: 0,
+    lastReviewedAt: null,
+    masteryScore: 0,
+    scheduler,
+  };
+}
 
 /** One graded review. The raw, append-only log everything else is derived from. */
 export type ReviewEvent = {

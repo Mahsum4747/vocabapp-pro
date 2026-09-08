@@ -7,10 +7,11 @@ import { StudyChrome } from "@/components/study-chrome";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { buildTest, leitnerBoxOf, type TestQuestion } from "@/lib/quiz";
-import { useSet, useStudyStore } from "@/lib/store";
+import { queuedCards } from "@/lib/srs";
+import { useSet, useSetProgress, useStudyStore } from "@/lib/store";
 import { isCardActive } from "@/lib/types";
 import { answersMatch, parseIntSearchParam, cn } from "@/lib/utils";
-import { logReview } from "@/lib/review-log";
+import { ratingForOutcome, useReviewLogger } from "@/lib/review-log";
 
 type Search = { box?: number };
 
@@ -25,18 +26,21 @@ function TestPage() {
   const { setId } = Route.useParams();
   const { box } = Route.useSearch();
   const studySet = useSet(setId);
-  const bumpMastery = useStudyStore((s) => s.bumpMastery);
+  const progress = useSetProgress(setId);
   const markStudied = useStudyStore((s) => s.markStudied);
+  const logReview = useReviewLogger();
   const [round, setRound] = useState(0);
 
   const boxCards = useMemo(() => {
     if (!studySet) return [];
     const active = studySet.cards.filter(isCardActive);
-    return box !== undefined ? active.filter((c) => leitnerBoxOf(c) === box) : active;
-  }, [studySet, box]);
+    return box !== undefined ? active.filter((c) => leitnerBoxOf(c, progress) === box) : active;
+  }, [studySet, box, progress]);
 
   const questions = useMemo<TestQuestion[]>(() => {
-    return buildTest(boxCards, Math.min(12, boxCards.length));
+    // Queue first so a test covers what is actually due, then build.
+    const queued = queuedCards(boxCards, progress, { now: Date.now() });
+    return buildTest(queued, Math.min(12, queued.length));
     // snapshot per round so grading doesn't reshuffle
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [studySet?.id, box, round]);
@@ -54,6 +58,7 @@ function TestPage() {
   const [score, setScore] = useState(0);
   const [missed, setMissed] = useState<string[]>([]);
   const [done, setDone] = useState(false);
+  const [shownAt, setShownAt] = useState(() => Date.now());
 
   useEffect(() => {
     markStudied(setId);
@@ -81,9 +86,14 @@ function TestPage() {
       const card = studySet.cards.find((c) => c.id === q.cardId);
       if (card) setMissed((m) => [...m, card.term]);
     }
-    bumpMastery(setId, q.cardId, ok ? 1 : -1);
-
-    logReview({ setId: studySet.id, cardId: q.cardId, correct: ok });
+    // Test keeps its Correct/Incorrect UX — Hard and Easy have no meaning for
+    // a typed or clicked answer — and maps onto the matching ratings.
+    logReview({
+      setId: studySet.id,
+      cardId: q.cardId,
+      rating: ratingForOutcome(ok),
+      responseTimeMs: Date.now() - shownAt,
+    });
   }
 
   function next() {
@@ -91,6 +101,7 @@ function TestPage() {
     setWritten("");
     setTf(null);
     setRevealed(false);
+    setShownAt(Date.now());
     if (index + 1 >= questions.length) {
       setDone(true);
       return;

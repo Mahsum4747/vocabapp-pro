@@ -3,14 +3,15 @@ import { BookOpen, Layers } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import type { Card, StudySet } from "@/lib/types";
 import { MASTERY_MAX } from "@/lib/types";
-import { leitnerBoxCounts, masteryPercent } from "@/lib/quiz";
+import { leitnerBoxCounts, masteryPercent, type ProgressMap } from "@/lib/quiz";
+import { useProgress } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import { Badge } from "./ui/badge";
 import { Progress } from "./ui/progress";
 
 /** Glance-level signal: one tiny bar per Leitner box, terracotta (needs review) fading to sage (mastered). */
-function MiniLeitner({ cards }: { cards: Card[] }) {
-  const counts = leitnerBoxCounts(cards);
+function MiniLeitner({ cards, progress }: { cards: Card[]; progress: ProgressMap }) {
+  const counts = leitnerBoxCounts(cards, progress);
   const max = Math.max(1, ...counts);
 
   return (
@@ -31,7 +32,10 @@ function MiniLeitner({ cards }: { cards: Card[] }) {
 }
 
 export function SetCard({ set }: { set: StudySet }) {
-  const mastery = masteryPercent(set.cards);
+  // Whatever progress the library page has already loaded; an unstudied set
+  // simply reads as 0.
+  const progress = useProgress();
+  const mastery = masteryPercent(set.cards, progress);
   const when = set.lastStudiedAt
     ? formatDistanceToNow(set.lastStudiedAt, { addSuffix: true })
     : "Not studied yet";
@@ -58,7 +62,7 @@ export function SetCard({ set }: { set: StudySet }) {
           Reference
         </span>
       ) : (
-        <MiniLeitner cards={set.cards} />
+        <MiniLeitner cards={set.cards} progress={progress} />
       )}
       <p className="mt-2 line-clamp-2 min-h-10 text-sm text-muted">
         {set.description || "No description"}

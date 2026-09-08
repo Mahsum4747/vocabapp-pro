@@ -1,5 +1,6 @@
+import { useEffect } from "react";
 import { create } from "zustand";
-import type { CardStatus, StudySet } from "./types";
+import type { CardProgress, CardStatus, ReviewRating, StudySet } from "./types";
 import {
   getMySets,
   getSetById as getSetByIdFn,
@@ -12,12 +13,13 @@ import {
   copyPublicSet as copyPublicSetFn,
   copyCardsToSet as copyCardsToSetFn,
   moveCardsToSet as moveCardsToSetFn,
+  recordReview as recordReviewFn,
+  getSetProgress as getSetProgressFn,
+  getAllProgress as getAllProgressFn,
+  resetSetProgress as resetSetProgressFn,
 } from "./study-sets";
-import {
-  getStreak as getStreakFn,
-  recordStudyActivity as recordStudyActivityFn,
-  type StreakInfo,
-} from "./streak";
+import { getStreak as getStreakFn, type StreakInfo } from "./streak";
+import { localDateKey } from "./utils";
 
 type DraftCard = {
   term: string;
@@ -31,6 +33,14 @@ type StudyState = {
   publicSets: StudySet[];
   isLoaded: boolean;
   streak: StreakInfo | null;
+  /**
+   * The signed-in user's learning progress, keyed by card id. Flat rather
+   * than nested per set: a card id is unique, and every read site (mastery
+   * bar, Leitner boxes, review queue) wants a card-id lookup.
+   */
+  progress: Record<string, CardProgress>;
+  /** Set ids whose progress has been fetched, so a set isn't refetched per mode. */
+  loadedProgressSetIds: string[];
   fetchSets: () => Promise<void>;
   fetchSetById: (id: string) => Promise<StudySet | null>;
   fetchPublicSets: () => Promise<void>;
@@ -56,8 +66,22 @@ type StudyState = {
   replaceCards: (id: string, cards: DraftCard[]) => Promise<void>;
   deleteSet: (id: string) => Promise<void>;
   toggleStar: (setId: string, cardId: string) => Promise<void>;
-  bumpMastery: (setId: string, cardId: string, delta: number) => Promise<void>;
-  resetMastery: (setId: string) => Promise<void>;
+  /** Load this set's progress rows for the signed-in user. */
+  fetchSetProgress: (setId: string) => Promise<void>;
+  /** Load every progress row the user has — one query for the whole library. */
+  fetchAllProgress: () => Promise<void>;
+  /**
+   * Record one graded review. The single client entry point into the SRS
+   * engine — the server schedules, this just stores what came back.
+   */
+  recordReview: (input: {
+    setId: string;
+    cardId: string;
+    rating: ReviewRating;
+    responseTimeMs?: number;
+  }) => Promise<void>;
+  /** Forget this set's learning progress (content is untouched). */
+  resetProgress: (setId: string) => Promise<void>;
   setCardStatus: (setId: string, cardId: string, status: CardStatus) => Promise<void>;
   markStudied: (setId: string) => Promise<void>;
   importSet: (set: StudySet) => Promise<string>;
@@ -90,6 +114,8 @@ export const useStudyStore = create<StudyState>()((set, get) => ({
   publicSets: [],
   isLoaded: false,
   streak: null,
+  progress: {},
+  loadedProgressSetIds: [],
 
   fetchSets: async () => {
     try {
@@ -170,11 +196,12 @@ export const useStudyStore = create<StudyState>()((set, get) => ({
     set({ sets: get().sets.filter((s) => s.id !== setId) });
   },
 
-  // Starring/mastery are per-card progress on the set's own document — only
-  // its owner can persist them (server-enforced). Studying someone else's
-  // public set still updates this tab's view optimistically so the mode
-  // itself works end-to-end; it just doesn't stick past a reload for a
-  // non-owner, which is expected since it isn't "your" set to track.
+  // Starring lives on the set document, so only its owner can persist it
+  // (server-enforced). Studying someone else's public set still updates this
+  // tab's view optimistically so the mode works end-to-end; it just doesn't
+  // stick past a reload for a non-owner, which is expected since it isn't
+  // "your" set to curate. Learning progress is NOT like this — it is stored
+  // per user, so it persists for everyone (see recordReview below).
   toggleStar: async (setId, cardId) => {
     const targetSet = findSet(get().sets, setId);
     if (!targetSet) return;
@@ -191,39 +218,69 @@ export const useStudyStore = create<StudyState>()((set, get) => ({
     }
   },
 
-  bumpMastery: async (setId, cardId, delta) => {
-    const targetSet = findSet(get().sets, setId);
-    if (!targetSet) return;
-    const updatedCards = targetSet.cards.map((card) =>
-      card.id === cardId
-        ? { ...card, mastery: Math.min(5, Math.max(0, card.mastery + delta)) }
-        : card,
-    );
-    set({
-      sets: get().sets.map((s) => (s.id !== targetSet.id ? s : { ...s, cards: updatedCards })),
-    });
+  fetchSetProgress: async (setId) => {
+    const resolvedId = findSet(get().sets, setId)?.id ?? setId;
     try {
-      await replaceCardsFn({ data: { id: targetSet.id, cards: updatedCards } });
+      const rows = await getSetProgressFn({ data: { setId: resolvedId } });
+      const next = { ...get().progress };
+      for (const row of rows) next[row.cardId] = row;
+      set({
+        progress: next,
+        loadedProgressSetIds: Array.from(new Set([...get().loadedProgressSetIds, resolvedId])),
+      });
     } catch (error) {
-      console.error("Failed to save mastery:", error);
+      // Signed out, or someone else's set — study still works, it just shows
+      // no prior progress.
+      console.error("Failed to load progress:", error);
     }
   },
 
-  resetMastery: async (setId) => {
-    const targetSet = findSet(get().sets, setId);
-    if (!targetSet) return;
-    const updatedCards = targetSet.cards.map((card) => ({ ...card, mastery: 0 }));
-    await replaceCardsFn({ data: { id: targetSet.id, cards: updatedCards } });
-    const now = Date.now();
+  fetchAllProgress: async () => {
+    try {
+      const rows = await getAllProgressFn();
+      const next: Record<string, CardProgress> = {};
+      for (const row of rows) next[row.cardId] = row;
+      set({
+        progress: { ...get().progress, ...next },
+        loadedProgressSetIds: Array.from(
+          new Set([...get().loadedProgressSetIds, ...rows.map((r) => r.setId)]),
+        ),
+      });
+    } catch (error) {
+      console.error("Failed to load progress:", error);
+    }
+  },
+
+  recordReview: async ({ setId, cardId, rating, responseTimeMs }) => {
+    const resolvedId = findSet(get().sets, setId)?.id ?? setId;
+    const result = await recordReviewFn({
+      data: {
+        setId: resolvedId,
+        cardId,
+        rating,
+        date: localDateKey(),
+        ...(responseTimeMs !== undefined ? { responseTimeMs } : {}),
+      },
+    });
+    // The server returns the scheduled state it just stored, so the mastery
+    // bar and Leitner boxes update without a refetch.
     set({
-      sets: get().sets.map((s) =>
-        s.id !== targetSet.id ? s : { ...s, updatedAt: now, cards: updatedCards },
-      ),
+      progress: { ...get().progress, [cardId]: result.progress },
+      ...(result.streak ? { streak: result.streak } : {}),
     });
   },
 
-  // Curation, not progress — owner-only in the UI, so unlike toggleStar/
-  // bumpMastery this doesn't need to tolerate a non-owner viewer.
+  resetProgress: async (setId) => {
+    const resolvedId = findSet(get().sets, setId)?.id ?? setId;
+    await resetSetProgressFn({ data: { setId: resolvedId } });
+    const cardIds = new Set(findSet(get().sets, setId)?.cards.map((c) => c.id) ?? []);
+    const next = { ...get().progress };
+    for (const id of cardIds) delete next[id];
+    set({ progress: next });
+  },
+
+  // Curation, not progress — owner-only in the UI, so unlike toggleStar this
+  // doesn't need to tolerate a non-owner viewer.
   setCardStatus: async (setId, cardId, status) => {
     const targetSet = findSet(get().sets, setId);
     if (!targetSet) return;
@@ -245,17 +302,12 @@ export const useStudyStore = create<StudyState>()((set, get) => ({
       ),
     });
     try {
-      // Only the owner can persist `updatedAt` on the set's own document —
-      // studying someone else's public set still counts for YOUR streak below.
+      // Only the owner can persist `updatedAt` on the set's own document.
+      // This marks "you opened this set", nothing more — the streak is driven
+      // by completed reviews, server-side, inside recordReview.
       await updateSetMetaFn({ data: { id: resolvedId, patch: {} } });
     } catch (error) {
       console.error("Failed to record set activity:", error);
-    }
-    try {
-      const streak = await recordStudyActivityFn();
-      set({ streak });
-    } catch (error) {
-      console.error("Failed to record study activity:", error);
     }
   },
 
@@ -353,4 +405,33 @@ export const useStudyStore = create<StudyState>()((set, get) => ({
 
 export function useSet(id: string | undefined) {
   return useStudyStore((state) => (id ? findSet(state.sets, id) : undefined));
+}
+
+/**
+ * The signed-in user's progress, keyed by card id — the read path for the
+ * mastery bar, the Leitner boxes and the review queue.
+ *
+ * Returns the whole map rather than slicing per set: it is one object
+ * reference, so components re-render only when a review actually lands.
+ */
+export function useProgress(): Record<string, CardProgress> {
+  return useStudyStore((state) => state.progress);
+}
+
+/**
+ * Load a set's progress once. Safe to call from every study mode — the second
+ * caller for the same set is a no-op.
+ */
+export function useSetProgress(setId: string | undefined) {
+  const progress = useProgress();
+  const fetchSetProgress = useStudyStore((s) => s.fetchSetProgress);
+  const loaded = useStudyStore((s) => s.loadedProgressSetIds);
+  const resolvedId = useSet(setId)?.id;
+
+  useEffect(() => {
+    if (!resolvedId || loaded.includes(resolvedId)) return;
+    void fetchSetProgress(resolvedId);
+  }, [resolvedId, loaded, fetchSetProgress]);
+
+  return progress;
 }

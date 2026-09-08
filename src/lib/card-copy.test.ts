@@ -2,7 +2,7 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { freshCardCopy, isCardActive, type Card } from "./types.ts";
 
-/** A card carrying every bit of the original owner's progress and curation. */
+/** A card carrying every bit of the original owner's curation. */
 function usedCard(overrides: Partial<Card> = {}): Card {
   return {
     id: "source-card-1",
@@ -11,18 +11,27 @@ function usedCard(overrides: Partial<Card> = {}): Card {
     example: "Gib mir das Buch zurück!",
     imageUrl: null,
     starred: true,
-    mastery: 5,
     status: "excluded",
     ...overrides,
   };
 }
 
 describe("freshCardCopy", () => {
-  it("resets the original owner's progress", () => {
+  it("resets the original owner's curation", () => {
     const copy = freshCardCopy(usedCard(), "new-id");
 
-    assert.equal(copy.mastery, 0);
     assert.equal(copy.starred, false);
+  });
+
+  it("carries no learning state at all", () => {
+    // Progress is user-scoped and lives in CardProgress, so a copied card has
+    // nothing to reset — there is no per-user field on the card to inherit.
+    const copy = freshCardCopy(usedCard(), "new-id") as Record<string, unknown>;
+
+    assert.equal("mastery" in copy, false);
+    assert.equal("masteryScore" in copy, false);
+    assert.equal("stability" in copy, false);
+    assert.equal("dueAt" in copy, false);
   });
 
   it("resets status to active, whatever the source was", () => {
@@ -61,7 +70,6 @@ describe("freshCardCopy", () => {
     const source = usedCard();
     freshCardCopy(source, "new-id");
 
-    assert.equal(source.mastery, 5);
     assert.equal(source.starred, true);
     assert.equal(source.status, "excluded");
   });
@@ -73,16 +81,15 @@ describe("copying a whole set", () => {
   // owner's mastery, stars and excluded/archived flags.
   it("gives every card a clean slate and a unique id", () => {
     const source: Card[] = [
-      usedCard({ id: "a", term: "eins", mastery: 3, starred: true, status: "archived" }),
-      usedCard({ id: "b", term: "zwei", mastery: 5, starred: false, status: "excluded" }),
-      usedCard({ id: "c", term: "drei", mastery: 1, starred: true, status: undefined }),
+      usedCard({ id: "a", term: "eins", starred: true, status: "archived" }),
+      usedCard({ id: "b", term: "zwei", starred: false, status: "excluded" }),
+      usedCard({ id: "c", term: "drei", starred: true, status: undefined }),
     ];
 
     let counter = 0;
     const copied = source.map((card) => freshCardCopy(card, `copy-${counter++}`));
 
     for (const card of copied) {
-      assert.equal(card.mastery, 0);
       assert.equal(card.starred, false);
       assert.ok(isCardActive(card));
     }

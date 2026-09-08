@@ -1,6 +1,10 @@
-import type { Card } from "./types";
-import { isCardActive, MASTERY_MAX } from "./types";
-import { shuffle } from "./utils";
+import type { Card, CardProgress } from "./types.ts";
+import { isCardActive, MASTERY_MAX } from "./types.ts";
+import { leitnerBoxOfScore } from "./srs/mastery.ts";
+import { shuffle } from "./utils.ts";
+
+/** Per-card progress for the signed-in user, keyed by card id. */
+export type ProgressMap = Record<string, CardProgress>;
 
 export type McQuestion = {
   type: "mc";
@@ -100,26 +104,30 @@ export function buildTest(cards: Card[], limit = 12): TestQuestion[] {
   });
 }
 
+// Mastery and Leitner boxes are per-user, so they read the signed-in user's
+// CardProgress rather than anything on the shared card. A card with no
+// progress row simply hasn't been studied yet, and counts as 0.
+//
 // Excluded/archived cards aren't part of the working set — they don't count
 // toward mastery or Leitner box totals.
-export function masteryPercent(cards: Card[]) {
+export function masteryPercent(cards: Card[], progress: ProgressMap): number {
   const active = cards.filter(isCardActive);
   if (active.length === 0) return 0;
-  const sum = active.reduce((acc, card) => acc + card.mastery, 0);
-  return Math.round((sum / (active.length * 5)) * 100);
+  const sum = active.reduce((acc, card) => acc + (progress[card.id]?.masteryScore ?? 0), 0);
+  return Math.round(sum / active.length);
 }
 
-/** Which Leitner box (0..MASTERY_MAX) a card's mastery level sits in. */
-export function leitnerBoxOf(card: Card): number {
-  return Math.min(Math.max(Math.round(card.mastery), 0), MASTERY_MAX);
+/** Which Leitner box (0..MASTERY_MAX) a card currently sits in for this user. */
+export function leitnerBoxOf(card: Card, progress: ProgressMap): number {
+  return leitnerBoxOfScore(progress[card.id]?.masteryScore ?? 0);
 }
 
-/** Leitner box counts: index N is how many active cards sit at mastery level N (0..MASTERY_MAX). */
-export function leitnerBoxCounts(cards: Card[]): number[] {
+/** Leitner box counts: index N is how many active cards sit in box N (0..MASTERY_MAX). */
+export function leitnerBoxCounts(cards: Card[], progress: ProgressMap): number[] {
   const counts = new Array(MASTERY_MAX + 1).fill(0) as number[];
   for (const card of cards) {
     if (!isCardActive(card)) continue;
-    counts[leitnerBoxOf(card)] += 1;
+    counts[leitnerBoxOf(card, progress)] += 1;
   }
   return counts;
 }

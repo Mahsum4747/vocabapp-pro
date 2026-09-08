@@ -44,9 +44,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { masteryPercent } from "@/lib/quiz";
+import { masteryPercent, type ProgressMap } from "@/lib/quiz";
 import { serializeSetExport } from "@/lib/parse-cards";
-import { useSet, useStudyStore } from "@/lib/store";
+import { useSet, useSetProgress, useStudyStore } from "@/lib/store";
 import type { Card, CardStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -63,11 +63,12 @@ const SORT_OPTIONS: { value: SortMode; label: string }[] = [
   { value: "starred", label: "Starred first" },
 ];
 
-function sortCards(cards: Card[], mode: SortMode): Card[] {
+function sortCards(cards: Card[], mode: SortMode, progress: ProgressMap): Card[] {
   if (mode === "original") return cards;
   const sorted = [...cards];
+  const score = (card: Card) => progress[card.id]?.masteryScore ?? 0;
   if (mode === "alpha") sorted.sort((a, b) => a.term.localeCompare(b.term));
-  else if (mode === "mastery") sorted.sort((a, b) => a.mastery - b.mastery);
+  else if (mode === "mastery") sorted.sort((a, b) => score(a) - score(b));
   else if (mode === "starred") sorted.sort((a, b) => Number(b.starred) - Number(a.starred));
   return sorted;
 }
@@ -75,10 +76,11 @@ function sortCards(cards: Card[], mode: SortMode): Card[] {
 function SetPage() {
   const { setId } = Route.useParams();
   const studySet = useSet(setId);
+  const progress = useSetProgress(setId);
   const navigate = useNavigate();
   const deleteSet = useStudyStore((s) => s.deleteSet);
   const toggleStar = useStudyStore((s) => s.toggleStar);
-  const resetMastery = useStudyStore((s) => s.resetMastery);
+  const resetProgress = useStudyStore((s) => s.resetProgress);
   const togglePublic = useStudyStore((s) => s.togglePublic);
   const setCardStatus = useStudyStore((s) => s.setCardStatus);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -104,8 +106,8 @@ function SetPage() {
             (c.example ?? "").toLowerCase().includes(q),
         )
       : base;
-    return sortCards(filtered, sortMode);
-  }, [studySet, query, sortMode, cardView]);
+    return sortCards(filtered, sortMode, progress);
+  }, [studySet, query, sortMode, cardView, progress]);
 
   if (!studySet) {
     return (
@@ -123,7 +125,7 @@ function SetPage() {
     );
   }
 
-  const mastery = masteryPercent(studySet.cards);
+  const mastery = masteryPercent(studySet.cards, progress);
   const starred = studySet.cards.filter((c) => c.starred).length;
   const archivedCount = studySet.cards.filter((c) => c.status === "archived").length;
 
@@ -234,7 +236,7 @@ function SetPage() {
                 {!studySet.isReference ? (
                   <DropdownMenuItem
                     onSelect={() => {
-                      resetMastery(setId);
+                      void resetProgress(setId);
                       toast.success("Progress reset.");
                     }}
                   >
@@ -269,6 +271,7 @@ function SetPage() {
             </div>
             <LeitnerBoxes
               cards={studySet.cards}
+              progress={progress}
               selectedBox={selectedBox}
               onSelectBox={setSelectedBox}
             />
