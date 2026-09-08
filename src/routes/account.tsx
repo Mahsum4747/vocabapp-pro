@@ -17,6 +17,7 @@ import {
   type AchievementId,
   type AchievementStats,
 } from "@/lib/gamification";
+import { DEFAULT_SOUND_SETTINGS, playSound, type SoundSettings } from "@/lib/sound";
 import { getDailyStatsRange } from "@/lib/study-sets";
 import { useStudyStore } from "@/lib/store";
 import type { DailyStats } from "@/lib/types";
@@ -36,6 +37,7 @@ const TABS = [
   { id: "xp", label: "XP" },
   { id: "achievements", label: "Achievements" },
   { id: "goal", label: "Daily goal" },
+  { id: "sound", label: "Sound" },
 ] as const;
 
 type TabId = (typeof TABS)[number]["id"];
@@ -94,6 +96,7 @@ function AccountPage() {
           <AchievementsTab unlocked={profile.achievements} stats={stats} />
         ) : null}
         {tab === "goal" ? <GoalTab timeZone={profile.timeZone} /> : null}
+        {tab === "sound" ? <SoundTab /> : null}
       </div>
     </AppShell>
   );
@@ -262,6 +265,64 @@ function AchievementCard({
             </span>
           )}
         </p>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Sound settings. Saved as they are changed rather than behind a Save button:
+ * there are two controls and both are instantly reversible.
+ */
+function SoundTab() {
+  const profile = useStudyStore((s) => s.profile);
+  const setSoundSettings = useStudyStore((s) => s.setSoundSettings);
+  const settings = profile?.soundSettings ?? DEFAULT_SOUND_SETTINGS;
+
+  function save(next: SoundSettings) {
+    void setSoundSettings(next).catch((error) =>
+      console.error("Failed to save sound settings:", error),
+    );
+  }
+
+  return (
+    <div className="max-w-md space-y-6">
+      <label className="flex items-center justify-between gap-4 rounded-xl bg-surface p-4 shadow-[var(--shadow-border)]">
+        <span>
+          <span className="block font-medium">Sound effects</span>
+          <span className="block text-sm text-muted">
+            Short cues when a card is flipped or answered.
+          </span>
+        </span>
+        <input
+          type="checkbox"
+          className="size-5 shrink-0 accent-[var(--color-primary)]"
+          checked={settings.enabled}
+          onChange={(e) => save({ ...settings, enabled: e.target.checked })}
+        />
+      </label>
+
+      <div className="rounded-xl bg-surface p-4 shadow-[var(--shadow-border)]">
+        <div className="flex items-center justify-between">
+          <label htmlFor="volume" className="font-medium">
+            Volume
+          </label>
+          <span className="text-sm text-muted tabular-nums">{settings.volume}</span>
+        </div>
+        <input
+          id="volume"
+          type="range"
+          min={0}
+          max={100}
+          step={5}
+          value={settings.volume}
+          disabled={!settings.enabled}
+          onChange={(e) => save({ ...settings, volume: Number(e.target.value) })}
+          onMouseUp={() => playSound("correct")}
+          onTouchEnd={() => playSound("correct")}
+          className="mt-3 w-full accent-[var(--color-primary)] disabled:opacity-50"
+        />
+        <p className="mt-2 text-xs text-subtle">Zero is silence, even with sound switched on.</p>
       </div>
     </div>
   );

@@ -7,6 +7,7 @@ import { StudyChrome } from "./study-chrome";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { useReviewLogger } from "@/lib/review-log";
+import { playSound } from "@/lib/sound";
 import type { Card, ReviewRating } from "@/lib/types";
 import { cn, shuffle } from "@/lib/utils";
 
@@ -69,6 +70,10 @@ export function StudyDeck({
   const [order, setOrder] = useState<string[]>([]);
   const [index, setIndex] = useState(0);
   const [flipped, setFlipped] = useState(false);
+  const flip = useCallback(() => {
+    playSound("cardFlip");
+    setFlipped((f) => !f);
+  }, []);
   const [done, setDone] = useState(false);
   // Session-only tally of grades given this visit — not persisted, resets on reload.
   const [stillLearningCount, setStillLearningCount] = useState(0);
@@ -128,14 +133,14 @@ export function StudyDeck({
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
       if (e.key === " " || e.key === "Enter") {
         e.preventDefault();
-        setFlipped((f) => !f);
+        flip();
       } else if (e.key === "ArrowRight") go(1);
       else if (e.key === "ArrowLeft") go(-1);
       else if (e.key.toLowerCase() === "s" && entry && onToggleStar) onToggleStar(entry);
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [go, entry, onToggleStar]);
+  }, [go, entry, onToggleStar, flip]);
 
   const chromeRight =
     headerRight || allowShuffle ? (
@@ -247,7 +252,7 @@ export function StudyDeck({
         imageUrl={card.imageUrl}
         termLanguage={entry.termLanguage}
         flipped={flipped}
-        onFlip={() => setFlipped((f) => !f)}
+        onFlip={flip}
       />
       {/* Which set this card came from — context for a mixed round, kept
           quiet so the term stays the thing you are looking at. */}

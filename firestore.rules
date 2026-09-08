@@ -22,7 +22,9 @@ rules_version = '2';
 //                                            totals, and `achievements`, a map
 //                                            of unlocked id -> epoch ms:
 //                                            streak_7, perfect_run,
-//                                            mastered_10, set_completed
+//                                            mastered_10, set_completed;
+//                                            plus `completedSets` (paid-once
+//                                            set bonuses) and `soundSettings`
 //   users/{userId}/cardProgress/{cardId}   — per-card review summary
 //   users/{userId}/reviewEvents/{eventId}  — raw review event log
 //   users/{userId}/dailyStats/{date}       — per-day totals

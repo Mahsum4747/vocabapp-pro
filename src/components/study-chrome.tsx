@@ -64,7 +64,9 @@ export function StudyChrome({
         </div>
         <Progress value={pct} className="h-1 rounded-none" />
       </header>
-      <main className="mx-auto w-full max-w-4xl px-4 py-8">{children}</main>
+      {/* `study-pulse` is the tier-1 celebration's target: the whole study
+          surface taps once on a right answer, in every mode. */}
+      <main className="study-pulse mx-auto w-full max-w-4xl px-4 py-8">{children}</main>
     </div>
   );
 }

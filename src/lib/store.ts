@@ -2,7 +2,8 @@ import { useEffect } from "react";
 import { create } from "zustand";
 import type { CardProgress, CardStatus, DailyStats, ReviewRating, StudySet } from "./types";
 import { emptyDailyStats } from "./types";
-import type { UserProfile } from "./gamification";
+import type { AchievementId, UserProfile } from "./gamification";
+import { configureSound, type SoundSettings } from "./sound";
 import {
   getMySets,
   getSetById as getSetByIdFn,
@@ -20,6 +21,7 @@ import {
   getAllProgress as getAllProgressFn,
   getProfile as getProfileFn,
   updateDailyGoal as updateDailyGoalFn,
+  updateSoundSettings as updateSoundSettingsFn,
   resetSetProgress as resetSetProgressFn,
 } from "./study-sets";
 import { getStreak as getStreakFn, type StreakInfo } from "./streak";
@@ -30,6 +32,14 @@ type DraftCard = {
   definition: string;
   imageUrl?: string | null;
   example?: string | null;
+};
+
+/** What a graded review turned out to be worth, for the celebration layer. */
+export type ReviewOutcome = {
+  unlocked: AchievementId[];
+  setCompleted: { setId: string; title: string; xp: number } | null;
+  /** True only on the review that crossed today's goal, not on later ones. */
+  goalJustMet: boolean;
 };
 
 type StudyState = {
@@ -91,7 +101,7 @@ type StudyState = {
     cardId: string;
     rating: ReviewRating;
     responseTimeMs?: number;
-  }) => Promise<void>;
+  }) => Promise<ReviewOutcome>;
   /** Forget this set's learning progress (content is untouched). */
   resetProgress: (setId: string) => Promise<void>;
   setCardStatus: (setId: string, cardId: string, status: CardStatus) => Promise<void>;
@@ -111,6 +121,8 @@ type StudyState = {
   fetchProfile: () => Promise<void>;
   /** Change the daily goal, recording the viewer's timezone the first time. */
   setDailyGoal: (goal: number) => Promise<void>;
+  /** Change the sound preferences, on the server and on this device. */
+  setSoundSettings: (next: SoundSettings) => Promise<void>;
   fetchMySetsForTransfer: () => Promise<StudySet[] | null>;
   copyCardsToSet: (sourceSetId: string, targetSetId: string, cardIds: string[]) => Promise<number>;
   moveCardsToSet: (sourceSetId: string, targetSetId: string, cardIds: string[]) => Promise<number>;
@@ -284,6 +296,19 @@ export const useStudyStore = create<StudyState>()((set, get) => ({
     // bar and Leitner boxes update without a refetch.
     const previousToday = get().today;
     const delta = result.dailyDelta;
+    const profileBefore = get().profile;
+
+    // Crossing the goal is a one-time event, so it is decided here from the
+    // before and after counts rather than from "is the goal met now", which
+    // would be true for every review after it.
+    const wordsBefore = previousToday?.uniqueWordsReviewed ?? 0;
+    const goal = profileBefore?.dailyGoal ?? 0;
+    const goalJustMet =
+      goal > 0 &&
+      previousToday?.date === delta.date &&
+      wordsBefore < goal &&
+      wordsBefore + delta.uniqueWordsReviewed >= goal;
+
     set({
       progress: { ...get().progress, [cardId]: result.progress },
       ...(result.streak ? { streak: result.streak } : {}),
@@ -291,12 +316,12 @@ export const useStudyStore = create<StudyState>()((set, get) => ({
       // ring and the level bar follow a grade immediately. The day's deltas
       // come from the server rather than being recomputed here — the
       // once-per-card-per-day rule lives in one place.
-      ...(get().profile
+      ...(profileBefore
         ? {
             profile: {
-              ...get().profile!,
+              ...profileBefore,
               totalXP: result.xp.total,
-              totalReviews: get().profile!.totalReviews + 1,
+              totalReviews: profileBefore.totalReviews + 1,
             },
           }
         : {}),
@@ -313,6 +338,12 @@ export const useStudyStore = create<StudyState>()((set, get) => ({
           }
         : {}),
     });
+
+    return {
+      unlocked: result.unlocked,
+      setCompleted: result.setCompleted,
+      goalJustMet,
+    };
   },
 
   fetchProfile: async () => {
@@ -320,6 +351,9 @@ export const useStudyStore = create<StudyState>()((set, get) => ({
     try {
       const { profile, today } = await getProfileFn({ data: { date } });
       set({ profile, today });
+      // Mirror to the device so the first cue of the next session is right
+      // before this call has had time to come back.
+      configureSound(profile.soundSettings);
     } catch (error) {
       console.error("Failed to load profile:", error);
       // Signed out, or the read failed: leave `profile` null so the UI shows
@@ -417,6 +451,15 @@ export const useStudyStore = create<StudyState>()((set, get) => ({
       ),
     });
     return cloned.id;
+  },
+
+  setSoundSettings: async (next) => {
+    // Applied locally first: a learner turning sound off should not hear one
+    // more chime while the write is in flight.
+    configureSound(next);
+    const current = get().profile;
+    if (current) set({ profile: { ...current, soundSettings: next } });
+    await updateSoundSettingsFn({ data: next });
   },
 
   fetchMySetsForTransfer: async () => {

@@ -3,6 +3,7 @@ import { AuthProvider } from "@/lib/auth/provider";
 import { PreviewHostBridge } from "@/components/preview-host-bridge";
 import { HydrationGate } from "@/components/hydration-gate";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { CelebrationProvider } from "@/components/celebration";
 import { Toaster } from "sonner";
 import appCss from "../styles.css?url";
 
@@ -43,9 +44,11 @@ function Root() {
         <PreviewHostBridge />
         <AuthProvider>
           <TooltipProvider>
-            <HydrationGate>
-              <Outlet />
-            </HydrationGate>
+            <CelebrationProvider>
+              <HydrationGate>
+                <Outlet />
+              </HydrationGate>
+            </CelebrationProvider>
             <Toaster
               position="bottom-center"
               theme="system"

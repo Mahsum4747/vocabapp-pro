@@ -160,3 +160,96 @@
     filter: blur(0);
   }
 }
+
+/* Celebrations — see src/components/celebration.tsx. All of them are short,
+   and all of them are skipped for a viewer who asked for reduced motion. */
+@keyframes celebrate-pulse {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.02);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* The study surface taps once on a right answer. Applied to the study layout
+   rather than to one card because all four modes lay their question out
+   differently, and 1.02 on a full-width column reads as a tap where 1.05
+   reads as a jolt. */
+body[data-celebrate="correct"] .study-pulse {
+  animation: celebrate-pulse 160ms ease-out;
+}
+
+@keyframes celebrate-mark {
+  0% {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  35% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+  70% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1);
+  }
+}
+
+.celebrate-mark {
+  animation: celebrate-mark 600ms ease-out forwards;
+}
+
+@keyframes celebrate-badge {
+  0% {
+    opacity: 0;
+    transform: translateY(-8px) scale(1.1);
+  }
+  15% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.celebrate-badge {
+  animation: celebrate-badge 1600ms ease-out forwards;
+}
+
+@keyframes celebrate-flash {
+  0% {
+    opacity: 0;
+  }
+  40% {
+    opacity: 0.3;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.celebrate-flash {
+  animation: celebrate-flash 500ms ease-out forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body[data-celebrate="correct"] .study-pulse {
+    animation: none;
+  }
+  .celebrate-mark,
+  .celebrate-badge {
+    animation-duration: 1ms;
+    animation-fill-mode: forwards;
+  }
+}

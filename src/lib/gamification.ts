@@ -1,3 +1,4 @@
+import type { SoundSettings } from "./sound.ts";
 import type { ReviewRating } from "./types.ts";
 
 /**
@@ -29,6 +30,14 @@ export const XP_BY_RATING: Record<ReviewRating, number> = {
 export const XP_PER_CARD_PER_DAY = 20;
 
 export const XP_PER_LEVEL = 100;
+
+/**
+ * One-off bonus for taking every card in a set to mastery.
+ *
+ * Paid once per set, ever — finishing a set is an achievement, and re-earning
+ * it by reviewing one card of a finished set would make it worthless.
+ */
+export const SET_COMPLETION_XP = 150;
 
 /**
  * XP for one review. `firstReviewToday` comes from the same day-key check
@@ -107,6 +116,7 @@ export type UserProfile = {
   masteredCards: number;
   /** Achievement id -> epoch ms it was unlocked. */
   achievements: Record<string, number>;
+  soundSettings: SoundSettings;
 };
 
 /** The stats every achievement is judged against, pulled out of a profile. */

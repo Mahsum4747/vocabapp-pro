@@ -9,6 +9,7 @@ import { planReview } from "./review-plan";
 import {
   applyXp,
   MASTERED_SCORE,
+  SET_COMPLETION_XP,
   newlyUnlocked,
   nextPerfectRun,
   xpForReview,
@@ -24,6 +25,7 @@ import {
   type UserSettings,
 } from "./daily-goal";
 import { freshCardCopy, isCardActive, isCorrectRating, readDailyStats } from "./types";
+import { readSoundSettings, type SoundSettings } from "./sound";
 import type { Card, CardProgress, DailyStats, StudySet } from "./types";
 
 /** Firestore ids and the date key are path segments — keep them tight. */
@@ -477,6 +479,40 @@ export const recordReview = createServerFn({ method: "POST" })
       // can never disagree about what "today" means.
       const xpDelta = xpForReview(data.rating, plan.daily.uniqueWordsReviewed > 0);
 
+      /**
+       * Did this review just finish the set?
+       *
+       * Settled inside the transaction, before any write, so the bonus and the
+       * "already paid" list move together and a set can never pay twice. The
+       * read only happens when this card has itself just reached mastery and
+       * the set has not been completed before — on an ordinary review it costs
+       * nothing.
+       */
+      const completedSets = Array.isArray(user?.completedSets) ? user.completedSets : [];
+      const activeIds = new Set(studySet.cards.filter(isCardActive).map((card) => card.id));
+      let setJustCompleted = false;
+
+      if (
+        plan.progress.masteryScore >= MASTERED_SCORE &&
+        activeIds.size > 0 &&
+        !completedSets.includes(data.setId)
+      ) {
+        const mastered = await tx.get(
+          userRef
+            .collection("cardProgress")
+            .where("setId", "==", data.setId)
+            .where("masteryScore", ">=", MASTERED_SCORE),
+        );
+        // This card's new score is not stored yet — it is being written by
+        // this very transaction — so count it here. Cards no longer in the set
+        // are ignored, or a deleted card could "complete" a set on its own.
+        const masteredIds = new Set(mastered.docs.map((doc) => doc.id));
+        masteredIds.add(data.cardId);
+        setJustCompleted = [...activeIds].every((id) => masteredIds.has(id));
+      }
+
+      const completionBonus = setJustCompleted ? SET_COMPLETION_XP : 0;
+
       // The counters are stored as increments so concurrent reviews of
       // different cards can't clobber each other's totals; the resolved values
       // in `plan.progress` are what gets returned to the client.
@@ -495,7 +531,7 @@ export const recordReview = createServerFn({ method: "POST" })
         // in `planReview` from the progress row this transaction already read —
         // no extra read, and it is testable without a database.
         uniqueWordsReviewed: FieldValue.increment(plan.daily.uniqueWordsReviewed),
-        xpEarned: FieldValue.increment(xpDelta),
+        xpEarned: FieldValue.increment(xpDelta + completionBonus),
       };
 
       // XP and the lifetime counters are written as resolved values rather
@@ -503,10 +539,11 @@ export const recordReview = createServerFn({ method: "POST" })
       // to be clamped at zero, which `FieldValue.increment` cannot do.
       const profile: Partial<UserDoc> = {
         id: context.userId,
-        totalXP: applyXp(user?.totalXP ?? 0, xpDelta),
+        totalXP: applyXp(user?.totalXP ?? 0, xpDelta + completionBonus),
         totalReviews: (user?.totalReviews ?? 0) + 1,
         perfectRun: nextPerfectRun(user?.perfectRun ?? 0, data.rating),
         updatedAt: now,
+        ...(setJustCompleted ? { completedSets: [...completedSets, data.setId] } : {}),
         ...(user === undefined ? { createdAt: now } : {}),
       };
 
@@ -521,8 +558,10 @@ export const recordReview = createServerFn({ method: "POST" })
         // The day's deltas, so the client can update the goal ring and the XP
         // bar without re-reading the day — and without re-deriving the
         // first-review-today rule for itself.
-        dailyDelta: { ...plan.daily, xpEarned: xpDelta },
-        xpDelta,
+        dailyDelta: { ...plan.daily, xpEarned: xpDelta + completionBonus },
+        xpDelta: xpDelta + completionBonus,
+        setJustCompleted,
+        completedSets: profile.completedSets ?? completedSets,
         totalXP: profile.totalXP ?? 0,
         totalReviews: profile.totalReviews ?? 0,
         perfectRun: profile.perfectRun ?? 0,
@@ -553,7 +592,6 @@ export const recordReview = createServerFn({ method: "POST" })
       // on its own review, and nothing else. An already-earned badge is never
       // re-counted.
       const crossedMastery = progress.masteryScore >= MASTERED_SCORE;
-      const activeInSet = studySet.cards.filter(isCardActive).length;
 
       unlocked = await unlockAchievementsFor({
         userRef,
@@ -562,10 +600,8 @@ export const recordReview = createServerFn({ method: "POST" })
           perfectRun: outcome.perfectRun,
           masteredCards:
             crossedMastery && !("mastered_10" in already) ? await countMasteredCards(userRef) : 0,
-          setsCompleted:
-            crossedMastery && !("set_completed" in already) && activeInSet > 0
-              ? await countMasteredInSet(userRef, data.setId, activeInSet)
-              : 0,
+          // Already settled inside the transaction — no second query.
+          setsCompleted: outcome.completedSets.length,
         },
         already,
         now,
@@ -581,6 +617,10 @@ export const recordReview = createServerFn({ method: "POST" })
       xp: { total: outcome.totalXP, gained: outcome.xpDelta },
       dailyDelta: outcome.dailyDelta,
       unlocked,
+      // Only on the review that finished the set, and only ever once per set.
+      setCompleted: outcome.setJustCompleted
+        ? { setId: data.setId, title: studySet.title, xp: SET_COMPLETION_XP }
+        : null,
     };
   });
 
@@ -592,28 +632,6 @@ async function countMasteredCards(userRef: FirebaseFirestore.DocumentReference):
     .count()
     .get();
   return snap.data().count;
-}
-
-/**
- * Is every active card in this set mastered? Returns 1 when it is, so it can
- * be read as a count alongside the other achievement stats.
- *
- * Judged on the set's current state rather than on one sitting: "in one
- * session" would need a session identity that nothing stores, and a set taken
- * to mastery over three evenings is no less finished than one done in an hour.
- */
-async function countMasteredInSet(
-  userRef: FirebaseFirestore.DocumentReference,
-  setId: string,
-  activeCards: number,
-): Promise<number> {
-  const snap = await userRef
-    .collection("cardProgress")
-    .where("setId", "==", setId)
-    .where("masteryScore", ">=", MASTERED_SCORE)
-    .count()
-    .get();
-  return snap.data().count >= activeCards ? 1 : 0;
 }
 
 /**
@@ -745,6 +763,10 @@ type UserDoc = {
   perfectRun: number;
   /** Unlocked achievement id -> the epoch ms it was earned. */
   achievements: Record<string, number>;
+  /** Sets whose every active card has reached mastery, so the bonus pays once. */
+  completedSets: string[];
+  /** Sound preferences, mirrored to the device for instant playback. */
+  soundSettings: SoundSettings;
   /** Epoch ms from the server clock, matching every other timestamp we store. */
   createdAt: number;
   updatedAt: number;
@@ -762,6 +784,11 @@ const updateDailyGoalSchema = z.object({
    * which local day a review belongs to on its own.
    */
   timeZone: z.string().trim().max(64).refine(isTimeZoneName).optional(),
+});
+
+const soundSettingsSchema = z.object({
+  enabled: z.boolean(),
+  volume: z.number().int().min(0).max(100),
 });
 
 const profileQuerySchema = z.object({ date: dateKeySchema });
@@ -786,8 +813,35 @@ function readProfile(stored: unknown, masteredCards: number): UserProfile {
     perfectRun: count(doc.perfectRun),
     masteredCards,
     achievements,
+    soundSettings: readSoundSettings(doc.soundSettings),
   };
 }
+
+/**
+ * Store the signed-in user's sound preferences.
+ *
+ * Kept on the profile rather than only on the device, so a learner who mutes
+ * the app on their phone does not get chimed at on their laptop.
+ */
+export const updateSoundSettings = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
+  .validator((input: unknown) => soundSettingsSchema.parse(input))
+  .handler(async ({ context, data }): Promise<SoundSettings> => {
+    const { getAdminFirestore } = await import("./firebase-admin.server");
+    const db = getAdminFirestore();
+    const ref = db.collection("users").doc(context.userId);
+    const now = Date.now();
+    const existing = await ref.get();
+
+    const patch: Partial<UserDoc> = {
+      id: context.userId,
+      soundSettings: data,
+      updatedAt: now,
+      ...(existing.exists ? {} : { createdAt: now }),
+    };
+    await ref.set(patch, { merge: true });
+    return data;
+  });
 
 /**
  * Everything the home cards and the account page read about the signed-in

@@ -1,4 +1,5 @@
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
+import { useCelebration } from "@/components/celebration";
 import { useStudyStore } from "./store";
 import type { ReviewRating } from "./types";
 
@@ -35,13 +36,37 @@ export type LogReview = (input: {
  */
 export function useReviewLogger(): LogReview {
   const recordReview = useStudyStore((s) => s.recordReview);
+  const profile = useStudyStore((s) => s.profile);
+  const fetchProfile = useStudyStore((s) => s.fetchProfile);
+  const celebrate = useCelebration();
+
+  // A study mode opened directly — a bookmark, a reload — has no profile yet,
+  // and without it the daily goal cannot be recognised as met. One fetch per
+  // session; a signed-out visitor simply leaves it null.
+  useEffect(() => {
+    if (!profile) void fetchProfile();
+  }, [profile, fetchProfile]);
 
   return useCallback(
     (input) => {
-      void recordReview(input).catch((error) => {
-        console.error("Failed to record review:", error);
-      });
+      // Immediate, before the write goes out: the answer was right whether or
+      // not the network agrees, and the whole point of this path is that the
+      // learner is never left waiting on it.
+      if (input.rating === "easy") celebrate.correct("excellent");
+      else if (input.rating === "good") celebrate.correct("correct");
+      else if (input.rating === "again") celebrate.wrong();
+
+      void recordReview(input)
+        .then((outcome) => {
+          // What the server worked out: badges, a finished set, today's goal.
+          celebrate.achievements(outcome.unlocked);
+          if (outcome.setCompleted) celebrate.setCompleted(outcome.setCompleted);
+          else if (outcome.goalJustMet) celebrate.dailyGoalMet();
+        })
+        .catch((error) => {
+          console.error("Failed to record review:", error);
+        });
     },
-    [recordReview],
+    [recordReview, celebrate],
   );
 }
