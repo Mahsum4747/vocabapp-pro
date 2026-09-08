@@ -6,6 +6,13 @@ import { authMiddleware, optionalAuthMiddleware } from "./auth/middleware";
 import { recordStudyActivityFor, type StreakInfo } from "./streak";
 import { defaultScheduler as scheduler } from "./srs";
 import { planReview } from "./review-plan";
+import {
+  DEFAULT_TIME_ZONE,
+  isDailyGoalOption,
+  isTimeZoneName,
+  readUserSettings,
+  type UserSettings,
+} from "./daily-goal";
 import { freshCardCopy, isCorrectRating } from "./types";
 import type { Card, CardProgress, DailyStats, StudySet } from "./types";
 
@@ -459,6 +466,11 @@ export const recordReview = createServerFn({ method: "POST" })
         reviews: FieldValue.increment(plan.daily.reviews),
         correctReviews: FieldValue.increment(plan.daily.correctReviews),
         studySeconds: FieldValue.increment(plan.daily.studySeconds),
+        // 0 for a card already counted today, so grading the same word three
+        // times moves `reviews` by 3 and this by 1. The dedup decision is made
+        // in `planReview` from the progress row this transaction already read —
+        // no extra read, and it is testable without a database.
+        uniqueWordsReviewed: FieldValue.increment(plan.daily.uniqueWordsReviewed),
       };
 
       tx.set(progressRef, update, { merge: true });
@@ -563,4 +575,88 @@ export const resetSetProgress = createServerFn({ method: "POST" })
       await batch.commit();
     }
     return { ok: true as const, cleared: snap.size };
+  });
+
+/**
+ * The signed-in user's settings document.
+ *
+ * `users/{uid}` was a phantom until now — a path prefix that carried the
+ * cardProgress/reviewEvents/dailyStats subcollections and no fields of its
+ * own. The daily goal is the first thing that belongs on the user rather than
+ * on a set or a card, so the document becomes real here.
+ *
+ * Note what is NOT duplicated onto it: the streak still lives in
+ * `user_streaks/{uid}`, and the day's counters still live in
+ * `dailyStats/{date}`. Copying either here would create a second source of
+ * truth for something already stored.
+ */
+type UserDoc = {
+  id: string;
+  dailyGoal: number;
+  timeZone: string;
+  /** Epoch ms from the server clock, matching every other timestamp we store. */
+  createdAt: number;
+  updatedAt: number;
+};
+
+const updateDailyGoalSchema = z.object({
+  goal: z
+    .number()
+    .int()
+    .refine(isDailyGoalOption, { message: "goal must be one of 5, 10, 20 or 30" }),
+  /**
+   * The viewer's IANA timezone, when the caller knows it (the browser does:
+   * `Intl.DateTimeFormat().resolvedOptions().timeZone`). Optional so a goal
+   * can be saved without one; stored so the server can eventually work out
+   * which local day a review belongs to on its own.
+   */
+  timeZone: z.string().trim().max(64).refine(isTimeZoneName).optional(),
+});
+
+/**
+ * The signed-in user's daily goal and timezone.
+ *
+ * Never fails for a user who has no settings document — which today is every
+ * user — it returns the defaults instead. There is no uid parameter: the
+ * caller is whoever `authMiddleware` resolved, so there is no way to ask for
+ * somebody else's settings and no ownership check that could be forgotten.
+ */
+export const getDailyGoal = createServerFn({ method: "GET" })
+  .middleware([authMiddleware])
+  .handler(async ({ context }): Promise<UserSettings> => {
+    const { getAdminFirestore } = await import("./firebase-admin.server");
+    const db = getAdminFirestore();
+    const doc = await db.collection("users").doc(context.userId).get();
+    return readUserSettings(doc.exists ? doc.data() : null);
+  });
+
+/**
+ * Set the signed-in user's daily goal, creating their settings document the
+ * first time.
+ *
+ * A merge write, so the fields this call doesn't mention — `timeZone` when it
+ * wasn't supplied, and `createdAt` — survive untouched.
+ */
+export const updateDailyGoal = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
+  .validator((input: unknown) => updateDailyGoalSchema.parse(input))
+  .handler(async ({ context, data }): Promise<UserSettings> => {
+    const { getAdminFirestore } = await import("./firebase-admin.server");
+    const db = getAdminFirestore();
+    const ref = db.collection("users").doc(context.userId);
+    const existing = await ref.get();
+    const now = Date.now();
+
+    const patch: Partial<UserDoc> = {
+      id: context.userId,
+      dailyGoal: data.goal,
+      updatedAt: now,
+      ...(data.timeZone !== undefined ? { timeZone: data.timeZone } : {}),
+      // Only on creation: a merge write would otherwise reset the original
+      // date every time the goal changes.
+      ...(existing.exists ? {} : { createdAt: now, timeZone: data.timeZone ?? DEFAULT_TIME_ZONE }),
+    };
+
+    await ref.set(patch, { merge: true });
+    return readUserSettings({ ...existing.data(), ...patch });
   });

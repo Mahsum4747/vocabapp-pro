@@ -31,6 +31,7 @@ function priorProgress(overrides: Partial<CardProgress> = {}): CardProgress {
     correctReviews: 3,
     consecutiveCorrect: 2,
     lastReviewedAt: NOW - 86_400_000,
+    lastReviewedDate: "2026-02-02",
     masteryScore: 20,
     scheduler: defaultScheduler.name,
     ...overrides,
@@ -138,12 +139,80 @@ describe("daily stats", () => {
 
   it("carries only date-based fields", () => {
     // Guards against reintroducing wordsReviewedToday / lastActiveDate /
-    // uniqueWords / mastered, which are not date-scoped counters.
+    // mastered, which are not date-scoped counters.
+    //
+    // `uniqueWordsReviewed` is: it answers "how many distinct words did I work
+    // on ON THIS DAY", which is only meaningful per day and cannot be derived
+    // from a lifetime total. The counters this guard keeps out are ones that
+    // belong on the user or the card instead.
     assert.deepEqual(Object.keys(plan().daily).sort(), [
       "correctReviews",
       "date",
       "reviews",
       "studySeconds",
+      "uniqueWordsReviewed",
     ]);
+  });
+});
+
+describe("unique words per day", () => {
+  it("counts a card the first time it is graded today", () => {
+    assert.equal(plan({ previous: null }).daily.uniqueWordsReviewed, 1);
+  });
+
+  it("does not count the same card again on the same day", () => {
+    const previous = priorProgress({ lastReviewedDate: "2026-02-03" });
+    const { daily } = plan({ previous, date: "2026-02-03" });
+
+    assert.equal(daily.reviews, 1, "every review still counts as a review");
+    assert.equal(daily.uniqueWordsReviewed, 0, "but the word was already counted today");
+  });
+
+  it("counts a card again on a new day", () => {
+    const previous = priorProgress({ lastReviewedDate: "2026-02-02" });
+    assert.equal(plan({ previous, date: "2026-02-03" }).daily.uniqueWordsReviewed, 1);
+  });
+
+  it("counts a row written before the field existed as a first review", () => {
+    // The documented backfill behaviour: at most one overcount per card, and
+    // the next review of that card gets it right.
+    const legacy = priorProgress();
+    delete (legacy as { lastReviewedDate?: string | null }).lastReviewedDate;
+
+    assert.equal(plan({ previous: legacy, date: "2026-02-03" }).daily.uniqueWordsReviewed, 1);
+  });
+
+  it("stamps the day it counted, so the next review can tell", () => {
+    const { progress } = plan({ date: "2026-02-03" });
+
+    assert.equal(progress.lastReviewedDate, "2026-02-03");
+    // The timestamp keeps recording the server clock; the date records the
+    // viewer's local day, which the server cannot derive from it.
+    assert.equal(progress.lastReviewedAt, NOW);
+  });
+
+  it("adds up to two words over three reviews of two cards", () => {
+    // The session the manual check describes: card A, card B, card A again.
+    const first = plan({ cardId: "a", previous: null, date: "2026-02-03" });
+    const second = plan({ cardId: "b", previous: null, date: "2026-02-03" });
+    const third = plan({ cardId: "a", previous: first.progress, date: "2026-02-03" });
+
+    const days = [first, second, third].map((p) => p.daily);
+    assert.equal(
+      days.reduce((sum, d) => sum + d.reviews, 0),
+      3,
+    );
+    assert.equal(
+      days.reduce((sum, d) => sum + d.uniqueWordsReviewed, 0),
+      2,
+    );
+  });
+
+  it("treats a day key change as a new day even across a timezone move", () => {
+    // The comparison is on the client's own day key, so a traveller whose
+    // local day rolls over gets a new day here without any server-side
+    // timezone arithmetic.
+    const previous = priorProgress({ lastReviewedDate: "2026-02-03" });
+    assert.equal(plan({ previous, date: "2026-02-04" }).daily.uniqueWordsReviewed, 1);
   });
 });

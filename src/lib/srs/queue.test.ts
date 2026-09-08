@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { buildReviewQueue, queuedCards } from "./queue.ts";
+import { buildReviewQueue, isWeakWord, queuedCards } from "./queue.ts";
 import type { Card, CardProgress } from "../types.ts";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -33,6 +33,7 @@ function progress(cardId: string, overrides: Partial<CardProgress> = {}): CardPr
     correctReviews: 3,
     consecutiveCorrect: 3,
     lastReviewedAt: NOW - 5 * DAY_MS,
+    lastReviewedDate: null,
     masteryScore: 50,
     scheduler: "fsrs",
     ...overrides,
@@ -143,5 +144,84 @@ describe("review queue ordering", () => {
     const map = new Map([["b", progress("b", { dueAt: NOW - 5 * DAY_MS })]]);
 
     assert.deepEqual(ids(queuedCards(cards, map, { now: NOW })), ["b", "a"]);
+  });
+});
+
+describe("weak words", () => {
+  // The helper's defaults are a healthy card: reviewed, answered right, not
+  // due, mastery 50. Each test turns on only the signals it is about.
+  const healthy = () =>
+    progress("c", {
+      masteryScore: 90,
+      consecutiveCorrect: 3,
+      totalReviews: 10,
+      lapses: 0,
+      dueAt: NOW + 5 * DAY_MS,
+    });
+
+  it("needs two signals, not one", () => {
+    // Low mastery alone: a card in a set started yesterday looks exactly like
+    // this, and it is not weak.
+    assert.equal(isWeakWord({ ...healthy(), masteryScore: 20 }, { now: NOW }), false);
+
+    // One wrong answer alone, on a card answered right nine times before.
+    assert.equal(isWeakWord({ ...healthy(), consecutiveCorrect: 0 }, { now: NOW }), false);
+  });
+
+  it("flags a card with low mastery that was just answered wrong", () => {
+    const card = { ...healthy(), masteryScore: 20, consecutiveCorrect: 0 };
+    assert.equal(isWeakWord(card, { now: NOW }), true);
+  });
+
+  it("flags a card that keeps being forgotten and is now overdue", () => {
+    const card = {
+      ...healthy(),
+      lapses: 5, // 5/10 reviews lapsed, well over the third
+      dueAt: NOW - 3 * DAY_MS,
+    };
+    assert.equal(isWeakWord(card, { now: NOW }), true);
+  });
+
+  it("flags a low-mastery card sitting past its due date", () => {
+    const card = { ...healthy(), masteryScore: 30, dueAt: NOW - DAY_MS };
+    assert.equal(isWeakWord(card, { now: NOW }), true);
+  });
+
+  it("leaves a card that is merely due alone", () => {
+    // Due is the queue's business. Weakness is about how the answers have
+    // been going, and this card's have been going fine.
+    assert.equal(isWeakWord({ ...healthy(), dueAt: NOW - 1000 }, { now: NOW }), false);
+  });
+
+  it("never calls a card weak before it has been reviewed", () => {
+    const unseen = progress("c", {
+      state: "new",
+      dueAt: null,
+      totalReviews: 0,
+      correctReviews: 0,
+      consecutiveCorrect: 0,
+      masteryScore: 0,
+      lastReviewedAt: null,
+    });
+
+    // Mastery 0 and no correct answers would otherwise be two signals — but
+    // "not started" is not "struggling".
+    assert.equal(isWeakWord(unseen, { now: NOW }), false);
+    assert.equal(isWeakWord(undefined, { now: NOW }), false);
+  });
+
+  it("survives a row with broken numbers", () => {
+    const broken = progress("c", {
+      masteryScore: NaN,
+      totalReviews: NaN,
+      lapses: NaN,
+    });
+    assert.equal(isWeakWord(broken, { now: NOW }), false, "an unreadable row is not evidence");
+  });
+
+  it("counts a lapse rate over a third, but not one under it", () => {
+    const overdue = { ...healthy(), dueAt: NOW - DAY_MS };
+    assert.equal(isWeakWord({ ...overdue, lapses: 4, totalReviews: 10 }, { now: NOW }), true);
+    assert.equal(isWeakWord({ ...overdue, lapses: 3, totalReviews: 10 }, { now: NOW }), false);
   });
 });

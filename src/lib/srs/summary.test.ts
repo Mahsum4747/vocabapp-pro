@@ -33,6 +33,7 @@ function progress(cardId: string, overrides: Partial<CardProgress> = {}): CardPr
     correctReviews: 3,
     consecutiveCorrect: 3,
     lastReviewedAt: NOW - 10 * DAY_MS,
+    lastReviewedDate: null,
     masteryScore: 50,
     scheduler: "fsrs",
     ...overrides,

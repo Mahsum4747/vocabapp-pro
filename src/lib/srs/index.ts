@@ -17,6 +17,7 @@ export {
   reviewSummary,
   hasReviewWork,
   isStudiableSet,
+  isWeakWord,
   summarizeLibrary,
   DEFAULT_QUEUE_WEIGHTS,
 } from "./queue.ts";

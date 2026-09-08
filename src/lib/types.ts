@@ -130,6 +130,17 @@ export type CardProgress = SchedulerState & {
   consecutiveCorrect: number;
   lastReviewedAt: number | null;
   /**
+   * The LOCAL calendar day of the last review, "YYYY-MM-DD", as the client
+   * reported it.
+   *
+   * Stored next to `lastReviewedAt` rather than derived from it: the epoch
+   * timestamp is the server's, and the server does not know the viewer's
+   * timezone, so it cannot tell which local day an evening review belongs to.
+   * This is what lets a second review of the same card today be recognised as
+   * the same day. Rows written before this field existed have it absent.
+   */
+  lastReviewedDate: string | null;
+  /**
    * 0..100, derived from scheduler state for display and the Leitner boxes.
    * A product metric only: the scheduler never reads it back, so it cannot
    * influence when a card is next shown.
@@ -156,6 +167,7 @@ export function initialProgress(
     correctReviews: 0,
     consecutiveCorrect: 0,
     lastReviewedAt: null,
+    lastReviewedDate: null,
     masteryScore: 0,
     scheduler,
   };
@@ -179,4 +191,10 @@ export type DailyStats = {
   reviews: number;
   correctReviews: number;
   studySeconds: number;
+  /**
+   * Distinct cards reviewed today — one per card however many times it was
+   * graded. "How many words did I work on" is a different question from "how
+   * many answers did I give", and a daily goal is about the former.
+   */
+  uniqueWordsReviewed: number;
 };

@@ -13,6 +13,8 @@ export type DailyDelta = {
   reviews: number;
   correctReviews: number;
   studySeconds: number;
+  /** 1 the first time this card is graded today, 0 for every repeat. */
+  uniqueWordsReviewed: number;
 };
 
 export type ReviewPlan = {
@@ -65,6 +67,17 @@ export function planReview(input: {
     ...(responseTimeMs !== undefined ? { responseTimeMs } : {}),
   };
 
+  /**
+   * Is this the card's first review today?
+   *
+   * Compared as day KEYS, not timestamps: both sides are the viewer's own
+   * local day, so there is no timezone arithmetic to get wrong. A row written
+   * before `lastReviewedDate` existed has none, and counts as a first review —
+   * a one-time overcount of at most one per card, which self-heals as soon as
+   * that card is reviewed again.
+   */
+  const firstReviewToday = previous?.lastReviewedDate !== date;
+
   const progress: CardProgress = {
     ...scheduled,
     userId,
@@ -75,6 +88,7 @@ export function planReview(input: {
     // A wrong answer breaks the streak outright rather than decrementing it.
     consecutiveCorrect: correct ? (previous?.consecutiveCorrect ?? 0) + 1 : 0,
     lastReviewedAt: now,
+    lastReviewedDate: date,
     masteryScore: masteryScoreOf(scheduled),
     scheduler: scheduler.name,
   };
@@ -87,6 +101,7 @@ export function planReview(input: {
       reviews: 1,
       correctReviews: correct ? 1 : 0,
       studySeconds: Math.round((responseTimeMs ?? 0) / 1000),
+      uniqueWordsReviewed: firstReviewToday ? 1 : 0,
     },
   };
 }

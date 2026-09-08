@@ -65,6 +65,58 @@ function bandOf(progress: CardProgress | undefined, now: number): Band {
   return "early";
 }
 
+/**
+ * Is this card a "weak word" — one the learner keeps getting wrong, rather
+ * than one they simply haven't reached yet?
+ *
+ * Four independent signals, and a card qualifies on any TWO of them. One
+ * signal alone is too easy to trip: a low mastery score describes every card
+ * in a set someone started yesterday, and a single wrong answer on a card
+ * answered right nine times is a slip, not a weakness. Requiring agreement
+ * between two different kinds of evidence — how weak the scheduler thinks the
+ * memory is, how the last answer went, how often it has been forgotten, and
+ * whether it is sitting unanswered past its due date — is what separates the
+ * two.
+ *
+ * A card with no reviews is never weak. "Not started" and "struggling" are
+ * different states, and merging them is the bug this codebase already fixed
+ * once in the Leitner boxes.
+ *
+ * Reads only the progress row: no query, no event log, so a caller can score a
+ * whole library from the map it already loaded.
+ */
+export function isWeakWord(
+  progress: CardProgress | undefined,
+  options: Pick<QueueOptions, "now">,
+): boolean {
+  if (!progress) return false;
+  const totalReviews = Number.isFinite(progress.totalReviews) ? progress.totalReviews : 0;
+  if (totalReviews <= 0) return false;
+
+  const masteryScore = Number.isFinite(progress.masteryScore) ? progress.masteryScore : 0;
+  const lapses = Number.isFinite(progress.lapses) ? progress.lapses : 0;
+
+  const signals = [
+    // The scheduler's own verdict: this memory is not holding.
+    masteryScore < WEAK_MASTERY_MAX,
+    // The last answer was wrong.
+    progress.consecutiveCorrect === 0,
+    // It has been forgotten in more than a third of its reviews.
+    lapses / totalReviews > WEAK_FAILURE_RATE,
+    // Reviewed before, and now sitting past its due date.
+    progress.lastReviewedAt !== null && progress.dueAt !== null && progress.dueAt <= options.now,
+  ];
+
+  return signals.filter(Boolean).length >= WEAK_SIGNALS_REQUIRED;
+}
+
+/** Below this mastery score, the scheduler considers the memory shaky. */
+const WEAK_MASTERY_MAX = 60;
+/** Above this share of reviews ending in a lapse, the card is being forgotten. */
+const WEAK_FAILURE_RATE = 0.3;
+/** How many signals must agree before a card counts as weak. */
+const WEAK_SIGNALS_REQUIRED = 2;
+
 function priorityOf(
   progress: CardProgress | undefined,
   options: Required<Pick<QueueOptions, "now">> & { weights: QueueWeights },
