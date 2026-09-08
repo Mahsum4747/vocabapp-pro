@@ -12,6 +12,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SUBJECTS } from "@/lib/types";
 import { masteryPercent } from "@/lib/quiz";
+import { summarizeLibrary } from "@/lib/srs";
+import { ReviewCallout } from "@/components/review-status";
 import { useProgress, useStudyStore } from "@/lib/store";
 
 type Search = { view?: "mine" | "public" };
@@ -65,6 +67,18 @@ function Home() {
     const ownIds = new Set(sets.map((s) => s.id));
     return publicSets.filter((set) => !ownIds.has(set.id));
   }, [publicSets, sets]);
+
+  /**
+   * What the whole library owes, and which set to open first.
+   *
+   * Derived from the progress map this page already loads for the mastery
+   * bars — no extra query, and no counter of its own that could drift from
+   * what a session actually serves.
+   */
+  const reviewNow = useMemo(
+    () => summarizeLibrary(sets, progress, { now: Date.now() }),
+    [sets, progress],
+  );
 
   const continueSet = useMemo(() => {
     return [...sets]
@@ -146,6 +160,17 @@ function Home() {
           </Button>
         </div>
       </section>
+
+      {/* Reviews come first when any are waiting: the engine already knows
+          what is due, and this is the way in. */}
+      {reviewNow.target ? (
+        <ReviewCallout
+          setId={reviewNow.target.set.id}
+          summary={reviewNow.totals}
+          title={reviewNow.target.set.title}
+          className="mt-8"
+        />
+      ) : null}
 
       {continueSet ? (
         <Link

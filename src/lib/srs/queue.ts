@@ -1,4 +1,4 @@
-import type { Card, CardProgress } from "../types.ts";
+import type { Card, CardProgress, StudySet } from "../types.ts";
 import { isCardActive } from "../types.ts";
 
 /**
@@ -147,6 +147,113 @@ export function buildReviewQueue(
   }
 
   return options.limit === undefined ? selected : selected.slice(0, options.limit);
+}
+
+/**
+ * What a set (or a whole library) currently owes the learner.
+ *
+ * "Due" means the scheduler's due date has passed: `due` counts every card
+ * with `dueAt <= now`, and `overdue` is the subset more than a day past it, so
+ * `overdue` is always included in `due` rather than added to it.
+ *
+ * NEW cards are counted separately and never folded into `due`. A card that
+ * has never been seen isn't owed a review — it's unstarted work — and merging
+ * the two would let a big new set read as a huge review backlog.
+ */
+export type ReviewSummary = {
+  /** dueAt <= now. Includes `overdue`. */
+  due: number;
+  /** More than a day past due. */
+  overdue: number;
+  /** Never studied — no progress row yet. */
+  fresh: number;
+  /** Not due, but the last answer was wrong or the card keeps being forgotten. */
+  weak: number;
+  /** Not due and in good shape. */
+  notDue: number;
+  /** Active cards considered (excluded/archived are not counted). */
+  total: number;
+};
+
+/**
+ * Count what's waiting, using the same banding the queue orders by — so the
+ * number on a button and the cards a session actually serves can't disagree.
+ */
+export function reviewSummary(
+  cards: Card[],
+  progressByCardId: Map<string, CardProgress> | Record<string, CardProgress>,
+  options: Pick<QueueOptions, "now">,
+): ReviewSummary {
+  const entries = buildReviewQueue(cards, progressByCardId, {
+    now: options.now,
+    includeNotDue: true,
+  });
+
+  const count = (band: Band) => entries.filter((e) => e.band === band).length;
+  const overdue = count("overdue");
+
+  return {
+    due: overdue + count("due"),
+    overdue,
+    fresh: count("fresh"),
+    weak: count("weak"),
+    notDue: count("early"),
+    total: entries.length,
+  };
+}
+
+/** Is there anything worth opening a review session for? */
+export function hasReviewWork(summary: ReviewSummary): boolean {
+  return summary.due > 0 || summary.fresh > 0 || summary.weak > 0;
+}
+
+export type LibraryReview = {
+  /** Every set's counts added together. */
+  totals: ReviewSummary;
+  /** The set to open first, or undefined when nothing is waiting anywhere. */
+  target?: { set: StudySet; summary: ReviewSummary };
+};
+
+/**
+ * The library-wide view: how much is waiting in total, and which set to open.
+ *
+ * Review happens inside a set, so the "start review" action has to pick one.
+ * It picks the set with the most overdue cards, then the most due, then the
+ * most new — i.e. wherever the learner is furthest behind.
+ *
+ * Reference sets and sets too small to study are left out entirely; they have
+ * no review flow to send anyone into.
+ */
+export function summarizeLibrary(
+  sets: StudySet[],
+  progressByCardId: Map<string, CardProgress> | Record<string, CardProgress>,
+  options: Pick<QueueOptions, "now">,
+): LibraryReview {
+  const perSet = sets
+    .filter((set) => !set.isReference && set.cards.length >= 2)
+    .map((set) => ({ set, summary: reviewSummary(set.cards, progressByCardId, options) }));
+
+  const totals = perSet.reduce<ReviewSummary>(
+    (acc, { summary }) => ({
+      due: acc.due + summary.due,
+      overdue: acc.overdue + summary.overdue,
+      fresh: acc.fresh + summary.fresh,
+      weak: acc.weak + summary.weak,
+      notDue: acc.notDue + summary.notDue,
+      total: acc.total + summary.total,
+    }),
+    { due: 0, overdue: 0, fresh: 0, weak: 0, notDue: 0, total: 0 },
+  );
+
+  const best = [...perSet].sort(
+    (a, b) =>
+      b.summary.overdue - a.summary.overdue ||
+      b.summary.due - a.summary.due ||
+      b.summary.fresh - a.summary.fresh,
+  )[0];
+
+  const hasWork = best !== undefined && (best.summary.due > 0 || best.summary.fresh > 0);
+  return { totals, target: hasWork ? best : undefined };
 }
 
 /**

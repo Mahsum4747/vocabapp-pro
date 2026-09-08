@@ -22,6 +22,7 @@ import { ModeGrid } from "@/components/mode-grid";
 import { LeitnerBoxes } from "@/components/leitner-boxes";
 import { EmptyState } from "@/components/empty-state";
 import { ExampleLine } from "@/components/example-line";
+import { ReviewCallout } from "@/components/review-status";
 import { ShareLink } from "@/components/share-link";
 import { SpeakButton } from "@/components/speak-button";
 import { TransferCardsDialog, type TransferMode } from "@/components/transfer-cards-dialog";
@@ -45,6 +46,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { masteryPercent, type ProgressMap } from "@/lib/quiz";
+import { reviewSummary } from "@/lib/srs";
 import { serializeSetExport } from "@/lib/parse-cards";
 import { useSet, useSetProgress, useStudyStore } from "@/lib/store";
 import type { Card, CardStatus } from "@/lib/types";
@@ -126,6 +128,8 @@ function SetPage() {
   }
 
   const mastery = masteryPercent(studySet.cards, progress);
+  // Same progress rows the mastery bar and Leitner boxes read — no extra query.
+  const summary = reviewSummary(studySet.cards, progress, { now: Date.now() });
   const starred = studySet.cards.filter((c) => c.starred).length;
   const archivedCount = studySet.cards.filter((c) => c.status === "archived").length;
 
@@ -276,6 +280,10 @@ function SetPage() {
               onSelectBox={setSelectedBox}
             />
           </div>
+
+          {studySet.cards.length >= 2 ? (
+            <ReviewCallout setId={studySet.id} summary={summary} className="mt-4" />
+          ) : null}
 
           <div className="mt-4">
             {selectedBox !== null ? (

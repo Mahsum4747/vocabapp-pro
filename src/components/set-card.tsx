@@ -5,6 +5,8 @@ import type { Card, StudySet } from "@/lib/types";
 import { MASTERY_MAX } from "@/lib/types";
 import { leitnerBoxCounts, masteryPercent, type ProgressMap } from "@/lib/quiz";
 import { useProgress } from "@/lib/store";
+import { reviewSummary } from "@/lib/srs";
+import { DueBadge } from "./review-status";
 import { cn } from "@/lib/utils";
 import { Badge } from "./ui/badge";
 import { Progress } from "./ui/progress";
@@ -36,6 +38,8 @@ export function SetCard({ set }: { set: StudySet }) {
   // simply reads as 0.
   const progress = useProgress();
   const mastery = masteryPercent(set.cards, progress);
+  // Derived from the progress the library page already loaded — no extra read.
+  const summary = reviewSummary(set.cards, progress, { now: Date.now() });
   const when = set.lastStudiedAt
     ? formatDistanceToNow(set.lastStudiedAt, { addSuffix: true })
     : "Not studied yet";
@@ -48,10 +52,13 @@ export function SetCard({ set }: { set: StudySet }) {
     >
       <div className="flex items-center justify-between gap-3">
         <Badge>{set.subject}</Badge>
-        <span className="inline-flex items-center gap-1 text-xs text-muted tabular-nums">
-          <Layers className="size-3.5" />
-          {set.cards.length} cards
-        </span>
+        <div className="flex items-center gap-2">
+          {set.isReference ? null : <DueBadge summary={summary} />}
+          <span className="inline-flex items-center gap-1 text-xs text-muted tabular-nums">
+            <Layers className="size-3.5" />
+            {set.cards.length} cards
+          </span>
+        </div>
       </div>
       <h3 className="mt-4 font-display text-xl font-medium tracking-tight group-hover:text-primary">
         {set.title}

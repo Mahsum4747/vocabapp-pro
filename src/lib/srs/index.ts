@@ -11,6 +11,19 @@ export const defaultScheduler: Scheduler = createFsrsScheduler();
 export { createFsrsScheduler, DEFAULT_WEIGHTS, retrievability } from "./fsrs.ts";
 export type { FsrsOptions, FsrsWeights } from "./fsrs.ts";
 export { leitnerBoxOfScore, masteryScoreOf, MASTERY_TARGET_STABILITY_DAYS } from "./mastery.ts";
-export { buildReviewQueue, queuedCards, DEFAULT_QUEUE_WEIGHTS } from "./queue.ts";
-export type { QueueEntry, QueueOptions, QueueWeights } from "./queue.ts";
+export {
+  buildReviewQueue,
+  queuedCards,
+  reviewSummary,
+  hasReviewWork,
+  summarizeLibrary,
+  DEFAULT_QUEUE_WEIGHTS,
+} from "./queue.ts";
+export type {
+  QueueEntry,
+  QueueOptions,
+  QueueWeights,
+  ReviewSummary,
+  LibraryReview,
+} from "./queue.ts";
 export type { LearningState, ReviewInput, Scheduler, SchedulerState } from "./scheduler.ts";
