@@ -45,7 +45,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { masteryPercent, type ProgressMap } from "@/lib/quiz";
+import { masteryPercent, masteryScoreFor, type ProgressMap } from "@/lib/quiz";
 import { reviewSummary } from "@/lib/srs";
 import { serializeSetExport } from "@/lib/parse-cards";
 import { useSet, useSetProgress, useStudyStore } from "@/lib/store";
@@ -68,7 +68,7 @@ const SORT_OPTIONS: { value: SortMode; label: string }[] = [
 function sortCards(cards: Card[], mode: SortMode, progress: ProgressMap): Card[] {
   if (mode === "original") return cards;
   const sorted = [...cards];
-  const score = (card: Card) => progress[card.id]?.masteryScore ?? 0;
+  const score = (card: Card) => masteryScoreFor(progress, card.id);
   if (mode === "alpha") sorted.sort((a, b) => a.term.localeCompare(b.term));
   else if (mode === "mastery") sorted.sort((a, b) => score(a) - score(b));
   else if (mode === "starred") sorted.sort((a, b) => Number(b.starred) - Number(a.starred));

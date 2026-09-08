@@ -94,7 +94,31 @@ export function ReviewCallout({
   }
 
   const urgent = summary.overdue > 0;
-  const actionLabel = summary.due > 0 ? "Start review" : "Start learning";
+
+  /**
+   * Heading and button are derived from ONE decision, so they can never
+   * disagree — the bug this replaces said "Ready to review" above a "Start
+   * learning" button for a set whose cards were all new or not yet due.
+   *
+   * A card that has never been seen cannot be "reviewed", so a set with
+   * nothing due says so plainly and offers to start learning instead.
+   */
+  const mode: "overdue" | "due" | "new" | "weak" =
+    summary.overdue > 0 ? "overdue" : summary.due > 0 ? "due" : summary.fresh > 0 ? "new" : "weak";
+
+  const HEADING = {
+    overdue: "Reviews overdue",
+    due: "Ready to review",
+    new: "New cards to learn",
+    weak: "Worth another look",
+  } as const;
+
+  const ACTION = {
+    overdue: "Start review",
+    due: "Start review",
+    new: "Start learning",
+    weak: "Start review",
+  } as const;
 
   return (
     <div
@@ -112,7 +136,7 @@ export function ReviewCallout({
           )}
         >
           {urgent ? <AlertCircle className="size-3.5" /> : <Sparkles className="size-3.5" />}
-          {urgent ? "Reviews overdue" : "Ready to review"}
+          {HEADING[mode]}
         </p>
         {title ? (
           <p className="mt-1 truncate font-display text-lg font-medium tracking-tight">{title}</p>
@@ -121,7 +145,7 @@ export function ReviewCallout({
       </div>
       <Button asChild className="shrink-0">
         <Link to="/sets/$setId/flashcards" params={{ setId }}>
-          {actionLabel}
+          {ACTION[mode]}
         </Link>
       </Button>
     </div>

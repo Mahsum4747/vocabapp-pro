@@ -6,6 +6,19 @@ import { shuffle } from "./utils.ts";
 /** Per-card progress for the signed-in user, keyed by card id. */
 export type ProgressMap = Record<string, CardProgress>;
 
+/**
+ * One card's mastery score, as a number that is always safe to average.
+ *
+ * The single boundary where stored progress becomes arithmetic. A missing row
+ * means unstudied (0), and so does a row whose score isn't a real number —
+ * `?? 0` alone would let a stored NaN through and turn the whole set's mastery
+ * into NaN%.
+ */
+export function masteryScoreFor(progress: ProgressMap, cardId: string): number {
+  const score = progress[cardId]?.masteryScore;
+  return typeof score === "number" && Number.isFinite(score) ? score : 0;
+}
+
 export type McQuestion = {
   type: "mc";
   cardId: string;
@@ -113,13 +126,13 @@ export function buildTest(cards: Card[], limit = 12): TestQuestion[] {
 export function masteryPercent(cards: Card[], progress: ProgressMap): number {
   const active = cards.filter(isCardActive);
   if (active.length === 0) return 0;
-  const sum = active.reduce((acc, card) => acc + (progress[card.id]?.masteryScore ?? 0), 0);
+  const sum = active.reduce((acc, card) => acc + masteryScoreFor(progress, card.id), 0);
   return Math.round(sum / active.length);
 }
 
 /** Which Leitner box (0..MASTERY_MAX) a card currently sits in for this user. */
 export function leitnerBoxOf(card: Card, progress: ProgressMap): number {
-  return leitnerBoxOfScore(progress[card.id]?.masteryScore ?? 0);
+  return leitnerBoxOfScore(masteryScoreFor(progress, card.id));
 }
 
 /** Leitner box counts: index N is how many active cards sit in box N (0..MASTERY_MAX). */

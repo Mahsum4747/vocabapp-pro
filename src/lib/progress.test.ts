@@ -1,8 +1,14 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { leitnerBoxCounts, leitnerBoxOf, masteryPercent, type ProgressMap } from "./quiz.ts";
+import {
+  leitnerBoxCounts,
+  leitnerBoxOf,
+  masteryPercent,
+  masteryScoreFor,
+  type ProgressMap,
+} from "./quiz.ts";
 import { freshCardCopy, initialProgress, isCorrectRating, type Card } from "./types.ts";
-import { defaultScheduler } from "./srs/index.ts";
+import { defaultScheduler, leitnerBoxOfScore, masteryScoreOf } from "./srs/index.ts";
 
 function card(id: string, overrides: Partial<Card> = {}): Card {
   return {
@@ -117,5 +123,85 @@ describe("rating correctness", () => {
     assert.equal(isCorrectRating("hard"), true);
     assert.equal(isCorrectRating("good"), true);
     assert.equal(isCorrectRating("easy"), true);
+  });
+});
+
+describe("malformed or legacy progress rows", () => {
+  /**
+   * Regression: the set page rendered "NaN%".
+   *
+   * A stored row whose `stability` is missing or NaN — a row written before
+   * the field existed, or one already poisoned — used to fall through
+   * `stability <= 0` (false for undefined) into log1p and return NaN, which
+   * then propagated through the average and the box counts.
+   */
+  function brokenProgress(
+    cardId: string,
+    overrides: Record<string, unknown> = {},
+  ): ProgressMap[string] {
+    return {
+      ...initialProgress("u1", cardId, "s1", defaultScheduler.initial(), defaultScheduler.name),
+      ...overrides,
+    } as ProgressMap[string];
+  }
+
+  it("scores a row with no stability as 0 rather than NaN", () => {
+    const score = masteryScoreOf({ stability: undefined as unknown as number });
+    assert.equal(Number.isFinite(score), true, "must be a real number");
+    assert.equal(score, 0);
+  });
+
+  it("scores a NaN stability as 0", () => {
+    assert.equal(masteryScoreOf({ stability: NaN }), 0);
+  });
+
+  it("keeps the Leitner box finite for a broken score", () => {
+    assert.equal(leitnerBoxOfScore(NaN), 0);
+    assert.equal(leitnerBoxOfScore(undefined as unknown as number), 0);
+  });
+
+  it("never renders NaN% for a set holding a broken row", () => {
+    const cards = [card("a"), card("b")];
+    const progress: ProgressMap = {
+      a: brokenProgress("a", { masteryScore: NaN }),
+      b: progressFor("b", 100),
+    };
+
+    const percent = masteryPercent(cards, progress);
+    assert.equal(Number.isFinite(percent), true, `expected a number, got ${percent}`);
+    assert.equal(percent, 50, "the broken row counts as 0, the good one as 100");
+  });
+
+  it("never renders NaN% when every row is broken", () => {
+    const cards = [card("a"), card("b")];
+    const progress: ProgressMap = {
+      a: brokenProgress("a", { masteryScore: NaN }),
+      b: brokenProgress("b", { masteryScore: undefined }),
+    };
+
+    assert.equal(masteryPercent(cards, progress), 0);
+  });
+
+  it("still counts a card with a broken row in the box totals", () => {
+    const cards = [card("a"), card("b"), card("c")];
+    const progress: ProgressMap = {
+      a: brokenProgress("a", { masteryScore: NaN }),
+      b: progressFor("b", 100),
+    };
+
+    const counts = leitnerBoxCounts(cards, progress);
+    assert.equal(
+      counts.reduce((sum, n) => sum + n, 0),
+      cards.length,
+      "a broken row must not make a card vanish from the boxes",
+    );
+    assert.equal(counts[0], 2, "the broken row and the unstudied card sit in box 0");
+    assert.equal(counts[5], 1);
+  });
+
+  it("treats a non-numeric stored score as unstudied", () => {
+    const progress: ProgressMap = { a: brokenProgress("a", { masteryScore: "80" }) };
+    assert.equal(masteryScoreFor(progress, "a"), 0);
+    assert.equal(masteryPercent([card("a")], progress), 0);
   });
 });
