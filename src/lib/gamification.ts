@@ -69,18 +69,23 @@ export function levelFromXp(totalXp: number): LevelInfo {
   };
 }
 
-export type AchievementId = "first_card" | "100_words" | "streak_7" | "perfect_run" | "mastered_10";
+export type AchievementId = "streak_7" | "perfect_run" | "mastered_10" | "set_completed";
 
-/** The running totals every achievement is judged against. */
+/**
+ * The running totals every achievement is judged against.
+ *
+ * Deliberately not "reviews recorded": counting attempts rewards showing up,
+ * and every badge here is meant to reward something that actually went well.
+ */
 export type AchievementStats = {
-  /** Reviews this user has recorded, ever. */
-  totalReviews: number;
   /** Current streak in days, from `user_streaks`. */
   currentStreak: number;
   /** Consecutive good/easy answers; any `again` or `hard` resets it. */
   perfectRun: number;
   /** Cards whose mastery score has reached MASTERED_SCORE. */
   masteredCards: number;
+  /** Sets whose every active card has reached mastery. 0 or 1 is enough here. */
+  setsCompleted: number;
 };
 
 export const MASTERED_SCORE = 80;
@@ -107,10 +112,13 @@ export type UserProfile = {
 /** The stats every achievement is judged against, pulled out of a profile. */
 export function statsOf(profile: UserProfile, currentStreak: number): AchievementStats {
   return {
-    totalReviews: profile.totalReviews,
     currentStreak,
     perfectRun: profile.perfectRun,
     masteredCards: profile.masteredCards,
+    // Whether a set is finished is only ever established at review time, from
+    // the set being reviewed — so for display it is simply whether the badge
+    // has been earned. A locked one reads 0 / 1, which is all it can say.
+    setsCompleted: profile.achievements.set_completed !== undefined ? 1 : 0,
   };
 }
 
@@ -124,20 +132,6 @@ export type Achievement = {
 };
 
 export const ACHIEVEMENTS: readonly Achievement[] = [
-  {
-    id: "first_card",
-    name: "First card",
-    description: "Review your first card.",
-    metric: "totalReviews",
-    target: 1,
-  },
-  {
-    id: "100_words",
-    name: "Century",
-    description: "Record 100 reviews.",
-    metric: "totalReviews",
-    target: 100,
-  },
   {
     id: "streak_7",
     name: "Seven days",
@@ -158,6 +152,13 @@ export const ACHIEVEMENTS: readonly Achievement[] = [
     description: `Take ten words to a mastery score of ${MASTERED_SCORE}.`,
     metric: "masteredCards",
     target: 10,
+  },
+  {
+    id: "set_completed",
+    name: "Set complete",
+    description: "Take every card in one set to mastery.",
+    metric: "setsCompleted",
+    target: 1,
   },
 ];
 

@@ -15,7 +15,7 @@ import {
 import type { ReviewRating } from "./types.ts";
 
 function stats(overrides: Partial<AchievementStats> = {}): AchievementStats {
-  return { totalReviews: 0, currentStreak: 0, perfectRun: 0, masteredCards: 0, ...overrides };
+  return { currentStreak: 0, perfectRun: 0, masteredCards: 0, setsCompleted: 0, ...overrides };
 }
 
 describe("XP for one review", () => {
@@ -101,19 +101,24 @@ describe("the perfect run counter", () => {
 });
 
 describe("achievements", () => {
-  it("unlocks the first card on the first review", () => {
-    assert.deepEqual(newlyUnlocked(stats({ totalReviews: 1 }), {}), ["first_card"]);
+  it("offers four badges, all of them earned rather than attended", () => {
+    // No badge for simply recording reviews: turning up is not an achievement,
+    // and a counter of attempts would unlock on ten wrong answers.
+    assert.deepEqual(
+      ACHIEVEMENTS.map((a) => a.id),
+      ["streak_7", "perfect_run", "mastered_10", "set_completed"],
+    );
   });
 
   it("does not unlock the same achievement twice", () => {
-    const earned = stats({ totalReviews: 5 });
-    assert.deepEqual(newlyUnlocked(earned, { first_card: 1_700_000_000_000 }), []);
+    const earned = stats({ currentStreak: 9 });
+    assert.deepEqual(newlyUnlocked(earned, { streak_7: 1_700_000_000_000 }), []);
   });
 
   it("still fires a milestone that was passed rather than hit exactly", () => {
-    // A counter can move past 100 without ever equalling it — a retried
+    // A counter can move past its target without ever equalling it — a retried
     // transaction, a repaired total. The badge must not be lost forever.
-    assert.deepEqual(newlyUnlocked(stats({ totalReviews: 104 }), { first_card: 1 }), ["100_words"]);
+    assert.deepEqual(newlyUnlocked(stats({ masteredCards: 14 }), {}), ["mastered_10"]);
   });
 
   it("unlocks the week streak from the streak counter", () => {
@@ -127,18 +132,24 @@ describe("achievements", () => {
   });
 
   it("unlocks ten mastered words", () => {
+    assert.equal(newlyUnlocked(stats({ masteredCards: 9 }), {}).includes("mastered_10"), false);
     assert.equal(newlyUnlocked(stats({ masteredCards: 10 }), {}).includes("mastered_10"), true);
   });
 
+  it("unlocks a completed set on the first finished set", () => {
+    assert.equal(newlyUnlocked(stats({ setsCompleted: 0 }), {}).includes("set_completed"), false);
+    assert.equal(newlyUnlocked(stats({ setsCompleted: 1 }), {}).includes("set_completed"), true);
+  });
+
   it("reports progress towards a locked one, capped at the target", () => {
-    const century = ACHIEVEMENTS.find((a) => a.id === "100_words")!;
-    assert.deepEqual(achievementProgress(century, stats({ totalReviews: 42 })), {
-      current: 42,
-      target: 100,
+    const mastered = ACHIEVEMENTS.find((a) => a.id === "mastered_10")!;
+    assert.deepEqual(achievementProgress(mastered, stats({ masteredCards: 4 })), {
+      current: 4,
+      target: 10,
     });
-    assert.deepEqual(achievementProgress(century, stats({ totalReviews: 500 })), {
-      current: 100,
-      target: 100,
+    assert.deepEqual(achievementProgress(mastered, stats({ masteredCards: 50 })), {
+      current: 10,
+      target: 10,
     });
   });
 });
@@ -166,7 +177,7 @@ describe("a session, end to end", () => {
 
     for (let i = 1; i <= 10; i++) {
       run = nextPerfectRun(run, "good");
-      const fired = newlyUnlocked(stats({ totalReviews: i, perfectRun: run }), unlocked);
+      const fired = newlyUnlocked(stats({ perfectRun: run }), unlocked);
       unlocked = { ...unlocked, ...Object.fromEntries(fired.map((id) => [id, i])) };
 
       if (i < 10) assert.equal("perfect_run" in unlocked, false, `unlocked too early at ${i}`);
@@ -174,7 +185,6 @@ describe("a session, end to end", () => {
 
     assert.equal("perfect_run" in unlocked, true);
     assert.equal(unlocked.perfect_run, 10, "unlocked on the tenth answer");
-    assert.equal(unlocked.first_card, 1, "and the first card badge kept its own date");
   });
 
   it("resets the run when one answer goes wrong", () => {

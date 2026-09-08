@@ -18,7 +18,11 @@ rules_version = '2';
 //   study_sets/{setId}                     — sets and their cards
 //   user_streaks/{userId}                  — streak counters
 //   ai_generated_sets/{cacheKey}           — Gemini response cache
-//   users/{userId}                         — settings: daily goal, timezone
+//   users/{userId}                         — profile: daily goal, timezone, XP
+//                                            totals, and `achievements`, a map
+//                                            of unlocked id -> epoch ms:
+//                                            streak_7, perfect_run,
+//                                            mastered_10, set_completed
 //   users/{userId}/cardProgress/{cardId}   — per-card review summary
 //   users/{userId}/reviewEvents/{eventId}  — raw review event log
 //   users/{userId}/dailyStats/{date}       — per-day totals

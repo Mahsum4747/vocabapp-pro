@@ -23,7 +23,7 @@ import {
   readUserSettings,
   type UserSettings,
 } from "./daily-goal";
-import { freshCardCopy, isCorrectRating, readDailyStats } from "./types";
+import { freshCardCopy, isCardActive, isCorrectRating, readDailyStats } from "./types";
 import type { Card, CardProgress, DailyStats, StudySet } from "./types";
 
 /** Firestore ids and the date key are path segments — keep them tight. */
@@ -547,20 +547,27 @@ export const recordReview = createServerFn({ method: "POST" })
     // worth failing a recorded review over.
     let unlocked: AchievementId[] = [];
     try {
+      const already = outcome.achievements ?? {};
+      // Both mastery badges cost a query, so they are only counted when this
+      // review could actually have moved them: a card joins the mastered pile
+      // on its own review, and nothing else. An already-earned badge is never
+      // re-counted.
+      const crossedMastery = progress.masteryScore >= MASTERED_SCORE;
+      const activeInSet = studySet.cards.filter(isCardActive).length;
+
       unlocked = await unlockAchievementsFor({
-        db,
         userRef,
         stats: {
-          totalReviews: outcome.totalReviews,
           currentStreak: streak?.currentStreak ?? 0,
           perfectRun: outcome.perfectRun,
-          // Counting mastered cards is a query, so it is only worth running
-          // when this review could actually have changed the count — a card
-          // only joins the mastered pile on its own review.
           masteredCards:
-            progress.masteryScore >= MASTERED_SCORE ? await countMasteredCards(userRef) : 0,
+            crossedMastery && !("mastered_10" in already) ? await countMasteredCards(userRef) : 0,
+          setsCompleted:
+            crossedMastery && !("set_completed" in already) && activeInSet > 0
+              ? await countMasteredInSet(userRef, data.setId, activeInSet)
+              : 0,
         },
-        already: outcome.achievements,
+        already,
         now,
       });
     } catch (error) {
@@ -588,6 +595,28 @@ async function countMasteredCards(userRef: FirebaseFirestore.DocumentReference):
 }
 
 /**
+ * Is every active card in this set mastered? Returns 1 when it is, so it can
+ * be read as a count alongside the other achievement stats.
+ *
+ * Judged on the set's current state rather than on one sitting: "in one
+ * session" would need a session identity that nothing stores, and a set taken
+ * to mastery over three evenings is no less finished than one done in an hour.
+ */
+async function countMasteredInSet(
+  userRef: FirebaseFirestore.DocumentReference,
+  setId: string,
+  activeCards: number,
+): Promise<number> {
+  const snap = await userRef
+    .collection("cardProgress")
+    .where("setId", "==", setId)
+    .where("masteryScore", ">=", MASTERED_SCORE)
+    .count()
+    .get();
+  return snap.data().count >= activeCards ? 1 : 0;
+}
+
+/**
  * Write any achievements these totals have just earned, and return them.
  *
  * A merge write of only the new ids: Firestore merges maps field by field, so
@@ -595,7 +624,6 @@ async function countMasteredCards(userRef: FirebaseFirestore.DocumentReference):
  * it was actually earned.
  */
 async function unlockAchievementsFor(input: {
-  db: FirebaseFirestore.Firestore;
   userRef: FirebaseFirestore.DocumentReference;
   stats: AchievementStats;
   already: Record<string, unknown> | undefined;

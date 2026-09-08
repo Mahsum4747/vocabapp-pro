@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { format } from "date-fns";
-import { Award, Flame, Sparkles, Star, Target, Zap } from "lucide-react";
+import { Award, Flame, Layers, Target, Zap } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { AuthGate } from "@/components/auth-gate";
@@ -87,7 +87,9 @@ function AccountPage() {
       </div>
 
       <div className="mt-6">
-        {tab === "xp" ? <XpTab totalXP={profile.totalXP} /> : null}
+        {tab === "xp" ? (
+          <XpTab totalXP={profile.totalXP} totalReviews={profile.totalReviews} />
+        ) : null}
         {tab === "achievements" ? (
           <AchievementsTab unlocked={profile.achievements} stats={stats} />
         ) : null}
@@ -99,7 +101,7 @@ function AccountPage() {
 
 const CHART_DAYS = 7;
 
-function XpTab({ totalXP }: { totalXP: number }) {
+function XpTab({ totalXP, totalReviews }: { totalXP: number; totalReviews: number }) {
   const { level, xpIntoLevel, xpToNextLevel } = levelFromXp(totalXP);
   const [history, setHistory] = useState<DailyStats[] | null>(null);
 
@@ -137,6 +139,9 @@ function XpTab({ totalXP }: { totalXP: number }) {
         <p className="mt-2 text-sm text-muted tabular-nums">
           {xpToNextLevel} XP to level {level + 1} — about {goodAnswersNeeded} more cards answered
           well.
+        </p>
+        <p className="mt-4 text-sm text-muted tabular-nums">
+          {totalReviews} review{totalReviews === 1 ? "" : "s"} recorded.
         </p>
       </section>
 
@@ -189,12 +194,11 @@ function XpChart({ rows }: { rows: DailyStats[] }) {
   );
 }
 
-const ACHIEVEMENT_ICONS: Record<AchievementId, typeof Star> = {
-  first_card: Star,
-  "100_words": Sparkles,
+const ACHIEVEMENT_ICONS: Record<AchievementId, typeof Award> = {
   streak_7: Flame,
   perfect_run: Target,
   mastered_10: Award,
+  set_completed: Layers,
 };
 
 function AchievementsTab({
