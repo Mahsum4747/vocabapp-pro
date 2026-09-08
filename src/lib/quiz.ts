@@ -117,30 +117,89 @@ export function buildTest(cards: Card[], limit = 12): TestQuestion[] {
   });
 }
 
+/**
+ * Has this user actually reviewed this card?
+ *
+ * A card with no progress row has never been seen; so has one whose row was
+ * created empty (the deferred backfill seeds zeroed rows). Both are
+ * "not started", which is a different thing from "reviewed and doing badly" —
+ * merging them makes a brand new set look like a set of failures.
+ */
+export function hasBeenReviewed(progress: ProgressMap, cardId: string): boolean {
+  const row = progress[cardId];
+  return row !== undefined && Number.isFinite(row.totalReviews) && row.totalReviews > 0;
+}
+
+export type MasteryStats = {
+  /** 0..100 over every active card. Never-reviewed cards contribute 0. */
+  percent: number;
+  /** Active cards with at least one recorded review. */
+  reviewed: number;
+  /** Active cards never reviewed — unstarted, not failed. */
+  notStarted: number;
+  /** Active cards in total (excluded/archived are not counted). */
+  active: number;
+};
+
 // Mastery and Leitner boxes are per-user, so they read the signed-in user's
-// CardProgress rather than anything on the shared card. A card with no
-// progress row simply hasn't been studied yet, and counts as 0.
+// CardProgress rather than anything on the shared card.
 //
 // Excluded/archived cards aren't part of the working set — they don't count
 // toward mastery or Leitner box totals.
-export function masteryPercent(cards: Card[], progress: ProgressMap): number {
+
+/**
+ * Mastery for a set, with the unstarted cards counted separately.
+ *
+ * `percent` still divides by every active card — "how much of this set do I
+ * know" has to treat untouched cards as not-yet-known, or a set with one
+ * mastered card would read 100%. But `notStarted` travels alongside it so the
+ * UI can say "12% · 39 not started" rather than implying 39 failures.
+ */
+export function masteryStats(cards: Card[], progress: ProgressMap): MasteryStats {
   const active = cards.filter(isCardActive);
-  if (active.length === 0) return 0;
-  const sum = active.reduce((acc, card) => acc + masteryScoreFor(progress, card.id), 0);
-  return Math.round(sum / active.length);
+  let reviewed = 0;
+  let sum = 0;
+  for (const card of active) {
+    if (hasBeenReviewed(progress, card.id)) reviewed += 1;
+    sum += masteryScoreFor(progress, card.id);
+  }
+  return {
+    percent: active.length === 0 ? 0 : Math.round(sum / active.length),
+    reviewed,
+    notStarted: active.length - reviewed,
+    active: active.length,
+  };
 }
 
-/** Which Leitner box (0..MASTERY_MAX) a card currently sits in for this user. */
-export function leitnerBoxOf(card: Card, progress: ProgressMap): number {
+export function masteryPercent(cards: Card[], progress: ProgressMap): number {
+  return masteryStats(cards, progress).percent;
+}
+
+/**
+ * Which Leitner box a card sits in for this user, or null when it has never
+ * been reviewed. Null rather than 0: box 0 means "reviewed and still weak",
+ * and an untouched card has not earned that.
+ */
+export function leitnerBoxOf(card: Card, progress: ProgressMap): number | null {
+  if (!hasBeenReviewed(progress, card.id)) return null;
   return leitnerBoxOfScore(masteryScoreFor(progress, card.id));
 }
 
-/** Leitner box counts: index N is how many active cards sit in box N (0..MASTERY_MAX). */
-export function leitnerBoxCounts(cards: Card[], progress: ProgressMap): number[] {
-  const counts = new Array(MASTERY_MAX + 1).fill(0) as number[];
+export type LeitnerCounts = {
+  /** Index N is how many REVIEWED active cards sit in box N (0..MASTERY_MAX). */
+  boxes: number[];
+  /** Active cards that have never been reviewed, which belong in no box. */
+  notStarted: number;
+};
+
+export function leitnerBoxCounts(cards: Card[], progress: ProgressMap): LeitnerCounts {
+  const boxes = new Array(MASTERY_MAX + 1).fill(0) as number[];
+  let notStarted = 0;
   for (const card of cards) {
     if (!isCardActive(card)) continue;
-    counts[leitnerBoxOf(card, progress)] += 1;
+    const box = leitnerBoxOf(card, progress);
+    if (box === null) notStarted += 1;
+    else boxes[box] += 1;
   }
-  return counts;
+  return { boxes, notStarted };
 }

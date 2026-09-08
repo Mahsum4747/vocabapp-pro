@@ -3,6 +3,9 @@ import { ArrowLeft } from "lucide-react";
 import type { ReactNode } from "react";
 import { Progress } from "./ui/progress";
 
+const BACK_LINK =
+  "inline-flex size-11 items-center justify-center rounded-md text-muted transition-colors hover:bg-surface-2 hover:text-fg";
+
 export function StudyChrome({
   setId,
   title,
@@ -13,7 +16,9 @@ export function StudyChrome({
   headerRight,
   children,
 }: {
-  setId: string;
+  /** The set being studied. Omitted for a round that spans the library, which
+   *  has no single set to go back to. */
+  setId?: string;
   title: string;
   mode: string;
   index: number;
@@ -28,14 +33,20 @@ export function StudyChrome({
     <div className="min-h-dvh bg-bg text-fg">
       <header className="border-b border-border/80">
         <div className="mx-auto flex h-16 max-w-4xl items-center gap-3 px-4">
-          <Link
-            to="/sets/$setId"
-            params={{ setId }}
-            className="inline-flex size-11 items-center justify-center rounded-md text-muted transition-colors hover:bg-surface-2 hover:text-fg"
-            aria-label="Back to set"
-          >
-            <ArrowLeft className="size-5" />
-          </Link>
+          {setId ? (
+            <Link
+              to="/sets/$setId"
+              params={{ setId }}
+              className={BACK_LINK}
+              aria-label="Back to set"
+            >
+              <ArrowLeft className="size-5" />
+            </Link>
+          ) : (
+            <Link to="/" className={BACK_LINK} aria-label="Back to library">
+              <ArrowLeft className="size-5" />
+            </Link>
+          )}
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-medium">{title}</p>
             <p className="text-xs text-muted">

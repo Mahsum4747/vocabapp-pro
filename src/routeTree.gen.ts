@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as CreateRouteImport } from './routes/create'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as ReviewRouteImport } from './routes/review'
 import { Route as SetsSetIdRouteImport } from './routes/sets.$setId'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as SetsSetIdIndexRouteImport } from './routes/sets.$setId.index'
@@ -34,6 +35,11 @@ const CreateRoute = CreateRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReviewRoute = ReviewRouteImport.update({
+  id: '/review',
+  path: '/review',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SetsSetIdRoute = SetsSetIdRouteImport.update({
@@ -81,6 +87,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/create': typeof CreateRoute
   '/login': typeof LoginRoute
+  '/review': typeof ReviewRoute
   '/sets/$setId': typeof SetsSetIdRouteWithChildren
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/sets/$setId/edit': typeof SetsSetIdEditRoute
@@ -94,6 +101,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/create': typeof CreateRoute
   '/login': typeof LoginRoute
+  '/review': typeof ReviewRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/sets/$setId/edit': typeof SetsSetIdEditRoute
   '/sets/$setId/flashcards': typeof SetsSetIdFlashcardsRoute
@@ -107,6 +115,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/create': typeof CreateRoute
   '/login': typeof LoginRoute
+  '/review': typeof ReviewRoute
   '/sets/$setId': typeof SetsSetIdRouteWithChildren
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/sets/$setId/edit': typeof SetsSetIdEditRoute
@@ -122,6 +131,7 @@ export interface FileRouteTypes {
     | '/'
     | '/create'
     | '/login'
+    | '/review'
     | '/sets/$setId'
     | '/api/auth/$'
     | '/sets/$setId/edit'
@@ -135,6 +145,7 @@ export interface FileRouteTypes {
     | '/'
     | '/create'
     | '/login'
+    | '/review'
     | '/api/auth/$'
     | '/sets/$setId/edit'
     | '/sets/$setId/flashcards'
@@ -147,6 +158,7 @@ export interface FileRouteTypes {
     | '/'
     | '/create'
     | '/login'
+    | '/review'
     | '/sets/$setId'
     | '/api/auth/$'
     | '/sets/$setId/edit'
@@ -161,6 +173,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CreateRoute: typeof CreateRoute
   LoginRoute: typeof LoginRoute
+  ReviewRoute: typeof ReviewRoute
   SetsSetIdRoute: typeof SetsSetIdRouteWithChildren
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
 }
@@ -186,6 +199,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/review': {
+      id: '/review'
+      path: '/review'
+      fullPath: '/review'
+      preLoaderRoute: typeof ReviewRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sets/$setId': {
@@ -273,6 +293,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CreateRoute: CreateRoute,
   LoginRoute: LoginRoute,
+  ReviewRoute: ReviewRoute,
   SetsSetIdRoute: SetsSetIdRouteWithChildren,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
 }

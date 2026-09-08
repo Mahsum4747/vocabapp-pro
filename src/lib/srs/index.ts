@@ -16,6 +16,7 @@ export {
   queuedCards,
   reviewSummary,
   hasReviewWork,
+  isStudiableSet,
   summarizeLibrary,
   DEFAULT_QUEUE_WEIGHTS,
 } from "./queue.ts";

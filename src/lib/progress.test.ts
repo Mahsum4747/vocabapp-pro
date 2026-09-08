@@ -1,10 +1,12 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import {
+  hasBeenReviewed,
   leitnerBoxCounts,
   leitnerBoxOf,
   masteryPercent,
   masteryScoreFor,
+  masteryStats,
   type ProgressMap,
 } from "./quiz.ts";
 import { freshCardCopy, initialProgress, isCorrectRating, type Card } from "./types.ts";
@@ -21,9 +23,13 @@ function card(id: string, overrides: Partial<Card> = {}): Card {
   };
 }
 
+/** A row for a card the user HAS reviewed — `totalReviews` is what tells the
+ *  two apart, so a row that only carries a score would still read as unstarted. */
 function progressFor(cardId: string, masteryScore: number, userId = "u1"): ProgressMap[string] {
   return {
     ...initialProgress(userId, cardId, "s1", defaultScheduler.initial(), defaultScheduler.name),
+    reps: 1,
+    totalReviews: 1,
     masteryScore,
   };
 }
@@ -43,7 +49,9 @@ describe("progress is user-scoped", () => {
   it("treats a card with no progress row as unstudied", () => {
     const cards = [card("a"), card("b")];
     assert.equal(masteryPercent(cards, {}), 0);
-    assert.equal(leitnerBoxOf(cards[0], {}), 0);
+    // Null, not box 0: box 0 is "reviewed and still weak", which is a claim
+    // about a card this user has actually seen.
+    assert.equal(leitnerBoxOf(cards[0], {}), null);
   });
 
   it("excludes excluded and archived cards from the mastery average", () => {
@@ -70,13 +78,45 @@ describe("progress is user-scoped", () => {
     };
 
     const counts = leitnerBoxCounts(cards, progress);
-    assert.equal(counts.length, 6);
-    assert.equal(counts[0], 2, "unstudied and 0% both sit in box 0");
-    assert.equal(counts[5], 1, "100% sits in the top box");
+    assert.equal(counts.boxes.length, 6);
+    assert.equal(counts.boxes[0], 1, "only the reviewed-but-weak card sits in box 0");
+    assert.equal(counts.boxes[5], 1, "100% sits in the top box");
+    assert.equal(counts.notStarted, 1, "the card with no row is not started, not failed");
     assert.equal(
-      counts.reduce((a, b) => a + b, 0),
+      counts.boxes.reduce((a, b) => a + b, 0) + counts.notStarted,
       cards.length,
+      "every active card is accounted for exactly once",
     );
+  });
+
+  it("keeps a never-reviewed card out of box 0", () => {
+    const cards = [card("a")];
+
+    // Both shapes mean the same thing: this user has never reviewed the card.
+    const noRow: ProgressMap = {};
+    const zeroedRow: ProgressMap = {
+      a: initialProgress("u1", "a", "s1", defaultScheduler.initial(), defaultScheduler.name),
+    };
+
+    for (const progress of [noRow, zeroedRow]) {
+      const counts = leitnerBoxCounts(cards, progress);
+      assert.equal(counts.boxes[0], 0);
+      assert.equal(counts.notStarted, 1);
+      assert.equal(hasBeenReviewed(progress, "a"), false);
+    }
+  });
+
+  it("reports unstarted cards alongside the mastery percent", () => {
+    const cards = [card("a"), card("b"), card("c"), card("d")];
+    const stats = masteryStats(cards, { a: progressFor("a", 100) });
+
+    // The percent still divides by every active card — three untouched cards
+    // are three cards not yet known — but they are reported as unstarted
+    // rather than left to read as failures.
+    assert.equal(stats.percent, 25);
+    assert.equal(stats.reviewed, 1);
+    assert.equal(stats.notStarted, 3);
+    assert.equal(stats.active, 4);
   });
 
   it("keeps no learning state on the shared card model", () => {
@@ -97,7 +137,7 @@ describe("copied sets start with fresh progress", () => {
     const ownersProgress: ProgressMap = { "source-1": progressFor("source-1", 100) };
 
     assert.equal(masteryPercent([copy], ownersProgress), 0);
-    assert.equal(leitnerBoxOf(copy, ownersProgress), 0);
+    assert.equal(leitnerBoxOf(copy, ownersProgress), null);
     assert.notEqual(copy.id, source.id);
   });
 });
@@ -141,6 +181,8 @@ describe("malformed or legacy progress rows", () => {
   ): ProgressMap[string] {
     return {
       ...initialProgress("u1", cardId, "s1", defaultScheduler.initial(), defaultScheduler.name),
+      reps: 3,
+      totalReviews: 3,
       ...overrides,
     } as ProgressMap[string];
   }
@@ -191,12 +233,13 @@ describe("malformed or legacy progress rows", () => {
 
     const counts = leitnerBoxCounts(cards, progress);
     assert.equal(
-      counts.reduce((sum, n) => sum + n, 0),
+      counts.boxes.reduce((sum, n) => sum + n, 0) + counts.notStarted,
       cards.length,
       "a broken row must not make a card vanish from the boxes",
     );
-    assert.equal(counts[0], 2, "the broken row and the unstudied card sit in box 0");
-    assert.equal(counts[5], 1);
+    assert.equal(counts.boxes[0], 1, "the broken row is reviewed, so it sits in box 0");
+    assert.equal(counts.boxes[5], 1);
+    assert.equal(counts.notStarted, 1, "only the card with no row at all is unstarted");
   });
 
   it("treats a non-numeric stored score as unstudied", () => {

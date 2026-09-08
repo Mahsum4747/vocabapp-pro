@@ -45,7 +45,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { masteryPercent, masteryScoreFor, type ProgressMap } from "@/lib/quiz";
+import { masteryScoreFor, masteryStats, type ProgressMap } from "@/lib/quiz";
 import { reviewSummary } from "@/lib/srs";
 import { serializeSetExport } from "@/lib/parse-cards";
 import { useSet, useSetProgress, useStudyStore } from "@/lib/store";
@@ -127,7 +127,7 @@ function SetPage() {
     );
   }
 
-  const mastery = masteryPercent(studySet.cards, progress);
+  const { percent: mastery, notStarted } = masteryStats(studySet.cards, progress);
   // Same progress rows the mastery bar and Leitner boxes read — no extra query.
   const summary = reviewSummary(studySet.cards, progress, { now: Date.now() });
   const starred = studySet.cards.filter((c) => c.starred).length;
@@ -269,7 +269,9 @@ function SetPage() {
             <div className="min-w-40 flex-1">
               <div className="flex justify-between text-xs text-muted">
                 <span>Mastery</span>
-                <span className="tabular-nums">{mastery}%</span>
+                <span className="tabular-nums">
+                  {mastery}%{notStarted > 0 ? ` · ${notStarted} not started` : ""}
+                </span>
               </div>
               <Progress value={mastery} className="mt-1.5" />
             </div>

@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ChevronDown, ChevronRight, Plus, Search, Sparkles } from "lucide-react";
+import { AlertCircle, ChevronDown, ChevronRight, Plus, Search, Sparkles } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { AuthGate } from "@/components/auth-gate";
@@ -11,10 +11,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SUBJECTS } from "@/lib/types";
-import { masteryPercent } from "@/lib/quiz";
+import { masteryStats } from "@/lib/quiz";
 import { summarizeLibrary } from "@/lib/srs";
-import { ReviewCallout } from "@/components/review-status";
+import { ReviewCallout, ReviewCounts } from "@/components/review-status";
 import { useProgress, useStudyStore } from "@/lib/store";
+import { cn } from "@/lib/utils";
 
 type Search = { view?: "mine" | "public" };
 
@@ -85,6 +86,11 @@ function Home() {
       .filter((s) => s.lastStudiedAt)
       .sort((a, b) => (b.lastStudiedAt ?? 0) - (a.lastStudiedAt ?? 0))[0];
   }, [sets]);
+
+  const continueMastery = useMemo(
+    () => masteryStats(continueSet?.cards ?? [], progress),
+    [continueSet, progress],
+  );
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -162,8 +168,41 @@ function Home() {
       </section>
 
       {/* Reviews come first when any are waiting: the engine already knows
-          what is due, and this is the way in. */}
-      {reviewNow.target ? (
+          what is due, and this is the way in.
+
+          Two shapes, never both. When cards are actually due, the library-wide
+          Review session is the entry point. When nothing is due but a set has
+          new cards, there is nothing to review — so the per-set callout offers
+          to start learning instead. */}
+      {reviewNow.totals.due > 0 ? (
+        <Link
+          to="/review"
+          className="mt-8 flex flex-col justify-between gap-4 rounded-2xl bg-surface p-6 shadow-[var(--shadow-border)] transition-shadow hover:shadow-[var(--shadow-border-hover)] sm:flex-row sm:items-center"
+        >
+          <div className="min-w-0">
+            <p
+              className={cn(
+                "flex items-center gap-1.5 text-xs font-medium tracking-wide uppercase",
+                reviewNow.totals.overdue > 0 ? "text-danger" : "text-muted",
+              )}
+            >
+              {reviewNow.totals.overdue > 0 ? (
+                <AlertCircle className="size-3.5" />
+              ) : (
+                <Sparkles className="size-3.5" />
+              )}
+              Review
+            </p>
+            <h2 className="mt-2 font-display text-2xl font-medium tracking-tight">
+              {reviewNow.totals.due} card{reviewNow.totals.due === 1 ? "" : "s"} due
+            </h2>
+            <ReviewCounts summary={reviewNow.totals} className="mt-1 text-muted" />
+          </div>
+          <span className="inline-flex h-11 shrink-0 items-center rounded-md bg-primary px-4 text-sm font-medium text-primary-fg">
+            Start review
+          </span>
+        </Link>
+      ) : reviewNow.target ? (
         <ReviewCallout
           setId={reviewNow.target.set.id}
           summary={reviewNow.totals}
@@ -186,8 +225,8 @@ function Home() {
               {continueSet.title}
             </h2>
             <p className="mt-1 text-sm text-primary-fg/75">
-              {continueSet.cards.length} cards · {masteryPercent(continueSet.cards, progress)}%
-              progress
+              {continueSet.cards.length} cards · {continueMastery.percent}% progress
+              {continueMastery.notStarted > 0 ? ` · ${continueMastery.notStarted} not started` : ""}
             </p>
           </div>
           <span className="inline-flex h-11 items-center rounded-md bg-primary-fg px-4 text-sm font-medium text-primary">

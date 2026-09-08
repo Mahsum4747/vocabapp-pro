@@ -3,7 +3,7 @@ import { BookOpen, Layers } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import type { Card, StudySet } from "@/lib/types";
 import { MASTERY_MAX } from "@/lib/types";
-import { leitnerBoxCounts, masteryPercent, type ProgressMap } from "@/lib/quiz";
+import { leitnerBoxCounts, masteryStats, type ProgressMap } from "@/lib/quiz";
 import { useProgress } from "@/lib/store";
 import { reviewSummary } from "@/lib/srs";
 import { DueBadge } from "./review-status";
@@ -11,14 +11,21 @@ import { cn } from "@/lib/utils";
 import { Badge } from "./ui/badge";
 import { Progress } from "./ui/progress";
 
-/** Glance-level signal: one tiny bar per Leitner box, terracotta (needs review) fading to sage (mastered). */
+/**
+ * Glance-level signal: one tiny bar per Leitner box, terracotta (needs review)
+ * fading to sage (mastered), plus a neutral bar for cards not started yet.
+ *
+ * The unstarted bar is deliberately not terracotta: a set you have never
+ * opened is not a set you are failing.
+ */
 function MiniLeitner({ cards, progress }: { cards: Card[]; progress: ProgressMap }) {
-  const counts = leitnerBoxCounts(cards, progress);
-  const max = Math.max(1, ...counts);
+  const { boxes, notStarted } = leitnerBoxCounts(cards, progress);
+  const max = Math.max(1, ...boxes, notStarted);
+  const height = (count: number) => (count === 0 ? 4 : 6 + Math.round((count / max) * 10));
 
   return (
     <div className="mt-3 flex h-4 items-end gap-1" aria-hidden="true">
-      {counts.map((count, box) => (
+      {boxes.map((count, box) => (
         <span
           key={box}
           className={cn(
@@ -26,9 +33,13 @@ function MiniLeitner({ cards, progress }: { cards: Card[]; progress: ProgressMap
             box <= 1 ? "bg-danger" : box >= MASTERY_MAX - 1 ? "bg-success-soft" : "bg-subtle/40",
             count === 0 && "opacity-25",
           )}
-          style={{ height: count === 0 ? 4 : 6 + Math.round((count / max) * 10) }}
+          style={{ height: height(count) }}
         />
       ))}
+      <span
+        className={cn("w-full flex-1 rounded-full bg-border", notStarted === 0 && "opacity-25")}
+        style={{ height: height(notStarted) }}
+      />
     </div>
   );
 }
@@ -37,7 +48,7 @@ export function SetCard({ set }: { set: StudySet }) {
   // Whatever progress the library page has already loaded; an unstudied set
   // simply reads as 0.
   const progress = useProgress();
-  const mastery = masteryPercent(set.cards, progress);
+  const { percent: mastery, notStarted } = masteryStats(set.cards, progress);
   // Derived from the progress the library page already loaded — no extra read.
   const summary = reviewSummary(set.cards, progress, { now: Date.now() });
   const when = set.lastStudiedAt
@@ -78,7 +89,9 @@ export function SetCard({ set }: { set: StudySet }) {
         <div className="mt-5 space-y-2">
           <div className="flex items-center justify-between text-xs text-muted">
             <span>Progress</span>
-            <span className="tabular-nums">{mastery}%</span>
+            <span className="tabular-nums">
+              {mastery}%{notStarted > 0 ? ` · ${notStarted} not started` : ""}
+            </span>
           </div>
           <Progress value={mastery} />
         </div>

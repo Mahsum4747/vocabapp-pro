@@ -207,6 +207,17 @@ export function hasReviewWork(summary: ReviewSummary): boolean {
   return summary.due > 0 || summary.fresh > 0 || summary.weak > 0;
 }
 
+/**
+ * Can a review session draw from this set?
+ *
+ * Reference sets are lookup material, not study material, and a one-card set
+ * has no round worth running. Shared so the library-wide counts and the
+ * library-wide session agree on what they are counting.
+ */
+export function isStudiableSet(set: StudySet): boolean {
+  return !set.isReference && set.cards.length >= 2;
+}
+
 export type LibraryReview = {
   /** Every set's counts added together. */
   totals: ReviewSummary;
@@ -230,7 +241,7 @@ export function summarizeLibrary(
   options: Pick<QueueOptions, "now">,
 ): LibraryReview {
   const perSet = sets
-    .filter((set) => !set.isReference && set.cards.length >= 2)
+    .filter(isStudiableSet)
     .map((set) => ({ set, summary: reviewSummary(set.cards, progressByCardId, options) }));
 
   const totals = perSet.reduce<ReviewSummary>(
