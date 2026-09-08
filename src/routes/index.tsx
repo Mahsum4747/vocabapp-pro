@@ -14,6 +14,7 @@ import { SUBJECTS } from "@/lib/types";
 import { masteryStats } from "@/lib/quiz";
 import { summarizeLibrary } from "@/lib/srs";
 import { ReviewCallout, ReviewCounts } from "@/components/review-status";
+import { DailyGoalCard, XpCard } from "@/components/goal-and-xp";
 import { useProgress, useStudyStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
@@ -35,6 +36,7 @@ function Home() {
   const fetchPublicSets = useStudyStore((s) => s.fetchPublicSets);
   const fetchStreak = useStudyStore((s) => s.fetchStreak);
   const fetchAllProgress = useStudyStore((s) => s.fetchAllProgress);
+  const fetchProfile = useStudyStore((s) => s.fetchProfile);
   const progress = useProgress();
 
   useEffect(() => {
@@ -44,7 +46,9 @@ function Home() {
     // One query for the whole library, so every set card can show real
     // mastery without a request per set.
     fetchAllProgress();
-  }, [fetchSets, fetchPublicSets, fetchStreak, fetchAllProgress]);
+    // Goal, XP and today's counters — one call, shared by both cards below.
+    fetchProfile();
+  }, [fetchSets, fetchPublicSets, fetchStreak, fetchAllProgress, fetchProfile]);
   const { view: viewParam } = Route.useSearch();
   const [query, setQuery] = useState("");
   const [subject, setSubject] = useState<string>("All");
@@ -210,6 +214,13 @@ function Home() {
           className="mt-8"
         />
       ) : null}
+
+      {/* Goal first, then XP: one is today's commitment, the other is the
+          long game. Both hide themselves when there is nothing to show. */}
+      <div className="mt-6 grid gap-4 md:grid-cols-2">
+        <DailyGoalCard />
+        <XpCard />
+      </div>
 
       {continueSet ? (
         <Link

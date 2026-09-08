@@ -1,6 +1,8 @@
 import { useEffect } from "react";
 import { create } from "zustand";
-import type { CardProgress, CardStatus, ReviewRating, StudySet } from "./types";
+import type { CardProgress, CardStatus, DailyStats, ReviewRating, StudySet } from "./types";
+import { emptyDailyStats } from "./types";
+import type { UserProfile } from "./gamification";
 import {
   getMySets,
   getSetById as getSetByIdFn,
@@ -16,6 +18,8 @@ import {
   recordReview as recordReviewFn,
   getSetProgress as getSetProgressFn,
   getAllProgress as getAllProgressFn,
+  getProfile as getProfileFn,
+  updateDailyGoal as updateDailyGoalFn,
   resetSetProgress as resetSetProgressFn,
 } from "./study-sets";
 import { getStreak as getStreakFn, type StreakInfo } from "./streak";
@@ -41,6 +45,14 @@ type StudyState = {
   progress: Record<string, CardProgress>;
   /** Set ids whose progress has been fetched, so a set isn't refetched per mode. */
   loadedProgressSetIds: string[];
+  /**
+   * The signed-in user's goal, XP and achievements, or null before it loads.
+   * Null is "not fetched yet", never "this user has nothing" — a user with no
+   * settings document still gets a profile full of defaults.
+   */
+  profile: UserProfile | null;
+  /** Today's counters for the goal ring and the XP bar. */
+  today: DailyStats | null;
   fetchSets: () => Promise<void>;
   fetchSetById: (id: string) => Promise<StudySet | null>;
   fetchPublicSets: () => Promise<void>;
@@ -95,6 +107,10 @@ type StudyState = {
    * when the fetch failed (most likely signed out) — the picker uses that to
    * send the visitor to sign in instead of showing an empty list.
    */
+  /** Load the profile and today's counters — one call, used by the home cards. */
+  fetchProfile: () => Promise<void>;
+  /** Change the daily goal, recording the viewer's timezone the first time. */
+  setDailyGoal: (goal: number) => Promise<void>;
   fetchMySetsForTransfer: () => Promise<StudySet[] | null>;
   copyCardsToSet: (sourceSetId: string, targetSetId: string, cardIds: string[]) => Promise<number>;
   moveCardsToSet: (sourceSetId: string, targetSetId: string, cardIds: string[]) => Promise<number>;
@@ -116,6 +132,8 @@ export const useStudyStore = create<StudyState>()((set, get) => ({
   streak: null,
   progress: {},
   loadedProgressSetIds: [],
+  profile: null,
+  today: null,
 
   fetchSets: async () => {
     try {
@@ -264,10 +282,61 @@ export const useStudyStore = create<StudyState>()((set, get) => ({
     });
     // The server returns the scheduled state it just stored, so the mastery
     // bar and Leitner boxes update without a refetch.
+    const previousToday = get().today;
+    const delta = result.dailyDelta;
     set({
       progress: { ...get().progress, [cardId]: result.progress },
       ...(result.streak ? { streak: result.streak } : {}),
+      // XP and the day's counters move with the same response, so the goal
+      // ring and the level bar follow a grade immediately. The day's deltas
+      // come from the server rather than being recomputed here — the
+      // once-per-card-per-day rule lives in one place.
+      ...(get().profile
+        ? {
+            profile: {
+              ...get().profile!,
+              totalXP: result.xp.total,
+              totalReviews: get().profile!.totalReviews + 1,
+            },
+          }
+        : {}),
+      ...(previousToday && previousToday.date === delta.date
+        ? {
+            today: {
+              date: delta.date,
+              reviews: previousToday.reviews + delta.reviews,
+              correctReviews: previousToday.correctReviews + delta.correctReviews,
+              studySeconds: previousToday.studySeconds + delta.studySeconds,
+              uniqueWordsReviewed: previousToday.uniqueWordsReviewed + delta.uniqueWordsReviewed,
+              xpEarned: previousToday.xpEarned + delta.xpEarned,
+            },
+          }
+        : {}),
     });
+  },
+
+  fetchProfile: async () => {
+    const date = localDateKey();
+    try {
+      const { profile, today } = await getProfileFn({ data: { date } });
+      set({ profile, today });
+    } catch (error) {
+      console.error("Failed to load profile:", error);
+      // Signed out, or the read failed: leave `profile` null so the UI shows
+      // nothing rather than an invented goal of zero.
+      set({ today: get().today ?? emptyDailyStats(date) });
+    }
+  },
+
+  setDailyGoal: async (goal) => {
+    // The browser is the only thing that knows the viewer's timezone; send it
+    // so the server can eventually decide which local day a review belongs to.
+    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const settings = await updateDailyGoalFn({
+      data: { goal, ...(timeZone ? { timeZone } : {}) },
+    });
+    const current = get().profile;
+    set({ profile: current ? { ...current, ...settings } : current });
   },
 
   resetProgress: async (setId) => {

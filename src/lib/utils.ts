@@ -48,6 +48,22 @@ export function parseIntSearchParam(value: unknown): number | undefined {
  * Deliberately not `toISOString().slice(0, 10)`, which is UTC: that files an
  * evening review under tomorrow's date for anyone east of UTC.
  */
+/**
+ * The last `days` local day keys, oldest first, ending with today.
+ *
+ * Built by stepping a local Date rather than subtracting milliseconds, so the
+ * days either side of a daylight-saving change are still one calendar day
+ * apart.
+ */
+export function recentDateKeys(days: number, from = new Date()): string[] {
+  const keys: string[] = [];
+  for (let i = days - 1; i >= 0; i--) {
+    const day = new Date(from.getFullYear(), from.getMonth(), from.getDate() - i);
+    keys.push(localDateKey(day));
+  }
+  return keys;
+}
+
 export function localDateKey(date = new Date()): string {
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");

@@ -197,4 +197,42 @@ export type DailyStats = {
    * many answers did I give", and a daily goal is about the former.
    */
   uniqueWordsReviewed: number;
+  /**
+   * XP earned on this day. Stored rather than recomputed from the event log:
+   * the per-card daily cap means a day's XP is not a function of its ratings
+   * alone, so replaying the events would give a different number.
+   */
+  xpEarned: number;
 };
+
+/** A day with nothing recorded yet — what a missing document means. */
+export function emptyDailyStats(date: string): DailyStats {
+  return {
+    date,
+    reviews: 0,
+    correctReviews: 0,
+    studySeconds: 0,
+    uniqueWordsReviewed: 0,
+    xpEarned: 0,
+  };
+}
+
+/**
+ * Read a stored day back, filling in fields written before they existed.
+ *
+ * `uniqueWordsReviewed` and `xpEarned` arrived after the collection did, so
+ * every document from before Phase 1B/2 is missing them. Missing means zero,
+ * not broken.
+ */
+export function readDailyStats(date: string, stored: unknown): DailyStats {
+  const doc = (stored ?? {}) as Record<string, unknown>;
+  const num = (value: unknown) => (typeof value === "number" && Number.isFinite(value) ? value : 0);
+  return {
+    date,
+    reviews: num(doc.reviews),
+    correctReviews: num(doc.correctReviews),
+    studySeconds: num(doc.studySeconds),
+    uniqueWordsReviewed: num(doc.uniqueWordsReviewed),
+    xpEarned: num(doc.xpEarned),
+  };
+}

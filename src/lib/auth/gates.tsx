@@ -8,6 +8,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { DailyGoalDialog } from "@/components/daily-goal-dialog";
 import { cn } from "@/lib/utils";
 import { authEnabled, signOut } from "./client";
 import { useCurrentUser, useCurrentUserState, type AppUser } from "./use-current-user";
@@ -123,7 +124,7 @@ export function OwnershipStatus({
 }
 
 /** Shared dropdown body for both the header avatar and the mobile nav's Account tab. */
-function AccountMenuContent({ user }: { user: AppUser }) {
+function AccountMenuContent({ user, onDailyGoal }: { user: AppUser; onDailyGoal: () => void }) {
   // Sign-out can take a moment (and can fail when deployed), so the control
   // shows it is working and cannot be fired twice.
   const [signingOut, setSigningOut] = useState(false);
@@ -137,6 +138,11 @@ function AccountMenuContent({ user }: { user: AppUser }) {
           <p className="truncate text-xs text-muted">{user.primaryEmail}</p>
         ) : null}
       </div>
+      <DropdownMenuSeparator />
+      <DropdownMenuItem asChild>
+        <Link to="/account">Your progress</Link>
+      </DropdownMenuItem>
+      <DropdownMenuItem onSelect={onDailyGoal}>Daily goal</DropdownMenuItem>
       {authEnabled && (
         <>
           <DropdownMenuSeparator />
@@ -163,27 +169,34 @@ function AccountMenuContent({ user }: { user: AppUser }) {
  */
 export function UserButton() {
   const user = useCurrentUser();
+  // Before the early return: hooks cannot be conditional.
+  const [goalOpen, setGoalOpen] = useState(false);
   if (!user) return null;
   const label = user.displayName ?? user.primaryEmail ?? "Account";
   const initial = label.charAt(0).toUpperCase();
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <button
-          type="button"
-          aria-label="Account menu"
-          className="grid size-9 shrink-0 place-items-center overflow-hidden rounded-full bg-primary text-sm font-medium text-primary-fg outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
-        >
-          {user.profileImageUrl ? (
-            <img src={user.profileImageUrl} alt="" className="size-9 object-cover" />
-          ) : (
-            initial
-          )}
-        </button>
-      </DropdownMenuTrigger>
-      <AccountMenuContent user={user} />
-    </DropdownMenu>
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            type="button"
+            aria-label="Account menu"
+            className="grid size-9 shrink-0 place-items-center overflow-hidden rounded-full bg-primary text-sm font-medium text-primary-fg outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+          >
+            {user.profileImageUrl ? (
+              <img src={user.profileImageUrl} alt="" className="size-9 object-cover" />
+            ) : (
+              initial
+            )}
+          </button>
+        </DropdownMenuTrigger>
+        <AccountMenuContent user={user} onDailyGoal={() => setGoalOpen(true)} />
+      </DropdownMenu>
+      {/* Outside the menu: the dropdown unmounts its own subtree when it
+          closes, which would take the dialog with it. */}
+      <DailyGoalDialog open={goalOpen} onOpenChange={setGoalOpen} />
+    </>
   );
 }
 
@@ -194,6 +207,7 @@ export function UserButton() {
  */
 export function AccountNavItem({ className }: { className?: string }) {
   const { user, isPending } = useCurrentUserState();
+  const [goalOpen, setGoalOpen] = useState(false);
   if (isPending) return null;
 
   if (!user) {
@@ -206,20 +220,23 @@ export function AccountNavItem({ className }: { className?: string }) {
   }
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <button type="button" className={cn(className, "outline-none")}>
-          <span className="grid size-5 shrink-0 place-items-center overflow-hidden rounded-full bg-primary text-[10px] font-medium text-primary-fg">
-            {user.profileImageUrl ? (
-              <img src={user.profileImageUrl} alt="" className="size-5 object-cover" />
-            ) : (
-              (user.displayName ?? user.primaryEmail ?? "A").charAt(0).toUpperCase()
-            )}
-          </span>
-          Account
-        </button>
-      </DropdownMenuTrigger>
-      <AccountMenuContent user={user} />
-    </DropdownMenu>
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button type="button" className={cn(className, "outline-none")}>
+            <span className="grid size-5 shrink-0 place-items-center overflow-hidden rounded-full bg-primary text-[10px] font-medium text-primary-fg">
+              {user.profileImageUrl ? (
+                <img src={user.profileImageUrl} alt="" className="size-5 object-cover" />
+              ) : (
+                (user.displayName ?? user.primaryEmail ?? "A").charAt(0).toUpperCase()
+              )}
+            </span>
+            Account
+          </button>
+        </DropdownMenuTrigger>
+        <AccountMenuContent user={user} onDailyGoal={() => setGoalOpen(true)} />
+      </DropdownMenu>
+      <DailyGoalDialog open={goalOpen} onOpenChange={setGoalOpen} />
+    </>
   );
 }

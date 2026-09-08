@@ -7,17 +7,34 @@ import { recordStudyActivityFor, type StreakInfo } from "./streak";
 import { defaultScheduler as scheduler } from "./srs";
 import { planReview } from "./review-plan";
 import {
+  applyXp,
+  MASTERED_SCORE,
+  newlyUnlocked,
+  nextPerfectRun,
+  xpForReview,
+  type AchievementId,
+  type AchievementStats,
+  type UserProfile,
+} from "./gamification";
+import {
   DEFAULT_TIME_ZONE,
   isDailyGoalOption,
   isTimeZoneName,
   readUserSettings,
   type UserSettings,
 } from "./daily-goal";
-import { freshCardCopy, isCorrectRating } from "./types";
+import { freshCardCopy, isCorrectRating, readDailyStats } from "./types";
 import type { Card, CardProgress, DailyStats, StudySet } from "./types";
 
 /** Firestore ids and the date key are path segments — keep them tight. */
 const idSchema = z.string().trim().min(1).max(200);
+
+/**
+ * A local calendar day, "YYYY-MM-DD". Also a document id, and Firestore reads
+ * "a/b/c" as a nested path, so an unvalidated string here would let a caller
+ * read or write outside the dailyStats collection.
+ */
+const dateKeySchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "date must be YYYY-MM-DD");
 
 const recordReviewSchema = z.object({
   cardId: idSchema,
@@ -30,7 +47,7 @@ const recordReviewSchema = z.object({
    * id: Firestore reads "a/b/c" as a nested path, so an unvalidated string
    * here would let a caller write outside the dailyStats collection.
    */
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "date must be YYYY-MM-DD"),
+  date: dateKeySchema,
   /** Capped at an hour — a longer "response" is a tab left open, not study time. */
   responseTimeMs: z
     .number()
@@ -435,10 +452,12 @@ export const recordReview = createServerFn({ method: "POST" })
     const eventRef = userRef.collection("reviewEvents").doc();
     const dailyRef = userRef.collection("dailyStats").doc(data.date);
 
-    const progress = await db.runTransaction(async (tx) => {
+    const outcome = await db.runTransaction(async (tx) => {
+      // Both reads first: a Firestore transaction refuses a read after a write.
       // The scheduler needs the state it is advancing from, and a streak of
       // correct answers has to be read before it can be extended or broken.
       const previous = (await tx.get(progressRef)).data() as CardProgress | undefined;
+      const user = (await tx.get(userRef)).data() as Partial<UserDoc> | undefined;
 
       const plan = planReview({
         userId: context.userId,
@@ -452,6 +471,11 @@ export const recordReview = createServerFn({ method: "POST" })
         now,
         scheduler,
       });
+
+      // Paid only on a card's first review of the day — the same day-key
+      // decision that drives `uniqueWordsReviewed`, so the cap and the counter
+      // can never disagree about what "today" means.
+      const xpDelta = xpForReview(data.rating, plan.daily.uniqueWordsReviewed > 0);
 
       // The counters are stored as increments so concurrent reviews of
       // different cards can't clobber each other's totals; the resolved values
@@ -471,15 +495,41 @@ export const recordReview = createServerFn({ method: "POST" })
         // in `planReview` from the progress row this transaction already read —
         // no extra read, and it is testable without a database.
         uniqueWordsReviewed: FieldValue.increment(plan.daily.uniqueWordsReviewed),
+        xpEarned: FieldValue.increment(xpDelta),
+      };
+
+      // XP and the lifetime counters are written as resolved values rather
+      // than increments: the transaction has just read them, and the total has
+      // to be clamped at zero, which `FieldValue.increment` cannot do.
+      const profile: Partial<UserDoc> = {
+        id: context.userId,
+        totalXP: applyXp(user?.totalXP ?? 0, xpDelta),
+        totalReviews: (user?.totalReviews ?? 0) + 1,
+        perfectRun: nextPerfectRun(user?.perfectRun ?? 0, data.rating),
+        updatedAt: now,
+        ...(user === undefined ? { createdAt: now } : {}),
       };
 
       tx.set(progressRef, update, { merge: true });
       // A fresh document id every time: the log is append-only, never updated.
       tx.set(eventRef, plan.event);
       tx.set(dailyRef, daily, { merge: true });
+      tx.set(userRef, profile, { merge: true });
 
-      return plan.progress;
+      return {
+        progress: plan.progress,
+        // The day's deltas, so the client can update the goal ring and the XP
+        // bar without re-reading the day — and without re-deriving the
+        // first-review-today rule for itself.
+        dailyDelta: { ...plan.daily, xpEarned: xpDelta },
+        xpDelta,
+        totalXP: profile.totalXP ?? 0,
+        totalReviews: profile.totalReviews ?? 0,
+        perfectRun: profile.perfectRun ?? 0,
+        achievements: user?.achievements,
+      };
     });
+    const progress = outcome.progress;
 
     // A completed review is the study activity a streak should count — not
     // merely opening a study mode. Best-effort: the review is already stored,
@@ -491,8 +541,73 @@ export const recordReview = createServerFn({ method: "POST" })
       console.error("Failed to record streak activity:", error);
     }
 
-    return { ok: true as const, progress, streak };
+    // Achievements are settled after the streak, because one of them asks how
+    // long the streak is. Outside the transaction and best-effort for the same
+    // reason as the streak: the review is already stored, and a badge is never
+    // worth failing a recorded review over.
+    let unlocked: AchievementId[] = [];
+    try {
+      unlocked = await unlockAchievementsFor({
+        db,
+        userRef,
+        stats: {
+          totalReviews: outcome.totalReviews,
+          currentStreak: streak?.currentStreak ?? 0,
+          perfectRun: outcome.perfectRun,
+          // Counting mastered cards is a query, so it is only worth running
+          // when this review could actually have changed the count — a card
+          // only joins the mastered pile on its own review.
+          masteredCards:
+            progress.masteryScore >= MASTERED_SCORE ? await countMasteredCards(userRef) : 0,
+        },
+        already: outcome.achievements,
+        now,
+      });
+    } catch (error) {
+      console.error("Failed to record achievements:", error);
+    }
+
+    return {
+      ok: true as const,
+      progress,
+      streak,
+      xp: { total: outcome.totalXP, gained: outcome.xpDelta },
+      dailyDelta: outcome.dailyDelta,
+      unlocked,
+    };
   });
+
+/** How many of this user's cards have reached the mastered score. */
+async function countMasteredCards(userRef: FirebaseFirestore.DocumentReference): Promise<number> {
+  const snap = await userRef
+    .collection("cardProgress")
+    .where("masteryScore", ">=", MASTERED_SCORE)
+    .count()
+    .get();
+  return snap.data().count;
+}
+
+/**
+ * Write any achievements these totals have just earned, and return them.
+ *
+ * A merge write of only the new ids: Firestore merges maps field by field, so
+ * an existing unlock timestamp is never overwritten and a badge keeps the date
+ * it was actually earned.
+ */
+async function unlockAchievementsFor(input: {
+  db: FirebaseFirestore.Firestore;
+  userRef: FirebaseFirestore.DocumentReference;
+  stats: AchievementStats;
+  already: Record<string, unknown> | undefined;
+  now: number;
+}): Promise<AchievementId[]> {
+  const ids = newlyUnlocked(input.stats, input.already);
+  if (ids.length === 0) return [];
+
+  const achievements = Object.fromEntries(ids.map((id) => [id, input.now]));
+  await input.userRef.set({ achievements }, { merge: true });
+  return ids;
+}
 
 /** One card's progress for the signed-in user, or null if never reviewed. */
 export const getCardProgress = createServerFn({ method: "GET" })
@@ -594,6 +709,14 @@ type UserDoc = {
   id: string;
   dailyGoal: number;
   timeZone: string;
+  /** Lifetime XP, never negative. */
+  totalXP: number;
+  /** Reviews this user has recorded, ever — what the milestone badges count. */
+  totalReviews: number;
+  /** Consecutive good/easy answers; any `again` or `hard` resets it to 0. */
+  perfectRun: number;
+  /** Unlocked achievement id -> the epoch ms it was earned. */
+  achievements: Record<string, number>;
   /** Epoch ms from the server clock, matching every other timestamp we store. */
   createdAt: number;
   updatedAt: number;
@@ -613,21 +736,81 @@ const updateDailyGoalSchema = z.object({
   timeZone: z.string().trim().max(64).refine(isTimeZoneName).optional(),
 });
 
+const profileQuerySchema = z.object({ date: dateKeySchema });
+const dailyStatsRangeSchema = z.object({ dates: z.array(dateKeySchema).min(1).max(31) });
+
+/** Turn a stored `users/{uid}` document into the profile the UI reads. */
+function readProfile(stored: unknown, masteredCards: number): UserProfile {
+  const doc = (stored ?? {}) as Record<string, unknown>;
+  const settings = readUserSettings(doc);
+  const count = (value: unknown) =>
+    typeof value === "number" && Number.isFinite(value) && value > 0 ? Math.floor(value) : 0;
+  const achievements =
+    doc.achievements && typeof doc.achievements === "object"
+      ? (doc.achievements as Record<string, number>)
+      : {};
+
+  return {
+    dailyGoal: settings.dailyGoal,
+    timeZone: settings.timeZone,
+    totalXP: count(doc.totalXP),
+    totalReviews: count(doc.totalReviews),
+    perfectRun: count(doc.perfectRun),
+    masteredCards,
+    achievements,
+  };
+}
+
 /**
- * The signed-in user's daily goal and timezone.
+ * Everything the home cards and the account page read about the signed-in
+ * user: the daily goal, the XP totals, the unlocked achievements, and today.
  *
- * Never fails for a user who has no settings document — which today is every
- * user — it returns the defaults instead. There is no uid parameter: the
- * caller is whoever `authMiddleware` resolved, so there is no way to ask for
- * somebody else's settings and no ownership check that could be forgotten.
+ * One call rather than one per card. `date` is the viewer's local day for the
+ * same reason `recordReview` takes one — the server cannot work out which
+ * calendar day an evening review belongs to.
+ *
+ * Never fails for a user who has no settings document, which is every user who
+ * has not set a goal: it returns defaults and zeroes instead.
  */
-export const getDailyGoal = createServerFn({ method: "GET" })
+export const getProfile = createServerFn({ method: "GET" })
   .middleware([authMiddleware])
-  .handler(async ({ context }): Promise<UserSettings> => {
+  .validator((input: unknown) => profileQuerySchema.parse(input))
+  .handler(async ({ context, data }): Promise<{ profile: UserProfile; today: DailyStats }> => {
     const { getAdminFirestore } = await import("./firebase-admin.server");
     const db = getAdminFirestore();
-    const doc = await db.collection("users").doc(context.userId).get();
-    return readUserSettings(doc.exists ? doc.data() : null);
+    const userRef = db.collection("users").doc(context.userId);
+
+    const [userDoc, todayDoc, mastered] = await Promise.all([
+      userRef.get(),
+      userRef.collection("dailyStats").doc(data.date).get(),
+      countMasteredCards(userRef),
+    ]);
+
+    return {
+      profile: readProfile(userDoc.exists ? userDoc.data() : null, mastered),
+      today: readDailyStats(data.date, todayDoc.exists ? todayDoc.data() : null),
+    };
+  });
+
+/**
+ * Named days of history, for the account page's chart.
+ *
+ * The caller passes the day keys it wants because only the client knows its
+ * own calendar; days with no document come back as zeroes rather than gaps, so
+ * a chart can plot them without deciding what a missing day means.
+ */
+export const getDailyStatsRange = createServerFn({ method: "GET" })
+  .middleware([authMiddleware])
+  .validator((input: unknown) => dailyStatsRangeSchema.parse(input))
+  .handler(async ({ context, data }): Promise<DailyStats[]> => {
+    const { getAdminFirestore } = await import("./firebase-admin.server");
+    const db = getAdminFirestore();
+    const collection = db.collection("users").doc(context.userId).collection("dailyStats");
+
+    const docs = await db.getAll(...data.dates.map((date) => collection.doc(date)));
+    return data.dates.map((date, i) =>
+      readDailyStats(date, docs[i]?.exists ? docs[i].data() : null),
+    );
   });
 
 /**
