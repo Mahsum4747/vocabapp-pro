@@ -3,7 +3,7 @@ import { z } from "zod";
 // Type-only, so no firebase-admin code reaches the client bundle.
 import type { PartialWithFieldValue } from "firebase-admin/firestore";
 import { authMiddleware, optionalAuthMiddleware } from "./auth/middleware";
-import { isCorrectRating } from "./types";
+import { freshCardCopy, isCorrectRating } from "./types";
 import type { Card, CardProgress, DailyStats, ReviewEvent, StudySet } from "./types";
 
 /** Firestore ids and the date key are path segments — keep them tight. */
@@ -301,7 +301,9 @@ export const copyPublicSet = createServerFn({ method: "POST" })
       createdAt: now,
       updatedAt: now,
       lastStudiedAt: null,
-      cards: source.cards.map((c) => ({ ...c, id: uidServer() })),
+      // Content only — the copier starts from zero, not from the original
+      // owner's mastery, stars, or excluded/archived flags.
+      cards: source.cards.map((c) => freshCardCopy(c, uidServer())),
     };
     await db.collection("study_sets").doc(id).set(cloned);
 
@@ -355,15 +357,7 @@ async function transferCards(userId: string, data: TransferCardsInput, removeFro
   }
 
   const target = targetDoc.data() as StudySet;
-  const addedCards: Card[] = selected.map((c) => ({
-    id: uidServer(),
-    term: c.term,
-    definition: c.definition,
-    starred: false,
-    mastery: 0,
-    imageUrl: c.imageUrl,
-    example: c.example ?? null,
-  }));
+  const addedCards: Card[] = selected.map((c) => freshCardCopy(c, uidServer()));
   const now = Date.now();
   const targetCards = [...target.cards, ...addedCards];
   await targetRef.update({ cards: targetCards, updatedAt: now });

@@ -27,6 +27,30 @@ export function isCardActive(card: Card): boolean {
   return !card.status || card.status === "active";
 }
 
+/**
+ * A card as it should land in someone else's library: the same content, none
+ * of the original owner's progress or curation. Mastery and starring reset,
+ * and the status goes back to active (absent = active), so a copied set is
+ * never pre-marked as learned, starred, excluded or archived.
+ *
+ * Shared by both copy paths — a whole public set, and individual cards moved
+ * or copied between sets — so the two can't drift apart again.
+ *
+ * `id` comes from the caller's id generator, which keeps this pure and
+ * testable; every copy must get a fresh id rather than reusing the source's.
+ */
+export function freshCardCopy(card: Card, id: string): Card {
+  return {
+    id,
+    term: card.term,
+    definition: card.definition,
+    imageUrl: card.imageUrl,
+    example: card.example ?? null,
+    starred: false,
+    mastery: 0,
+  };
+}
+
 export type StudySet = {
   id: string;
   title: string;
