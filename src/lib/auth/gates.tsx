@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Link, Navigate } from "@tanstack/react-router";
 import { User } from "lucide-react";
 import {
@@ -40,6 +40,23 @@ export function SignedOut({ children }: { children: ReactNode }) {
   const { user, isPending } = useCurrentUserState();
   if (isPending || user) return null;
   return <>{children}</>;
+}
+
+/**
+ * Reports whether the viewer is signed in, once the session has actually
+ * resolved — renders nothing itself. For a route that wants to make one
+ * decision from sign-in state (e.g. a default tab) without pulling the auth
+ * client into its own eager bundle: lazy-load this the same way `AuthGate`
+ * lazy-loads `RequireAuth`.
+ *
+ * Only ever import this via `React.lazy` — see `RequireAuth` above for why.
+ */
+export function ReportSignedIn({ onKnown }: { onKnown: (signedIn: boolean) => void }) {
+  const { user, isPending } = useCurrentUserState();
+  useEffect(() => {
+    if (!isPending) onKnown(user !== null);
+  }, [isPending, user, onKnown]);
+  return null;
 }
 
 /**

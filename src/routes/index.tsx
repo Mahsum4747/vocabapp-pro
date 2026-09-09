@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AlertCircle, ChevronDown, ChevronRight, Plus, Search, Sparkles } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { AuthGate } from "@/components/auth-gate";
 import { EmptyState } from "@/components/empty-state";
@@ -17,6 +17,13 @@ import { ReviewCallout, ReviewCounts } from "@/components/review-status";
 import { DailyGoalCard, WeakWordsCard, XpCard } from "@/components/goal-and-xp";
 import { useProgress, useStudyStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
+
+// Lazy: pulls in the auth client (better-auth/react), which must stay out of
+// this route's eager bundle — see auth-gate.tsx's RequireAuth for why. Only
+// used to pick this page's default tab; it renders nothing itself.
+const ReportSignedIn = lazy(() =>
+  import("@/lib/auth/gates").then((m) => ({ default: m.ReportSignedIn })),
+);
 
 type Search = { view?: "mine" | "public" };
 
@@ -53,16 +60,28 @@ function Home() {
   const [query, setQuery] = useState("");
   const [subject, setSubject] = useState<string>("All");
   const [collapsedFolders, setCollapsedFolders] = useState<Set<string>>(new Set());
-  // Defaults to "public" — this page is reachable signed out, and Public
-  // Sets is the only tab that works without an account (see AuthGate below).
+  // Starts on "public" — the only tab that works before we know whether this
+  // visitor is signed in (see AuthGate below) — and flips to "mine" once
+  // `ReportSignedIn` resolves, unless an explicit `?view=` or a manual click
+  // already decided it.
   const [view, setView] = useState<"mine" | "public">(viewParam ?? "public");
+  const viewDecided = useRef(Boolean(viewParam));
 
   // The mobile bottom nav's "My Library" tab navigates here with ?view=mine;
   // pick that up even when this component is already mounted (a client-side
   // navigation doesn't remount, so the useState initializer above only runs once).
   useEffect(() => {
-    if (viewParam) setView(viewParam);
+    if (viewParam) {
+      viewDecided.current = true;
+      setView(viewParam);
+    }
   }, [viewParam]);
+
+  /** A visitor's own click always wins over the sign-in-based default. */
+  function chooseView(next: "mine" | "public") {
+    viewDecided.current = true;
+    setView(next);
+  }
 
   // `sets` only ever holds the current user's own sets (getMySets/getSetById
   // are ownership-scoped), so excluding those ids from `publicSets` is the
@@ -157,6 +176,18 @@ function Home() {
 
   return (
     <AppShell>
+      {/* Renders nothing — just tells us once whether to default this page's
+          tab to "mine" instead of "public" for a signed-in visitor. */}
+      <Suspense fallback={null}>
+        <ReportSignedIn
+          onKnown={(signedIn) => {
+            if (!viewDecided.current) {
+              viewDecided.current = true;
+              setView(signedIn ? "mine" : "public");
+            }
+          }}
+        />
+      </Suspense>
       <section className="stagger-in">
         <p className="text-sm font-medium text-muted">Personal library</p>
         <h1 className="mt-2 max-w-xl font-display text-4xl font-medium tracking-tight md:text-5xl">
@@ -264,10 +295,10 @@ function Home() {
 
       <div className="mt-10 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="flex gap-2">
-          <button type="button" onClick={() => setView("mine")}>
+          <button type="button" onClick={() => chooseView("mine")}>
             <Badge tone={view === "mine" ? "primary" : "muted"}>My Library</Badge>
           </button>
-          <button type="button" onClick={() => setView("public")}>
+          <button type="button" onClick={() => chooseView("public")}>
             <Badge tone={view === "public" ? "accent" : "muted"}>Public Sets</Badge>
           </button>
         </div>
