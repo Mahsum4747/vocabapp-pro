@@ -210,7 +210,7 @@ function EditPage() {
               />
               Reference set (no study modes, just a list)
             </label>
-            <CardEditor cards={cards} onChange={setCards} />
+            <CardEditor cards={cards} onChange={setCards} termLanguage={termLanguage} />
             <div className="sticky bottom-4 flex justify-end gap-2">
               <Button type="button" variant="ghost" asChild>
                 <Link to="/sets/$setId" params={{ setId }}>

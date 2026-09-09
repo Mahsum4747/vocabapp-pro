@@ -182,7 +182,7 @@ function CreatePage() {
               />
               Reference set (no study modes, just a list)
             </label>
-            <CardEditor cards={cards} onChange={setCards} />
+            <CardEditor cards={cards} onChange={setCards} termLanguage={termLanguage} />
             <div className="sticky bottom-4 flex justify-end">
               <Button type="submit" size="lg">
                 Save set

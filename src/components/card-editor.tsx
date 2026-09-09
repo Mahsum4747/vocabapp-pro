@@ -1,10 +1,15 @@
 import { useState } from "react";
-import { ImagePlus, Loader2, Plus, Trash2, X } from "lucide-react";
+import { ImagePlus, Loader2, Plus, Sparkles, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { ALLOWED_IMAGE_TYPES, MAX_IMAGE_BYTES, uploadCardImage } from "@/lib/card-images";
+import { suggestCardContent } from "@/lib/suggest-card";
 import { Button } from "./ui/button";
 import { Input, Textarea } from "./ui/input";
 import { Label } from "./ui/label";
+
+/** The language a card's primary definition is written in — fixed, not a
+ *  per-set setting; matches the default already used in Generate-from-topic. */
+const DEFAULT_DEFINITION_LANGUAGE = "English";
 
 export type EditorCard = {
   id: string;
@@ -25,11 +30,19 @@ const MAX_IMAGE_MB = MAX_IMAGE_BYTES / (1024 * 1024);
 export function CardEditor({
   cards,
   onChange,
+  termLanguage,
 }: {
   cards: EditorCard[];
   onChange: (cards: EditorCard[]) => void;
+  /** The set's term language, if known — passed to the AI suggestion so its
+   *  example sentence is written in the right language. */
+  termLanguage?: string;
 }) {
   const [uploadingId, setUploadingId] = useState<string | null>(null);
+  // A set, not a single id: suggesting on two different cards can genuinely
+  // overlap, and a shared "current id" would let the second request's
+  // cleanup wipe the first one's still-loading spinner.
+  const [suggestingIds, setSuggestingIds] = useState<ReadonlySet<string>>(new Set());
 
   function update(id: string, patch: Partial<EditorCard>) {
     onChange(cards.map((card) => (card.id === id ? { ...card, ...patch } : card)));
@@ -62,6 +75,40 @@ export function CardEditor({
       toast.error(error instanceof Error ? error.message : "Image upload failed.");
     } finally {
       setUploadingId(null);
+    }
+  }
+
+  /**
+   * Fill a card's definition and example from its term, one Gemini call for
+   * both fields. Overwrites whatever was there — an explicit "ask again"
+   * action, not something that fires on its own.
+   */
+  async function suggest(id: string) {
+    const card = cards.find((c) => c.id === id);
+    const term = card?.term.trim();
+    if (!term) return;
+    setSuggestingIds((prev) => new Set(prev).add(id));
+    try {
+      const result = await suggestCardContent({
+        data: {
+          term,
+          ...(termLanguage ? { termLanguage } : {}),
+          definitionLanguage: DEFAULT_DEFINITION_LANGUAGE,
+        },
+      });
+      if (!result.ok) {
+        toast.error(result.error);
+        return;
+      }
+      update(id, { definition: result.definition, example: result.example });
+    } catch {
+      toast.error("Couldn't get a suggestion, try again.");
+    } finally {
+      setSuggestingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
     }
   }
 
@@ -106,7 +153,23 @@ export function CardEditor({
               />
             </div>
           </div>
-          <div className="mt-3 space-y-1.5">
+          <div className="mt-2 flex justify-end">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              disabled={!card.term.trim() || suggestingIds.has(card.id)}
+              onClick={() => void suggest(card.id)}
+            >
+              {suggestingIds.has(card.id) ? (
+                <Loader2 className="size-3.5 animate-spin" />
+              ) : (
+                <Sparkles className="size-3.5" />
+              )}
+              {suggestingIds.has(card.id) ? "Suggesting…" : "Suggest with AI"}
+            </Button>
+          </div>
+          <div className="mt-1 space-y-1.5">
             <Label htmlFor={`example-${card.id}`}>Example sentence (optional)</Label>
             <Input
               id={`example-${card.id}`}
