@@ -332,6 +332,13 @@ function SoundTab() {
         />
         <p className="mt-2 text-xs text-subtle">Zero is silence, even with sound switched on.</p>
       </div>
+
+      <p className="text-xs text-subtle">
+        Card audio (the speaker icon) uses your device&apos;s best available voice for each
+        language automatically. For more or better-sounding voices, check your OS&apos;s voice
+        settings — iOS: Settings → Accessibility → Spoken Content → Voices; Android: install
+        additional voice packs from Google text-to-speech settings.
+      </p>
     </div>
   );
 }

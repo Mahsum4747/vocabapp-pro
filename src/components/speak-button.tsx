@@ -1,13 +1,17 @@
 import { useEffect, useState } from "react";
 import { Volume2 } from "lucide-react";
-import { speak, speechSupported } from "@/lib/speech";
+import { canSpeak, speak } from "@/lib/speech";
 import { cn } from "@/lib/utils";
 
 /**
  * Reads `text` aloud via the browser's Web Speech API. Renders nothing until
- * after mount (checking `speechSynthesis` support during SSR would always be
- * false, causing a hydration mismatch once the browser has it) and nothing
- * at all when the browser doesn't support it.
+ * `canSpeak` resolves true — which requires both a mount (checking
+ * `speechSynthesis` during SSR would always be false, causing a hydration
+ * mismatch once the browser has it) and, for a recognized `language`, an
+ * installed voice actually being found for it (voice lookup is async: the
+ * list itself loads async in most browsers). A recognized language with no
+ * voice at all (nor fallback — see speech.ts) keeps this hidden rather than
+ * having it silently mispronounce the text in some unrelated voice.
  */
 export function SpeakButton({
   text,
@@ -20,13 +24,21 @@ export function SpeakButton({
   className?: string;
   label?: string;
 }) {
-  const [supported, setSupported] = useState(false);
+  const [available, setAvailable] = useState(false);
+  const hasText = text.trim().length > 0;
 
   useEffect(() => {
-    setSupported(speechSupported());
-  }, []);
+    if (!hasText) return;
+    let cancelled = false;
+    void canSpeak(language).then((ok) => {
+      if (!cancelled) setAvailable(ok);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [language, hasText]);
 
-  if (!supported || !text.trim()) return null;
+  if (!hasText || !available) return null;
 
   return (
     <button
@@ -34,7 +46,7 @@ export function SpeakButton({
       onClick={(e) => {
         e.preventDefault();
         e.stopPropagation();
-        speak(text, language);
+        void speak(text, language);
       }}
       aria-label={label}
       className={cn(
