@@ -1,5 +1,11 @@
 import { buildReviewQueue, isStudiableSet, weakCards, type QueueEntry } from "./srs/index.ts";
-import { isCardActive, type Card, type CardProgress, type StudySet } from "./types.ts";
+import {
+  isCardActive,
+  resolveSetLanguages,
+  type Card,
+  type CardProgress,
+  type StudySet,
+} from "./types.ts";
 
 /** One card in a library-wide review round, with the set it came from. */
 export type SessionCard = {
@@ -76,12 +82,15 @@ export function buildLibrarySession(
   for (const entry of queue) {
     const set = setOfCard.get(entry.card.id);
     if (!set) continue;
+    const setLanguages = resolveSetLanguages(set);
     sessionCards.push({
       card: entry.card,
       setId: set.id,
       setTitle: set.title,
-      termLanguage: set.termLanguage,
-      definitionLanguage2: set.definitionLanguage2,
+      // Codes first, free text only where a set has none — the leaf
+      // speak buttons take either.
+      termLanguage: setLanguages.term ?? set.termLanguage,
+      definitionLanguage2: setLanguages.definition2 ?? set.definitionLanguage2,
       band: entry.band,
     });
   }

@@ -15,7 +15,7 @@ import {
   type WrittenQuestion,
 } from "@/lib/quiz";
 import { useSet, useSetProgress, useStudyStore } from "@/lib/store";
-import { isCardActive } from "@/lib/types";
+import { isCardActive, resolveSetLanguages } from "@/lib/types";
 import { answersMatch, parseIntSearchParam, cn } from "@/lib/utils";
 import { queuedCards } from "@/lib/srs";
 import { ratingForOutcome, useReviewLogger } from "@/lib/review-log";
@@ -35,6 +35,7 @@ function LearnPage() {
   const { setId } = Route.useParams();
   const { box } = Route.useSearch();
   const studySet = useSet(setId);
+  const setLanguages = resolveSetLanguages(studySet ?? {});
   const progress = useSetProgress(setId);
   const markStudied = useStudyStore((s) => s.markStudied);
   const logReview = useReviewLogger();
@@ -210,7 +211,7 @@ function LearnPage() {
       </h2>
       <Definition2Line
         definition2={item.definition2}
-        definitionLanguage2={studySet.definitionLanguage2}
+        definitionLanguage2={setLanguages.definition2 ?? studySet.definitionLanguage2}
         className="mt-1"
       />
 
@@ -269,7 +270,7 @@ function LearnPage() {
 
       {/* Only after grading — the example contains the term, i.e. the answer. */}
       {revealed ? (
-        <ExampleLine example={item.example} termLanguage={studySet.termLanguage} className="mt-4" />
+        <ExampleLine example={item.example} termLanguage={setLanguages.term ?? studySet.termLanguage} className="mt-4" />
       ) : null}
 
       {revealed && isMc ? (

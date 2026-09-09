@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { pickBestVoice, resolveVoice, type VoiceLike } from "./speech.ts";
+import { pickBestVoice, resolveVoice, toBcp47, type VoiceLike } from "./speech.ts";
 
 function voice(overrides: Partial<VoiceLike> & Pick<VoiceLike, "name" | "lang">): VoiceLike {
   return { voiceURI: overrides.name, localService: true, ...overrides };
@@ -66,14 +66,20 @@ describe("resolveVoice", () => {
   });
 
   it("falls back Kurmanji (ku) to a Turkish voice when no Kurdish voice is installed", () => {
-    const voices = [voice({ name: "Yelda", lang: "tr-TR" }), voice({ name: "Alex", lang: "en-US" })];
+    const voices = [
+      voice({ name: "Yelda", lang: "tr-TR" }),
+      voice({ name: "Alex", lang: "en-US" }),
+    ];
     const resolved = resolveVoice("ku", voices);
     assert.equal(resolved?.voice.name, "Yelda");
     assert.equal(resolved?.lang, "tr");
   });
 
   it("falls back Sorani (ckb) to an Arabic voice when no Sorani voice is installed", () => {
-    const voices = [voice({ name: "Maged", lang: "ar-SA" }), voice({ name: "Alex", lang: "en-US" })];
+    const voices = [
+      voice({ name: "Maged", lang: "ar-SA" }),
+      voice({ name: "Alex", lang: "en-US" }),
+    ];
     const resolved = resolveVoice("ckb", voices);
     assert.equal(resolved?.voice.name, "Maged");
     assert.equal(resolved?.lang, "ar");
@@ -96,7 +102,44 @@ describe("resolveVoice", () => {
   it("has no fallback chain for a language that isn't Kurdish/Sorani", () => {
     // No de voice, and German has no configured fallback — must not, say,
     // wander to an unrelated Dutch or Danish voice.
-    const voices = [voice({ name: "Alex", lang: "en-US" }), voice({ name: "Yelda", lang: "tr-TR" })];
+    const voices = [
+      voice({ name: "Alex", lang: "en-US" }),
+      voice({ name: "Yelda", lang: "tr-TR" }),
+    ];
     assert.equal(resolveVoice("de-DE", voices), undefined);
+  });
+});
+
+describe("toBcp47 — canonical code first, free text as fallback", () => {
+  it("maps a canonical code to its region-qualified tag", () => {
+    assert.equal(toBcp47("de"), "de-DE");
+    assert.equal(toBcp47("en"), "en-US");
+    assert.equal(toBcp47("tr"), "tr-TR");
+  });
+
+  it("lands legacy free text on the same tag as the code", () => {
+    // Every spelling of a language must speak with one voice, literally.
+    for (const spelling of ["German", "Deutsch", "Almanca", "de-DE", "DE"]) {
+      assert.equal(toBcp47(spelling), "de-DE", spelling);
+    }
+  });
+
+  it("keeps Kurdish on the bare tags the fallback chain keys off", () => {
+    // LANGUAGE_FALLBACKS is keyed by "ku"/"ckb"; region-qualifying these here
+    // would silently disable the Turkish/Arabic fallback.
+    assert.equal(toBcp47("ku"), "ku");
+    assert.equal(toBcp47("Kurmancî"), "ku");
+    assert.equal(toBcp47("ckb"), "ckb");
+    assert.equal(toBcp47("Soranî"), "ckb");
+  });
+
+  it("passes through a tag-shaped string for a language with no code yet", () => {
+    assert.equal(toBcp47("he-IL"), "he-IL");
+  });
+
+  it("returns undefined for nothing and for text it cannot place", () => {
+    assert.equal(toBcp47(undefined), undefined);
+    assert.equal(toBcp47("   "), undefined);
+    assert.equal(toBcp47("Klingon"), undefined);
   });
 });

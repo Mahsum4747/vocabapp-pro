@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { buildTest, leitnerBoxOf, type TestQuestion } from "@/lib/quiz";
 import { queuedCards } from "@/lib/srs";
 import { useSet, useSetProgress, useStudyStore } from "@/lib/store";
-import { isCardActive } from "@/lib/types";
+import { isCardActive, resolveSetLanguages } from "@/lib/types";
 import { answersMatch, parseIntSearchParam, cn } from "@/lib/utils";
 import { ratingForOutcome, useReviewLogger } from "@/lib/review-log";
 
@@ -27,6 +27,7 @@ function TestPage() {
   const { setId } = Route.useParams();
   const { box } = Route.useSearch();
   const studySet = useSet(setId);
+  const setLanguages = resolveSetLanguages(studySet ?? {});
   const progress = useSetProgress(setId);
   const markStudied = useStudyStore((s) => s.markStudied);
   const logReview = useReviewLogger();
@@ -212,7 +213,7 @@ function TestPage() {
       {q.type !== "tf" ? (
         <Definition2Line
           definition2={q.definition2}
-          definitionLanguage2={studySet.definitionLanguage2}
+          definitionLanguage2={setLanguages.definition2 ?? studySet.definitionLanguage2}
           className="mt-1"
         />
       ) : null}
@@ -311,7 +312,7 @@ function TestPage() {
 
       {/* Only after grading — the example contains the term, i.e. the answer. */}
       {revealed ? (
-        <ExampleLine example={q.example} termLanguage={studySet.termLanguage} className="mt-4" />
+        <ExampleLine example={q.example} termLanguage={setLanguages.term ?? studySet.termLanguage} className="mt-4" />
       ) : null}
 
       {revealed && q.type !== "written" ? (

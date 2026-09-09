@@ -1,3 +1,5 @@
+import { normalizeLanguage, type LanguageCode } from "./lang/languages.ts";
+
 // Browser-only text-to-speech via the Web Speech API — no external service,
 // no API key. `termLanguage` on a set is a free-text language name (e.g.
 // "German", picked in the Generate-from-topic dialog), so we map the common
@@ -61,9 +63,57 @@ const LANGUAGE_FALLBACKS: Record<string, string[]> = {
   ckb: ["ar"],
 };
 
-function toBcp47(language?: string): string | undefined {
+/**
+ * The tag to speak each canonical code with. Regions are spelled out because
+ * a voice list is region-flavoured — asking for "de-DE" finds a German voice
+ * more reliably than bare "de" on some engines, and `pickBestVoice` still
+ * falls back to a base-language match either way.
+ */
+const CODE_TAGS: Record<LanguageCode, string> = {
+  de: "de-DE",
+  en: "en-US",
+  tr: "tr-TR",
+  ku: "ku",
+  ckb: "ckb",
+  fr: "fr-FR",
+  es: "es-ES",
+  it: "it-IT",
+  pt: "pt-PT",
+  nl: "nl-NL",
+  ru: "ru-RU",
+  pl: "pl-PL",
+  sv: "sv-SE",
+  nb: "nb-NO",
+  da: "da-DK",
+  fi: "fi-FI",
+  el: "el-GR",
+  ar: "ar-SA",
+  ja: "ja-JP",
+  ko: "ko-KR",
+  zh: "zh-CN",
+  hi: "hi-IN",
+  uk: "uk-UA",
+  cs: "cs-CZ",
+  ro: "ro-RO",
+  hu: "hu-HU",
+};
+
+/**
+ * Resolve whatever a caller has — a canonical code, or the free text a set
+ * was saved with years ago — to a speech tag.
+ *
+ * The canonical code comes first: it is the one identity that can't be spelled
+ * six ways. `normalizeLanguage` also absorbs the free text (it knows every
+ * legacy spelling and raw BCP-47 form), so the two paths below only catch what
+ * it genuinely doesn't recognize — a tag-shaped string for a language with no
+ * code yet, then the original legacy map, kept so a public or long-untouched
+ * set doesn't lose the voice it had.
+ */
+export function toBcp47(language?: string): string | undefined {
   const trimmed = language?.trim();
   if (!trimmed) return undefined;
+  const code = normalizeLanguage(trimmed);
+  if (code) return CODE_TAGS[code];
   // Already looks like a BCP-47 tag (e.g. "de", "de-DE") — use as-is.
   if (/^[a-zA-Z]{2,3}(-[a-zA-Z]{2,3})?$/.test(trimmed)) return trimmed;
   return LANGUAGE_TAGS[trimmed.toLowerCase()];
@@ -213,8 +263,7 @@ export async function findVoice(
   if (voiceCache.has(cacheKey)) return voiceCache.get(cacheKey) ?? undefined;
   const voices = await loadVoices();
   const resolved = resolveVoice(tag, voices) as
-    | { voice: SpeechSynthesisVoice; lang: string }
-    | undefined;
+    { voice: SpeechSynthesisVoice; lang: string } | undefined;
   voiceCache.set(cacheKey, resolved ?? null);
   return resolved;
 }

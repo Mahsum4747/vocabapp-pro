@@ -49,6 +49,7 @@ import { masteryScoreFor, masteryStats, type ProgressMap } from "@/lib/quiz";
 import { reviewSummary } from "@/lib/srs";
 import { serializeSetExport } from "@/lib/parse-cards";
 import { useSet, useSetProgress, useStudyStore } from "@/lib/store";
+import { resolveSetLanguages } from "@/lib/types";
 import type { Card, CardStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -78,6 +79,7 @@ function sortCards(cards: Card[], mode: SortMode, progress: ProgressMap): Card[]
 function SetPage() {
   const { setId } = Route.useParams();
   const studySet = useSet(setId);
+  const setLanguages = resolveSetLanguages(studySet ?? {});
   const progress = useSetProgress(setId);
   const navigate = useNavigate();
   const deleteSet = useStudyStore((s) => s.deleteSet);
@@ -456,7 +458,7 @@ function SetPage() {
                           >
                             {card.term}
                           </p>
-                          <SpeakButton text={card.term} language={studySet.termLanguage} />
+                          <SpeakButton text={card.term} language={setLanguages.term ?? studySet.termLanguage} />
                           {isExcluded ? (
                             <span className="shrink-0 rounded-full bg-surface-2 px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-muted uppercase">
                               Excluded
@@ -469,7 +471,7 @@ function SetPage() {
                           </p>
                           <ExampleLine
                             example={card.example}
-                            termLanguage={studySet.termLanguage}
+                            termLanguage={setLanguages.term ?? studySet.termLanguage}
                           />
                         </div>
                       </div>

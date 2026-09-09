@@ -6,7 +6,7 @@ import { EmptyState } from "@/components/empty-state";
 import { StudyDeck, type DeckEntry } from "@/components/study-deck";
 import { Button } from "@/components/ui/button";
 import { useSet, useSetProgress, useStudyStore } from "@/lib/store";
-import { isCardActive } from "@/lib/types";
+import { isCardActive, resolveSetLanguages } from "@/lib/types";
 import { leitnerBoxOf } from "@/lib/quiz";
 import { queuedCards, weakCards } from "@/lib/srs";
 import { parseIntSearchParam } from "@/lib/utils";
@@ -25,6 +25,7 @@ function FlashcardsPage() {
   const { setId } = Route.useParams();
   const { box, filter } = Route.useSearch();
   const studySet = useSet(setId);
+  const setLanguages = resolveSetLanguages(studySet ?? {});
   const progress = useSetProgress(setId);
   const toggleStar = useStudyStore((s) => s.toggleStar);
   const markStudied = useStudyStore((s) => s.markStudied);
@@ -52,8 +53,8 @@ function FlashcardsPage() {
     return ordered.map((card) => ({
       card,
       setId: studySet.id,
-      termLanguage: studySet.termLanguage,
-      definitionLanguage2: studySet.definitionLanguage2,
+      termLanguage: setLanguages.term ?? studySet.termLanguage,
+      definitionLanguage2: setLanguages.definition2 ?? studySet.definitionLanguage2,
     }));
     // Keyed on the set id (not the studySet object, and not `progress`) so a
     // review landing mid-round — which replaces both with new objects — does
