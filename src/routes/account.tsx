@@ -24,7 +24,7 @@ import {
 import { DEFAULT_SOUND_SETTINGS, playSound, type SoundSettings } from "@/lib/sound";
 import { getDailyStatsRange } from "@/lib/study-sets";
 import { deleteUserAccount } from "@/lib/delete-account";
-import { signOut } from "@/lib/auth/client";
+import { deleteAuthAccount } from "@/lib/delete-auth-account";
 import { useStudyStore } from "@/lib/store";
 import type { DailyStats } from "@/lib/types";
 import { cn, recentDateKeys } from "@/lib/utils";
@@ -360,12 +360,15 @@ function AccountTab() {
     if (confirmText.toUpperCase() !== "DELETE") return;
     setIsDeleting(true);
     try {
-      const result = await deleteUserAccount({});
-      if (result.ok) {
-        toast.success("Account deleted.");
-        // Sign out and redirect to login
-        await signOut("/login");
-      }
+      // Two separate server functions/requests (Firestore, then Postgres) —
+      // see delete-auth-account.ts for why they aren't combined into one.
+      await deleteUserAccount({});
+      await deleteAuthAccount({});
+      toast.success("Account deleted.");
+      // Sign out and redirect to login. Dynamic import: better-auth/react
+      // must stay out of every route's eager bundle graph (see auth-gate.tsx).
+      const { signOut } = await import("@/lib/auth/client");
+      await signOut("/login");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to delete account.");
       setIsDeleting(false);
