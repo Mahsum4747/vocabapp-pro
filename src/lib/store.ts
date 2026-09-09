@@ -23,9 +23,11 @@ import {
   updateDailyGoal as updateDailyGoalFn,
   updateSoundSettings as updateSoundSettingsFn,
   resetSetProgress as resetSetProgressFn,
+  type SetMetaPatch,
 } from "./study-sets";
 import { getStreak as getStreakFn, type StreakInfo } from "./streak";
 import { localDateKey } from "./utils";
+import type { LanguageCode } from "./lang/languages";
 
 type DraftCard = {
   term: string;
@@ -75,24 +77,14 @@ type StudyState = {
     cards: DraftCard[];
     isReference?: boolean;
     termLanguage?: string;
+    termLangCode?: LanguageCode;
+    defLangCode?: LanguageCode;
     definitionLanguage2?: string;
+    defLang2Code?: LanguageCode;
     folder?: string;
   }) => Promise<string>;
-  updateSetMeta: (
-    id: string,
-    patch: Partial<
-      Pick<
-        StudySet,
-        | "title"
-        | "description"
-        | "subject"
-        | "isReference"
-        | "termLanguage"
-        | "definitionLanguage2"
-        | "folder"
-      >
-    >,
-  ) => Promise<void>;
+  /** `patch` language codes accept `null` to clear them; see `SetMetaPatch`. */
+  updateSetMeta: (id: string, patch: SetMetaPatch) => Promise<void>;
   replaceCards: (id: string, cards: DraftCard[]) => Promise<void>;
   deleteSet: (id: string) => Promise<void>;
   toggleStar: (setId: string, cardId: string) => Promise<void>;
@@ -207,11 +199,26 @@ export const useStudyStore = create<StudyState>()((set, get) => ({
     cards,
     isReference,
     termLanguage,
+    termLangCode,
+    defLangCode,
     definitionLanguage2,
+    defLang2Code,
     folder,
   }) => {
     const next = await createSet({
-      data: { title, description, subject, cards, isReference, termLanguage, definitionLanguage2, folder },
+      data: {
+        title,
+        description,
+        subject,
+        cards,
+        isReference,
+        termLanguage,
+        termLangCode,
+        defLangCode,
+        definitionLanguage2,
+        defLang2Code,
+        folder,
+      },
     });
     set({ sets: [next, ...get().sets] });
     return next.id;
@@ -221,8 +228,13 @@ export const useStudyStore = create<StudyState>()((set, get) => ({
     const setId = findSet(get().sets, id)?.id ?? id;
     await updateSetMetaFn({ data: { id: setId, patch } });
     const now = Date.now();
+    // A `null` language code means the server deleted that field, so mirror
+    // that locally as absent rather than storing a null the type doesn't allow.
+    const localPatch = Object.fromEntries(
+      Object.entries(patch).map(([key, value]) => [key, value === null ? undefined : value]),
+    ) as Partial<StudySet>;
     set({
-      sets: get().sets.map((s) => (s.id === setId ? { ...s, ...patch, updatedAt: now } : s)),
+      sets: get().sets.map((s) => (s.id === setId ? { ...s, ...localPatch, updatedAt: now } : s)),
     });
   },
 

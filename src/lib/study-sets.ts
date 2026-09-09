@@ -25,6 +25,7 @@ import {
   type UserSettings,
 } from "./daily-goal";
 import { freshCardCopy, isCardActive, isCorrectRating, readDailyStats } from "./types";
+import { asLanguageCode, type LanguageCode } from "./lang/languages";
 import { readSoundSettings, type SoundSettings } from "./sound";
 import type { Card, CardProgress, DailyStats, StudySet } from "./types";
 
@@ -167,7 +168,10 @@ export const createSet = createServerFn({ method: "POST" })
       cards: DraftCard[];
       isReference?: boolean;
       termLanguage?: string;
+      termLangCode?: LanguageCode;
+      defLangCode?: LanguageCode;
       definitionLanguage2?: string;
+      defLang2Code?: LanguageCode;
       folder?: string;
     }) => input,
   )
@@ -178,6 +182,11 @@ export const createSet = createServerFn({ method: "POST" })
     const now = Date.now();
     const folder = data.folder?.trim();
     const definitionLanguage2 = data.definitionLanguage2?.trim();
+    // Validated rather than trusted: the codes arrive over the wire, and an
+    // unrecognized one must not be stored as if it were canonical.
+    const termLangCode = asLanguageCode(data.termLangCode);
+    const defLangCode = asLanguageCode(data.defLangCode);
+    const defLang2Code = asLanguageCode(data.defLang2Code);
     const next: StudySet = {
       id,
       title: data.title.trim() || "Untitled set",
@@ -193,34 +202,50 @@ export const createSet = createServerFn({ method: "POST" })
       copyCount: 0,
       isReference: data.isReference ?? false,
       ...(data.termLanguage ? { termLanguage: data.termLanguage } : {}),
+      ...(termLangCode ? { termLangCode } : {}),
+      ...(defLangCode ? { defLangCode } : {}),
       ...(definitionLanguage2 ? { definitionLanguage2 } : {}),
+      ...(defLang2Code ? { defLang2Code } : {}),
       ...(folder ? { folder } : {}),
     };
     await db.collection("study_sets").doc(id).set(next);
     return next;
   });
 
+/** The language-code fields, the only ones where `null` means "clear it". */
+const LANGUAGE_CODE_KEYS = ["termLangCode", "defLangCode", "defLang2Code"] as const;
+
+function isLanguageCodeKey(key: string): boolean {
+  return (LANGUAGE_CODE_KEYS as readonly string[]).includes(key);
+}
+
+/**
+ * What `updateSetMeta` accepts. Language codes take `null` as an explicit
+ * "clear this", distinct from `undefined`, which continues to mean "leave it
+ * alone" for every field.
+ */
+export type SetMetaPatch = Partial<
+  Pick<
+    StudySet,
+    | "title"
+    | "description"
+    | "subject"
+    | "isReference"
+    | "termLanguage"
+    | "definitionLanguage2"
+    | "folder"
+  >
+> & {
+  termLangCode?: LanguageCode | null;
+  defLangCode?: LanguageCode | null;
+  defLang2Code?: LanguageCode | null;
+};
+
 export const updateSetMeta = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
-  .validator(
-    (input: {
-      id: string;
-      patch: Partial<
-        Pick<
-          StudySet,
-          | "title"
-          | "description"
-          | "subject"
-          | "isReference"
-          | "termLanguage"
-          | "definitionLanguage2"
-          | "folder"
-        >
-      >;
-    }) => input,
-  )
+  .validator((input: { id: string; patch: SetMetaPatch }) => input)
   .handler(async ({ context, data }) => {
-    const { getAdminFirestore } = await import("./firebase-admin.server");
+    const { getAdminFirestore, FieldValue } = await import("./firebase-admin.server");
     const db = getAdminFirestore();
     const ref = db.collection("study_sets").doc(data.id);
     const doc = await ref.get();
@@ -231,8 +256,17 @@ export const updateSetMeta = createServerFn({ method: "POST" })
     // Firestore's update() rejects an explicit `undefined` field value —
     // drop any patch keys left `undefined` (e.g. a set with no termLanguage)
     // instead of sending them through.
+    //
+    // The language codes are the one exception, and only they: an explicit
+    // `null` there means "this set no longer has a language for this slot",
+    // which has to remove the field rather than leave the old code behind.
+    // Every other field keeps its existing behavior.
     const cleanPatch = Object.fromEntries(
-      Object.entries(data.patch).filter(([, value]) => value !== undefined),
+      Object.entries(data.patch)
+        .filter(([, value]) => value !== undefined)
+        .map(([key, value]) =>
+          value === null && isLanguageCodeKey(key) ? [key, FieldValue.delete()] : [key, value],
+        ),
     );
     await ref.update({ ...cleanPatch, updatedAt: now });
     return { ok: true };
@@ -270,7 +304,9 @@ export const replaceCards = createServerFn({ method: "POST" })
         const example =
           d.example !== undefined ? d.example?.trim() || null : (prior?.example ?? null);
         const definition2 =
-          d.definition2 !== undefined ? d.definition2?.trim() || null : (prior?.definition2 ?? null);
+          d.definition2 !== undefined
+            ? d.definition2?.trim() || null
+            : (prior?.definition2 ?? null);
         return {
           id: keptId,
           term,
