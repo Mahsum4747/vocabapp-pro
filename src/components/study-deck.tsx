@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Shuffle, Star } from "lucide-react";
 import type { ReactNode } from "react";
 import { EmptyState } from "./empty-state";
@@ -80,6 +80,13 @@ export function StudyDeck({
   const [knowCount, setKnowCount] = useState(0);
   // When the current card was first shown, for the scheduler's response time.
   const [shownAt, setShownAt] = useState(() => Date.now());
+  // Which order-index was last graded. A ref, not state, so a second click
+  // event arriving before React re-renders (a double-click, a fast double-tap
+  // on mobile) still sees the update — unlike the other three study modes,
+  // flashcards has no "revealed" state to disable the buttons on, so this is
+  // the only thing standing between one grade and the same card's review
+  // landing twice.
+  const lastGradedIndexRef = useRef<number | null>(null);
 
   const byId = useMemo(() => {
     const map = new Map<string, DeckEntry>();
@@ -92,6 +99,7 @@ export function StudyDeck({
     setIndex(0);
     setFlipped(false);
     setDone(false);
+    lastGradedIndexRef.current = null;
   }, [deck]);
 
   const entry = byId.get(order[index] ?? "");
@@ -114,6 +122,13 @@ export function StudyDeck({
 
   function handleGrade(rating: ReviewRating) {
     if (!entry) return;
+    // Guards against the same card being graded twice from one action (a
+    // double-click, or two rapid taps): once this index has been submitted,
+    // it stays blocked until the user actually moves to a different card —
+    // including back via "Previous", which must still allow a deliberate
+    // re-grade.
+    if (lastGradedIndexRef.current === index) return;
+    lastGradedIndexRef.current = index;
 
     if (rating === "again") setStillLearningCount((n) => n + 1);
     else setKnowCount((n) => n + 1);
@@ -156,6 +171,7 @@ export function StudyDeck({
               setIndex(0);
               setFlipped(false);
               setDone(false);
+              lastGradedIndexRef.current = null;
             }}
           >
             <Shuffle className="size-4" />
@@ -183,6 +199,7 @@ export function StudyDeck({
                 setIndex(0);
                 setFlipped(false);
                 setDone(false);
+                lastGradedIndexRef.current = null;
               }}
             >
               Start over
