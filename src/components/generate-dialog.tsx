@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Sparkles } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Loader2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { generateStudySet, type GeneratedSet } from "@/lib/generate-set";
 import { Button } from "./ui/button";
@@ -20,12 +20,20 @@ export function GenerateDialog({
   const [termLanguage, setTermLanguage] = useState("German");
   const [definitionLanguage, setDefinitionLanguage] = useState("English");
   const [loading, setLoading] = useState(false);
+  // Flips on once generation has been running long enough that "Generating…"
+  // alone would start to read as stuck, rather than just working.
+  const [longWait, setLongWait] = useState(false);
+  const longWaitTimer = useRef<number | undefined>(undefined);
 
   useEffect(() => {
     if (forceOpen > 0) setOpen(true);
   }, [forceOpen]);
 
+  // Cancel a pending timer if the dialog unmounts mid-generation.
+  useEffect(() => () => window.clearTimeout(longWaitTimer.current), []);
+
   async function run() {
+    if (loading) return;
     if (topic.trim().length < 2) {
       toast.error("Enter a topic.");
       return;
@@ -35,6 +43,8 @@ export function GenerateDialog({
       return;
     }
     setLoading(true);
+    setLongWait(false);
+    longWaitTimer.current = window.setTimeout(() => setLongWait(true), 6000);
     try {
       const result = await generateStudySet({
         data: {
@@ -54,7 +64,9 @@ export function GenerateDialog({
     } catch {
       toast.error("Something went wrong.");
     } finally {
+      window.clearTimeout(longWaitTimer.current);
       setLoading(false);
+      setLongWait(false);
     }
   }
 
@@ -77,6 +89,7 @@ export function GenerateDialog({
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
             placeholder="e.g. Ottoman sultans, A2 verbs, CSS flexbox"
+            disabled={loading}
             onKeyDown={(e) => {
               if (e.key === "Enter") void run();
             }}
@@ -90,6 +103,7 @@ export function GenerateDialog({
               value={termLanguage}
               onChange={(e) => setTermLanguage(e.target.value)}
               placeholder="e.g. German"
+              disabled={loading}
             />
           </div>
           <div className="space-y-1.5">
@@ -99,6 +113,7 @@ export function GenerateDialog({
               value={definitionLanguage}
               onChange={(e) => setDefinitionLanguage(e.target.value)}
               placeholder="e.g. English"
+              disabled={loading}
             />
           </div>
         </div>
@@ -112,11 +127,24 @@ export function GenerateDialog({
             value={count}
             onChange={(e) => setCount(Number(e.target.value))}
             className="w-full accent-primary"
+            disabled={loading}
           />
         </div>
         <Button type="button" className="w-full" onClick={() => void run()} disabled={loading}>
-          {loading ? "Generating…" : "Generate"}
+          {loading ? (
+            <>
+              <Loader2 className="size-4 animate-spin" />
+              Generating…
+            </>
+          ) : (
+            "Generate"
+          )}
         </Button>
+        {loading ? (
+          <p className="text-center text-sm text-muted" role="status" aria-live="polite">
+            {longWait ? "This can take a moment…" : "Creating your set…"}
+          </p>
+        ) : null}
       </DialogContent>
     </Dialog>
   );
