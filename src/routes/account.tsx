@@ -2,9 +2,13 @@ import { createFileRoute } from "@tanstack/react-router";
 import { format } from "date-fns";
 import { Award, Flame, Layers, Target, Zap } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 import { AppShell } from "@/components/app-shell";
 import { AuthGate } from "@/components/auth-gate";
 import { DailyGoalPicker } from "@/components/daily-goal-dialog";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogClose } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import {
   ACHIEVEMENTS,
@@ -19,6 +23,8 @@ import {
 } from "@/lib/gamification";
 import { DEFAULT_SOUND_SETTINGS, playSound, type SoundSettings } from "@/lib/sound";
 import { getDailyStatsRange } from "@/lib/study-sets";
+import { deleteUserAccount } from "@/lib/delete-account";
+import { signOut } from "@/lib/auth/client";
 import { useStudyStore } from "@/lib/store";
 import type { DailyStats } from "@/lib/types";
 import { cn, recentDateKeys } from "@/lib/utils";
@@ -38,6 +44,7 @@ const TABS = [
   { id: "achievements", label: "Achievements" },
   { id: "goal", label: "Daily goal" },
   { id: "sound", label: "Sound" },
+  { id: "account", label: "Account" },
 ] as const;
 
 type TabId = (typeof TABS)[number]["id"];
@@ -97,6 +104,7 @@ function AccountPage() {
         ) : null}
         {tab === "goal" ? <GoalTab timeZone={profile.timeZone} /> : null}
         {tab === "sound" ? <SoundTab /> : null}
+        {tab === "account" ? <AccountTab /> : null}
       </div>
     </AppShell>
   );
@@ -339,6 +347,84 @@ function GoalTab({ timeZone }: { timeZone: string }) {
       <p className="text-xs text-subtle">
         Days roll over in your own timezone{timeZone ? ` (${timeZone})` : ""}.
       </p>
+    </div>
+  );
+}
+
+function AccountTab() {
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmText, setConfirmText] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  async function handleDeleteAccount() {
+    if (confirmText.toUpperCase() !== "DELETE") return;
+    setIsDeleting(true);
+    try {
+      const result = await deleteUserAccount({});
+      if (result.ok) {
+        toast.success("Account deleted.");
+        // Sign out and redirect to login
+        await signOut("/login");
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to delete account.");
+      setIsDeleting(false);
+    }
+  }
+
+  return (
+    <div className="max-w-md space-y-4">
+      <div className="rounded-xl bg-danger-soft p-4 shadow-[var(--shadow-border)]">
+        <h3 className="font-medium text-danger">Delete account</h3>
+        <p className="mt-2 text-sm text-danger/80">
+          This permanently deletes your account, all study sets, cards, and progress. This action
+          cannot be undone.
+        </p>
+        <Button
+          className="mt-4 w-full bg-danger hover:bg-danger/90"
+          onClick={() => setConfirmOpen(true)}
+        >
+          Delete my account
+        </Button>
+      </div>
+
+      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <DialogContent title="Delete account permanently?">
+          <div className="space-y-4 pt-2">
+            <p className="text-sm text-muted">
+              This will permanently delete your account and all your data, including:
+            </p>
+            <ul className="space-y-1 text-sm text-muted list-disc list-inside">
+              <li>All study sets and cards</li>
+              <li>All learning progress and review history</li>
+              <li>Account settings and preferences</li>
+            </ul>
+            <p className="text-sm font-medium text-fg">To confirm, type DELETE below:</p>
+            <Input
+              type="text"
+              placeholder="Type DELETE"
+              value={confirmText}
+              onChange={(e) => setConfirmText(e.target.value)}
+              className="font-mono"
+              disabled={isDeleting}
+            />
+            <div className="flex gap-2">
+              <Button
+                className="flex-1 bg-danger hover:bg-danger/90"
+                onClick={handleDeleteAccount}
+                disabled={confirmText.toUpperCase() !== "DELETE" || isDeleting}
+              >
+                {isDeleting ? "Deleting…" : "Delete permanently"}
+              </Button>
+              <DialogClose asChild>
+                <Button className="flex-1" variant="outline" disabled={isDeleting}>
+                  Cancel
+                </Button>
+              </DialogClose>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
