@@ -73,7 +73,7 @@ function AccountPage() {
 
   return (
     <AppShell>
-      <h1 className="font-display text-3xl font-medium tracking-tight">Your progress</h1>
+      <h1 className="font-display text-3xl font-medium tracking-tight">Account</h1>
 
       <div className="mt-6 flex gap-1 border-b border-border/80">
         {TABS.map((entry) => (

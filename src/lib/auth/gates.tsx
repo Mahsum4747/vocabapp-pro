@@ -157,7 +157,7 @@ function AccountMenuContent({ user, onDailyGoal }: { user: AppUser; onDailyGoal:
       </div>
       <DropdownMenuSeparator />
       <DropdownMenuItem asChild>
-        <Link to="/account">Your progress</Link>
+        <Link to="/account">Account</Link>
       </DropdownMenuItem>
       <DropdownMenuItem onSelect={onDailyGoal}>Daily goal</DropdownMenuItem>
       {authEnabled && (
