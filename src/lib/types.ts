@@ -1,4 +1,5 @@
 import type { SchedulerState } from "./srs/scheduler.ts";
+import { asLanguageCode, normalizeLanguage, type LanguageCode } from "./lang/languages.ts";
 
 /**
  * "active" (default, absent = active) shows everywhere; "excluded" is
@@ -93,6 +94,20 @@ export type StudySet = {
   /** Language the terms are written in (e.g. "German") — set when generated via AI. Drives text-to-speech accent; absent means use the browser's default voice. */
   termLanguage?: string;
   /**
+   * Canonical code for `termLanguage`. Written going forward; absent on every
+   * set made before codes existed, which is why reads go through
+   * `resolveSetLanguages` rather than touching this directly. Nothing
+   * backfills it — the free text stays the display value either way.
+   */
+  termLangCode?: LanguageCode;
+  /**
+   * Canonical code for the PRIMARY definition language. It has no free-text
+   * counterpart: the primary definition language was only ever a transient
+   * choice in the generate dialog, never stored on the set. So this is null
+   * for every pre-existing set, with nothing to fall back to.
+   */
+  defLangCode?: LanguageCode;
+  /**
    * A second language to show a definition in, alongside the primary one
    * (e.g. a German→English set that also wants a Turkish gloss). Absent
    * means the set has no second definition language — the normal case.
@@ -100,9 +115,44 @@ export type StudySet = {
    * text in their own `definition2`.
    */
   definitionLanguage2?: string;
+  /** Canonical code for `definitionLanguage2`, same rules as `termLangCode`. */
+  defLang2Code?: LanguageCode;
   /** Optional single-level grouping label (e.g. "A1", "İş Almancası") — free text, not nested. */
   folder?: string;
 };
+
+/** A set's three languages as canonical codes, `null` where none can be determined. */
+export type SetLanguages = {
+  term: LanguageCode | null;
+  definition: LanguageCode | null;
+  definition2: LanguageCode | null;
+};
+
+/**
+ * The single way to ask what languages a set is in.
+ *
+ * Resolution is `stored code ?? normalizeLanguage(free text) ?? null` — new
+ * sets carry codes, older ones fall back to whatever free text they have, and
+ * anything unrecognized stays null rather than becoming a guess. Stored codes
+ * are validated on the way out because Firestore documents are untyped and
+ * can hold anything a previous version (or a hand edit) put there.
+ *
+ * The primary definition language has no free-text field to fall back to, so
+ * it resolves from `defLangCode` alone.
+ */
+export function resolveSetLanguages(
+  set: Pick<
+    StudySet,
+    "termLanguage" | "termLangCode" | "defLangCode" | "definitionLanguage2" | "defLang2Code"
+  >,
+): SetLanguages {
+  return {
+    term: asLanguageCode(set.termLangCode) ?? normalizeLanguage(set.termLanguage ?? ""),
+    definition: asLanguageCode(set.defLangCode),
+    definition2:
+      asLanguageCode(set.defLang2Code) ?? normalizeLanguage(set.definitionLanguage2 ?? ""),
+  };
+}
 
 export const SUBJECTS = [
   "Language",
