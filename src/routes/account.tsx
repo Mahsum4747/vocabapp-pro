@@ -75,7 +75,7 @@ function AccountPage() {
     <AppShell>
       <h1 className="font-display text-3xl font-medium tracking-tight">Account</h1>
 
-      <div className="mt-6 flex gap-1 border-b border-border/80">
+      <div className="mt-6 flex gap-1 overflow-x-auto border-b border-border/80">
         {TABS.map((entry) => (
           <button
             key={entry.id}
@@ -84,7 +84,7 @@ function AccountPage() {
             aria-selected={tab === entry.id}
             onClick={() => setTab(entry.id)}
             className={cn(
-              "-mb-px border-b-2 px-4 py-2 text-sm font-medium transition-colors",
+              "-mb-px shrink-0 border-b-2 px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors",
               tab === entry.id
                 ? "border-primary text-fg"
                 : "border-transparent text-muted hover:text-fg",
