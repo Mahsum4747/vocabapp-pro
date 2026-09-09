@@ -6,6 +6,7 @@ import { suggestCardContent } from "@/lib/suggest-card";
 import { Button } from "./ui/button";
 import { Input, Textarea } from "./ui/input";
 import { Label } from "./ui/label";
+import { Dialog, DialogContent, DialogClose } from "./ui/dialog";
 
 /** The language a card's primary definition is written in — fixed, not a
  *  per-set setting; matches the default already used in Generate-from-topic. */
@@ -48,6 +49,12 @@ export function CardEditor({
   // and second-definition suggestions are independent requests and can
   // genuinely overlap, same reasoning as two different cards overlapping.
   const [suggestingKeys, setSuggestingKeys] = useState<ReadonlySet<string>>(new Set());
+  // Track pending suggestion awaiting user confirmation
+  const [confirmDialog, setConfirmDialog] = useState<{
+    cardId: string;
+    field: "primary" | "second";
+    suggestion: { definition: string; example: string };
+  } | null>(null);
 
   function update(id: string, patch: Partial<EditorCard>) {
     onChange(cards.map((card) => (card.id === id ? { ...card, ...patch } : card)));
@@ -85,8 +92,10 @@ export function CardEditor({
 
   /**
    * Fill a card's definition (and, for the primary field, its example) from
-   * the term, one Gemini call per field. Overwrites whatever was there — an
-   * explicit "ask again" action, not something that fires on its own.
+   * the term, one Gemini call per field. An explicit "ask again" action.
+   *
+   * If the field is already filled, shows a confirmation dialog before replacing.
+   * If empty, applies the suggestion directly.
    *
    * The second-definition suggestion reuses this same call, parameterized on
    * `definitionLanguage2` instead of the fixed primary language — it still
@@ -100,6 +109,11 @@ export function CardEditor({
     const term = card?.term.trim();
     if (!term) return;
     if (field === "second" && !definitionLanguage2?.trim()) return;
+
+    // Check if field is already filled
+    const currentValue = field === "primary" ? card?.definition : card?.definition2;
+    const isFilled = currentValue?.trim();
+
     const key = `${id}:${field}`;
     setSuggestingKeys((prev) => new Set(prev).add(key));
     try {
@@ -114,8 +128,17 @@ export function CardEditor({
         toast.error(result.error);
         return;
       }
-      if (field === "primary") update(id, { definition: result.definition, example: result.example });
-      else update(id, { definition2: result.definition });
+
+      // If field is filled, ask for confirmation; otherwise apply directly
+      if (isFilled) {
+        setConfirmDialog({ cardId: id, field, suggestion: result });
+      } else {
+        if (field === "primary") {
+          update(id, { definition: result.definition, example: result.example });
+        } else {
+          update(id, { definition2: result.definition });
+        }
+      }
     } catch {
       toast.error("Couldn't get a suggestion, try again.");
     } finally {
@@ -125,6 +148,17 @@ export function CardEditor({
         return next;
       });
     }
+  }
+
+  function confirmReplace() {
+    if (!confirmDialog) return;
+    const { cardId, field, suggestion } = confirmDialog;
+    if (field === "primary") {
+      update(cardId, { definition: suggestion.definition, example: suggestion.example });
+    } else {
+      update(cardId, { definition2: suggestion.definition });
+    }
+    setConfirmDialog(null);
   }
 
   return (
@@ -272,6 +306,28 @@ export function CardEditor({
         <Plus />
         Add card
       </Button>
+
+      <Dialog open={confirmDialog !== null} onOpenChange={(open) => !open && setConfirmDialog(null)}>
+        <DialogContent title="Replace existing content?">
+          <div className="space-y-4 pt-2">
+            <p className="text-sm text-muted">
+              This field already has content. Replace it with the AI suggestion?
+            </p>
+            <div className="space-y-2">
+              <div className="flex gap-2">
+                <Button className="flex-1" onClick={confirmReplace}>
+                  Replace
+                </Button>
+                <DialogClose asChild>
+                  <Button className="flex-1" variant="outline">
+                    Cancel
+                  </Button>
+                </DialogClose>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

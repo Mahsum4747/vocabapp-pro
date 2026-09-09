@@ -39,8 +39,9 @@ const RESPONSE_SCHEMA = {
     definition: {
       type: "STRING",
       description:
-        "The term's meaning, in the requested definition language. Meaning only — " +
-        "no example sentence, no quotes, no labels, no line breaks.",
+        "A brief translation or definition of the term, in the requested definition language. " +
+        "One to a few words or short phrase only — no example sentence, no quotes, " +
+        "no labels, no line breaks, no punctuation at the end.",
     },
     example: {
       type: "STRING",
@@ -73,9 +74,9 @@ async function cacheKeyFor(data: z.infer<typeof inputSchema>): Promise<string> {
 function buildPrompt(data: z.infer<typeof inputSchema>): string {
   const termLanguageText = data.termLanguage ? ` The term is in ${data.termLanguage}.` : "";
   return [
-    `Give the definition and one example sentence for this flashcard term: "${data.term}".${termLanguageText}`,
-    `"definition": the term's meaning, in ${data.definitionLanguage}. The meaning only —`,
-    "  no example sentence, no quotes, no labels, no line breaks.",
+    `Give a brief definition and one example sentence for this flashcard term: "${data.term}".${termLanguageText}`,
+    `"definition": a brief translation or definition, in ${data.definitionLanguage}. One to a few words`,
+    "  or short phrase only — no example sentence, no quotes, no labels, no line breaks, no ending punctuation.",
     `"example": one short sentence${data.termLanguage ? ` in ${data.termLanguage}` : ""} that uses the`,
     "  term naturally. It must contain the term itself (an inflected/conjugated form is fine)",
     "  and must be grammatically flawless — correct articles, prepositions, cases, and agreement.",
