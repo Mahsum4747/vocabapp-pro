@@ -6,14 +6,26 @@ import { Button } from "./ui/button";
 import { Dialog, DialogContent, DialogTrigger } from "./ui/dialog";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
+import { LanguageSelect } from "./language-select";
+import type { LanguageChoice } from "@/lib/lang/choice";
 
 export function GenerateDialog({
   onGenerated,
   forceOpen = 0,
+  termLang,
+  onTermLangChange,
+  defLang,
+  onDefLangChange,
   definitionLanguage2,
 }: {
   onGenerated: (set: GeneratedSet) => void;
   forceOpen?: number;
+  /** The form owns the two languages, so choosing one here and choosing it on
+   *  the form are the same choice — and the set is saved with the codes. */
+  termLang: LanguageChoice;
+  onTermLangChange: (choice: LanguageChoice) => void;
+  defLang: LanguageChoice;
+  onDefLangChange: (choice: LanguageChoice) => void;
   /** The set's second definition language, if the form's own toggle for it
    *  is on — forwarded as-is so generation fills `definition2` too. */
   definitionLanguage2?: string;
@@ -21,8 +33,6 @@ export function GenerateDialog({
   const [open, setOpen] = useState(false);
   const [topic, setTopic] = useState("");
   const [count, setCount] = useState(12);
-  const [termLanguage, setTermLanguage] = useState("German");
-  const [definitionLanguage, setDefinitionLanguage] = useState("English");
   const [loading, setLoading] = useState(false);
   // Flips on once generation has been running long enough that "Generating…"
   // alone would start to read as stuck, rather than just working.
@@ -42,7 +52,7 @@ export function GenerateDialog({
       toast.error("Enter a topic.");
       return;
     }
-    if (!termLanguage.trim() || !definitionLanguage.trim()) {
+    if (!termLang.text.trim() || !defLang.text.trim()) {
       toast.error("Enter both languages.");
       return;
     }
@@ -55,8 +65,8 @@ export function GenerateDialog({
         data: {
           topic: topic.trim(),
           count,
-          termLanguage: termLanguage.trim(),
-          definitionLanguage: definitionLanguage.trim(),
+          termLanguage: termLang.text.trim(),
+          definitionLanguage: defLang.text.trim(),
           ...(trimmedDefinitionLanguage2
             ? { definitionLanguage2: trimmedDefinitionLanguage2 }
             : {}),
@@ -104,26 +114,22 @@ export function GenerateDialog({
           />
         </div>
         <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1.5">
-            <Label htmlFor="term-lang">Term language</Label>
-            <Input
-              id="term-lang"
-              value={termLanguage}
-              onChange={(e) => setTermLanguage(e.target.value)}
-              placeholder="e.g. German"
-              disabled={loading}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="def-lang">Definition language</Label>
-            <Input
-              id="def-lang"
-              value={definitionLanguage}
-              onChange={(e) => setDefinitionLanguage(e.target.value)}
-              placeholder="e.g. English"
-              disabled={loading}
-            />
-          </div>
+          <LanguageSelect
+            id="term-lang"
+            label="Term language"
+            value={termLang}
+            onChange={onTermLangChange}
+            disabled={loading}
+            placeholder="e.g. German"
+          />
+          <LanguageSelect
+            id="def-lang"
+            label="Definition language"
+            value={defLang}
+            onChange={onDefLangChange}
+            disabled={loading}
+            placeholder="e.g. English"
+          />
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="count">Number of cards · {count}</Label>

@@ -10,12 +10,37 @@ import { OwnerGate } from "@/components/owner-gate";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { SUBJECTS } from "@/lib/types";
+import { LanguageSelect } from "@/components/language-select";
+import { NO_LANGUAGE, storedLanguageChoice, type LanguageChoice } from "@/lib/lang/choice";
+import { SUBJECTS, resolveSetLanguages, type StudySet } from "@/lib/types";
 import { useSet, useStudyStore } from "@/lib/store";
 
 export const Route = createFileRoute("/sets/$setId/edit")({
   component: EditPage,
 });
+
+/**
+ * Seed the pickers from a set as it is stored: the resolved code (which for
+ * older sets comes from normalizing their free text) plus the free text to
+ * show. A set with neither leaves the field empty rather than defaulting to
+ * a language it was never in.
+ */
+function termChoiceFor(set: StudySet | undefined): LanguageChoice {
+  if (!set) return NO_LANGUAGE;
+  return storedLanguageChoice(resolveSetLanguages(set).term, set.termLanguage);
+}
+
+function defChoiceFor(set: StudySet | undefined): LanguageChoice {
+  if (!set) return NO_LANGUAGE;
+  // No free-text counterpart exists for the primary definition language, so
+  // this stays empty until the set is saved with a code.
+  return storedLanguageChoice(resolveSetLanguages(set).definition, undefined);
+}
+
+function def2ChoiceFor(set: StudySet | undefined): LanguageChoice {
+  if (!set) return NO_LANGUAGE;
+  return storedLanguageChoice(resolveSetLanguages(set).definition2, set.definitionLanguage2);
+}
 
 function EditPage() {
   const { setId } = Route.useParams();
@@ -29,13 +54,12 @@ function EditPage() {
   const [description, setDescription] = useState(studySet?.description ?? "");
   const [subject, setSubject] = useState(studySet?.subject ?? "General");
   const [isReference, setIsReference] = useState(studySet?.isReference ?? false);
-  const [termLanguage, setTermLanguage] = useState(studySet?.termLanguage);
+  const [termLang, setTermLang] = useState<LanguageChoice>(() => termChoiceFor(studySet));
+  const [defLang, setDefLang] = useState<LanguageChoice>(() => defChoiceFor(studySet));
   const [definitionLanguage2Enabled, setDefinitionLanguage2Enabled] = useState(
     Boolean(studySet?.definitionLanguage2),
   );
-  const [definitionLanguage2, setDefinitionLanguage2] = useState(
-    studySet?.definitionLanguage2 ?? "",
-  );
+  const [defLang2, setDefLang2] = useState<LanguageChoice>(() => def2ChoiceFor(studySet));
   const [folder, setFolder] = useState(studySet?.folder ?? "");
   const [cards, setCards] = useState<EditorCard[]>(
     studySet?.cards.map((c) => ({
@@ -54,9 +78,10 @@ function EditPage() {
     setDescription(studySet.description);
     setSubject(studySet.subject);
     setIsReference(studySet.isReference ?? false);
-    setTermLanguage(studySet.termLanguage);
+    setTermLang(termChoiceFor(studySet));
+    setDefLang(defChoiceFor(studySet));
     setDefinitionLanguage2Enabled(Boolean(studySet.definitionLanguage2));
-    setDefinitionLanguage2(studySet.definitionLanguage2 ?? "");
+    setDefLang2(def2ChoiceFor(studySet));
     setFolder(studySet.folder ?? "");
     setCards(
       studySet.cards.map((c) => ({
@@ -105,14 +130,17 @@ function EditPage() {
       description,
       subject,
       isReference,
-      termLanguage,
+      termLanguage: termLang.text.trim(),
+      // `null` clears the stored code outright; an omitted key would survive
+      // the update as whatever it already was.
+      termLangCode: termLang.code,
+      defLangCode: defLang.code,
       // Sent even when cleared: an omitted key survives an update() as
       // whatever it already was, but an unchecked toggle means "no second
       // language", not "leave it alone".
       definitionLanguage2:
-        definitionLanguage2Enabled && definitionLanguage2.trim()
-          ? definitionLanguage2.trim()
-          : "",
+        definitionLanguage2Enabled && defLang2.text.trim() ? defLang2.text.trim() : "",
+      defLang2Code: definitionLanguage2Enabled ? defLang2.code : null,
       folder: folder.trim(),
     });
     replaceCards(setId, filled);
@@ -145,12 +173,15 @@ function EditPage() {
           </h1>
           <div className="mt-6 flex flex-wrap gap-2">
             <GenerateDialog
-              definitionLanguage2={definitionLanguage2Enabled ? definitionLanguage2 : undefined}
+              termLang={termLang}
+              onTermLangChange={setTermLang}
+              defLang={defLang}
+              onDefLangChange={setDefLang}
+              definitionLanguage2={definitionLanguage2Enabled ? defLang2.text.trim() : undefined}
               onGenerated={(generated) => {
                 setTitle(generated.title);
                 setDescription(generated.description ?? "");
                 setSubject(generated.subject || subject);
-                setTermLanguage(generated.termLanguage);
                 setCards(
                   generated.cards.map((card) => ({
                     id: crypto.randomUUID(),
@@ -207,6 +238,23 @@ function EditPage() {
                 ))}
               </datalist>
             </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <LanguageSelect
+                id="term-language"
+                label="Term language"
+                hint="The language the terms are written in — drives pronunciation."
+                value={termLang}
+                onChange={setTermLang}
+                placeholder="e.g. German"
+              />
+              <LanguageSelect
+                id="definition-language"
+                label="Definition language"
+                value={defLang}
+                onChange={setDefLang}
+                placeholder="e.g. English"
+              />
+            </div>
             <div className="flex flex-wrap gap-2">
               {SUBJECTS.map((name) => (
                 <Button
@@ -240,19 +288,20 @@ function EditPage() {
                 Add a second definition language
               </label>
               {definitionLanguage2Enabled ? (
-                <Input
-                  value={definitionLanguage2}
-                  onChange={(e) => setDefinitionLanguage2(e.target.value)}
+                <LanguageSelect
+                  id="def-lang-2"
+                  label="Second definition language"
+                  value={defLang2}
+                  onChange={setDefLang2}
                   placeholder="e.g. Turkish"
-                  aria-label="Second definition language"
                 />
               ) : null}
             </div>
             <CardEditor
               cards={cards}
               onChange={setCards}
-              termLanguage={termLanguage}
-              definitionLanguage2={definitionLanguage2Enabled ? definitionLanguage2 : undefined}
+              termLanguage={termLang.text.trim() || undefined}
+              definitionLanguage2={definitionLanguage2Enabled ? defLang2.text.trim() : undefined}
             />
             <div className="sticky bottom-4 flex justify-end gap-2">
               <Button type="button" variant="ghost" asChild>

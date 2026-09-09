@@ -4,6 +4,8 @@ import { AppShell } from "@/components/app-shell";
 import { AuthGate } from "@/components/auth-gate";
 import { CardEditor, type EditorCard } from "@/components/card-editor";
 import { GenerateDialog } from "@/components/generate-dialog";
+import { LanguageSelect } from "@/components/language-select";
+import { NO_LANGUAGE, languageChoice, type LanguageChoice } from "@/lib/lang/choice";
 import { ImportDialog } from "@/components/import-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,9 +41,10 @@ function CreatePage() {
   const [description, setDescription] = useState("");
   const [subject, setSubject] = useState("General");
   const [isReference, setIsReference] = useState(false);
-  const [termLanguage, setTermLanguage] = useState<string | undefined>(undefined);
+  const [termLang, setTermLang] = useState<LanguageChoice>(() => languageChoice("de"));
+  const [defLang, setDefLang] = useState<LanguageChoice>(() => languageChoice("en"));
   const [definitionLanguage2Enabled, setDefinitionLanguage2Enabled] = useState(false);
-  const [definitionLanguage2, setDefinitionLanguage2] = useState("");
+  const [defLang2, setDefLang2] = useState<LanguageChoice>(NO_LANGUAGE);
   const [folder, setFolder] = useState("");
   const [cards, setCards] = useState<EditorCard[]>(blankCards);
   const [aiOpenSignal, setAiOpenSignal] = useState(0);
@@ -70,11 +73,12 @@ function CreatePage() {
       subject,
       cards: filled,
       isReference,
-      termLanguage,
+      termLanguage: termLang.text.trim() || undefined,
+      termLangCode: termLang.code ?? undefined,
+      defLangCode: defLang.code ?? undefined,
       definitionLanguage2:
-        definitionLanguage2Enabled && definitionLanguage2.trim()
-          ? definitionLanguage2.trim()
-          : undefined,
+        definitionLanguage2Enabled && defLang2.text.trim() ? defLang2.text.trim() : undefined,
+      defLang2Code: definitionLanguage2Enabled ? (defLang2.code ?? undefined) : undefined,
       folder: folder.trim() || undefined,
     });
     toast.success("Set saved.");
@@ -96,12 +100,15 @@ function CreatePage() {
           <div className="mt-6 flex flex-wrap gap-2">
             <GenerateDialog
               forceOpen={aiOpenSignal}
-              definitionLanguage2={definitionLanguage2Enabled ? definitionLanguage2 : undefined}
+              termLang={termLang}
+              onTermLangChange={setTermLang}
+              defLang={defLang}
+              onDefLangChange={setDefLang}
+              definitionLanguage2={definitionLanguage2Enabled ? defLang2.text.trim() : undefined}
               onGenerated={(generated) => {
                 setTitle(generated.title);
                 setDescription(generated.description ?? "");
                 setSubject(generated.subject || "General");
-                setTermLanguage(generated.termLanguage);
                 setCards(
                   generated.cards.map((card) => ({
                     id: crypto.randomUUID(),
@@ -165,6 +172,23 @@ function CreatePage() {
                 ))}
               </datalist>
             </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <LanguageSelect
+                id="term-language"
+                label="Term language"
+                hint="The language the terms are written in — drives pronunciation."
+                value={termLang}
+                onChange={setTermLang}
+                placeholder="e.g. German"
+              />
+              <LanguageSelect
+                id="definition-language"
+                label="Definition language"
+                value={defLang}
+                onChange={setDefLang}
+                placeholder="e.g. English"
+              />
+            </div>
             <div className="space-y-1.5">
               <Label>Subject</Label>
               <div className="flex flex-wrap gap-2">
@@ -201,19 +225,20 @@ function CreatePage() {
                 Add a second definition language
               </label>
               {definitionLanguage2Enabled ? (
-                <Input
-                  value={definitionLanguage2}
-                  onChange={(e) => setDefinitionLanguage2(e.target.value)}
+                <LanguageSelect
+                  id="def-lang-2"
+                  label="Second definition language"
+                  value={defLang2}
+                  onChange={setDefLang2}
                   placeholder="e.g. Turkish"
-                  aria-label="Second definition language"
                 />
               ) : null}
             </div>
             <CardEditor
               cards={cards}
               onChange={setCards}
-              termLanguage={termLanguage}
-              definitionLanguage2={definitionLanguage2Enabled ? definitionLanguage2 : undefined}
+              termLanguage={termLang.text.trim() || undefined}
+              definitionLanguage2={definitionLanguage2Enabled ? defLang2.text.trim() : undefined}
             />
             <div className="sticky bottom-4 flex justify-end">
               <Button type="submit" size="lg">
