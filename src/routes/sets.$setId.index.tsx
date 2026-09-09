@@ -319,11 +319,15 @@ function SetPage() {
           <>
             <div className="mt-8 mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-2">
-                <button type="button" onClick={() => switchView("active")}>
+                <button type="button" className="-m-2 p-2" onClick={() => switchView("active")}>
                   <Badge tone={cardView === "active" ? "primary" : "muted"}>Cards</Badge>
                 </button>
                 {isOwner ? (
-                  <button type="button" onClick={() => switchView("archived")}>
+                  <button
+                    type="button"
+                    className="-m-2 p-2"
+                    onClick={() => switchView("archived")}
+                  >
                     <Badge tone={cardView === "archived" ? "primary" : "muted"}>
                       Archived{archivedCount > 0 ? ` (${archivedCount})` : ""}
                     </Badge>
@@ -370,7 +374,7 @@ function SetPage() {
                 <div className="flex items-center gap-3 text-sm">
                   <button
                     type="button"
-                    className="text-muted underline-offset-2 hover:text-fg hover:underline"
+                    className="-m-2 p-2 text-muted underline-offset-2 hover:text-fg hover:underline"
                     onClick={selectAll}
                   >
                     Select all
@@ -378,7 +382,7 @@ function SetPage() {
                   {selectedIds.size > 0 ? (
                     <button
                       type="button"
-                      className="text-muted underline-offset-2 hover:text-fg hover:underline"
+                      className="-m-2 p-2 text-muted underline-offset-2 hover:text-fg hover:underline"
                       onClick={clearSelection}
                     >
                       Clear selection
@@ -443,10 +447,10 @@ function SetPage() {
                           studySet.isReference ? "md:gap-8" : "md:gap-6",
                         )}
                       >
-                        <div className="flex items-center gap-1">
+                        <div className="flex min-w-0 items-center gap-1">
                           <p
                             className={cn(
-                              "font-medium",
+                              "min-w-0 break-words font-medium",
                               studySet.isReference && "text-base md:text-lg",
                             )}
                           >
@@ -454,13 +458,13 @@ function SetPage() {
                           </p>
                           <SpeakButton text={card.term} language={studySet.termLanguage} />
                           {isExcluded ? (
-                            <span className="rounded-full bg-surface-2 px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-muted uppercase">
+                            <span className="shrink-0 rounded-full bg-surface-2 px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-muted uppercase">
                               Excluded
                             </span>
                           ) : null}
                         </div>
-                        <div className="space-y-1">
-                          <p className="text-sm whitespace-pre-line text-muted md:text-base">
+                        <div className="min-w-0 space-y-1">
+                          <p className="text-sm whitespace-pre-line break-words text-muted md:text-base">
                             {card.definition}
                           </p>
                           <ExampleLine
