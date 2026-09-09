@@ -1,18 +1,22 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import {
+  configureSound,
   DEFAULT_SOUND_SETTINGS,
   gainFor,
   isAudible,
+  MAX_FREQUENCY,
   MAX_GAIN,
+  playSound,
   readSoundSettings,
+  RETRIGGER_MS,
   SOUNDS,
   type SoundEvent,
 } from "./sound.ts";
 
 const EVENTS = Object.keys(SOUNDS) as SoundEvent[];
 
-describe("the sound specs", () => {
+describe("the sound language", () => {
   it("covers every event the app fires", () => {
     assert.deepEqual(EVENTS.sort(), [
       "achievement",
@@ -26,59 +30,136 @@ describe("the sound specs", () => {
   });
 
   it("keeps every cue inside its stated length", () => {
-    // The duration is what callers schedule against, so no tone may outlive it.
+    // The duration is what callers schedule against, so nothing may outlive it.
     for (const event of EVENTS) {
       const spec = SOUNDS[event];
-      for (const tone of spec.tones) {
+      for (const voice of spec.voices) {
         assert.ok(
-          tone.start + tone.duration <= spec.duration,
-          `${event}: a tone runs past the cue's ${spec.duration}ms`,
+          voice.start + voice.duration <= spec.duration,
+          `${event}: a voice runs past the cue's ${spec.duration}ms`,
+        );
+      }
+      for (const transient of spec.transients ?? []) {
+        assert.ok(
+          transient.start + transient.duration <= spec.duration,
+          `${event}: a transient runs past the cue`,
         );
       }
     }
   });
 
-  it("matches the lengths the design asks for", () => {
-    assert.equal(SOUNDS.cardFlip.duration, 200);
-    assert.equal(SOUNDS.correct.duration, 300);
-    assert.equal(SOUNDS.excellent.duration, 400);
-    assert.equal(SOUNDS.achievement.duration, 500);
-    assert.equal(SOUNDS.setCompleted.duration, 800);
-    assert.equal(SOUNDS.error.duration, 200);
-    assert.equal(SOUNDS.dailyGoalSuccess.duration, 500);
+  it("stays inside the lengths the design calls for", () => {
+    const ranges: Record<SoundEvent, [number, number]> = {
+      cardFlip: [80, 150],
+      correct: [180, 250],
+      excellent: [250, 350],
+      achievement: [350, 500],
+      setCompleted: [500, 700],
+      error: [120, 180],
+      dailyGoalSuccess: [350, 500],
+    };
+
+    for (const event of EVENTS) {
+      const [min, max] = ranges[event];
+      const { duration } = SOUNDS[event];
+      assert.ok(
+        duration >= min && duration <= max,
+        `${event}: ${duration}ms is outside ${min}–${max}ms`,
+      );
+    }
   });
 
-  it("uses audible frequencies and real durations throughout", () => {
+  it("never reaches a piercing frequency", () => {
+    // The whole character depends on this: brightness is what makes a cue
+    // read as a notification rather than as UI feedback.
     for (const event of EVENTS) {
-      for (const tone of SOUNDS[event].tones) {
+      for (const voice of SOUNDS[event].voices) {
+        for (const freq of [voice.freq, voice.freqEnd ?? voice.freq]) {
+          assert.ok(
+            freq >= 100 && freq <= MAX_FREQUENCY,
+            `${event}: ${freq}Hz is outside the warm range`,
+          );
+        }
         assert.ok(
-          tone.freq >= 100 && tone.freq <= 4000,
-          `${event}: ${tone.freq}Hz is out of range`,
+          voice.lowpass <= 3200,
+          `${event}: the low-pass is too open at ${voice.lowpass}Hz`,
         );
-        assert.ok(tone.duration > 0, `${event}: a tone has no length`);
-        assert.ok(tone.gain > 0 && tone.gain <= 1, `${event}: gain ${tone.gain} is out of range`);
       }
     }
   });
 
-  it("never lets one cue's voices add up to clipping", () => {
-    // Tones overlap in the chords, so their combined gain is what reaches the
-    // output — over 1 and the sum distorts.
+  it("gives every voice a real envelope rather than an on/off switch", () => {
     for (const event of EVENTS) {
-      const total = SOUNDS[event].tones.reduce((sum, tone) => sum + tone.gain, 0);
-      assert.ok(total <= 1.5, `${event}: voices sum to ${total}`);
+      for (const voice of SOUNDS[event].voices) {
+        const { attack, decay, sustain, release } = voice.envelope;
+        assert.ok(attack > 0, `${event}: a voice switches on instantly`);
+        assert.ok(release > 0, `${event}: a voice cuts off instead of decaying`);
+        assert.ok(decay >= 0);
+        assert.ok(sustain >= 0 && sustain <= 1, `${event}: sustain ${sustain} is out of range`);
+        assert.ok(
+          attack + decay + release <= voice.duration * 1.6,
+          `${event}: the envelope is far longer than the voice`,
+        );
+      }
     }
   });
 
-  it("plays the flip cue more quietly than the reward cues", () => {
-    // It fires on every single card; a chime at answer volume would grate.
-    assert.ok(SOUNDS.cardFlip.tones[0].gain < SOUNDS.correct.tones[0].gain);
+  it("keeps each cue's voices from summing into something loud", () => {
+    // Voices overlap by design, so their combined peak is what reaches the
+    // bus. Well under 1 leaves the compressor room to work.
+    for (const event of EVENTS) {
+      const total = SOUNDS[event].voices.reduce((sum, voice) => sum + voice.gain, 0);
+      assert.ok(total <= 0.9, `${event}: voices peak together at ${total.toFixed(2)}`);
+    }
   });
 
-  it("rises in pitch for a right answer", () => {
-    const [tone] = SOUNDS.correct.tones;
-    assert.equal(tone.freq, 1000);
-    assert.equal(tone.freqEnd, 1200);
+  it("plays the flip cue far more quietly than any reward", () => {
+    // It fires on every single card; at reward volume it would grate within a
+    // dozen flips.
+    const flip = Math.max(...SOUNDS.cardFlip.voices.map((v) => v.gain));
+    for (const event of ["correct", "excellent", "achievement", "setCompleted"] as SoundEvent[]) {
+      const reward = Math.max(...SOUNDS[event].voices.map((v) => v.gain));
+      assert.ok(flip < reward, `cardFlip (${flip}) should be quieter than ${event} (${reward})`);
+    }
+  });
+
+  it("builds the tactile cues from a filtered transient, not just a tone", () => {
+    // The click of contact is what makes a flip feel physical.
+    assert.ok((SOUNDS.cardFlip.transients ?? []).length > 0);
+    assert.ok((SOUNDS.error.transients ?? []).length > 0);
+  });
+
+  it("answers a wrong card low and quietly, never as a buzzer", () => {
+    const loudest = Math.max(...SOUNDS.error.voices.map((v) => v.gain));
+    const correct = Math.max(...SOUNDS.correct.voices.map((v) => v.gain));
+
+    for (const voice of SOUNDS.error.voices) {
+      assert.ok(voice.freq <= 250, "the error cue must stay in the low register");
+      assert.ok(voice.lowpass <= 900, "and must not carry any bite");
+    }
+    assert.ok(loudest <= correct, "getting one wrong must not be louder than getting one right");
+  });
+
+  it("moves in pitch where the gesture should carry meaning", () => {
+    // Confirmation lifts; a miss settles downward.
+    const [confirm] = SOUNDS.correct.voices;
+    assert.ok(confirm.freqEnd !== undefined && confirm.freqEnd > confirm.freq);
+
+    const [miss] = SOUNDS.error.voices;
+    assert.ok(miss.freqEnd !== undefined && miss.freqEnd < miss.freq);
+  });
+
+  it("voices the celebrations as chords rather than single beeps", () => {
+    for (const event of ["achievement", "setCompleted", "dailyGoalSuccess"] as SoundEvent[]) {
+      assert.ok(SOUNDS[event].voices.length >= 2, `${event} should be voiced, not a single tone`);
+    }
+  });
+
+  it("keeps the goal cue distinct from the badge cue", () => {
+    // They can occur seconds apart, and must not be mistaken for each other.
+    const goal = SOUNDS.dailyGoalSuccess.voices.map((v) => v.freq).sort();
+    const badge = SOUNDS.achievement.voices.map((v) => v.freq).sort();
+    assert.notDeepEqual(goal, badge);
   });
 });
 
@@ -88,7 +169,7 @@ describe("volume", () => {
     assert.equal(gainFor({ enabled: true, volume: 50 }), MAX_GAIN / 2);
   });
 
-  it("is silent at zero even when sound is on", () => {
+  it("is muted at zero even when sound is on", () => {
     assert.equal(gainFor({ enabled: true, volume: 0 }), 0);
     assert.equal(isAudible({ enabled: true, volume: 0 }), false);
   });
@@ -98,10 +179,42 @@ describe("volume", () => {
     assert.equal(isAudible({ enabled: false, volume: 100 }), false);
   });
 
-  it("is audible by default", () => {
+  it("is quiet by default", () => {
     assert.equal(isAudible(DEFAULT_SOUND_SETTINGS), true);
-    assert.equal(DEFAULT_SOUND_SETTINGS.enabled, true);
-    assert.equal(DEFAULT_SOUND_SETTINGS.volume, 70);
+    assert.ok(gainFor(DEFAULT_SOUND_SETTINGS) < 0.15, "the default must not be assertive");
+  });
+});
+
+describe("playing a cue", () => {
+  it("does nothing at all when sound is off", () => {
+    // No context, no nodes, no throw — with sound off the audio hardware is
+    // never touched.
+    configureSound({ enabled: false, volume: 100 });
+    for (const event of EVENTS) {
+      assert.doesNotThrow(() => playSound(event));
+    }
+  });
+
+  it("does nothing at all at volume zero", () => {
+    configureSound({ enabled: true, volume: 0 });
+    for (const event of EVENTS) {
+      assert.doesNotThrow(() => playSound(event));
+    }
+  });
+
+  it("never blocks or throws where there is no audio at all", () => {
+    // Server rendering, and any browser that refuses to give us a context:
+    // the study loop must be untouched either way.
+    configureSound(DEFAULT_SOUND_SETTINGS);
+    for (const event of EVENTS) {
+      assert.equal(playSound(event), undefined);
+    }
+  });
+
+  it("suppresses a repeat of the same cue for long enough to matter", () => {
+    // Match mode can resolve pairs faster than this; the same chime stacked on
+    // itself is both louder and cheaper-sounding than one clean hit.
+    assert.ok(RETRIGGER_MS >= 40 && RETRIGGER_MS <= 150);
   });
 });
 

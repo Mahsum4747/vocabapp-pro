@@ -32,8 +32,7 @@
   --shadow-border-hover:
     0 0 0 1px rgb(26 26 26 / 0.08), 0 1px 2px -1px rgb(26 26 26 / 0.08),
     0 8px 24px -12px rgb(26 26 26 / 0.16);
-  --shadow-card:
-    0 0 0 1px rgb(26 26 26 / 0.06), 0 8px 24px -12px rgb(26 26 26 / 0.12);
+  --shadow-card: 0 0 0 1px rgb(26 26 26 / 0.06), 0 8px 24px -12px rgb(26 26 26 / 0.12);
   --ease-smooth-out: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
 }
@@ -57,13 +56,10 @@
     --color-slate: #5c8fa3;
     --color-ring: #2a6b4f;
     --shadow-border:
-      0 0 0 1px rgb(0 0 0 / 0.4), 0 1px 2px -1px rgb(0 0 0 / 0.3),
-      0 2px 4px 0 rgb(0 0 0 / 0.2);
+      0 0 0 1px rgb(0 0 0 / 0.4), 0 1px 2px -1px rgb(0 0 0 / 0.3), 0 2px 4px 0 rgb(0 0 0 / 0.2);
     --shadow-border-hover:
-      0 0 0 1px rgb(0 0 0 / 0.5), 0 1px 2px -1px rgb(0 0 0 / 0.3),
-      0 8px 24px -12px rgb(0 0 0 / 0.4);
-    --shadow-card:
-      0 0 0 1px rgb(0 0 0 / 0.5), 0 8px 24px -12px rgb(0 0 0 / 0.35);
+      0 0 0 1px rgb(0 0 0 / 0.5), 0 1px 2px -1px rgb(0 0 0 / 0.3), 0 8px 24px -12px rgb(0 0 0 / 0.4);
+    --shadow-card: 0 0 0 1px rgb(0 0 0 / 0.5), 0 8px 24px -12px rgb(0 0 0 / 0.35);
   }
 }
 
@@ -161,36 +157,40 @@
   }
 }
 
-/* Celebrations — see src/components/celebration.tsx. All of them are short,
-   and all of them are skipped for a viewer who asked for reduced motion. */
+/* Celebrations — see src/components/celebration.tsx.
+   The whole set is deliberately understated: short, small in amplitude, and
+   skipped entirely for a viewer who has asked for reduced motion. Nothing here
+   should be able to make the study surface feel like a game. */
 @keyframes celebrate-pulse {
   0% {
     transform: scale(1);
   }
-  40% {
-    transform: scale(1.02);
+  45% {
+    transform: scale(1.012);
   }
   100% {
     transform: scale(1);
   }
 }
 
-/* The study surface taps once on a right answer. Applied to the study layout
-   rather than to one card because all four modes lay their question out
-   differently, and 1.02 on a full-width column reads as a tap where 1.05
-   reads as a jolt. */
+/* The study surface acknowledges a right answer with a movement you feel more
+   than see. Applied to the study layout rather than to one card because all
+   four modes lay their question out differently — and at full-column width,
+   anything past about 1.01 stops reading as a card and starts reading as the
+   page moving. */
 body[data-celebrate="correct"] .study-pulse {
-  animation: celebrate-pulse 160ms ease-out;
+  animation: celebrate-pulse 220ms cubic-bezier(0.22, 0.61, 0.36, 1);
 }
 
+/* No overshoot: the tick arrives at rest. */
 @keyframes celebrate-mark {
   0% {
     opacity: 0;
-    transform: scale(0.6);
+    transform: scale(0.92);
   }
-  35% {
+  30% {
     opacity: 1;
-    transform: scale(1.1);
+    transform: scale(1);
   }
   70% {
     opacity: 1;
@@ -203,17 +203,34 @@ body[data-celebrate="correct"] .study-pulse {
 }
 
 .celebrate-mark {
-  animation: celebrate-mark 600ms ease-out forwards;
+  animation: celebrate-mark 520ms cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+}
+
+/* A single ring opening outward — the confirmation gesture, doing the work a
+   bounce would otherwise do. */
+@keyframes celebrate-ring {
+  0% {
+    opacity: 0.5;
+    transform: scale(0.9);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.6);
+  }
+}
+
+.celebrate-ring {
+  animation: celebrate-ring 460ms cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
 }
 
 @keyframes celebrate-badge {
   0% {
     opacity: 0;
-    transform: translateY(-8px) scale(1.1);
+    transform: translateY(-6px);
   }
   15% {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translateY(0);
   }
   85% {
     opacity: 1;
@@ -224,27 +241,14 @@ body[data-celebrate="correct"] .study-pulse {
 }
 
 .celebrate-badge {
-  animation: celebrate-badge 1600ms ease-out forwards;
-}
-
-@keyframes celebrate-flash {
-  0% {
-    opacity: 0;
-  }
-  40% {
-    opacity: 0.3;
-  }
-  100% {
-    opacity: 0;
-  }
-}
-
-.celebrate-flash {
-  animation: celebrate-flash 500ms ease-out forwards;
+  animation: celebrate-badge 1600ms cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
 }
 
 @media (prefers-reduced-motion: reduce) {
   body[data-celebrate="correct"] .study-pulse {
+    animation: none;
+  }
+  .celebrate-ring {
     animation: none;
   }
   .celebrate-mark,

@@ -59,7 +59,6 @@ export function CelebrationProvider({ children }: { children: ReactNode }) {
     null,
   );
   const [completion, setCompletion] = useState<SetCompletion | null>(null);
-  const [flash, setFlash] = useState(false);
   const nextId = useRef(0);
 
   // The tier-1 pulse is a body attribute so the study surface can react to it
@@ -79,12 +78,6 @@ export function CelebrationProvider({ children }: { children: ReactNode }) {
     const timer = window.setTimeout(() => setBadge(null), 1600);
     return () => window.clearTimeout(timer);
   }, [badge]);
-
-  useEffect(() => {
-    if (!flash) return;
-    const timer = window.setTimeout(() => setFlash(false), 500);
-    return () => window.clearTimeout(timer);
-  }, [flash]);
 
   const throwConfetti = useCallback((count: number, duration: number) => {
     if (prefersReducedMotion()) return;
@@ -107,7 +100,7 @@ export function CelebrationProvider({ children }: { children: ReactNode }) {
         if (ids.length === 0) return;
         playSound("achievement");
         setBadge(ids[0]);
-        throwConfetti(12, 400);
+        throwConfetti(8, 450);
       },
       [throwConfetti],
     ),
@@ -115,8 +108,10 @@ export function CelebrationProvider({ children }: { children: ReactNode }) {
     setCompleted: useCallback(
       (next) => {
         playSound("setCompleted");
-        if (!prefersReducedMotion()) setFlash(true);
-        throwConfetti(24, 800);
+        // No screen flash: the dialog and a little drifting confetti are the
+        // celebration. A full-screen tint reads as an arcade, and it is the
+        // one effect a learner cannot look away from.
+        throwConfetti(14, 800);
         setCompletion(next);
       },
       [throwConfetti],
@@ -140,20 +135,26 @@ export function CelebrationProvider({ children }: { children: ReactNode }) {
           onDone={() => setConfetti(null)}
         />
       ) : null}
-      {flash ? (
-        <div className="pointer-events-none fixed inset-0 z-[70] bg-white celebrate-flash" />
-      ) : null}
       <SetCompleteDialog completion={completion} onClose={() => setCompletion(null)} />
     </CelebrationContext.Provider>
   );
 }
 
-/** Tier 1: a green tick that fades in over the card and leaves. */
+/**
+ * Tier 1: a tick that settles in and leaves.
+ *
+ * No overshoot and no bounce — it appears at rest. The ring behind it does the
+ * work a bounce would otherwise do, and it expands outward rather than pushing
+ * the eye around.
+ */
 function CorrectMark() {
   return (
     <div className="pointer-events-none fixed inset-0 z-[60] grid place-items-center">
-      <span className="celebrate-mark grid size-16 place-items-center rounded-full bg-success-soft text-success">
-        <Check className="size-8" strokeWidth={3} />
+      <span className="relative grid size-12 place-items-center">
+        <span className="celebrate-ring absolute inset-0 rounded-full border border-success" />
+        <span className="celebrate-mark grid size-12 place-items-center rounded-full bg-success-soft text-success">
+          <Check className="size-6" strokeWidth={2.5} />
+        </span>
       </span>
     </div>
   );
@@ -235,7 +236,7 @@ function Confetti({
 }) {
   const container = useRef<HTMLDivElement>(null);
   // Held in a ref so a re-render of the provider — a badge appearing, the
-  // flash clearing — cannot restart the animation from the top.
+  // badge clearing — cannot restart the animation from the top.
   const done = useRef(onDone);
   done.current = onDone;
 
@@ -251,15 +252,15 @@ function Confetti({
     for (let i = 0; i < count; i++) {
       const particle: Particle = {
         x: Math.random() * width,
-        y: -50 - Math.random() * 40,
-        dy: Math.random() * 2,
-        dx: (Math.random() - 0.5) * 3,
+        y: -40 - Math.random() * 30,
+        dy: Math.random() * 0.6,
+        dx: (Math.random() - 0.5) * 1.4,
         rotation: Math.random() * 360,
-        spin: (Math.random() - 0.5) * 24,
+        spin: (Math.random() - 0.5) * 8,
         color: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
       };
       const node = document.createElement("div");
-      node.style.cssText = `position:absolute;top:0;left:0;width:8px;height:8px;border-radius:2px;background:${particle.color};will-change:transform`;
+      node.style.cssText = `position:absolute;top:0;left:0;width:5px;height:5px;border-radius:1px;opacity:0.75;background:${particle.color};will-change:transform`;
       host.appendChild(node);
       nodes.push(node);
       particles.push(particle);
@@ -278,7 +279,9 @@ function Confetti({
 
       for (let i = 0; i < particles.length; i++) {
         const particle = particles[i];
-        particle.dy += 0.5;
+        // Gentle: pieces drift down rather than being thrown. Half the pull
+        // of the first pass, which fell like a slot machine payout.
+        particle.dy += 0.24;
         particle.y += particle.dy;
         particle.x += particle.dx;
         particle.rotation += particle.spin;
