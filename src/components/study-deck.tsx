@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Shuffle, Star } from "lucide-react";
+import { Layers, Shuffle, Star } from "lucide-react";
 import type { ReactNode } from "react";
 import { EmptyState } from "./empty-state";
 import { FlashCard } from "./flash-card";
@@ -271,10 +271,16 @@ export function StudyDeck({
         flipped={flipped}
         onFlip={flip}
       />
-      {/* Which set this card came from — context for a mixed round, kept
-          quiet so the term stays the thing you are looking at. */}
+      {/* Which set this card came from — a mixed round pulls from the whole
+          library, so this is the only thing on screen that says which one. A
+          badge rather than a caption: it needs to actually be noticed. */}
       {entry.setTitle ? (
-        <p className="mt-3 truncate text-center text-xs text-subtle">From {entry.setTitle}</p>
+        <div className="mt-3 flex justify-center">
+          <Badge className="max-w-full">
+            <Layers className="size-3 shrink-0" />
+            <span className="truncate">{entry.setTitle}</span>
+          </Badge>
+        </div>
       ) : null}
       <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
         <Button variant="outline" onClick={() => go(-1)} disabled={index === 0}>

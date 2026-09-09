@@ -8,11 +8,15 @@ import { useStudyStore } from "@/lib/store";
 import { buildLibrarySession, type ReviewSession } from "@/lib/review-session";
 import type { QueueEntry } from "@/lib/srs";
 
-type Search = { filter?: "weak" };
+type Search = { filter?: "weak"; set?: string };
 
 export const Route = createFileRoute("/review")({
   validateSearch: (search: Record<string, unknown>): Search => ({
     filter: search.filter === "weak" ? "weak" : undefined,
+    // Scopes the library-wide round to one set's document id — same idea as
+    // `?filter=weak`, but narrowing the pool instead of changing what counts
+    // as due. Empty/whitespace reads as "no scope", same as omitting it.
+    set: typeof search.set === "string" && search.set.trim() ? search.set.trim() : undefined,
   }),
   component: ReviewRoute,
 });
@@ -45,11 +49,20 @@ const BANDS: Record<QueueEntry["band"], { label: string; tone: DeckEntry["bandTo
 };
 
 function ReviewPage() {
-  const { filter } = Route.useSearch();
+  const { filter, set: setId } = Route.useSearch();
   const sets = useStudyStore((s) => s.sets);
   const fetchSets = useStudyStore((s) => s.fetchSets);
   const fetchAllProgress = useStudyStore((s) => s.fetchAllProgress);
   const toggleStar = useStudyStore((s) => s.toggleStar);
+
+  // Same pool the queue reads, just narrowed to one set before it's built —
+  // banding, ordering and the weak filter all behave exactly as they do
+  // library-wide.
+  const scopedSets = useMemo(
+    () => (setId ? sets.filter((s) => s.id === setId) : sets),
+    [sets, setId],
+  );
+  const scopedSetTitle = setId ? sets.find((s) => s.id === setId)?.title : undefined;
 
   // Both reads go through server functions behind authMiddleware — the client
   // never touches Firestore.
@@ -75,13 +88,13 @@ function ReviewPage() {
     // Progress comes from the store rather than a subscribed value, so a
     // graded card landing cannot re-run this.
     setSession(
-      buildLibrarySession(sets, useStudyStore.getState().progress, {
+      buildLibrarySession(scopedSets, useStudyStore.getState().progress, {
         now: Date.now(),
         newCardLimit: NEW_CARDS_PER_SESSION,
         ...(filter === "weak" ? { filter } : {}),
       }),
     );
-  }, [ready, session, sets, filter]);
+  }, [ready, session, scopedSets, filter]);
 
   /**
    * Memoised: StudyDeck treats a new deck identity as a new round, so building
@@ -152,11 +165,19 @@ function ReviewPage() {
     );
   }
 
+  const title = scopedSetTitle
+    ? filter === "weak"
+      ? `Weak words · ${scopedSetTitle}`
+      : scopedSetTitle
+    : filter === "weak"
+      ? "Weak words"
+      : "Review";
+
   return (
     <StudyDeck
       deck={deck}
-      title={filter === "weak" ? "Weak words" : "Review"}
-      mode="All sets"
+      title={title}
+      mode={scopedSetTitle ? "One set" : "All sets"}
       onToggleStar={onToggleStar}
     />
   );
