@@ -19,7 +19,7 @@ export function Definition2Line({
   if (!definition2?.trim()) return null;
   return (
     <p className={cn("flex items-start gap-1 text-base text-muted", className)}>
-      <span className="whitespace-pre-line">{definition2}</span>
+      <span className="min-w-0 flex-1 break-words whitespace-pre-line">{definition2}</span>
       <SpeakButton
         text={definition2}
         language={definitionLanguage2}

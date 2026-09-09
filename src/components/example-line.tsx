@@ -19,7 +19,7 @@ export function ExampleLine({
   if (!example?.trim()) return null;
   return (
     <p className={cn("flex items-start gap-1 text-sm text-subtle italic", className)}>
-      <span className="whitespace-pre-line">{example}</span>
+      <span className="min-w-0 flex-1 break-words whitespace-pre-line">{example}</span>
       <SpeakButton text={example} language={termLanguage} label="Listen to the example" />
     </p>
   );

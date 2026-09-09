@@ -28,7 +28,7 @@ export function FlashCard({
       type="button"
       onClick={onFlip}
       className={cn(
-        "flex h-80 w-full flex-col justify-between rounded-2xl p-8 text-left shadow-[var(--shadow-card)] transition-[background-color,color,transform] duration-200 ease-[var(--ease-smooth-out)] md:h-96",
+        "flex min-h-80 w-full flex-col justify-between gap-4 rounded-2xl p-8 text-left shadow-[var(--shadow-card)] transition-[background-color,color,transform] duration-200 ease-[var(--ease-smooth-out)] md:min-h-96",
         flipped ? "bg-primary text-primary-fg" : "bg-surface text-fg",
       )}
       aria-label={flipped ? "Show term" : "Show definition"}
