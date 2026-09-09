@@ -53,6 +53,7 @@ function FlashcardsPage() {
       card,
       setId: studySet.id,
       termLanguage: studySet.termLanguage,
+      definitionLanguage2: studySet.definitionLanguage2,
     }));
     // Keyed on the set id (not the studySet object, and not `progress`) so a
     // review landing mid-round — which replaces both with new objects — does

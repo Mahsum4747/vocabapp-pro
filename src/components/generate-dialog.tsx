@@ -10,9 +10,13 @@ import { Label } from "./ui/label";
 export function GenerateDialog({
   onGenerated,
   forceOpen = 0,
+  definitionLanguage2,
 }: {
   onGenerated: (set: GeneratedSet) => void;
   forceOpen?: number;
+  /** The set's second definition language, if the form's own toggle for it
+   *  is on — forwarded as-is so generation fills `definition2` too. */
+  definitionLanguage2?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [topic, setTopic] = useState("");
@@ -46,12 +50,16 @@ export function GenerateDialog({
     setLongWait(false);
     longWaitTimer.current = window.setTimeout(() => setLongWait(true), 6000);
     try {
+      const trimmedDefinitionLanguage2 = definitionLanguage2?.trim();
       const result = await generateStudySet({
         data: {
           topic: topic.trim(),
           count,
           termLanguage: termLanguage.trim(),
           definitionLanguage: definitionLanguage.trim(),
+          ...(trimmedDefinitionLanguage2
+            ? { definitionLanguage2: trimmedDefinitionLanguage2 }
+            : {}),
         },
       });
       if (!result.ok) {

@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/app-shell";
+import { Definition2Line } from "@/components/definition2-line";
 import { EmptyState } from "@/components/empty-state";
 import { ExampleLine } from "@/components/example-line";
 import { StudyChrome } from "@/components/study-chrome";
@@ -207,6 +208,11 @@ function LearnPage() {
       <h2 className="mt-3 font-display text-3xl font-medium tracking-tight text-balance whitespace-pre-line">
         {item.prompt}
       </h2>
+      <Definition2Line
+        definition2={item.definition2}
+        definitionLanguage2={studySet.definitionLanguage2}
+        className="mt-1"
+      />
 
       {isMc ? (
         <div className="mt-8 grid gap-2">

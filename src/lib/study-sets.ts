@@ -67,6 +67,7 @@ type DraftCard = {
   definition: string;
   imageUrl?: string | null;
   example?: string | null;
+  definition2?: string | null;
 };
 type DraftCardWithProgress = DraftCard & {
   starred?: boolean;
@@ -106,6 +107,7 @@ function toCards(drafts: DraftCard[]): Card[] {
       starred: false,
       imageUrl: d.imageUrl || null,
       example: d.example?.trim() || null,
+      definition2: d.definition2?.trim() || null,
     }))
     .filter((c) => c.term || c.definition);
 }
@@ -165,6 +167,7 @@ export const createSet = createServerFn({ method: "POST" })
       cards: DraftCard[];
       isReference?: boolean;
       termLanguage?: string;
+      definitionLanguage2?: string;
       folder?: string;
     }) => input,
   )
@@ -174,6 +177,7 @@ export const createSet = createServerFn({ method: "POST" })
     const id = uidServer();
     const now = Date.now();
     const folder = data.folder?.trim();
+    const definitionLanguage2 = data.definitionLanguage2?.trim();
     const next: StudySet = {
       id,
       title: data.title.trim() || "Untitled set",
@@ -189,6 +193,7 @@ export const createSet = createServerFn({ method: "POST" })
       copyCount: 0,
       isReference: data.isReference ?? false,
       ...(data.termLanguage ? { termLanguage: data.termLanguage } : {}),
+      ...(definitionLanguage2 ? { definitionLanguage2 } : {}),
       ...(folder ? { folder } : {}),
     };
     await db.collection("study_sets").doc(id).set(next);
@@ -203,7 +208,13 @@ export const updateSetMeta = createServerFn({ method: "POST" })
       patch: Partial<
         Pick<
           StudySet,
-          "title" | "description" | "subject" | "isReference" | "termLanguage" | "folder"
+          | "title"
+          | "description"
+          | "subject"
+          | "isReference"
+          | "termLanguage"
+          | "definitionLanguage2"
+          | "folder"
         >
       >;
     }) => input,
@@ -258,6 +269,8 @@ export const replaceCards = createServerFn({ method: "POST" })
         // string = cleared); one that doesn't omits it, so keep what's there.
         const example =
           d.example !== undefined ? d.example?.trim() || null : (prior?.example ?? null);
+        const definition2 =
+          d.definition2 !== undefined ? d.definition2?.trim() || null : (prior?.definition2 ?? null);
         return {
           id: keptId,
           term,
@@ -265,6 +278,7 @@ export const replaceCards = createServerFn({ method: "POST" })
           starred: d.starred ?? prior?.starred ?? false,
           imageUrl: d.imageUrl || null,
           example,
+          definition2,
           ...(status ? { status } : {}),
         };
       })

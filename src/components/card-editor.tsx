@@ -17,6 +17,7 @@ export type EditorCard = {
   definition: string;
   imageUrl?: string | null;
   example?: string | null;
+  definition2?: string | null;
 };
 
 // Card images need Firebase Storage on a paid plan, which we're not on yet.
@@ -31,18 +32,22 @@ export function CardEditor({
   cards,
   onChange,
   termLanguage,
+  definitionLanguage2,
 }: {
   cards: EditorCard[];
   onChange: (cards: EditorCard[]) => void;
   /** The set's term language, if known — passed to the AI suggestion so its
    *  example sentence is written in the right language. */
   termLanguage?: string;
+  /** The set's second definition language, if it has one — shows a "Second
+   *  definition" field per card, with its own AI suggestion. */
+  definitionLanguage2?: string;
 }) {
   const [uploadingId, setUploadingId] = useState<string | null>(null);
-  // A set, not a single id: suggesting on two different cards can genuinely
-  // overlap, and a shared "current id" would let the second request's
-  // cleanup wipe the first one's still-loading spinner.
-  const [suggestingIds, setSuggestingIds] = useState<ReadonlySet<string>>(new Set());
+  // Keyed `${cardId}:${field}` rather than just the card id: a card's primary
+  // and second-definition suggestions are independent requests and can
+  // genuinely overlap, same reasoning as two different cards overlapping.
+  const [suggestingKeys, setSuggestingKeys] = useState<ReadonlySet<string>>(new Set());
 
   function update(id: string, patch: Partial<EditorCard>) {
     onChange(cards.map((card) => (card.id === id ? { ...card, ...patch } : card)));
@@ -79,34 +84,44 @@ export function CardEditor({
   }
 
   /**
-   * Fill a card's definition and example from its term, one Gemini call for
-   * both fields. Overwrites whatever was there — an explicit "ask again"
-   * action, not something that fires on its own.
+   * Fill a card's definition (and, for the primary field, its example) from
+   * the term, one Gemini call per field. Overwrites whatever was there — an
+   * explicit "ask again" action, not something that fires on its own.
+   *
+   * The second-definition suggestion reuses this same call, parameterized on
+   * `definitionLanguage2` instead of the fixed primary language — it still
+   * gets an `example` back (the prompt always asks for one), but discards
+   * it: there is only one example field, already filled by the primary
+   * suggestion, and it wouldn't make sense to overwrite it from a request
+   * whose language wasn't even the term's.
    */
-  async function suggest(id: string) {
+  async function suggest(id: string, field: "primary" | "second") {
     const card = cards.find((c) => c.id === id);
     const term = card?.term.trim();
     if (!term) return;
-    setSuggestingIds((prev) => new Set(prev).add(id));
+    if (field === "second" && !definitionLanguage2?.trim()) return;
+    const key = `${id}:${field}`;
+    setSuggestingKeys((prev) => new Set(prev).add(key));
     try {
       const result = await suggestCardContent({
         data: {
           term,
           ...(termLanguage ? { termLanguage } : {}),
-          definitionLanguage: DEFAULT_DEFINITION_LANGUAGE,
+          definitionLanguage: field === "primary" ? DEFAULT_DEFINITION_LANGUAGE : definitionLanguage2!.trim(),
         },
       });
       if (!result.ok) {
         toast.error(result.error);
         return;
       }
-      update(id, { definition: result.definition, example: result.example });
+      if (field === "primary") update(id, { definition: result.definition, example: result.example });
+      else update(id, { definition2: result.definition });
     } catch {
       toast.error("Couldn't get a suggestion, try again.");
     } finally {
-      setSuggestingIds((prev) => {
+      setSuggestingKeys((prev) => {
         const next = new Set(prev);
-        next.delete(id);
+        next.delete(key);
         return next;
       });
     }
@@ -158,15 +173,15 @@ export function CardEditor({
               type="button"
               variant="ghost"
               size="sm"
-              disabled={!card.term.trim() || suggestingIds.has(card.id)}
-              onClick={() => void suggest(card.id)}
+              disabled={!card.term.trim() || suggestingKeys.has(`${card.id}:primary`)}
+              onClick={() => void suggest(card.id, "primary")}
             >
-              {suggestingIds.has(card.id) ? (
+              {suggestingKeys.has(`${card.id}:primary`) ? (
                 <Loader2 className="size-3.5 animate-spin" />
               ) : (
                 <Sparkles className="size-3.5" />
               )}
-              {suggestingIds.has(card.id) ? "Suggesting…" : "Suggest with AI"}
+              {suggestingKeys.has(`${card.id}:primary`) ? "Suggesting…" : "Suggest with AI"}
             </Button>
           </div>
           <div className="mt-1 space-y-1.5">
@@ -178,6 +193,34 @@ export function CardEditor({
               placeholder="A sentence using the term"
             />
           </div>
+          {definitionLanguage2?.trim() ? (
+            <div className="mt-3 space-y-1.5">
+              <Label htmlFor={`def2-${card.id}`}>Second definition ({definitionLanguage2})</Label>
+              <Textarea
+                id={`def2-${card.id}`}
+                value={card.definition2 ?? ""}
+                onChange={(e) => update(card.id, { definition2: e.target.value })}
+                placeholder={`The definition in ${definitionLanguage2}`}
+                className="min-h-11"
+              />
+              <div className="flex justify-end">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  disabled={!card.term.trim() || suggestingKeys.has(`${card.id}:second`)}
+                  onClick={() => void suggest(card.id, "second")}
+                >
+                  {suggestingKeys.has(`${card.id}:second`) ? (
+                    <Loader2 className="size-3.5 animate-spin" />
+                  ) : (
+                    <Sparkles className="size-3.5" />
+                  )}
+                  {suggestingKeys.has(`${card.id}:second`) ? "Suggesting…" : "Suggest with AI"}
+                </Button>
+              </div>
+            </div>
+          ) : null}
           {IMAGE_UPLOAD_ENABLED && (
             <div className="mt-3">
               {card.imageUrl ? (

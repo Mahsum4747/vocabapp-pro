@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/app-shell";
+import { Definition2Line } from "@/components/definition2-line";
 import { EmptyState } from "@/components/empty-state";
 import { ExampleLine } from "@/components/example-line";
 import { StudyChrome } from "@/components/study-chrome";
@@ -208,6 +209,13 @@ function TestPage() {
       <h2 className="mt-3 font-display text-3xl font-medium tracking-tight text-balance whitespace-pre-line">
         {q.prompt}
       </h2>
+      {q.type !== "tf" ? (
+        <Definition2Line
+          definition2={q.definition2}
+          definitionLanguage2={studySet.definitionLanguage2}
+          className="mt-1"
+        />
+      ) : null}
 
       {q.type === "mc" ? (
         <div className="mt-8 grid gap-2">

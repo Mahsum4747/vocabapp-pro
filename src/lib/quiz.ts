@@ -29,6 +29,9 @@ export type McQuestion = {
   imageUrl?: string | null;
   /** The card's example sentence — it contains the term, so only ever shown after the answer is revealed. */
   example?: string | null;
+  /** The set's second-language definition, if it has one — safe to show
+   *  alongside the prompt, since it never reveals the term. */
+  definition2?: string | null;
 };
 
 export type WrittenQuestion = {
@@ -38,6 +41,7 @@ export type WrittenQuestion = {
   answer: string;
   imageUrl?: string | null;
   example?: string | null;
+  definition2?: string | null;
 };
 
 export type TfQuestion = {
@@ -73,6 +77,7 @@ export function multipleChoice(
     answer,
     imageUrl: card.imageUrl,
     example: card.example,
+    definition2: card.definition2,
   };
 }
 
@@ -87,6 +92,7 @@ export function writtenQuestion(
     answer: ask === "definition" ? card.term : card.definition,
     imageUrl: card.imageUrl,
     example: card.example,
+    definition2: card.definition2,
   };
 }
 

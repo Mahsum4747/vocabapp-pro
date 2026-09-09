@@ -51,7 +51,16 @@ function MatchPage() {
     ).slice(0, 6);
     const both: Tile[] = picked.flatMap((card) => [
       { id: `${card.id}-t`, cardId: card.id, text: card.term, kind: "term" as const },
-      { id: `${card.id}-d`, cardId: card.id, text: card.definition, kind: "definition" as const },
+      {
+        id: `${card.id}-d`,
+        cardId: card.id,
+        // A second line, not a second tile: matching stays a two-tile-per-card
+        // game, and a definition tile is still a single click target.
+        text: card.definition2?.trim()
+          ? `${card.definition}\n${card.definition2}`
+          : card.definition,
+        kind: "definition" as const,
+      },
     ]);
     return shuffle(both);
     // eslint-disable-next-line react-hooks/exhaustive-deps

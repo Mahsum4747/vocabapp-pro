@@ -30,6 +30,12 @@ function EditPage() {
   const [subject, setSubject] = useState(studySet?.subject ?? "General");
   const [isReference, setIsReference] = useState(studySet?.isReference ?? false);
   const [termLanguage, setTermLanguage] = useState(studySet?.termLanguage);
+  const [definitionLanguage2Enabled, setDefinitionLanguage2Enabled] = useState(
+    Boolean(studySet?.definitionLanguage2),
+  );
+  const [definitionLanguage2, setDefinitionLanguage2] = useState(
+    studySet?.definitionLanguage2 ?? "",
+  );
   const [folder, setFolder] = useState(studySet?.folder ?? "");
   const [cards, setCards] = useState<EditorCard[]>(
     studySet?.cards.map((c) => ({
@@ -38,6 +44,7 @@ function EditPage() {
       definition: c.definition,
       imageUrl: c.imageUrl,
       example: c.example,
+      definition2: c.definition2,
     })) ?? [],
   );
 
@@ -48,6 +55,8 @@ function EditPage() {
     setSubject(studySet.subject);
     setIsReference(studySet.isReference ?? false);
     setTermLanguage(studySet.termLanguage);
+    setDefinitionLanguage2Enabled(Boolean(studySet.definitionLanguage2));
+    setDefinitionLanguage2(studySet.definitionLanguage2 ?? "");
     setFolder(studySet.folder ?? "");
     setCards(
       studySet.cards.map((c) => ({
@@ -56,6 +65,7 @@ function EditPage() {
         definition: c.definition,
         imageUrl: c.imageUrl,
         example: c.example,
+        definition2: c.definition2,
       })),
     );
   }, [studySet]);
@@ -96,6 +106,13 @@ function EditPage() {
       subject,
       isReference,
       termLanguage,
+      // Sent even when cleared: an omitted key survives an update() as
+      // whatever it already was, but an unchecked toggle means "no second
+      // language", not "leave it alone".
+      definitionLanguage2:
+        definitionLanguage2Enabled && definitionLanguage2.trim()
+          ? definitionLanguage2.trim()
+          : "",
       folder: folder.trim(),
     });
     replaceCards(setId, filled);
@@ -128,6 +145,7 @@ function EditPage() {
           </h1>
           <div className="mt-6 flex flex-wrap gap-2">
             <GenerateDialog
+              definitionLanguage2={definitionLanguage2Enabled ? definitionLanguage2 : undefined}
               onGenerated={(generated) => {
                 setTitle(generated.title);
                 setDescription(generated.description ?? "");
@@ -139,6 +157,7 @@ function EditPage() {
                     term: card.term,
                     definition: card.definition,
                     example: card.example,
+                    definition2: card.definition2,
                   })),
                 );
               }}
@@ -210,7 +229,31 @@ function EditPage() {
               />
               Reference set (no study modes, just a list)
             </label>
-            <CardEditor cards={cards} onChange={setCards} termLanguage={termLanguage} />
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 text-sm text-fg select-none">
+                <input
+                  type="checkbox"
+                  checked={definitionLanguage2Enabled}
+                  onChange={(e) => setDefinitionLanguage2Enabled(e.target.checked)}
+                  className="size-4 rounded border-border accent-primary"
+                />
+                Add a second definition language
+              </label>
+              {definitionLanguage2Enabled ? (
+                <Input
+                  value={definitionLanguage2}
+                  onChange={(e) => setDefinitionLanguage2(e.target.value)}
+                  placeholder="e.g. Turkish"
+                  aria-label="Second definition language"
+                />
+              ) : null}
+            </div>
+            <CardEditor
+              cards={cards}
+              onChange={setCards}
+              termLanguage={termLanguage}
+              definitionLanguage2={definitionLanguage2Enabled ? definitionLanguage2 : undefined}
+            />
             <div className="sticky bottom-4 flex justify-end gap-2">
               <Button type="button" variant="ghost" asChild>
                 <Link to="/sets/$setId" params={{ setId }}>

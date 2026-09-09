@@ -40,6 +40,8 @@ function CreatePage() {
   const [subject, setSubject] = useState("General");
   const [isReference, setIsReference] = useState(false);
   const [termLanguage, setTermLanguage] = useState<string | undefined>(undefined);
+  const [definitionLanguage2Enabled, setDefinitionLanguage2Enabled] = useState(false);
+  const [definitionLanguage2, setDefinitionLanguage2] = useState("");
   const [folder, setFolder] = useState("");
   const [cards, setCards] = useState<EditorCard[]>(blankCards);
   const [aiOpenSignal, setAiOpenSignal] = useState(0);
@@ -69,6 +71,10 @@ function CreatePage() {
       cards: filled,
       isReference,
       termLanguage,
+      definitionLanguage2:
+        definitionLanguage2Enabled && definitionLanguage2.trim()
+          ? definitionLanguage2.trim()
+          : undefined,
       folder: folder.trim() || undefined,
     });
     toast.success("Set saved.");
@@ -90,6 +96,7 @@ function CreatePage() {
           <div className="mt-6 flex flex-wrap gap-2">
             <GenerateDialog
               forceOpen={aiOpenSignal}
+              definitionLanguage2={definitionLanguage2Enabled ? definitionLanguage2 : undefined}
               onGenerated={(generated) => {
                 setTitle(generated.title);
                 setDescription(generated.description ?? "");
@@ -101,6 +108,7 @@ function CreatePage() {
                     term: card.term,
                     definition: card.definition,
                     example: card.example,
+                    definition2: card.definition2,
                   })),
                 );
               }}
@@ -182,7 +190,31 @@ function CreatePage() {
               />
               Reference set (no study modes, just a list)
             </label>
-            <CardEditor cards={cards} onChange={setCards} termLanguage={termLanguage} />
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 text-sm text-fg select-none">
+                <input
+                  type="checkbox"
+                  checked={definitionLanguage2Enabled}
+                  onChange={(e) => setDefinitionLanguage2Enabled(e.target.checked)}
+                  className="size-4 rounded border-border accent-primary"
+                />
+                Add a second definition language
+              </label>
+              {definitionLanguage2Enabled ? (
+                <Input
+                  value={definitionLanguage2}
+                  onChange={(e) => setDefinitionLanguage2(e.target.value)}
+                  placeholder="e.g. Turkish"
+                  aria-label="Second definition language"
+                />
+              ) : null}
+            </div>
+            <CardEditor
+              cards={cards}
+              onChange={setCards}
+              termLanguage={termLanguage}
+              definitionLanguage2={definitionLanguage2Enabled ? definitionLanguage2 : undefined}
+            />
             <div className="sticky bottom-4 flex justify-end">
               <Button type="submit" size="lg">
                 Save set

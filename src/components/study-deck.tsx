@@ -25,6 +25,8 @@ export type DeckEntry = {
   /** Set name, shown under the card when a round spans more than one set. */
   setTitle?: string;
   termLanguage?: string;
+  /** The set's second definition language, if it has one. */
+  definitionLanguage2?: string;
   /** Why the queue picked this card now — "Overdue", "Due today", "New". */
   bandLabel?: string;
   /** Tint for the band chip. */
@@ -266,6 +268,8 @@ export function StudyDeck({
         term={card.term}
         definition={card.definition}
         example={card.example}
+        definition2={card.definition2}
+        definitionLanguage2={entry.definitionLanguage2}
         imageUrl={card.imageUrl}
         termLanguage={entry.termLanguage}
         flipped={flipped}

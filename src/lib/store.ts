@@ -32,6 +32,7 @@ type DraftCard = {
   definition: string;
   imageUrl?: string | null;
   example?: string | null;
+  definition2?: string | null;
 };
 
 /** What a graded review turned out to be worth, for the celebration layer. */
@@ -74,6 +75,7 @@ type StudyState = {
     cards: DraftCard[];
     isReference?: boolean;
     termLanguage?: string;
+    definitionLanguage2?: string;
     folder?: string;
   }) => Promise<string>;
   updateSetMeta: (
@@ -81,7 +83,13 @@ type StudyState = {
     patch: Partial<
       Pick<
         StudySet,
-        "title" | "description" | "subject" | "isReference" | "termLanguage" | "folder"
+        | "title"
+        | "description"
+        | "subject"
+        | "isReference"
+        | "termLanguage"
+        | "definitionLanguage2"
+        | "folder"
       >
     >,
   ) => Promise<void>;
@@ -192,9 +200,18 @@ export const useStudyStore = create<StudyState>()((set, get) => ({
     }
   },
 
-  addSet: async ({ title, description, subject, cards, isReference, termLanguage, folder }) => {
+  addSet: async ({
+    title,
+    description,
+    subject,
+    cards,
+    isReference,
+    termLanguage,
+    definitionLanguage2,
+    folder,
+  }) => {
     const next = await createSet({
-      data: { title, description, subject, cards, isReference, termLanguage, folder },
+      data: { title, description, subject, cards, isReference, termLanguage, definitionLanguage2, folder },
     });
     set({ sets: [next, ...get().sets] });
     return next.id;

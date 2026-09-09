@@ -7,11 +7,15 @@ const inputSchema = z.object({
   count: z.number().int().min(6).max(50),
   termLanguage: z.string().trim().min(1).max(40),
   definitionLanguage: z.string().trim().min(1).max(40),
+  /** When set, ask for a second definition in this language too — mirrors
+   *  the set's own `definitionLanguage2` toggle. */
+  definitionLanguage2: z.string().trim().min(1).max(40).optional(),
 });
 
 const cardSchema = z.object({
   term: z.string().min(1).max(200),
   definition: z.string().min(1).max(500),
+  definition2: z.string().max(500).optional(),
   example: z.string().max(500).optional().default(""),
 });
 
@@ -33,47 +37,68 @@ const GEMINI_MODEL = "gemini-3.6-flash";
 // Gemini's `responseSchema` is a restricted OpenAPI-3.0-style schema — plain
 // object, not a zod schema — that forces the model's JSON output to match it,
 // so we never have to parse free-form text out of a reply.
-const RESPONSE_SCHEMA = {
-  type: "OBJECT",
-  properties: {
-    title: { type: "STRING" },
-    description: { type: "STRING" },
-    subject: {
-      type: "STRING",
-      enum: ["Language", "Science", "History", "Geography", "Software", "General"],
-    },
-    cards: {
-      type: "ARRAY",
-      items: {
-        type: "OBJECT",
-        properties: {
-          term: { type: "STRING" },
-          definition: {
-            type: "STRING",
-            description:
-              "The term's meaning, in the definition language. Meaning only — " +
-              "no example sentence, no quotes, no labels, no line breaks.",
+//
+// Built per-request rather than as one static object: `definition2` only
+// belongs in the schema (and only becomes required) when the caller actually
+// asked for a second definition language — an unused optional field still
+// costs the model attention and output tokens it doesn't need to spend.
+function buildResponseSchema(wantsSecondDefinition: boolean) {
+  return {
+    type: "OBJECT",
+    properties: {
+      title: { type: "STRING" },
+      description: { type: "STRING" },
+      subject: {
+        type: "STRING",
+        enum: ["Language", "Science", "History", "Geography", "Software", "General"],
+      },
+      cards: {
+        type: "ARRAY",
+        items: {
+          type: "OBJECT",
+          properties: {
+            term: { type: "STRING" },
+            definition: {
+              type: "STRING",
+              description:
+                "The term's meaning, in the definition language. Meaning only — " +
+                "no example sentence, no quotes, no labels, no line breaks.",
+            },
+            ...(wantsSecondDefinition
+              ? {
+                  definition2: {
+                    type: "STRING",
+                    description:
+                      "The SAME meaning as \"definition\", but written in the second " +
+                      "definition language instead. Same rules — meaning only, no example, " +
+                      "no quotes, no labels.",
+                  },
+                }
+              : {}),
+            example: {
+              type: "STRING",
+              description:
+                "One short, grammatically flawless sentence in the term language that uses " +
+                "the term naturally. No quotes around it, no translation, no labels.",
+            },
           },
-          example: {
-            type: "STRING",
-            description:
-              "One short, grammatically flawless sentence in the term language that uses " +
-              "the term naturally. No quotes around it, no translation, no labels.",
-          },
+          required: wantsSecondDefinition
+            ? ["term", "definition", "definition2", "example"]
+            : ["term", "definition", "example"],
         },
-        required: ["term", "definition", "example"],
       },
     },
-  },
-  required: ["title", "cards"],
-};
+    required: ["title", "cards"],
+  };
+}
 
 // Bump when the prompt/response shape changes in a way that makes previously
 // cached results stale (e.g. the definition format below) — old cache entries
-// under the previous version are simply never looked up again.
-const CACHE_VERSION = "v3";
+// under the previous version are simply never looked up again. v4 adds the
+// optional second-definition-language field.
+const CACHE_VERSION = "v4";
 
-/** Deterministic cache key for one (topic, count, term/definition language) request. */
+/** Deterministic cache key for one (topic, count, term/definition language[s]) request. */
 async function cacheKeyFor(data: z.infer<typeof inputSchema>): Promise<string> {
   const { createHash } = await import("node:crypto");
   const normalized = [
@@ -82,6 +107,7 @@ async function cacheKeyFor(data: z.infer<typeof inputSchema>): Promise<string> {
     data.count,
     data.termLanguage.trim().toLowerCase(),
     data.definitionLanguage.trim().toLowerCase(),
+    data.definitionLanguage2?.trim().toLowerCase() ?? "",
   ].join("|");
   return createHash("sha256").update(normalized).digest("hex");
 }
@@ -93,6 +119,12 @@ function buildPrompt(data: z.infer<typeof inputSchema>): string {
     `  "term": the word or phrase itself, in ${data.termLanguage}.`,
     `  "definition": that term's meaning, in ${data.definitionLanguage}. The meaning only —`,
     "    no example sentence, no quotes, no labels, no line breaks.",
+    ...(data.definitionLanguage2
+      ? [
+          `  "definition2": the SAME meaning as "definition", but in ${data.definitionLanguage2}`,
+          "    instead. Same rules — meaning only, no example, no quotes, no labels.",
+        ]
+      : []),
     `  "example": one short sentence in ${data.termLanguage} that uses the term naturally.`,
     "    It must contain the term itself (an inflected/conjugated form is fine) and must be",
     "    grammatically flawless — correct articles, prepositions, cases, and agreement.",
@@ -145,7 +177,7 @@ export const generateStudySet = createServerFn({ method: "POST" })
             contents: [{ role: "user", parts: [{ text: buildPrompt(data) }] }],
             generationConfig: {
               responseMimeType: "application/json",
-              responseSchema: RESPONSE_SCHEMA,
+              responseSchema: buildResponseSchema(Boolean(data.definitionLanguage2)),
             },
             // Flashcard generation is benign educational content, but Gemini's
             // default safety thresholds can over-block a prompt just for

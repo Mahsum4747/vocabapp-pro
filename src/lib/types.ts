@@ -29,6 +29,12 @@ export type Card = {
    * definition language) so each can be shown, searched, and spoken on its own.
    */
   example?: string | null;
+  /**
+   * Optional definition in the set's second definition language
+   * (`StudySet.definitionLanguage2`). Absent when the set has no second
+   * language, or when this particular card hasn't been given one yet.
+   */
+  definition2?: string | null;
   status?: CardStatus;
 };
 
@@ -56,6 +62,7 @@ export function freshCardCopy(card: Card, id: string): Card {
     definition: card.definition,
     imageUrl: card.imageUrl,
     example: card.example ?? null,
+    definition2: card.definition2 ?? null,
     starred: false,
   };
 }
@@ -85,6 +92,14 @@ export type StudySet = {
   isReference?: boolean;
   /** Language the terms are written in (e.g. "German") — set when generated via AI. Drives text-to-speech accent; absent means use the browser's default voice. */
   termLanguage?: string;
+  /**
+   * A second language to show a definition in, alongside the primary one
+   * (e.g. a German→English set that also wants a Turkish gloss). Absent
+   * means the set has no second definition language — the normal case.
+   * Drives the second definition's speak button; cards carry the actual
+   * text in their own `definition2`.
+   */
+  definitionLanguage2?: string;
   /** Optional single-level grouping label (e.g. "A1", "İş Almancası") — free text, not nested. */
   folder?: string;
 };

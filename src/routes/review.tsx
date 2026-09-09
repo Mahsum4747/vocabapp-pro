@@ -107,6 +107,7 @@ function ReviewPage() {
         setId: entry.setId,
         setTitle: entry.setTitle,
         termLanguage: entry.termLanguage,
+        definitionLanguage2: entry.definitionLanguage2,
         // In a weak-words round every card is here for the same reason, so the
         // chip names the round rather than repeating the band on each card.
         bandLabel: filter === "weak" ? "Weak words" : BANDS[entry.band].label,

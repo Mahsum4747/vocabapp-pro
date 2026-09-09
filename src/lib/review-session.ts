@@ -8,6 +8,7 @@ export type SessionCard = {
   setId: string;
   setTitle: string;
   termLanguage?: string;
+  definitionLanguage2?: string;
   /** Why the queue picked this card now. */
   band: QueueEntry["band"];
 };
@@ -80,6 +81,7 @@ export function buildLibrarySession(
       setId: set.id,
       setTitle: set.title,
       termLanguage: set.termLanguage,
+      definitionLanguage2: set.definitionLanguage2,
       band: entry.band,
     });
   }

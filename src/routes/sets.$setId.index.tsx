@@ -105,7 +105,8 @@ function SetPage() {
           (c) =>
             c.term.toLowerCase().includes(q) ||
             c.definition.toLowerCase().includes(q) ||
-            (c.example ?? "").toLowerCase().includes(q),
+            (c.example ?? "").toLowerCase().includes(q) ||
+            (c.definition2 ?? "").toLowerCase().includes(q),
         )
       : base;
     return sortCards(filtered, sortMode, progress);

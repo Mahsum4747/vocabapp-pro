@@ -5,6 +5,8 @@ export function FlashCard({
   term,
   definition,
   example,
+  definition2,
+  definitionLanguage2,
   imageUrl,
   termLanguage,
   flipped,
@@ -13,6 +15,9 @@ export function FlashCard({
   term: string;
   definition: string;
   example?: string | null;
+  /** The set's second-language definition for this card, if it has one. */
+  definition2?: string | null;
+  definitionLanguage2?: string;
   imageUrl?: string | null;
   termLanguage?: string;
   flipped: boolean;
@@ -63,6 +68,21 @@ export function FlashCard({
         >
           {flipped ? definition : term}
         </span>
+        {/* Second definition sits right under the primary one — same side,
+            same question, just a different language. Never leaks the term. */}
+        {flipped && definition2 ? (
+          <span className="flex items-start gap-1">
+            <span className="text-base whitespace-pre-line text-primary-fg/85">
+              {definition2}
+            </span>
+            <SpeakButton
+              text={definition2}
+              language={definitionLanguage2}
+              label="Listen to the second definition"
+              className="text-primary-fg/70 hover:bg-primary-fg/10 hover:text-primary-fg"
+            />
+          </span>
+        ) : null}
         {/* The example is in the term language, so it belongs with the answer side. */}
         {flipped && example ? (
           <span className="flex items-start gap-1">
