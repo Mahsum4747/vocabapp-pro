@@ -1,6 +1,11 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { authMiddleware } from "./auth/middleware";
+import {
+  DEFINITION_SCHEMA_DESCRIPTION,
+  definitionExampleLines,
+  definitionRuleLines,
+} from "./ai-definition-rule";
 
 /**
  * One-card AI assist for manual card creation: given a term, suggest its
@@ -38,10 +43,7 @@ const RESPONSE_SCHEMA = {
   properties: {
     definition: {
       type: "STRING",
-      description:
-        "A brief translation or definition of the term, in the requested definition language. " +
-        "One to a few words or short phrase only — no example sentence, no quotes, " +
-        "no labels, no line breaks, no punctuation at the end.",
+      description: DEFINITION_SCHEMA_DESCRIPTION,
     },
     example: {
       type: "STRING",
@@ -57,7 +59,10 @@ const RESPONSE_SCHEMA = {
 // cached results stale — old cache entries under the previous version are
 // simply never looked up again. Independent of generate-set.ts's own version:
 // the two caches, prompts and schemas are unrelated.
-const CACHE_VERSION = "v1";
+//
+// v2: `definition` is a direct translation, not a dictionary-style
+// description — everything cached under v1 can still be the old long form.
+const CACHE_VERSION = "v2";
 
 /** Deterministic cache key for one (term, term language, definition language) request. */
 async function cacheKeyFor(data: z.infer<typeof inputSchema>): Promise<string> {
@@ -74,13 +79,14 @@ async function cacheKeyFor(data: z.infer<typeof inputSchema>): Promise<string> {
 function buildPrompt(data: z.infer<typeof inputSchema>): string {
   const termLanguageText = data.termLanguage ? ` The term is in ${data.termLanguage}.` : "";
   return [
-    `Give a brief definition and one example sentence for this flashcard term: "${data.term}".${termLanguageText}`,
-    `"definition": a brief translation or definition, in ${data.definitionLanguage}. One to a few words`,
-    "  or short phrase only — no example sentence, no quotes, no labels, no line breaks, no ending punctuation.",
+    `Give the translation and one example sentence for this flashcard term: "${data.term}".${termLanguageText}`,
+    ...definitionRuleLines(data.definitionLanguage, ""),
     `"example": one short sentence${data.termLanguage ? ` in ${data.termLanguage}` : ""} that uses the`,
     "  term naturally. It must contain the term itself (an inflected/conjugated form is fine)",
     "  and must be grammatically flawless — correct articles, prepositions, cases, and agreement.",
     "  No surrounding quotes, no translation, no labels.",
+    "How the definition must look:",
+    ...definitionExampleLines("  "),
   ].join("\n");
 }
 

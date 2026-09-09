@@ -1,6 +1,13 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { authMiddleware } from "./auth/middleware";
+import {
+  DEFINITION_SCHEMA_DESCRIPTION,
+  SECOND_DEFINITION_SCHEMA_DESCRIPTION,
+  definitionExampleLines,
+  definitionRuleLines,
+  secondDefinitionRuleLines,
+} from "./ai-definition-rule";
 
 const inputSchema = z.object({
   topic: z.string().trim().min(2).max(200),
@@ -60,18 +67,13 @@ function buildResponseSchema(wantsSecondDefinition: boolean) {
             term: { type: "STRING" },
             definition: {
               type: "STRING",
-              description:
-                "The term's meaning, in the definition language. Meaning only — " +
-                "no example sentence, no quotes, no labels, no line breaks.",
+              description: DEFINITION_SCHEMA_DESCRIPTION,
             },
             ...(wantsSecondDefinition
               ? {
                   definition2: {
                     type: "STRING",
-                    description:
-                      "The SAME meaning as \"definition\", but written in the second " +
-                      "definition language instead. Same rules — meaning only, no example, " +
-                      "no quotes, no labels.",
+                    description: SECOND_DEFINITION_SCHEMA_DESCRIPTION,
                   },
                 }
               : {}),
@@ -94,9 +96,11 @@ function buildResponseSchema(wantsSecondDefinition: boolean) {
 
 // Bump when the prompt/response shape changes in a way that makes previously
 // cached results stale (e.g. the definition format below) — old cache entries
-// under the previous version are simply never looked up again. v4 adds the
-// optional second-definition-language field.
-const CACHE_VERSION = "v4";
+// under the previous version are simply never looked up again. v4 added the
+// optional second-definition-language field; v5 makes `definition` a direct
+// translation rather than a dictionary-style description, so everything
+// cached under v4 can still hold the old long form.
+const CACHE_VERSION = "v5";
 
 /** Deterministic cache key for one (topic, count, term/definition language[s]) request. */
 async function cacheKeyFor(data: z.infer<typeof inputSchema>): Promise<string> {
@@ -117,20 +121,15 @@ function buildPrompt(data: z.infer<typeof inputSchema>): string {
     `Create exactly ${data.count} high-quality flashcards about: ${data.topic}.`,
     "Each card has three separate fields — never merge them:",
     `  "term": the word or phrase itself, in ${data.termLanguage}.`,
-    `  "definition": that term's meaning, in ${data.definitionLanguage}. The meaning only —`,
-    "    no example sentence, no quotes, no labels, no line breaks.",
-    ...(data.definitionLanguage2
-      ? [
-          `  "definition2": the SAME meaning as "definition", but in ${data.definitionLanguage2}`,
-          "    instead. Same rules — meaning only, no example, no quotes, no labels.",
-        ]
-      : []),
+    ...definitionRuleLines(data.definitionLanguage, "  "),
+    ...(data.definitionLanguage2 ? secondDefinitionRuleLines(data.definitionLanguage2, "  ") : []),
     `  "example": one short sentence in ${data.termLanguage} that uses the term naturally.`,
     "    It must contain the term itself (an inflected/conjugated form is fine) and must be",
     "    grammatically flawless — correct articles, prepositions, cases, and agreement.",
     "    No surrounding quotes, no translation, no labels.",
-    "Example, if term language is German and definition language is English:",
-    '  term: "zurückgeben", definition: "to give back",',
+    "How the definition must look:",
+    ...definitionExampleLines("  "),
+    'A full correct card: term: "zurückgeben", definition: "to give back",',
     '  example: "Kannst du mir das Buch morgen zurückgeben?"',
     'Pick a fitting "subject" from: Language, Science, History, Geography, Software, General.',
   ].join("\n");
