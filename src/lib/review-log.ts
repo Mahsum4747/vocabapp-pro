@@ -54,6 +54,7 @@ export function useReviewLogger(): LogReview {
       // learner is never left waiting on it.
       if (input.rating === "easy") celebrate.correct("excellent");
       else if (input.rating === "good") celebrate.correct("correct");
+      else if (input.rating === "hard") celebrate.hard();
       else if (input.rating === "again") celebrate.wrong();
 
       void recordReview(input)

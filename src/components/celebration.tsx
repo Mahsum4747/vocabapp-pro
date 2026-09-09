@@ -23,6 +23,8 @@ export type SetCompletion = { setId: string; title: string; xp: number };
 type Celebration = {
   /** A graded answer. `excellent` is the brighter cue for an easy recall. */
   correct: (variant: "correct" | "excellent") => void;
+  /** A correct but effortful answer: a light, dull tone, no animation. */
+  hard: () => void;
   /** A wrong answer: a low tone, no animation. Missing one is not an event. */
   wrong: () => void;
   achievements: (ids: AchievementId[]) => void;
@@ -32,6 +34,7 @@ type Celebration = {
 
 const noop: Celebration = {
   correct: () => {},
+  hard: () => {},
   wrong: () => {},
   achievements: () => {},
   setCompleted: () => {},
@@ -89,6 +92,10 @@ export function CelebrationProvider({ children }: { children: ReactNode }) {
     correct: useCallback((variant) => {
       playSound(variant === "excellent" ? "excellent" : "correct");
       setTick(Date.now());
+    }, []),
+
+    hard: useCallback(() => {
+      playSound("hard");
     }, []),
 
     wrong: useCallback(() => {

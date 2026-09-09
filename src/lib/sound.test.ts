@@ -25,6 +25,7 @@ describe("the sound language", () => {
       "dailyGoalSuccess",
       "error",
       "excellent",
+      "hard",
       "setCompleted",
     ]);
   });
@@ -53,6 +54,7 @@ describe("the sound language", () => {
       cardFlip: [80, 150],
       correct: [180, 250],
       excellent: [250, 350],
+      hard: [150, 250],
       achievement: [350, 500],
       setCompleted: [500, 700],
       error: [120, 180],
@@ -138,6 +140,26 @@ describe("the sound language", () => {
       assert.ok(voice.lowpass <= 900, "and must not carry any bite");
     }
     assert.ok(loudest <= correct, "getting one wrong must not be louder than getting one right");
+  });
+
+  it("makes the wrong-answer cue actually audible, not just present", () => {
+    // Regression: 0.22 read as inaudible on real hardware at a 196→165Hz
+    // fundamental, which the ear hears as quieter than a higher tone at the
+    // same amplitude. Raised as far as the "never louder than correct" rule
+    // allows, rather than by opening the low-pass (that would add the bite
+    // the cue is explicitly designed not to have).
+    const loudest = Math.max(...SOUNDS.error.voices.map((v) => v.gain));
+    assert.ok(loudest >= 0.28, `error cue is still too quiet at gain ${loudest}`);
+  });
+
+  it("gives a hard answer its own light-but-audible cue, between flip and correct", () => {
+    // Before this, "hard" fired no sound at all. It should read as more than
+    // the everywhere-tick of a card flip, but plainly under a full reward.
+    const flip = Math.max(...SOUNDS.cardFlip.voices.map((v) => v.gain));
+    const hard = Math.max(...SOUNDS.hard.voices.map((v) => v.gain));
+    const correct = Math.max(...SOUNDS.correct.voices.map((v) => v.gain));
+    assert.ok(hard > flip, `hard (${hard}) should be louder than the flip tick (${flip})`);
+    assert.ok(hard < correct, `hard (${hard}) should stay under a full reward (${correct})`);
   });
 
   it("moves in pitch where the gesture should carry meaning", () => {

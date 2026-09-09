@@ -20,6 +20,7 @@ export type SoundEvent =
   | "cardFlip"
   | "correct"
   | "excellent"
+  | "hard"
   | "achievement"
   | "setCompleted"
   | "error"
@@ -198,6 +199,28 @@ export const SOUNDS: Record<SoundEvent, SoundSpec> = {
   },
 
   /**
+   * A correct answer, but not a clean one — "noted", not "nailed it". One
+   * warm, dull note with no rising gesture and no second voice: felt, not
+   * celebrated. Sits below `correct` in both gain and brightness so it never
+   * reads as a bigger reward than the recall it followed.
+   */
+  hard: {
+    duration: 200,
+    voices: [
+      {
+        type: "triangle",
+        freq: F4,
+        start: 0,
+        duration: 180,
+        gain: 0.2,
+        envelope: WARM,
+        lowpass: 1300,
+      },
+    ],
+    transients: [{ start: 0, duration: 18, gain: 0.04, band: 800, q: 1.2 }],
+  },
+
+  /**
    * The badge signature: an F major triad voiced from the bottom up, each note
    * entering under the last. Deliberately no top octave — brightness is what
    * would make it sound like a slot machine.
@@ -303,6 +326,12 @@ export const SOUNDS: Record<SoundEvent, SoundSpec> = {
    * Not a buzzer. A muted low knock that falls slightly — the sound of
    * something not quite landing. Getting a card wrong is the normal cost of
    * learning and must not feel like a penalty.
+   *
+   * Voiced as loud as `correct` allows (its gain is the ceiling this cue must
+   * never cross — see the "never louder than getting one right" test): a low
+   * note needs real amplitude to be heard at all, and the original 0.22 read
+   * as barely-there on real hardware. Loudness comes from gain here, never
+   * from opening the low-pass — that's what would turn a knock into a buzz.
    */
   error: {
     duration: 160,
@@ -313,12 +342,12 @@ export const SOUNDS: Record<SoundEvent, SoundSpec> = {
         freqEnd: 164.81,
         start: 0,
         duration: 160,
-        gain: 0.22,
+        gain: 0.3,
         envelope: { attack: 10, decay: 50, sustain: 0.3, release: 90 },
         lowpass: 700,
       },
     ],
-    transients: [{ start: 0, duration: 20, gain: 0.05, band: 500, q: 0.9 }],
+    transients: [{ start: 0, duration: 20, gain: 0.08, band: 500, q: 0.9 }],
   },
 
   /**
