@@ -6,6 +6,7 @@ import {
   definitionExampleLines,
   definitionRuleLines,
 } from "./ai-definition-rule";
+import { normalizeLanguage } from "./lang/languages";
 
 /**
  * One-card AI assist for manual card creation: given a term, suggest its
@@ -62,16 +63,27 @@ const RESPONSE_SCHEMA = {
 //
 // v2: `definition` is a direct translation, not a dictionary-style
 // description — everything cached under v1 can still be the old long form.
-const CACHE_VERSION = "v2";
+// v3: keyed on canonical language codes instead of raw free text.
+const CACHE_VERSION = "v3";
 
-/** Deterministic cache key for one (term, term language, definition language) request. */
+/**
+ * Deterministic cache key for one (term, term language, definition language)
+ * request, keyed on canonical codes so the same term asked for "German" and
+ * for "Deutsch" shares one entry. A language with no code keeps its free
+ * text as the key, so unrecognized languages stay in separate buckets.
+ */
 async function cacheKeyFor(data: z.infer<typeof inputSchema>): Promise<string> {
   const { createHash } = await import("node:crypto");
+  const languageKey = (value: string | undefined) => {
+    const text = value?.trim() ?? "";
+    if (!text) return "";
+    return normalizeLanguage(text) ?? text.toLowerCase();
+  };
   const normalized = [
     CACHE_VERSION,
     data.term.trim().toLowerCase(),
-    (data.termLanguage ?? "").trim().toLowerCase(),
-    data.definitionLanguage.trim().toLowerCase(),
+    languageKey(data.termLanguage),
+    languageKey(data.definitionLanguage),
   ].join("|");
   return createHash("sha256").update(normalized).digest("hex");
 }

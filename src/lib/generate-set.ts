@@ -8,6 +8,7 @@ import {
   definitionRuleLines,
   secondDefinitionRuleLines,
 } from "./ai-definition-rule";
+import { normalizeLanguage } from "./lang/languages";
 
 const inputSchema = z.object({
   topic: z.string().trim().min(2).max(200),
@@ -98,20 +99,33 @@ function buildResponseSchema(wantsSecondDefinition: boolean) {
 // cached results stale (e.g. the definition format below) — old cache entries
 // under the previous version are simply never looked up again. v4 added the
 // optional second-definition-language field; v5 makes `definition` a direct
-// translation rather than a dictionary-style description, so everything
-// cached under v4 can still hold the old long form.
-const CACHE_VERSION = "v5";
+// translation rather than a dictionary-style description; v6 keys the cache
+// on canonical language codes instead of raw free text.
+const CACHE_VERSION = "v6";
 
-/** Deterministic cache key for one (topic, count, term/definition language[s]) request. */
+/**
+ * Deterministic cache key for one (topic, count, term/definition language[s])
+ * request, keyed on canonical codes so the same request spelled differently
+ * ("German" / "Deutsch" / "de") hits one entry instead of three.
+ *
+ * Free text is still what gets keyed for a language with no code — an
+ * unrecognized language keeps its own bucket rather than colliding with
+ * every other unrecognized one.
+ */
 async function cacheKeyFor(data: z.infer<typeof inputSchema>): Promise<string> {
   const { createHash } = await import("node:crypto");
+  const languageKey = (value: string | undefined) => {
+    const text = value?.trim() ?? "";
+    if (!text) return "";
+    return normalizeLanguage(text) ?? text.toLowerCase();
+  };
   const normalized = [
     CACHE_VERSION,
     data.topic.trim().toLowerCase(),
     data.count,
-    data.termLanguage.trim().toLowerCase(),
-    data.definitionLanguage.trim().toLowerCase(),
-    data.definitionLanguage2?.trim().toLowerCase() ?? "",
+    languageKey(data.termLanguage),
+    languageKey(data.definitionLanguage),
+    languageKey(data.definitionLanguage2),
   ].join("|");
   return createHash("sha256").update(normalized).digest("hex");
 }
