@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Check, Target, Zap } from "lucide-react";
+import { AlertTriangle, Check, Target, Zap } from "lucide-react";
 import { levelFromXp, XP_PER_LEVEL } from "@/lib/gamification";
 import { useStudyStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
@@ -50,6 +50,38 @@ export function DailyGoalCard({ className }: { className?: string }) {
         </p>
       </div>
     </div>
+  );
+}
+
+/**
+ * Cards that keep going wrong, as a way into a weak-words round.
+ *
+ * The count is handed in rather than derived here: the home page already holds
+ * the progress this is computed from, and a second read of it would be a
+ * second chance to disagree with what the session serves.
+ */
+export function WeakWordsCard({ count, className }: { count: number; className?: string }) {
+  // Nothing weak is not a state worth a card. It is the normal one.
+  if (count <= 0) return null;
+
+  return (
+    <Link
+      to="/review"
+      search={{ filter: "weak" as const }}
+      className={cn(
+        "block rounded-2xl bg-surface p-5 shadow-[var(--shadow-border)] transition-shadow hover:shadow-[var(--shadow-border-hover)]",
+        className,
+      )}
+    >
+      <p className="flex items-center gap-1.5 text-xs font-medium tracking-wide text-muted uppercase">
+        <AlertTriangle className="size-3.5" />
+        Weak words
+      </p>
+      <p className="mt-1 font-display text-xl font-medium tracking-tight tabular-nums">
+        {count} word{count === 1 ? "" : "s"} giving you trouble
+      </p>
+      <p className="mt-2 text-sm text-muted">Cards you keep missing, hardest first.</p>
+    </Link>
   );
 }
 

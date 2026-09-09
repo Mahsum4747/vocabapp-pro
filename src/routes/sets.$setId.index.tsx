@@ -278,6 +278,7 @@ function SetPage() {
             <LeitnerBoxes
               cards={studySet.cards}
               progress={progress}
+              setId={studySet.id}
               selectedBox={selectedBox}
               onSelectBox={setSelectedBox}
             />

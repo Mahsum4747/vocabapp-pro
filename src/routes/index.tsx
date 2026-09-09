@@ -12,9 +12,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SUBJECTS } from "@/lib/types";
 import { masteryStats } from "@/lib/quiz";
-import { summarizeLibrary } from "@/lib/srs";
+import { isStudiableSet, summarizeLibrary, weakCards } from "@/lib/srs";
 import { ReviewCallout, ReviewCounts } from "@/components/review-status";
-import { DailyGoalCard, XpCard } from "@/components/goal-and-xp";
+import { DailyGoalCard, WeakWordsCard, XpCard } from "@/components/goal-and-xp";
 import { useProgress, useStudyStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
@@ -90,6 +90,21 @@ function Home() {
       .filter((s) => s.lastStudiedAt)
       .sort((a, b) => (b.lastStudiedAt ?? 0) - (a.lastStudiedAt ?? 0))[0];
   }, [sets]);
+
+  /**
+   * How many cards are giving this learner trouble.
+   *
+   * Derived from the progress map this page already loads for the mastery
+   * bars — no extra query — and from the same `isWeakWord` the weak-words
+   * session filters on, so the number on the card is the number of cards the
+   * round will serve.
+   */
+  const weakCount = useMemo(() => {
+    const now = Date.now();
+    return sets
+      .filter(isStudiableSet)
+      .reduce((total, set) => total + weakCards(set.cards, progress, { now }).length, 0);
+  }, [sets, progress]);
 
   const continueMastery = useMemo(
     () => masteryStats(continueSet?.cards ?? [], progress),
@@ -220,6 +235,7 @@ function Home() {
       <div className="mt-6 grid gap-4 md:grid-cols-2">
         <DailyGoalCard />
         <XpCard />
+        <WeakWordsCard count={weakCount} />
       </div>
 
       {continueSet ? (

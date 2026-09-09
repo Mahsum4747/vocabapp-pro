@@ -185,3 +185,98 @@ describe("the caught-up state", () => {
     assert.equal(session.nextDueAt, null);
   });
 });
+
+describe("a weak-words round across the library", () => {
+  const weakRow = (id: string) =>
+    progress(id, { dueAt: NOW - 2 * DAY_MS, consecutiveCorrect: 0, masteryScore: 20 });
+
+  it("draws weak cards from every set, worst first", () => {
+    const sets = [set("a", [card("a1"), card("a2")]), set("b", [card("b1"), card("b2")])];
+    const map = {
+      a1: progress("a1", { dueAt: NOW - DAY_MS * 2, consecutiveCorrect: 0, masteryScore: 45 }),
+      b1: progress("b1", { dueAt: NOW - DAY_MS * 2, consecutiveCorrect: 0, masteryScore: 10 }),
+    };
+
+    const { cards } = buildLibrarySession(sets, map, { now: NOW, filter: "weak" });
+    assert.deepEqual(
+      cards.map((c) => c.card.id),
+      ["b1", "a1"],
+      "the weakest card leads, whichever set it is in",
+    );
+    assert.equal(cards[0].setId, "b", "and still carries its own set");
+  });
+
+  it("labels every card in the round as weak", () => {
+    const sets = [set("a", [card("a1"), card("a2")])];
+    const { cards } = buildLibrarySession(
+      sets,
+      { a1: weakRow("a1") },
+      { now: NOW, filter: "weak" },
+    );
+
+    assert.deepEqual(
+      cards.map((c) => c.band),
+      ["weak"],
+    );
+  });
+
+  it("serves nothing when nothing is weak, and offers no substitute", () => {
+    const sets = [set("a", [card("a1"), card("a2")])];
+    // Both cards are due and well known: an ordinary round has work to do, a
+    // weak round correctly has none. (A due card with middling mastery does
+    // count as weak — being due is one of `isWeakWord`'s four signals — so
+    // these have to be cards the scheduler is confident about.)
+    const known = { masteryScore: 92, consecutiveCorrect: 4, lapses: 0 };
+    const map = {
+      a1: progress("a1", { dueAt: NOW - 1000, ...known }),
+      a2: progress("a2", { dueAt: NOW - 1000, ...known }),
+    };
+
+    assert.equal(buildLibrarySession(sets, map, { now: NOW }).cards.length, 2);
+    assert.equal(buildLibrarySession(sets, map, { now: NOW, filter: "weak" }).cards.length, 0);
+  });
+
+  it("never introduces a new card, whatever the new-card limit says", () => {
+    const sets = [set("a", [card("seen"), card("fresh1"), card("fresh2")])];
+    const map = { seen: weakRow("seen") };
+
+    const { cards } = buildLibrarySession(sets, map, {
+      now: NOW,
+      newCardLimit: 20,
+      filter: "weak",
+    });
+    assert.deepEqual(
+      cards.map((c) => c.card.id),
+      ["seen"],
+      "a card you have never seen cannot be one you keep getting wrong",
+    );
+  });
+
+  it("leaves the ordinary round exactly as it was", () => {
+    const sets = [set("a", [card("over"), card("due"), card("new")])];
+    const map = { over: overdueRow("over"), due: dueRow("due") };
+
+    const ordinary = buildLibrarySession(sets, map, { now: NOW });
+    assert.deepEqual(
+      ordinary.cards.map((c) => c.card.id),
+      ["over", "due", "new"],
+    );
+    assert.deepEqual(
+      ordinary.cards.map((c) => c.band),
+      ["overdue", "due", "fresh"],
+    );
+  });
+
+  it("reports the next due date the same way in either round", () => {
+    const sets = [set("a", [card("a1"), card("a2")])];
+    const map = {
+      a1: weakRow("a1"),
+      a2: progress("a2", { dueAt: NOW + 3 * DAY_MS }),
+    };
+
+    assert.equal(
+      buildLibrarySession(sets, map, { now: NOW, filter: "weak" }).nextDueAt,
+      NOW + 3 * DAY_MS,
+    );
+  });
+});

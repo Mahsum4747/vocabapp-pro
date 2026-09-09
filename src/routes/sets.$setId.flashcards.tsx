@@ -8,21 +8,22 @@ import { Button } from "@/components/ui/button";
 import { useSet, useSetProgress, useStudyStore } from "@/lib/store";
 import { isCardActive } from "@/lib/types";
 import { leitnerBoxOf } from "@/lib/quiz";
-import { queuedCards } from "@/lib/srs";
+import { queuedCards, weakCards } from "@/lib/srs";
 import { parseIntSearchParam } from "@/lib/utils";
 
-type Search = { box?: number };
+type Search = { box?: number; filter?: "weak" };
 
 export const Route = createFileRoute("/sets/$setId/flashcards")({
   validateSearch: (search: Record<string, unknown>): Search => ({
     box: parseIntSearchParam(search.box),
+    filter: search.filter === "weak" ? "weak" : undefined,
   }),
   component: FlashcardsPage,
 });
 
 function FlashcardsPage() {
   const { setId } = Route.useParams();
-  const { box } = Route.useSearch();
+  const { box, filter } = Route.useSearch();
   const studySet = useSet(setId);
   const progress = useSetProgress(setId);
   const toggleStar = useStudyStore((s) => s.toggleStar);
@@ -33,16 +34,22 @@ function FlashcardsPage() {
   const boxCards = useMemo(() => {
     if (!studySet) return [];
     const active = studySet.cards.filter(isCardActive);
+    // The weak filter is the same `isWeakWord` the library-wide round uses,
+    // scoped to this set. It replaces the box filter rather than stacking with
+    // it: "box 2 and also weak" is not a question anyone asks.
+    if (filter === "weak") return weakCards(active, progress, { now: Date.now() });
     return box !== undefined ? active.filter((c) => leitnerBoxOf(c, progress) === box) : active;
-  }, [studySet, box, progress]);
+  }, [studySet, box, filter, progress]);
 
   const deck = useMemo<DeckEntry[]>(() => {
     if (!studySet) return [];
     const pool = starredOnly ? boxCards.filter((c) => c.starred) : boxCards;
     const cards = pool.length > 0 ? pool : boxCards;
     // Overdue first, then due, then weak, then new — the queue orders, the
-    // scheduler decided the due dates it reads.
-    return queuedCards(cards, progress, { now: Date.now() }).map((card) => ({
+    // scheduler decided the due dates it reads. A weak-words round keeps the
+    // order it arrived in: worst first, which is the point of asking for it.
+    const ordered = filter === "weak" ? cards : queuedCards(cards, progress, { now: Date.now() });
+    return ordered.map((card) => ({
       card,
       setId: studySet.id,
       termLanguage: studySet.termLanguage,
@@ -52,12 +59,15 @@ function FlashcardsPage() {
     // not rebuild the deck and snap back to card 0. The deck is a snapshot
     // taken when the round starts.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [studySet?.id, box, starredOnly]);
+  }, [studySet?.id, box, filter, starredOnly]);
 
+  const cardCount = `${boxCards.length} card${boxCards.length === 1 ? "" : "s"}`;
   const filterLabel =
-    box !== undefined
-      ? `Box ${box} · ${boxCards.length} card${boxCards.length === 1 ? "" : "s"}`
-      : undefined;
+    filter === "weak"
+      ? `Weak words · ${cardCount}`
+      : box !== undefined
+        ? `Box ${box} · ${cardCount}`
+        : undefined;
 
   useEffect(() => {
     markStudied(setId);
@@ -104,7 +114,14 @@ function FlashcardsPage() {
         </Button>
       }
       emptyState={
-        <EmptyState title="No cards" description="There are no cards to study in this set." />
+        filter === "weak" ? (
+          <EmptyState
+            title="Nothing is giving you trouble"
+            description="No words in this set are weak right now."
+          />
+        ) : (
+          <EmptyState title="No cards" description="There are no cards to study in this set." />
+        )
       }
       doneAction={
         <Button asChild variant="outline">

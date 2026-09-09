@@ -1,4 +1,6 @@
+import { Link } from "@tanstack/react-router";
 import { leitnerBoxCounts, type ProgressMap } from "@/lib/quiz";
+import { weakCards } from "@/lib/srs";
 import type { Card } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -12,15 +14,21 @@ import { cn } from "@/lib/utils";
 export function LeitnerBoxes({
   cards,
   progress,
+  setId,
   selectedBox,
   onSelectBox,
 }: {
   cards: Card[];
   progress: ProgressMap;
+  /** The set these boxes belong to, for the weak-words link. */
+  setId: string;
   selectedBox: number | null;
   onSelectBox: (box: number | null) => void;
 }) {
   const { boxes, notStarted } = leitnerBoxCounts(cards, progress);
+  // The same `isWeakWord` the weak-words rounds filter on — read from the
+  // progress this page already holds, so the chip and the round agree.
+  const weak = weakCards(cards, progress, { now: Date.now() }).length;
 
   return (
     <div className="flex gap-1.5">
@@ -54,6 +62,20 @@ export function LeitnerBoxes({
           </button>
         );
       })}
+      {/* Weak is a different question from a box — it cuts across them — so it
+          opens a round rather than filtering this row. */}
+      {weak > 0 ? (
+        <Link
+          to="/sets/$setId/flashcards"
+          params={{ setId }}
+          search={{ filter: "weak" as const }}
+          aria-label={`Study ${weak} weak word${weak === 1 ? "" : "s"}`}
+          className="flex min-w-10 flex-col items-center gap-0.5 rounded-lg bg-danger-soft px-2 py-1.5 transition-opacity hover:opacity-80"
+        >
+          <p className="text-[9px] font-medium tracking-wide text-danger uppercase">Weak</p>
+          <p className="text-xs font-medium text-danger tabular-nums">{weak}</p>
+        </Link>
+      ) : null}
       {notStarted > 0 ? (
         <span
           className="flex min-w-10 flex-col items-center gap-0.5 rounded-lg bg-surface-2 px-2 py-1.5"

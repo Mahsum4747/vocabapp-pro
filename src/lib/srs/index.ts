@@ -19,6 +19,7 @@ export {
   isStudiableSet,
   isWeakWord,
   summarizeLibrary,
+  weakCards,
   DEFAULT_QUEUE_WEIGHTS,
 } from "./queue.ts";
 export type {

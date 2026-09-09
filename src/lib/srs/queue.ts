@@ -110,6 +110,52 @@ export function isWeakWord(
   return signals.filter(Boolean).length >= WEAK_SIGNALS_REQUIRED;
 }
 
+/**
+ * The weak cards among these, worst first.
+ *
+ * Membership is `isWeakWord` and nothing else — this only orders what that
+ * already decided, so there is one definition of "weak" in the app. Lowest
+ * mastery leads, because that is the card the scheduler trusts least; ties go
+ * to the higher failure rate, which separates a card that has never taken
+ * from one that is merely early in its life.
+ *
+ * Ordering only, no selection policy and no due dates: a weak-words session is
+ * a filter over the same progress rows the queue reads, not a second scheduler.
+ */
+export function weakCards(
+  cards: Card[],
+  progressByCardId: Map<string, CardProgress> | Record<string, CardProgress>,
+  options: Pick<QueueOptions, "now">,
+): Card[] {
+  const lookup =
+    progressByCardId instanceof Map
+      ? (id: string) => progressByCardId.get(id)
+      : (id: string) => progressByCardId[id];
+
+  const score = (progress: CardProgress | undefined) => {
+    const mastery = Number.isFinite(progress?.masteryScore) ? progress!.masteryScore : 0;
+    const reviews = Number.isFinite(progress?.totalReviews) ? progress!.totalReviews : 0;
+    const lapses = Number.isFinite(progress?.lapses) ? progress!.lapses : 0;
+    return { mastery, failureRate: reviews > 0 ? lapses / reviews : 0 };
+  };
+
+  const order = new Map(cards.map((card, index) => [card.id, index]));
+
+  return cards
+    .filter(isCardActive)
+    .filter((card) => isWeakWord(lookup(card.id), options))
+    .sort((a, b) => {
+      const left = score(lookup(a.id));
+      const right = score(lookup(b.id));
+      return (
+        left.mastery - right.mastery ||
+        right.failureRate - left.failureRate ||
+        // Stable for cards the two measures cannot separate.
+        (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0)
+      );
+    });
+}
+
 /** Below this mastery score, the scheduler considers the memory shaky. */
 const WEAK_MASTERY_MAX = 60;
 /** Above this share of reviews ending in a lapse, the card is being forgotten. */

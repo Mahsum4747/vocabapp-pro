@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { buildReviewQueue, isWeakWord, queuedCards } from "./queue.ts";
+import { buildReviewQueue, isWeakWord, queuedCards, weakCards } from "./queue.ts";
 import type { Card, CardProgress } from "../types.ts";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -223,5 +223,102 @@ describe("weak words", () => {
     const overdue = { ...healthy(), dueAt: NOW - DAY_MS };
     assert.equal(isWeakWord({ ...overdue, lapses: 4, totalReviews: 10 }, { now: NOW }), true);
     assert.equal(isWeakWord({ ...overdue, lapses: 3, totalReviews: 10 }, { now: NOW }), false);
+  });
+});
+
+describe("a weak-words round", () => {
+  // Two signals each, so all of these qualify; what differs is how badly.
+  const overdue = (extra: Partial<CardProgress> = {}) => ({
+    dueAt: NOW - 2 * DAY_MS,
+    consecutiveCorrect: 0,
+    ...extra,
+  });
+
+  it("contains exactly what isWeakWord says it does", () => {
+    const cards = [card("weak"), card("fine"), card("unseen")];
+    const map = {
+      weak: progress("weak", overdue({ masteryScore: 20 })),
+      fine: progress("fine", {
+        masteryScore: 95,
+        consecutiveCorrect: 5,
+        dueAt: NOW + 5 * DAY_MS,
+        lapses: 0,
+      }),
+    };
+
+    const picked = weakCards(cards, map, { now: NOW });
+    assert.deepEqual(
+      picked.map((c) => c.id),
+      ["weak"],
+    );
+    for (const c of cards) {
+      assert.equal(
+        picked.includes(c),
+        isWeakWord(map[c.id as keyof typeof map], { now: NOW }),
+        `${c.id} must match isWeakWord`,
+      );
+    }
+  });
+
+  it("puts the lowest mastery first", () => {
+    const cards = [card("mid"), card("worst"), card("nearly")];
+    const map = {
+      mid: progress("mid", overdue({ masteryScore: 40 })),
+      worst: progress("worst", overdue({ masteryScore: 5 })),
+      nearly: progress("nearly", overdue({ masteryScore: 55 })),
+    };
+
+    assert.deepEqual(
+      weakCards(cards, map, { now: NOW }).map((c) => c.id),
+      ["worst", "mid", "nearly"],
+    );
+  });
+
+  it("breaks a tie on mastery with the higher failure rate", () => {
+    const cards = [card("rarely"), card("often")];
+    const map = {
+      rarely: progress("rarely", overdue({ masteryScore: 30, lapses: 1, totalReviews: 10 })),
+      often: progress("often", overdue({ masteryScore: 30, lapses: 6, totalReviews: 10 })),
+    };
+
+    assert.deepEqual(
+      weakCards(cards, map, { now: NOW }).map((c) => c.id),
+      ["often", "rarely"],
+    );
+  });
+
+  it("leaves out excluded and archived cards", () => {
+    const cards = [
+      card("keep"),
+      card("skip", { status: "excluded" }),
+      card("gone", { status: "archived" }),
+    ];
+    const map = {
+      keep: progress("keep", overdue({ masteryScore: 10 })),
+      skip: progress("skip", overdue({ masteryScore: 10 })),
+      gone: progress("gone", overdue({ masteryScore: 10 })),
+    };
+
+    assert.deepEqual(
+      weakCards(cards, map, { now: NOW }).map((c) => c.id),
+      ["keep"],
+    );
+  });
+
+  it("is empty when nothing is weak, rather than falling back to everything", () => {
+    // The opposite of `queuedCards`, which serves the whole set when nothing
+    // is due: an empty weak round is the correct, and good, answer.
+    const cards = [card("a"), card("b")];
+    const map = {
+      a: progress("a", { masteryScore: 90, consecutiveCorrect: 4, dueAt: NOW + 9 * DAY_MS }),
+      b: progress("b", { masteryScore: 88, consecutiveCorrect: 3, dueAt: NOW + 4 * DAY_MS }),
+    };
+
+    assert.deepEqual(weakCards(cards, map, { now: NOW }), []);
+    assert.deepEqual(weakCards([], {}, { now: NOW }), []);
+  });
+
+  it("never includes a card that has never been reviewed", () => {
+    assert.deepEqual(weakCards([card("new")], {}, { now: NOW }), []);
   });
 });

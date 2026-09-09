@@ -1,4 +1,4 @@
-import { buildReviewQueue, isStudiableSet, type QueueEntry } from "./srs/index.ts";
+import { buildReviewQueue, isStudiableSet, weakCards, type QueueEntry } from "./srs/index.ts";
 import { isCardActive, type Card, type CardProgress, type StudySet } from "./types.ts";
 
 /** One card in a library-wide review round, with the set it came from. */
@@ -34,7 +34,7 @@ export type ReviewSession = {
 export function buildLibrarySession(
   sets: StudySet[],
   progress: Record<string, CardProgress>,
-  options: { now: number; newCardLimit?: number },
+  options: { now: number; newCardLimit?: number; filter?: "weak" },
 ): ReviewSession {
   const studiable = sets.filter(isStudiableSet);
 
@@ -49,10 +49,27 @@ export function buildLibrarySession(
     }
   }
 
-  const queue = buildReviewQueue(cards, progress, {
-    now: options.now,
-    ...(options.newCardLimit !== undefined ? { newCardLimit: options.newCardLimit } : {}),
-  });
+  /**
+   * Two ways to fill a round, one set of progress rows.
+   *
+   * The weak filter replaces the queue's selection — it is a different
+   * question ("what keeps going wrong") than the queue's ("what is owed
+   * today") — but it reads exactly the same stored state, computes no due
+   * dates, and grades through the same path. Without the filter, nothing
+   * about the round changes.
+   */
+  const queue: QueueEntry[] =
+    options.filter === "weak"
+      ? weakCards(cards, progress, { now: options.now }).map((card) => ({
+          card,
+          progress: progress[card.id],
+          priority: 0,
+          band: "weak" as const,
+        }))
+      : buildReviewQueue(cards, progress, {
+          now: options.now,
+          ...(options.newCardLimit !== undefined ? { newCardLimit: options.newCardLimit } : {}),
+        });
 
   const sessionCards: SessionCard[] = [];
   for (const entry of queue) {

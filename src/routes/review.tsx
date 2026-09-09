@@ -8,7 +8,14 @@ import { useStudyStore } from "@/lib/store";
 import { buildLibrarySession, type ReviewSession } from "@/lib/review-session";
 import type { QueueEntry } from "@/lib/srs";
 
-export const Route = createFileRoute("/review")({ component: ReviewRoute });
+type Search = { filter?: "weak" };
+
+export const Route = createFileRoute("/review")({
+  validateSearch: (search: Record<string, unknown>): Search => ({
+    filter: search.filter === "weak" ? "weak" : undefined,
+  }),
+  component: ReviewRoute,
+});
 
 /** Cross-set review is personal data end to end, so it is signed-in only. */
 function ReviewRoute() {
@@ -38,6 +45,7 @@ const BANDS: Record<QueueEntry["band"], { label: string; tone: DeckEntry["bandTo
 };
 
 function ReviewPage() {
+  const { filter } = Route.useSearch();
   const sets = useStudyStore((s) => s.sets);
   const fetchSets = useStudyStore((s) => s.fetchSets);
   const fetchAllProgress = useStudyStore((s) => s.fetchAllProgress);
@@ -70,9 +78,10 @@ function ReviewPage() {
       buildLibrarySession(sets, useStudyStore.getState().progress, {
         now: Date.now(),
         newCardLimit: NEW_CARDS_PER_SESSION,
+        ...(filter === "weak" ? { filter } : {}),
       }),
     );
-  }, [ready, session, sets]);
+  }, [ready, session, sets, filter]);
 
   /**
    * Memoised: StudyDeck treats a new deck identity as a new round, so building
@@ -85,10 +94,12 @@ function ReviewPage() {
         setId: entry.setId,
         setTitle: entry.setTitle,
         termLanguage: entry.termLanguage,
-        bandLabel: BANDS[entry.band].label,
-        bandTone: BANDS[entry.band].tone,
+        // In a weak-words round every card is here for the same reason, so the
+        // chip names the round rather than repeating the band on each card.
+        bandLabel: filter === "weak" ? "Weak words" : BANDS[entry.band].label,
+        bandTone: filter === "weak" ? "danger" : BANDS[entry.band].tone,
       })),
-    [session],
+    [session, filter],
   );
 
   const onToggleStar = useCallback(
@@ -100,6 +111,19 @@ function ReviewPage() {
     return (
       <AppShell>
         <p className="text-sm text-muted">Loading your review queue…</p>
+      </AppShell>
+    );
+  }
+
+  if (session.cards.length === 0 && filter === "weak") {
+    return (
+      <AppShell>
+        <section className="mx-auto max-w-lg py-16 text-center">
+          <h1 className="font-display text-3xl font-medium tracking-tight">
+            Nothing is giving you trouble
+          </h1>
+          <p className="mt-3 text-muted">No words are weak right now.</p>
+        </section>
       </AppShell>
     );
   }
@@ -128,5 +152,12 @@ function ReviewPage() {
     );
   }
 
-  return <StudyDeck deck={deck} title="Review" mode="All sets" onToggleStar={onToggleStar} />;
+  return (
+    <StudyDeck
+      deck={deck}
+      title={filter === "weak" ? "Weak words" : "Review"}
+      mode="All sets"
+      onToggleStar={onToggleStar}
+    />
+  );
 }
