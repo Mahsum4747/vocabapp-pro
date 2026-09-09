@@ -305,6 +305,15 @@ function Home() {
               ))}
             </div>
 
+            {/* Folders exist but go unnoticed since nothing ever points at them —
+                show this once, and only while every set is still ungrouped. */}
+            {sets.length > 0 && !sets.some((s) => s.folder?.trim()) ? (
+              <p className="mt-3 text-xs text-muted">
+                Tip: give a set a folder (e.g. "German A2") to group related sets
+                together — edit a set to add one.
+              </p>
+            ) : null}
+
             {filtered.length === 0 ? (
               <div className="mt-8">
                 <EmptyState

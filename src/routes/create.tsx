@@ -139,12 +139,17 @@ function CreatePage() {
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="folder">Folder</Label>
+              {/* A placeholder alone disappears the moment someone starts typing —
+                  this stays visible so the grouping feature is actually noticed. */}
+              <p className="text-xs text-muted">
+                Group related sets together, e.g. "German A2" — optional.
+              </p>
               <Input
                 id="folder"
                 list="folder-options"
                 value={folder}
                 onChange={(e) => setFolder(e.target.value)}
-                placeholder="e.g. A1, İş Almancası (optional)"
+                placeholder="e.g. German A2"
               />
               <datalist id="folder-options">
                 {folderOptions.map((name) => (
