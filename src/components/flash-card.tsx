@@ -1,5 +1,8 @@
 import { SpeakButton } from "./speak-button";
 import { cn } from "@/lib/utils";
+import { articleizedTerm, profileFor } from "@/lib/lang/profiles";
+import type { LanguageCode } from "@/lib/lang/languages";
+import type { CardEnrichment } from "@/lib/types";
 
 export function FlashCard({
   term,
@@ -9,6 +12,8 @@ export function FlashCard({
   definitionLanguage2,
   imageUrl,
   termLanguage,
+  enrichment,
+  termLangCode,
   flipped,
   onFlip,
 }: {
@@ -20,9 +25,17 @@ export function FlashCard({
   definitionLanguage2?: string;
   imageUrl?: string | null;
   termLanguage?: string;
+  /** This card's gender/plural, if any — shown as an article on the term
+   *  ("der Tisch") only, never affecting `term` itself or what's spoken. */
+  enrichment?: CardEnrichment | null;
+  /** The set's resolved term-language code, gating whether `enrichment`
+   *  renders as an article at all (German today; see profileFor). */
+  termLangCode?: LanguageCode;
   flipped: boolean;
   onFlip: () => void;
 }) {
+  const profile = profileFor(termLangCode);
+  const displayTerm = articleizedTerm(term, enrichment, profile);
   return (
     <button
       type="button"
@@ -66,7 +79,7 @@ export function FlashCard({
               : "font-display text-3xl font-semibold tracking-tight md:text-4xl",
           )}
         >
-          {flipped ? definition : term}
+          {flipped ? definition : displayTerm}
         </span>
         {/* Second definition sits right under the primary one — same side,
             same question, just a different language. Never leaks the term. */}

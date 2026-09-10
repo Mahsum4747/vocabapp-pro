@@ -54,6 +54,7 @@ function FlashcardsPage() {
       card,
       setId: studySet.id,
       termLanguage: setLanguages.term ?? studySet.termLanguage,
+      termLangCode: setLanguages.term ?? undefined,
       definitionLanguage2: setLanguages.definition2 ?? studySet.definitionLanguage2,
     }));
     // Keyed on the set id (not the studySet object, and not `progress`) so a

@@ -50,6 +50,7 @@ import { reviewSummary } from "@/lib/srs";
 import { serializeSetExport } from "@/lib/parse-cards";
 import { useSet, useSetProgress, useStudyStore } from "@/lib/store";
 import { resolveSetLanguages } from "@/lib/types";
+import { articleizedTerm, profileFor } from "@/lib/lang/profiles";
 import type { Card, CardStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -80,6 +81,7 @@ function SetPage() {
   const { setId } = Route.useParams();
   const studySet = useSet(setId);
   const setLanguages = resolveSetLanguages(studySet ?? {});
+  const termProfile = profileFor(setLanguages.term);
   const progress = useSetProgress(setId);
   const navigate = useNavigate();
   const deleteSet = useStudyStore((s) => s.deleteSet);
@@ -456,7 +458,7 @@ function SetPage() {
                               studySet.isReference && "text-base md:text-lg",
                             )}
                           >
-                            {card.term}
+                            {articleizedTerm(card.term, card.enrichment, termProfile)}
                           </p>
                           <SpeakButton text={card.term} language={setLanguages.term ?? studySet.termLanguage} />
                           {isExcluded ? (

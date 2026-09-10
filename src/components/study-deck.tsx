@@ -9,6 +9,7 @@ import { Button } from "./ui/button";
 import { useReviewLogger } from "@/lib/review-log";
 import { playSound } from "@/lib/sound";
 import type { Card, ReviewRating } from "@/lib/types";
+import type { LanguageCode } from "@/lib/lang/languages";
 import { cn, shuffle } from "@/lib/utils";
 
 /**
@@ -25,6 +26,10 @@ export type DeckEntry = {
   /** Set name, shown under the card when a round spans more than one set. */
   setTitle?: string;
   termLanguage?: string;
+  /** The set's resolved term-language code, if known — drives whether the
+   *  flashcard front shows a gender article ("der Tisch"). Flashcards is
+   *  currently the only mode that passes this; see Phase 3B-UI's Q3. */
+  termLangCode?: LanguageCode;
   /** The set's second definition language, if it has one. */
   definitionLanguage2?: string;
   /** Why the queue picked this card now — "Overdue", "Due today", "New". */
@@ -272,6 +277,8 @@ export function StudyDeck({
         definitionLanguage2={entry.definitionLanguage2}
         imageUrl={card.imageUrl}
         termLanguage={entry.termLanguage}
+        enrichment={card.enrichment}
+        termLangCode={entry.termLangCode}
         flipped={flipped}
         onFlip={flip}
       />
