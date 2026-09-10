@@ -19,6 +19,7 @@ import { isCardActive, resolveSetLanguages } from "@/lib/types";
 import { answersMatch, parseIntSearchParam, cn } from "@/lib/utils";
 import { queuedCards } from "@/lib/srs";
 import { ratingForOutcome, useReviewLogger } from "@/lib/review-log";
+import { articleizedTerm, profileFor } from "@/lib/lang/profiles";
 
 type Search = { box?: number };
 
@@ -36,6 +37,7 @@ function LearnPage() {
   const { box } = Route.useSearch();
   const studySet = useSet(setId);
   const setLanguages = resolveSetLanguages(studySet ?? {});
+  const termProfile = profileFor(setLanguages.term);
   const progress = useSetProgress(setId);
   const markStudied = useStudyStore((s) => s.markStudied);
   const logReview = useReviewLogger();
@@ -185,7 +187,15 @@ function LearnPage() {
   if (!item) return null;
 
   const isMc = item.type === "mc";
-  const isCorrect = isMc ? selected === item.answer : answersMatch(written, item.answer);
+  // "written" always asks for the term (both callers of writtenQuestion() use
+  // its default ask: "definition"), so item.answer here is always the term —
+  // the only side an article could ever apply to. Gated on THIS card's own
+  // known gender, not just the set's language: a card with no enrichment
+  // takes the same `[]` path it always did, so its grading is untouched.
+  const answerCard = !isMc ? studySet.cards.find((c) => c.id === item.cardId) : undefined;
+  const answerArticleWords = answerCard?.enrichment?.gender ? termProfile.articleWords : [];
+  const matchOptions = { ignorableLeadingWords: answerArticleWords };
+  const isCorrect = isMc ? selected === item.answer : answersMatch(written, item.answer, matchOptions);
 
   return (
     <StudyChrome
@@ -246,7 +256,7 @@ function LearnPage() {
           className="mt-8 space-y-3"
           onSubmit={(e) => {
             e.preventDefault();
-            if (!revealed) grade(answersMatch(written, item.answer));
+            if (!revealed) grade(answersMatch(written, item.answer, matchOptions));
             else next();
           }}
         >
@@ -259,7 +269,9 @@ function LearnPage() {
           />
           {revealed ? (
             <p className={cn("text-sm", isCorrect ? "text-success" : "text-danger")}>
-              {isCorrect ? "Correct" : `Correct answer: ${item.answer}`}
+              {isCorrect
+                ? "Correct"
+                : `Correct answer: ${articleizedTerm(item.answer, answerCard?.enrichment, termProfile)}`}
             </p>
           ) : null}
           <Button type="submit" className="w-full">

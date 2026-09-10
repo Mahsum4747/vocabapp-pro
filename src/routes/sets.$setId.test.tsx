@@ -13,6 +13,7 @@ import { useSet, useSetProgress, useStudyStore } from "@/lib/store";
 import { isCardActive, resolveSetLanguages } from "@/lib/types";
 import { answersMatch, parseIntSearchParam, cn } from "@/lib/utils";
 import { ratingForOutcome, useReviewLogger } from "@/lib/review-log";
+import { articleizedTerm, profileFor } from "@/lib/lang/profiles";
 
 type Search = { box?: number };
 
@@ -28,6 +29,7 @@ function TestPage() {
   const { box } = Route.useSearch();
   const studySet = useSet(setId);
   const setLanguages = resolveSetLanguages(studySet ?? {});
+  const termProfile = profileFor(setLanguages.term);
   const progress = useSetProgress(setId);
   const markStudied = useStudyStore((s) => s.markStudied);
   const logReview = useReviewLogger();
@@ -188,6 +190,19 @@ function TestPage() {
 
   if (!q) return null;
 
+  // "written" always asks for the term (buildTest's slot-1 writtenQuestion()
+  // call uses its default ask: "definition"), so q.answer here is always the
+  // term — the only side an article could ever apply to. Gated on THIS
+  // card's own known gender, not just the set's language: a card with no
+  // enrichment takes the same `[]` path it always did, so its grading is
+  // untouched.
+  const answerCard =
+    q.type === "written" ? studySet.cards.find((c) => c.id === q.cardId) : undefined;
+  const answerArticleWords = answerCard?.enrichment?.gender ? termProfile.articleWords : [];
+  const matchOptions = { ignorableLeadingWords: answerArticleWords };
+  const displayAnswer =
+    q.type === "written" ? articleizedTerm(q.answer, answerCard?.enrichment, termProfile) : "";
+
   return (
     <StudyChrome
       setId={setId}
@@ -250,7 +265,7 @@ function TestPage() {
           className="mt-8 space-y-3"
           onSubmit={(e) => {
             e.preventDefault();
-            if (!revealed) finish(answersMatch(written, q.answer));
+            if (!revealed) finish(answersMatch(written, q.answer, matchOptions));
             else next();
           }}
         >
@@ -265,10 +280,12 @@ function TestPage() {
             <p
               className={cn(
                 "text-sm",
-                answersMatch(written, q.answer) ? "text-success" : "text-danger",
+                answersMatch(written, q.answer, matchOptions) ? "text-success" : "text-danger",
               )}
             >
-              {answersMatch(written, q.answer) ? "Correct" : `Correct answer: ${q.answer}`}
+              {answersMatch(written, q.answer, matchOptions)
+                ? "Correct"
+                : `Correct answer: ${displayAnswer}`}
             </p>
           ) : null}
           <Button type="submit" className="w-full">
