@@ -26,6 +26,19 @@ export interface LanguageProfile {
    *  undefined if this language doesn't have one. Absent entirely when
    *  `hasNounEnrichment` is false. */
   articleFor?(gender: GrammaticalGender): string | undefined;
+  /**
+   * Every word this language's nouns can start with an article — the same
+   * three words `articleFor` can produce, just as a flat list rather than a
+   * per-gender lookup. `[]` for a language with none.
+   *
+   * This is what a grading call site hands to `answersMatch`'s
+   * `ignorableLeadingWords`, so a typed "der Tisch" is accepted for a card
+   * whose gender is known — see sets.$setId.learn.tsx / .test.tsx. It is
+   * NOT which article is correct for a given gender: judging that is a
+   * separate, harder question this list doesn't answer, deliberately (a
+   * future article-specific drill's job, not this one's).
+   */
+  articleWords: readonly string[];
 }
 
 const GERMAN_ARTICLES: Record<GrammaticalGender, string> = { m: "der", f: "die", n: "das" };
@@ -33,11 +46,12 @@ const GERMAN_ARTICLES: Record<GrammaticalGender, string> = { m: "der", f: "die",
 const GERMAN_PROFILE: LanguageProfile = {
   hasNounEnrichment: true,
   articleFor: (gender) => GERMAN_ARTICLES[gender],
+  articleWords: Object.values(GERMAN_ARTICLES),
 };
 
 /** Every language without a profile below: no enrichment, no per-language
  *  rendering. Every set made before this feature existed resolves here. */
-export const EMPTY_PROFILE: LanguageProfile = { hasNounEnrichment: false };
+export const EMPTY_PROFILE: LanguageProfile = { hasNounEnrichment: false, articleWords: [] };
 
 const PROFILES: Partial<Record<LanguageCode, LanguageProfile>> = {
   de: GERMAN_PROFILE,

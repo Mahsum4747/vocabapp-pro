@@ -23,6 +23,31 @@ describe("profileFor", () => {
   });
 });
 
+describe("articleWords", () => {
+  it("lists exactly German's three articles, once each", () => {
+    const words = profileFor("de").articleWords;
+    assert.deepEqual([...words].sort(), ["das", "der", "die"]);
+  });
+
+  it("agrees with articleFor — the same words, not a second hand-written list", () => {
+    const german = profileFor("de");
+    for (const gender of ["m", "f", "n"] as const) {
+      const article = german.articleFor?.(gender);
+      assert.ok(article && german.articleWords.includes(article), gender);
+    }
+  });
+
+  it("is empty for the empty profile", () => {
+    assert.deepEqual(EMPTY_PROFILE.articleWords, []);
+  });
+
+  it("is empty for every other language too", () => {
+    for (const code of ["en", "tr", "ku", "ckb", "fr", "ru"] as const) {
+      assert.deepEqual(profileFor(code).articleWords, [], code);
+    }
+  });
+});
+
 describe("articleizedTerm", () => {
   const german = profileFor("de");
 
