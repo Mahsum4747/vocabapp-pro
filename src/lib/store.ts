@@ -449,10 +449,20 @@ export const useStudyStore = create<StudyState>()((set, get) => ({
         title: incoming.title,
         description: incoming.description,
         subject: incoming.subject,
+        // Forward every field a card can carry, not just term/definition —
+        // an import that dropped definition2/imageUrl/enrichment silently
+        // would quietly lose content on a re-import of a set exported from
+        // this same app. createSet still recomputes `enrichment` fresh for
+        // a German set, but a `source: "user"` correction the export
+        // captured must survive the round trip, so it has to be forwarded
+        // to have anywhere to land.
         cards: incoming.cards.map((c) => ({
           term: c.term,
           definition: c.definition,
           example: c.example ?? null,
+          definition2: c.definition2 ?? null,
+          imageUrl: c.imageUrl ?? null,
+          enrichment: c.enrichment ?? null,
         })),
       },
     });

@@ -24,10 +24,17 @@ import {
   readUserSettings,
   type UserSettings,
 } from "./daily-goal";
-import { freshCardCopy, isCardActive, isCorrectRating, readDailyStats } from "./types";
+import {
+  freshCardCopy,
+  isCardActive,
+  isCorrectRating,
+  readDailyStats,
+  resolveSetLanguages,
+} from "./types";
 import { asLanguageCode, type LanguageCode } from "./lang/languages";
 import { readSoundSettings, type SoundSettings } from "./sound";
-import type { Card, CardProgress, DailyStats, StudySet } from "./types";
+import { resolveEnrichment, resolveEnrichmentOnOmit } from "./card-enrichment-policy";
+import type { Card, CardEnrichment, CardProgress, DailyStats, StudySet } from "./types";
 
 /** Firestore ids and the date key are path segments — keep them tight. */
 const idSchema = z.string().trim().min(1).max(200);
@@ -69,6 +76,16 @@ type DraftCard = {
   imageUrl?: string | null;
   example?: string | null;
   definition2?: string | null;
+  /**
+   * Only `source: "user"` is ever trusted verbatim; `null`, an absent
+   * field, and a `source: "dict"`/`"ai"` value are all treated the same —
+   * the server fills it fresh from the dictionary when the set's term
+   * language is German. On an edit-page save specifically, an absent field
+   * additionally falls back to whatever the card already had, rather than
+   * being recomputed as "no override sent" would otherwise mean — see
+   * `replaceCards` and card-enrichment-policy.ts.
+   */
+  enrichment?: CardEnrichment | null;
 };
 type DraftCardWithProgress = DraftCard & {
   starred?: boolean;
@@ -99,17 +116,42 @@ function shareIdServer(): string {
   return out;
 }
 
-function toCards(drafts: DraftCard[]): Card[] {
+/**
+ * The dictionary lookup to hand `card-enrichment-policy.ts`, for a set whose
+ * resolved term language is (or isn't) German.
+ *
+ * Dynamically imported, and only when the set actually is German: the
+ * German noun dictionary is a 2.9 MB module, and every other set — the vast
+ * majority of saves — must not pay to load it. Mirrors how this file
+ * already lazy-loads `firebase-admin.server` inside each handler rather
+ * than importing it at module scope.
+ */
+async function germanDictLookup(
+  isGermanTermLanguage: boolean,
+): Promise<(term: string) => CardEnrichment | null> {
+  if (!isGermanTermLanguage) return () => null;
+  const { enrichGermanTerm } = await import("./german/enrich.server");
+  return enrichGermanTerm;
+}
+
+function toCards(
+  drafts: DraftCard[],
+  context: { isGermanTermLanguage: boolean; dictLookup: (term: string) => CardEnrichment | null },
+): Card[] {
   return drafts
-    .map((d) => ({
-      id: uidServer(),
-      term: d.term.trim(),
-      definition: d.definition.trim(),
-      starred: false,
-      imageUrl: d.imageUrl || null,
-      example: d.example?.trim() || null,
-      definition2: d.definition2?.trim() || null,
-    }))
+    .map((d) => {
+      const term = d.term.trim();
+      return {
+        id: uidServer(),
+        term,
+        definition: d.definition.trim(),
+        starred: false,
+        imageUrl: d.imageUrl || null,
+        example: d.example?.trim() || null,
+        definition2: d.definition2?.trim() || null,
+        enrichment: resolveEnrichment(term, d.enrichment, context),
+      };
+    })
     .filter((c) => c.term || c.definition);
 }
 
@@ -187,6 +229,12 @@ export const createSet = createServerFn({ method: "POST" })
     const termLangCode = asLanguageCode(data.termLangCode);
     const defLangCode = asLanguageCode(data.defLangCode);
     const defLang2Code = asLanguageCode(data.defLang2Code);
+    // Resolved from this same request's own language fields — a set being
+    // created has no prior document to read them back from.
+    const isGermanTermLanguage =
+      resolveSetLanguages({ termLanguage: data.termLanguage, termLangCode: termLangCode ?? undefined })
+        .term === "de";
+    const dictLookup = await germanDictLookup(isGermanTermLanguage);
     const next: StudySet = {
       id,
       title: data.title.trim() || "Untitled set",
@@ -195,7 +243,7 @@ export const createSet = createServerFn({ method: "POST" })
       createdAt: now,
       updatedAt: now,
       lastStudiedAt: null,
-      cards: toCards(data.cards),
+      cards: toCards(data.cards, { isGermanTermLanguage, dictLookup }),
       ownerId: context.userId,
       isPublic: false,
       shareId: shareIdServer(),
@@ -285,6 +333,11 @@ export const replaceCards = createServerFn({ method: "POST" })
     }
     const existing = doc.data() as StudySet;
     const previous = new Map(existing.cards.map((c) => [c.term.trim().toLowerCase(), c]));
+    // Read from the existing document, not from `data` — replaceCards never
+    // touches a set's language fields, so its own language is the only
+    // thing that can decide whether enrichment applies here.
+    const isGermanTermLanguage = resolveSetLanguages(existing).term === "de";
+    const dictLookup = await germanDictLookup(isGermanTermLanguage);
     // Learning progress is keyed by card id, so a card that survives an edit
     // has to keep its id — minting a new one on every save would orphan the
     // user's whole review history for that card.
@@ -307,6 +360,11 @@ export const replaceCards = createServerFn({ method: "POST" })
           d.definition2 !== undefined
             ? d.definition2?.trim() || null
             : (prior?.definition2 ?? null);
+        const enrichmentContext = { isGermanTermLanguage, dictLookup };
+        const enrichment =
+          d.enrichment !== undefined
+            ? resolveEnrichment(term, d.enrichment, enrichmentContext)
+            : resolveEnrichmentOnOmit(term, prior?.enrichment, enrichmentContext);
         return {
           id: keptId,
           term,
@@ -315,6 +373,7 @@ export const replaceCards = createServerFn({ method: "POST" })
           imageUrl: d.imageUrl || null,
           example,
           definition2,
+          enrichment,
           ...(status ? { status } : {}),
         };
       })
