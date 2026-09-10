@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { EMPTY_PROFILE, articleizedTerm, profileFor } from "./profiles.ts";
+import { EMPTY_PROFILE, articleWordsForAnswer, articleizedTerm, profileFor } from "./profiles.ts";
 
 describe("profileFor", () => {
   it("returns the German profile for 'de'", () => {
@@ -72,5 +72,39 @@ describe("articleizedTerm", () => {
     const term = "Tisch";
     articleizedTerm(term, { gender: "m", source: "dict" }, german);
     assert.equal(term, "Tisch");
+  });
+});
+
+describe("articleWordsForAnswer", () => {
+  const german = profileFor("de");
+
+  it("returns the profile's articles when the card's gender is known", () => {
+    assert.deepEqual(articleWordsForAnswer({ gender: "m", source: "dict" }, german), [
+      "der",
+      "die",
+      "das",
+    ]);
+  });
+
+  it("returns [] when the card has no gender at all — the no-regression path", () => {
+    // This is the path every existing (enrichment-less) card takes today.
+    assert.deepEqual(articleWordsForAnswer(undefined, german), []);
+    assert.deepEqual(articleWordsForAnswer(null, german), []);
+    assert.deepEqual(articleWordsForAnswer({ source: "dict" }, german), []);
+  });
+
+  it("returns [] for a non-German profile even when the card has a gender", () => {
+    // The second, independent gate: a malformed or legacy value (e.g. a
+    // card copied out of a German set into one with a different language)
+    // must not grant leniency just because a gender happens to be present.
+    assert.deepEqual(articleWordsForAnswer({ gender: "m", source: "dict" }, EMPTY_PROFILE), []);
+  });
+
+  it("respects a user's own correction the same as a dictionary value", () => {
+    assert.deepEqual(articleWordsForAnswer({ gender: "f", source: "user" }, german), [
+      "der",
+      "die",
+      "das",
+    ]);
   });
 });

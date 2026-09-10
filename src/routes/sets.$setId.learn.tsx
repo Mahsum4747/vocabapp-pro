@@ -19,7 +19,7 @@ import { isCardActive, resolveSetLanguages } from "@/lib/types";
 import { answersMatch, parseIntSearchParam, cn } from "@/lib/utils";
 import { queuedCards } from "@/lib/srs";
 import { ratingForOutcome, useReviewLogger } from "@/lib/review-log";
-import { articleizedTerm, profileFor } from "@/lib/lang/profiles";
+import { articleWordsForAnswer, articleizedTerm, profileFor } from "@/lib/lang/profiles";
 
 type Search = { box?: number };
 
@@ -193,8 +193,9 @@ function LearnPage() {
   // known gender, not just the set's language: a card with no enrichment
   // takes the same `[]` path it always did, so its grading is untouched.
   const answerCard = !isMc ? studySet.cards.find((c) => c.id === item.cardId) : undefined;
-  const answerArticleWords = answerCard?.enrichment?.gender ? termProfile.articleWords : [];
-  const matchOptions = { ignorableLeadingWords: answerArticleWords };
+  const matchOptions = {
+    ignorableLeadingWords: articleWordsForAnswer(answerCard?.enrichment, termProfile),
+  };
   const isCorrect = isMc ? selected === item.answer : answersMatch(written, item.answer, matchOptions);
 
   return (

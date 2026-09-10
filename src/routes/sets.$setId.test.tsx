@@ -13,7 +13,7 @@ import { useSet, useSetProgress, useStudyStore } from "@/lib/store";
 import { isCardActive, resolveSetLanguages } from "@/lib/types";
 import { answersMatch, parseIntSearchParam, cn } from "@/lib/utils";
 import { ratingForOutcome, useReviewLogger } from "@/lib/review-log";
-import { articleizedTerm, profileFor } from "@/lib/lang/profiles";
+import { articleWordsForAnswer, articleizedTerm, profileFor } from "@/lib/lang/profiles";
 
 type Search = { box?: number };
 
@@ -198,8 +198,9 @@ function TestPage() {
   // untouched.
   const answerCard =
     q.type === "written" ? studySet.cards.find((c) => c.id === q.cardId) : undefined;
-  const answerArticleWords = answerCard?.enrichment?.gender ? termProfile.articleWords : [];
-  const matchOptions = { ignorableLeadingWords: answerArticleWords };
+  const matchOptions = {
+    ignorableLeadingWords: articleWordsForAnswer(answerCard?.enrichment, termProfile),
+  };
   const displayAnswer =
     q.type === "written" ? articleizedTerm(q.answer, answerCard?.enrichment, termProfile) : "";
 

@@ -82,3 +82,22 @@ export function articleizedTerm(
   const article = enrichment?.gender && profile.articleFor?.(enrichment.gender);
   return article ? `${article} ${term}` : term;
 }
+
+/**
+ * The word list to hand `answersMatch`'s `ignorableLeadingWords` for one
+ * card's typed-term answer.
+ *
+ * Two independent gates collapse into one call: non-empty only when BOTH
+ * this card has a known gender AND the profile actually has articles for
+ * it. That second gate matters on its own — a card whose `enrichment.gender`
+ * is set but whose set isn't German (a malformed value, or a card copied
+ * out of its original German set into a set with a different language)
+ * still gets `[]`, exactly like a German card with no gender recorded at
+ * all. Neither caller needs to reason about that combination separately.
+ */
+export function articleWordsForAnswer(
+  enrichment: CardEnrichment | null | undefined,
+  profile: LanguageProfile,
+): readonly string[] {
+  return enrichment?.gender ? profile.articleWords : [];
+}
