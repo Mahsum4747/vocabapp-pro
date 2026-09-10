@@ -18,7 +18,7 @@
     "check:auth": "node scripts/check-auth-invariant.mjs",
     "test": "fail=0; npm run test:scripts || fail=1; npm run test:ts || fail=1; exit $fail",
     "test:scripts": "node --test 'scripts/**/*.test.mjs'",
-    "test:ts": "node --experimental-strip-types --test src/lib/ai-definition-rule.test.ts src/lib/lang/languages.test.ts src/lib/lang/resolve-set-languages.test.ts src/lib/german/nouns.server.test.ts src/lib/german/compound.test.ts src/lib/app-data/app-data.test.ts src/lib/auth/gate-identity.test.ts src/lib/card-copy.test.ts src/lib/daily-goal.test.ts src/lib/gamification.test.ts src/lib/progress.test.ts src/lib/review-plan.test.ts src/lib/sound.test.ts src/lib/speech.test.ts src/lib/review-session.test.ts src/lib/srs/scheduler.test.ts src/lib/srs/queue.test.ts src/lib/srs/summary.test.ts",
+    "test:ts": "node --experimental-strip-types --test src/lib/ai-definition-rule.test.ts src/lib/lang/languages.test.ts src/lib/lang/resolve-set-languages.test.ts src/lib/lang/profiles.test.ts src/lib/german/nouns.server.test.ts src/lib/german/compound.test.ts src/lib/app-data/app-data.test.ts src/lib/auth/gate-identity.test.ts src/lib/card-copy.test.ts src/lib/daily-goal.test.ts src/lib/gamification.test.ts src/lib/progress.test.ts src/lib/review-plan.test.ts src/lib/sound.test.ts src/lib/speech.test.ts src/lib/review-session.test.ts src/lib/srs/scheduler.test.ts src/lib/srs/queue.test.ts src/lib/srs/summary.test.ts",
     "lint": "eslint .",
     "format": "prettier --write ."
   },
