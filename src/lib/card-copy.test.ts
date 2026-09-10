@@ -104,3 +104,53 @@ describe("copying a whole set", () => {
     }
   });
 });
+
+describe("freshCardCopy — enrichment", () => {
+  it("carries enrichment over, unlike starred/status", () => {
+    const source = usedCard({
+      enrichment: { gender: "n", plural: "Häuser", source: "dict" },
+    });
+    const copy = freshCardCopy(source, "new-id");
+
+    assert.deepEqual(copy.enrichment, { gender: "n", plural: "Häuser", source: "dict" });
+  });
+
+  it("carries an inferred (compound-guess) enrichment over as-is", () => {
+    const source = usedCard({
+      enrichment: { gender: "f", plural: "Haustüren", source: "dict", inferred: true },
+    });
+    const copy = freshCardCopy(source, "new-id");
+
+    assert.equal(copy.enrichment?.inferred, true);
+  });
+
+  it("carries a user's own correction over, still attributed to them", () => {
+    const source = usedCard({ enrichment: { gender: "m", source: "user" } });
+    const copy = freshCardCopy(source, "new-id");
+
+    assert.equal(copy.enrichment?.source, "user");
+  });
+
+  it("normalizes a missing enrichment to null, like example/definition2", () => {
+    const source = usedCard();
+    delete (source as { enrichment?: unknown }).enrichment;
+    const copy = freshCardCopy(source, "new-id");
+
+    assert.equal(copy.enrichment, null);
+  });
+
+  it("never folds gender into the term string itself", () => {
+    // The regression this guards: term identity in replaceCards is keyed on
+    // term.trim().toLowerCase(), and a card's id (which FSRS/cardProgress
+    // key off) is only kept when that match succeeds. An article prefix
+    // here would silently orphan review history on the next edit-page save.
+    const source = usedCard({
+      term: "Haus",
+      enrichment: { gender: "n", plural: "Häuser", source: "dict" },
+    });
+    const copy = freshCardCopy(source, "new-id");
+
+    assert.equal(copy.term, "Haus");
+    assert.doesNotMatch(copy.term, /^(der|die|das)\s/i);
+  });
+});

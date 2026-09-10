@@ -9,6 +9,39 @@ import { asLanguageCode, normalizeLanguage, type LanguageCode } from "./lang/lan
  */
 export type CardStatus = "active" | "excluded" | "archived";
 
+/** Grammatical gender, where a language's dictionary marks one — "m"/"f"/"n"
+ *  in German today. Named generically rather than reusing the German noun
+ *  dictionary's own `Genus` type, so the core `Card` type stays decoupled
+ *  from any one language's implementation (src/lib/german/*). */
+export type GrammaticalGender = "m" | "f" | "n";
+
+/** Who supplied a `CardEnrichment` value. Distinct from `inferred`: this
+ *  says who decided, `inferred` says how confident they were. */
+export type CardEnrichmentSource = "dict" | "ai" | "user";
+
+/**
+ * Extra grammatical facts about a card's term — gender and plural for a noun
+ * today; nothing about verbs yet (that's a later step, with its own
+ * approval). Additive and per-card: absent on every card that predates it,
+ * and it changes nothing about `term`, `definition`, or how an answer is
+ * graded — `answersMatch` in utils.ts reads only those two fields.
+ *
+ * `source: "user"` always wins and is never overwritten by a later dict/AI
+ * fill — see the write paths in study-sets.ts.
+ *
+ * `inferred: true` marks a value guessed from splitting a compound rather
+ * than an exact dictionary hit (e.g. "Haustür" taking its gender from
+ * "Tür") — a hypothesis about morphology, not a fact about the word. It is
+ * still `source: "dict"`: the dictionary produced it, it just isn't sure.
+ * Absent (never `false`) when the value isn't a guess.
+ */
+export type CardEnrichment = {
+  gender?: GrammaticalGender;
+  plural?: string;
+  source: CardEnrichmentSource;
+  inferred?: true;
+};
+
 /**
  * Card CONTENT. Shared and copyable — a card means the same thing to every
  * user who has it, so nothing user-specific belongs here. How well *you* know
@@ -37,6 +70,14 @@ export type Card = {
    */
   definition2?: string | null;
   status?: CardStatus;
+  /**
+   * Language-specific grammatical facts about the term (currently: German
+   * noun gender/plural). Absent on any card this feature hasn't touched;
+   * `null` is an explicit "no enrichment for this card" from a caller that
+   * knows about the field, the same undefined-vs-null convention `example`
+   * and `definition2` already use in `replaceCards`.
+   */
+  enrichment?: CardEnrichment | null;
 };
 
 export function isCardActive(card: Card): boolean {
@@ -64,6 +105,13 @@ export function freshCardCopy(card: Card, id: string): Card {
     imageUrl: card.imageUrl,
     example: card.example ?? null,
     definition2: card.definition2 ?? null,
+    // Enrichment is a fact about the word, not the original owner's
+    // curation, so it carries over like content rather than resetting like
+    // `starred`/`status` — a copy of a German set shouldn't have to
+    // re-discover that "Tisch" is masculine. Display is gated on the
+    // copy's own resolved term language regardless, so this is inert on a
+    // set enrichment doesn't apply to.
+    enrichment: card.enrichment ?? null,
     starred: false,
   };
 }
