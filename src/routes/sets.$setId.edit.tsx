@@ -69,6 +69,7 @@ function EditPage() {
       imageUrl: c.imageUrl,
       example: c.example,
       definition2: c.definition2,
+      enrichment: c.enrichment,
     })) ?? [],
   );
 
@@ -91,6 +92,7 @@ function EditPage() {
         imageUrl: c.imageUrl,
         example: c.example,
         definition2: c.definition2,
+        enrichment: c.enrichment,
       })),
     );
   }, [studySet]);
@@ -301,6 +303,7 @@ function EditPage() {
               cards={cards}
               onChange={setCards}
               termLanguage={termLang.text.trim() || undefined}
+              termLangCode={termLang.code ?? undefined}
               definitionLanguage2={definitionLanguage2Enabled ? defLang2.text.trim() : undefined}
             />
             <div className="sticky bottom-4 flex justify-end gap-2">

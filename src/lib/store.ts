@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { create } from "zustand";
-import type { CardProgress, CardStatus, DailyStats, ReviewRating, StudySet } from "./types";
+import type { CardEnrichment, CardProgress, CardStatus, DailyStats, ReviewRating, StudySet } from "./types";
 import { emptyDailyStats } from "./types";
 import type { AchievementId, UserProfile } from "./gamification";
 import { configureSound, type SoundSettings } from "./sound";
@@ -35,6 +35,7 @@ type DraftCard = {
   imageUrl?: string | null;
   example?: string | null;
   definition2?: string | null;
+  enrichment?: CardEnrichment | null;
 };
 
 /** What a graded review turned out to be worth, for the celebration layer. */

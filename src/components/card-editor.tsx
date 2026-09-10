@@ -1,12 +1,18 @@
 import { useState } from "react";
-import { ImagePlus, Loader2, Plus, Sparkles, Trash2, X } from "lucide-react";
+import { HelpCircle, ImagePlus, Loader2, Plus, Sparkles, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { ALLOWED_IMAGE_TYPES, MAX_IMAGE_BYTES, uploadCardImage } from "@/lib/card-images";
 import { suggestCardContent } from "@/lib/suggest-card";
+import { previewGermanEnrichment } from "@/lib/german/preview-enrichment";
+import { profileFor } from "@/lib/lang/profiles";
+import type { LanguageCode } from "@/lib/lang/languages";
+import type { CardEnrichment, GrammaticalGender } from "@/lib/types";
 import { Button } from "./ui/button";
-import { Input, Textarea } from "./ui/input";
+import { Input, Select, Textarea } from "./ui/input";
 import { Label } from "./ui/label";
 import { Dialog, DialogContent, DialogClose } from "./ui/dialog";
+import { Badge } from "./ui/badge";
+import { Tooltip } from "./ui/tooltip";
 
 /** The language a card's primary definition is written in — fixed, not a
  *  per-set setting; matches the default already used in Generate-from-topic. */
@@ -19,6 +25,9 @@ export type EditorCard = {
   imageUrl?: string | null;
   example?: string | null;
   definition2?: string | null;
+  /** Gender/plural for a noun in a language that has them (German today).
+   *  See CardEnrichment in lib/types.ts. */
+  enrichment?: CardEnrichment | null;
 };
 
 // Card images need Firebase Storage on a paid plan, which we're not on yet.
@@ -33,6 +42,7 @@ export function CardEditor({
   cards,
   onChange,
   termLanguage,
+  termLangCode,
   definitionLanguage2,
 }: {
   cards: EditorCard[];
@@ -40,10 +50,17 @@ export function CardEditor({
   /** The set's term language, if known — passed to the AI suggestion so its
    *  example sentence is written in the right language. */
   termLanguage?: string;
+  /** The set's resolved term-language code. Drives whether the
+   *  gender/plural row shows at all — `profileFor` is the single place
+   *  that decision is made, so this stays in sync with the server's own
+   *  gate in card-enrichment-policy.ts without a second `=== 'de'` check
+   *  here. */
+  termLangCode?: LanguageCode;
   /** The set's second definition language, if it has one — shows a "Second
    *  definition" field per card, with its own AI suggestion. */
   definitionLanguage2?: string;
 }) {
+  const profile = profileFor(termLangCode);
   const [uploadingId, setUploadingId] = useState<string | null>(null);
   // Keyed `${cardId}:${field}` rather than just the card id: a card's primary
   // and second-definition suggestions are independent requests and can
@@ -161,6 +178,43 @@ export function CardEditor({
     setConfirmDialog(null);
   }
 
+  /**
+   * Fill a card's gender/plural from the dictionary — automatic (fired on
+   * blurring the Term field), not a button, and never asks for confirmation:
+   * dictionary-or-nothing, silent either way. Never overwrites a value the
+   * user has already corrected themselves (`source: "user"`) — that check
+   * happens before the request is even sent, the same "don't ask, just
+   * don't clobber" rule the server enforces on save in
+   * card-enrichment-policy.ts. A failed or empty lookup is a silent no-op:
+   * the server still computes the authoritative value at save time
+   * regardless of whether this preview ran or succeeded.
+   */
+  async function checkGermanEnrichment(id: string) {
+    if (!profile.hasNounEnrichment) return;
+    const card = cards.find((c) => c.id === id);
+    const term = card?.term.trim();
+    if (!term || card?.enrichment?.source === "user") return;
+    try {
+      const result = await previewGermanEnrichment({ data: { term } });
+      update(id, { enrichment: result });
+    } catch {
+      // Best-effort preview only.
+    }
+  }
+
+  /** A user typing directly into the gender/plural row always wins, and
+   *  always starts from what's currently shown (dictionary guess or not)
+   *  so correcting one field doesn't blank out the other. */
+  function setEnrichmentField(id: string, field: "gender" | "plural", value: string) {
+    const current = cards.find((c) => c.id === id)?.enrichment;
+    const gender: GrammaticalGender | undefined =
+      field === "gender" ? (value as GrammaticalGender) || undefined : current?.gender;
+    const plural = field === "plural" ? value.trim() || undefined : current?.plural;
+    update(id, {
+      enrichment: { source: "user", ...(gender ? { gender } : {}), ...(plural ? { plural } : {}) },
+    });
+  }
+
   return (
     <div className="space-y-3">
       {cards.map((card, index) => (
@@ -188,6 +242,7 @@ export function CardEditor({
                 id={`term-${card.id}`}
                 value={card.term}
                 onChange={(e) => update(card.id, { term: e.target.value })}
+                onBlur={() => void checkGermanEnrichment(card.id)}
                 placeholder="e.g. mitochondria"
               />
             </div>
@@ -202,6 +257,40 @@ export function CardEditor({
               />
             </div>
           </div>
+          {profile.hasNounEnrichment ? (
+            <div className="mt-2 space-y-1.5">
+              <div className="flex items-center gap-1.5">
+                <Label htmlFor={`gender-${card.id}`}>Gender &amp; plural (optional)</Label>
+                {card.enrichment?.inferred ? (
+                  <Tooltip content="Guessed from a compound word — check it">
+                    <Badge tone="accent" className="gap-1 px-1.5 py-0.5">
+                      <HelpCircle className="size-3" />
+                      guess
+                    </Badge>
+                  </Tooltip>
+                ) : null}
+              </div>
+              <div className="grid grid-cols-[6.5rem_1fr] gap-2">
+                <Select
+                  id={`gender-${card.id}`}
+                  value={card.enrichment?.gender ?? ""}
+                  onChange={(e) => setEnrichmentField(card.id, "gender", e.target.value)}
+                  aria-label="Gender"
+                >
+                  <option value="">—</option>
+                  <option value="m">der (m)</option>
+                  <option value="f">die (f)</option>
+                  <option value="n">das (n)</option>
+                </Select>
+                <Input
+                  value={card.enrichment?.plural ?? ""}
+                  onChange={(e) => setEnrichmentField(card.id, "plural", e.target.value)}
+                  placeholder="Plural, e.g. Tische"
+                  aria-label="Plural"
+                />
+              </div>
+            </div>
+          ) : null}
           <div className="mt-2 flex justify-end">
             <Button
               type="button"
