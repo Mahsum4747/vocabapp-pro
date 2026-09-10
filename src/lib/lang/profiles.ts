@@ -39,6 +39,22 @@ export interface LanguageProfile {
    * future article-specific drill's job, not this one's).
    */
   articleWords: readonly string[];
+  /**
+   * Whether AI example-sentence suggestions (Phase 3C) are enabled for this
+   * language. Independent of `hasNounEnrichment` — a language can get one
+   * before the other, and this is the single place that decision is made,
+   * the same reasoning as `hasNounEnrichment` itself: gates the editor's
+   * "Suggest example" affordance AND the server handler's own refusal to
+   * spend quota on a language that hasn't been enabled, so the two can't
+   * drift apart into "the button is hidden but the endpoint still answers."
+   *
+   * Only German is `true` today — a product decision (Gemini's Kurmancî/
+   * Turkish example quality hasn't been reviewed), not a technical limit:
+   * the server function and cache key are already language-agnostic.
+   * Enabling English, Turkish, or Kurdish later means adding or editing a
+   * profile with this flag `true`, not new code.
+   */
+  hasExampleSuggestions: boolean;
 }
 
 const GERMAN_ARTICLES: Record<GrammaticalGender, string> = { m: "der", f: "die", n: "das" };
@@ -47,11 +63,16 @@ const GERMAN_PROFILE: LanguageProfile = {
   hasNounEnrichment: true,
   articleFor: (gender) => GERMAN_ARTICLES[gender],
   articleWords: Object.values(GERMAN_ARTICLES),
+  hasExampleSuggestions: true,
 };
 
 /** Every language without a profile below: no enrichment, no per-language
  *  rendering. Every set made before this feature existed resolves here. */
-export const EMPTY_PROFILE: LanguageProfile = { hasNounEnrichment: false, articleWords: [] };
+export const EMPTY_PROFILE: LanguageProfile = {
+  hasNounEnrichment: false,
+  articleWords: [],
+  hasExampleSuggestions: false,
+};
 
 const PROFILES: Partial<Record<LanguageCode, LanguageProfile>> = {
   de: GERMAN_PROFILE,
@@ -100,4 +121,28 @@ export function articleWordsForAnswer(
   profile: LanguageProfile,
 ): readonly string[] {
   return enrichment?.gender ? profile.articleWords : [];
+}
+
+/**
+ * `term` with a leading article word stripped, if `profile.articleWords`
+ * has one and `term` starts with it — case-insensitive, and requiring the
+ * same word-boundary space `answersMatch`'s leniency does, so "Derby" is
+ * never treated as "Der" + "by". Returns `term` (just trimmed) unchanged
+ * when nothing matches, or the profile has no article words at all.
+ *
+ * This is the write/lookup-key side of the exact problem
+ * `articleWordsForAnswer` solves on the grading side: a cache keyed on the
+ * raw term would treat "der Sohn" and "Sohn" as different words and never
+ * share a Gemini result between them. Called before hashing an AI-cache
+ * key (see example-suggestions.ts) — never on anything that reaches
+ * `term` itself, which must stay exactly what the user typed.
+ */
+export function stripArticle(term: string, profile: LanguageProfile): string {
+  const trimmed = term.trim();
+  const lower = trimmed.toLowerCase();
+  for (const word of profile.articleWords) {
+    const prefix = `${word.toLowerCase()} `;
+    if (lower.startsWith(prefix)) return trimmed.slice(prefix.length).trim();
+  }
+  return trimmed;
 }

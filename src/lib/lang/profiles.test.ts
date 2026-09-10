@@ -1,6 +1,12 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { EMPTY_PROFILE, articleWordsForAnswer, articleizedTerm, profileFor } from "./profiles.ts";
+import {
+  EMPTY_PROFILE,
+  articleWordsForAnswer,
+  articleizedTerm,
+  profileFor,
+  stripArticle,
+} from "./profiles.ts";
 
 describe("profileFor", () => {
   it("returns the German profile for 'de'", () => {
@@ -106,5 +112,47 @@ describe("articleWordsForAnswer", () => {
       "die",
       "das",
     ]);
+  });
+});
+
+describe("hasExampleSuggestions", () => {
+  it("is enabled for German only", () => {
+    assert.equal(profileFor("de").hasExampleSuggestions, true);
+  });
+
+  it("is disabled for every other language and the empty profile", () => {
+    for (const code of ["en", "tr", "ku", "ckb", "fr", "ru"] as const) {
+      assert.equal(profileFor(code).hasExampleSuggestions, false, code);
+    }
+    assert.equal(EMPTY_PROFILE.hasExampleSuggestions, false);
+  });
+});
+
+describe("stripArticle", () => {
+  const german = profileFor("de");
+
+  it("strips a leading article, case-insensitively", () => {
+    assert.equal(stripArticle("der Sohn", german), "Sohn");
+    assert.equal(stripArticle("DIE Tür", german), "Tür");
+    assert.equal(stripArticle("Das Haus", german), "Haus");
+  });
+
+  it("leaves a term with no article untouched (just trimmed)", () => {
+    assert.equal(stripArticle("Sohn", german), "Sohn");
+    assert.equal(stripArticle("  Sohn  ", german), "Sohn");
+  });
+
+  it("does not treat a word merely starting with an article as prefixed", () => {
+    // Same boundary rule as answersMatch's leniency: a real word ("Derby")
+    // must never be mistaken for "der" + "by".
+    assert.equal(stripArticle("Derby", german), "Derby");
+  });
+
+  it("does not strip anything for a profile with no article words", () => {
+    assert.equal(stripArticle("der Sohn", EMPTY_PROFILE), "der Sohn");
+  });
+
+  it("strips only one leading article, not a chain of them", () => {
+    assert.equal(stripArticle("der der Sohn", german), "der Sohn");
   });
 });

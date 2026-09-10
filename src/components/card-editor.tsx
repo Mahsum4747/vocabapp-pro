@@ -3,6 +3,7 @@ import { HelpCircle, ImagePlus, Loader2, Plus, Sparkles, Trash2, X } from "lucid
 import { toast } from "sonner";
 import { ALLOWED_IMAGE_TYPES, MAX_IMAGE_BYTES, uploadCardImage } from "@/lib/card-images";
 import { suggestCardContent } from "@/lib/suggest-card";
+import { suggestExampleSentences } from "@/lib/example-suggestions";
 import { previewGermanEnrichment } from "@/lib/german/preview-enrichment";
 import { profileFor } from "@/lib/lang/profiles";
 import type { LanguageCode } from "@/lib/lang/languages";
@@ -44,6 +45,7 @@ export function CardEditor({
   termLanguage,
   termLangCode,
   definitionLanguage2,
+  topic,
 }: {
   cards: EditorCard[];
   onChange: (cards: EditorCard[]) => void;
@@ -59,6 +61,11 @@ export function CardEditor({
   /** The set's second definition language, if it has one — shows a "Second
    *  definition" field per card, with its own AI suggestion. */
   definitionLanguage2?: string;
+  /** The set's subject/topic ("Family", "Travel", ...), if meaningfully
+   *  set — passed to example suggestions as prompt flavour only (never
+   *  part of the cache key; see example-suggestions.ts). The default
+   *  "General" subject is treated as no topic. */
+  topic?: string;
 }) {
   const profile = profileFor(termLangCode);
   const [uploadingId, setUploadingId] = useState<string | null>(null);
@@ -72,6 +79,26 @@ export function CardEditor({
     field: "primary" | "second";
     suggestion: { definition: string; example: string };
   } | null>(null);
+  // Per-card inline example-suggestion panel: never written to except by
+  // the explicit actions below (open the panel, retry, pick a suggestion,
+  // close it) — nothing here is triggered by typing or by the term
+  // changing. Keyed by card id; a card not present here has never opened
+  // its panel.
+  const [exampleSuggestions, setExampleSuggestions] = useState<
+    Record<
+      string,
+      {
+        open: boolean;
+        status: "loading" | "ready" | "error";
+        examples: string[];
+        error?: string;
+        /** The term this result is for — a stale result from before an
+         *  edit is never shown as current; toggling back open re-fetches
+         *  instead. */
+        fetchedForTerm: string;
+      }
+    >
+  >({});
 
   function update(id: string, patch: Partial<EditorCard>) {
     onChange(cards.map((card) => (card.id === id ? { ...card, ...patch } : card)));
@@ -176,6 +203,96 @@ export function CardEditor({
       update(cardId, { definition2: suggestion.definition });
     }
     setConfirmDialog(null);
+  }
+
+  /**
+   * Fetch 2–3 example-sentence candidates for one card and open its panel —
+   * called ONLY from the "Suggest example" button's click and its inline
+   * Retry action, never from typing or a term change. Errors leave the
+   * card's `example` field completely untouched; they only set this panel's
+   * own error state, which the compact retry action reads.
+   */
+  async function fetchExampleSuggestions(id: string, term: string) {
+    setExampleSuggestions((prev) => ({
+      ...prev,
+      [id]: { open: true, status: "loading", examples: [], fetchedForTerm: term },
+    }));
+    const otherTerms = cards
+      .filter((c) => c.id !== id && c.term.trim())
+      .map((c) => c.term.trim())
+      .slice(0, 5);
+    const topicText =
+      topic?.trim() && topic.trim().toLowerCase() !== "general" ? topic.trim() : undefined;
+    try {
+      const result = await suggestExampleSentences({
+        data: {
+          term,
+          ...(termLanguage ? { termLanguage } : {}),
+          ...(termLangCode ? { termLangCode } : {}),
+          definitionLanguage: DEFAULT_DEFINITION_LANGUAGE,
+          ...(topicText ? { topic: topicText } : {}),
+          ...(otherTerms.length > 0 ? { existingTerms: otherTerms } : {}),
+        },
+      });
+      if (!result.ok) {
+        setExampleSuggestions((prev) => ({
+          ...prev,
+          [id]: { open: true, status: "error", examples: [], error: result.error, fetchedForTerm: term },
+        }));
+        return;
+      }
+      setExampleSuggestions((prev) => ({
+        ...prev,
+        [id]: { open: true, status: "ready", examples: result.examples, fetchedForTerm: term },
+      }));
+    } catch {
+      setExampleSuggestions((prev) => ({
+        ...prev,
+        [id]: {
+          open: true,
+          status: "error",
+          examples: [],
+          error: "Couldn't get suggestions, try again.",
+          fetchedForTerm: term,
+        },
+      }));
+    }
+  }
+
+  /**
+   * The "Suggest example" button's click handler — the ONLY place besides
+   * Retry that fetches. Toggles the panel closed if already open (whatever
+   * its state); otherwise reuses an already-fetched, still-current result
+   * without a network call, and only fetches fresh when there's nothing
+   * usable yet for this exact term.
+   */
+  function toggleExampleSuggestions(id: string) {
+    const term = cards.find((c) => c.id === id)?.term.trim();
+    if (!term) return;
+    const state = exampleSuggestions[id];
+    if (state?.open) {
+      setExampleSuggestions((prev) => ({ ...prev, [id]: { ...state, open: false } }));
+      return;
+    }
+    if (state?.status === "ready" && state.fetchedForTerm === term) {
+      setExampleSuggestions((prev) => ({ ...prev, [id]: { ...state, open: true } }));
+      return;
+    }
+    void fetchExampleSuggestions(id, term);
+  }
+
+  function closeExampleSuggestions(id: string) {
+    setExampleSuggestions((prev) =>
+      prev[id] ? { ...prev, [id]: { ...prev[id], open: false } } : prev,
+    );
+  }
+
+  /** The only place a suggestion ever reaches the Example field — an
+   *  explicit click on one specific sentence. Closes the panel afterward
+   *  so focus returns to the (now-filled) field, ready to edit. */
+  function pickExampleSuggestion(id: string, sentence: string) {
+    update(id, { example: sentence });
+    closeExampleSuggestions(id);
   }
 
   /**
@@ -308,13 +425,75 @@ export function CardEditor({
             </Button>
           </div>
           <div className="mt-1 space-y-1.5">
-            <Label htmlFor={`example-${card.id}`}>Example sentence (optional)</Label>
+            <div className="flex items-center justify-between gap-2">
+              <Label htmlFor={`example-${card.id}`}>Example sentence (optional)</Label>
+              {profile.hasExampleSuggestions ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-auto py-0.5"
+                  disabled={!card.term.trim()}
+                  onClick={() => toggleExampleSuggestions(card.id)}
+                >
+                  <Sparkles className="size-3.5" />
+                  Suggest example
+                </Button>
+              ) : null}
+            </div>
             <Input
               id={`example-${card.id}`}
               value={card.example ?? ""}
               onChange={(e) => update(card.id, { example: e.target.value })}
               placeholder="A sentence using the term"
             />
+            {/* Inline, optional, non-destructive: opened only by the button
+                above, never by typing or by the term changing. Selecting a
+                row is the only path that writes to `example`. */}
+            {exampleSuggestions[card.id]?.open ? (
+              <div className="space-y-1.5 rounded-lg bg-surface-2 p-2.5">
+                {exampleSuggestions[card.id]?.status === "loading" ? (
+                  <div className="flex items-center gap-2 py-1 text-sm text-muted">
+                    <Loader2 className="size-3.5 animate-spin" />
+                    Loading suggestions…
+                  </div>
+                ) : exampleSuggestions[card.id]?.status === "error" ? (
+                  <div className="flex items-center justify-between gap-2 text-sm">
+                    <span className="text-danger">
+                      {exampleSuggestions[card.id]?.error ?? "Couldn't get suggestions."}
+                    </span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => void fetchExampleSuggestions(card.id, card.term.trim())}
+                    >
+                      Retry
+                    </Button>
+                  </div>
+                ) : (
+                  <>
+                    {exampleSuggestions[card.id]?.examples.map((sentence, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => pickExampleSuggestion(card.id, sentence)}
+                        className="block w-full rounded-md bg-surface px-2.5 py-2 text-left text-sm text-fg shadow-[var(--shadow-border)] hover:bg-border"
+                      >
+                        {sentence}
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => closeExampleSuggestions(card.id)}
+                      className="px-0.5 text-xs text-muted hover:text-fg"
+                    >
+                      Hide suggestions
+                    </button>
+                  </>
+                )}
+              </div>
+            ) : null}
           </div>
           {definitionLanguage2?.trim() ? (
             <div className="mt-3 space-y-1.5">

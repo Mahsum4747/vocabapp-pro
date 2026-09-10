@@ -305,6 +305,7 @@ function EditPage() {
               termLanguage={termLang.text.trim() || undefined}
               termLangCode={termLang.code ?? undefined}
               definitionLanguage2={definitionLanguage2Enabled ? defLang2.text.trim() : undefined}
+              topic={subject}
             />
             <div className="sticky bottom-4 flex justify-end gap-2">
               <Button type="button" variant="ghost" asChild>
