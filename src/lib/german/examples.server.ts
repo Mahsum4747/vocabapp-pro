@@ -8,14 +8,27 @@ import type { BundledEntry } from "./types.ts";
  * and a cold start that never looks up a German term never pays for it.
  *
  * Unlike the noun dictionary, this does NOT split compounds or rank
- * multiple senses: it returns the FIRST row (in file order) whose lemma
- * matches, whatever its part of speech. There is no equivalent, for
- * examples/translations, of "a compound's head decides the answer" the way
- * there is for gender — and the card editor has no separate POS input to
- * disambiguate with regardless. If the real dataset ever has multiple rows
- * for the same lemma under different parts of speech, this returns
- * whichever comes first; that is a known, accepted simplification, not a
- * bug, and worth revisiting only once real overlap is actually observed.
+ * multiple senses. There is no equivalent, for examples/translations, of
+ * "a compound's head decides the answer" the way there is for gender.
+ *
+ * AMBIGUOUS LEMMAS RETURN NOTHING, ON PURPOSE. The real 2,885-record
+ * dataset has 322 lowercased lemmas with more than one row — 204 are
+ * cross-POS ("gehen" the verb vs. "Gehen" the nominalized noun), 118 are
+ * same-POS homographs that are just as risky ("Mensch" -> human being, or
+ * a separate, vulgar "hussy" sense; "See" -> lake, or sea; "Bank" -> bench,
+ * or financial bank). An earlier version of this picked "whichever row
+ * comes first in file order" — confirmed, once the real dataset landed, to
+ * silently return the WRONG sense for "gehen" (the noun "das Gehen"/"the
+ * walking" instead of the verb). That is the same class of failure as the
+ * "schmutzig" -> "çirkin" mistranslation Blocker 2 fixed for translation
+ * senses: wrong information presented as correct is worse than nothing.
+ *
+ * The card editor has no POS input to disambiguate with (verified: there
+ * is no part-of-speech concept anywhere in `Card`/`EditorCard` to pass
+ * through), so there is no principled way to pick the right row here.
+ * Returning `null` for any ambiguous lemma — cross-POS or same-POS alike —
+ * degrades to the panel's existing, already-safe "nothing bundled, AI
+ * action only" behavior, exactly like a lemma with no bundled data at all.
  */
 
 type RowRef = number | number[];
@@ -106,22 +119,27 @@ function parseRow(line: string): BundledEntry {
 
 /**
  * Look up the bundled example/translation entry for a German term, or
- * `null` when nothing is bundled for it — a real, common answer for a
- * dataset this size, not an error. Case-insensitive, and tolerant of "ss"
- * typed for "ß", same as `lookupNoun`.
+ * `null` when nothing is bundled for it OR the lemma is ambiguous (see the
+ * module doc comment) — both are real, common, and equally "no safe answer"
+ * outcomes for a dataset this size, not errors. Case-insensitive, and
+ * tolerant of "ss" typed for "ß", same as `lookupNoun`.
  *
  * Split from `lookupBundled` (which fixes the dictionary to the real
  * committed data) specifically so tests can exercise this exact logic
- * against a fixture `Dictionary`, since `examples-data.ts` is currently a
- * 0-record placeholder with nothing real to look up yet.
+ * against a fixture `Dictionary`.
  */
 export function lookupInDictionary(dictionary: Dictionary, term: string): BundledEntry | null {
   const key = term.trim().toLowerCase();
   if (!key) return null;
   const { rows, byLemma, byFolded } = dictionary;
-  const row = refToRows(byLemma.get(key))[0] ?? refToRows(byFolded.get(fold(key)))[0];
-  if (row === undefined) return null;
-  return parseRow(rows[row]!);
+
+  const direct = refToRows(byLemma.get(key));
+  if (direct.length > 0) return direct.length === 1 ? parseRow(rows[direct[0]!]!) : null;
+
+  const folded = refToRows(byFolded.get(fold(key)));
+  if (folded.length > 0) return folded.length === 1 ? parseRow(rows[folded[0]!]!) : null;
+
+  return null;
 }
 
 export function lookupBundled(term: string): BundledEntry | null {
