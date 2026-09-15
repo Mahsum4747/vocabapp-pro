@@ -15,6 +15,7 @@ export function FlashCard({
   termLanguage,
   enrichment,
   termLangCode,
+  note,
   flipped,
   onFlip,
 }: {
@@ -32,6 +33,9 @@ export function FlashCard({
   /** The set's resolved term-language code, gating whether `enrichment`
    *  renders as an article at all (German today; see profileFor). */
   termLangCode?: LanguageCode;
+  /** The learner's own free-text memory aid, if any — most useful exactly
+   *  when reviewing, so it's shown here too, not just in the editor. */
+  note?: string | null;
   flipped: boolean;
   onFlip: () => void;
 }) {
@@ -111,6 +115,11 @@ export function FlashCard({
               className="text-primary-fg/70 hover:bg-primary-fg/10 hover:text-primary-fg"
             />
           </span>
+        ) : null}
+        {/* Personal, never spoken (no SpeakButton) — it's a reminder to the
+            learner, not language content. */}
+        {flipped && note ? (
+          <span className="text-sm whitespace-pre-line text-primary-fg/70">{note}</span>
         ) : null}
       </div>
       <span className={cn("text-sm", flipped ? "text-primary-fg/70" : "text-subtle")}>

@@ -76,6 +76,7 @@ type DraftCard = {
   imageUrl?: string | null;
   example?: string | null;
   definition2?: string | null;
+  note?: string | null;
   /**
    * Only `source: "user"` is ever trusted verbatim; `null`, an absent
    * field, and a `source: "dict"`/`"ai"` value are all treated the same —
@@ -149,6 +150,7 @@ function toCards(
         imageUrl: d.imageUrl || null,
         example: d.example?.trim() || null,
         definition2: d.definition2?.trim() || null,
+        note: d.note?.trim() || null,
         enrichment: resolveEnrichment(term, d.enrichment, context),
       };
     })
@@ -360,6 +362,7 @@ export const replaceCards = createServerFn({ method: "POST" })
           d.definition2 !== undefined
             ? d.definition2?.trim() || null
             : (prior?.definition2 ?? null);
+        const note = d.note !== undefined ? d.note?.trim() || null : (prior?.note ?? null);
         const enrichmentContext = { isGermanTermLanguage, dictLookup };
         const enrichment =
           d.enrichment !== undefined
@@ -373,6 +376,7 @@ export const replaceCards = createServerFn({ method: "POST" })
           imageUrl: d.imageUrl || null,
           example,
           definition2,
+          note,
           enrichment,
           ...(status ? { status } : {}),
         };

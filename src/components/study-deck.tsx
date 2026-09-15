@@ -279,6 +279,7 @@ export function StudyDeck({
         termLanguage={entry.termLanguage}
         enrichment={card.enrichment}
         termLangCode={entry.termLangCode}
+        note={card.note}
         flipped={flipped}
         onFlip={flip}
       />

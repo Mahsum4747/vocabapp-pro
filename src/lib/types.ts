@@ -92,6 +92,13 @@ export type Card = {
    * and `definition2` already use in `replaceCards`.
    */
   enrichment?: CardEnrichment | null;
+  /**
+   * Free-text personal memory aid ("sounds like 'sun' in English"),
+   * 100% user-authored — never AI-generated, never part of grading or
+   * matching. Not language-specific, unlike `enrichment`. Same
+   * undefined-vs-null convention as `example`/`definition2`.
+   */
+  note?: string | null;
 };
 
 export function isCardActive(card: Card): boolean {
@@ -127,6 +134,10 @@ export function freshCardCopy(card: Card, id: string): Card {
     // set enrichment doesn't apply to.
     enrichment: card.enrichment ?? null,
     starred: false,
+    // A personal note is about the original learner, not the word — same
+    // "this is curation, not content" reasoning `starred`/`status` already
+    // get reset for, unlike `enrichment` just above.
+    note: null,
   };
 }
 

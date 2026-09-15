@@ -154,3 +154,30 @@ describe("freshCardCopy — enrichment", () => {
     assert.doesNotMatch(copy.term, /^(der|die|das)\s/i);
   });
 });
+
+describe("freshCardCopy — note", () => {
+  it("drops a personal note on copy, unlike enrichment", () => {
+    // A note belongs to the original learner, not the word — same
+    // "this is curation, not content" reasoning starred/status get reset
+    // for, not the "carries over as fact" reasoning enrichment gets.
+    const source = usedCard({ note: "confused with Schwester last time" });
+    const copy = freshCardCopy(source, "new-id");
+
+    assert.equal(copy.note, null);
+  });
+
+  it("drops the note even when the source had none to begin with", () => {
+    const source = usedCard();
+    delete (source as { note?: unknown }).note;
+    const copy = freshCardCopy(source, "new-id");
+
+    assert.equal(copy.note, null);
+  });
+
+  it("leaves the source's own note untouched", () => {
+    const source = usedCard({ note: "my mnemonic" });
+    freshCardCopy(source, "new-id");
+
+    assert.equal(source.note, "my mnemonic");
+  });
+});
