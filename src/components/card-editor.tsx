@@ -31,6 +31,8 @@ export type EditorCard = {
   /** Gender/plural for a noun in a language that has them (German today).
    *  See CardEnrichment in lib/types.ts. */
   enrichment?: CardEnrichment | null;
+  /** Free-text personal memory aid — 100% user-authored, never suggested. */
+  note?: string | null;
 };
 
 // Card images need Firebase Storage on a paid plan, which we're not on yet.
@@ -726,6 +728,16 @@ export function CardEditor({
                 )}
               </div>
             ) : null}
+          </div>
+          <div className="mt-3 space-y-1.5">
+            <Label htmlFor={`note-${card.id}`}>Personal note (optional)</Label>
+            <Textarea
+              id={`note-${card.id}`}
+              value={card.note ?? ""}
+              onChange={(e) => update(card.id, { note: e.target.value })}
+              placeholder="Your own memory aid, mnemonic, or reminder"
+              className="min-h-11"
+            />
           </div>
           {definitionLanguage2?.trim() ? (
             <div className="mt-3 space-y-1.5">

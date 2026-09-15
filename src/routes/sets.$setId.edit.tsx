@@ -70,6 +70,7 @@ function EditPage() {
       example: c.example,
       definition2: c.definition2,
       enrichment: c.enrichment,
+      note: c.note,
     })) ?? [],
   );
 
@@ -93,6 +94,7 @@ function EditPage() {
         example: c.example,
         definition2: c.definition2,
         enrichment: c.enrichment,
+        note: c.note,
       })),
     );
   }, [studySet]);
