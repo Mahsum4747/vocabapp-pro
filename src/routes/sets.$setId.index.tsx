@@ -83,6 +83,12 @@ function SetPage() {
   const studySet = useSet(setId);
   const setLanguages = resolveSetLanguages(studySet ?? {});
   const termProfile = profileFor(setLanguages.term);
+  // Gates the Articles drill tile (Phase 3C Part B) — only when the set has
+  // at least one German card with a known gender. Non-German sets and
+  // ungendered German cards never see it.
+  const hasArticleDrillCards =
+    termProfile.hasNounEnrichment &&
+    (studySet?.cards.some((card) => card.enrichment?.gender) ?? false);
   const progress = useSetProgress(setId);
   const navigate = useNavigate();
   const deleteSet = useStudyStore((s) => s.deleteSet);
@@ -311,6 +317,7 @@ function SetPage() {
               setId={setId}
               box={selectedBox ?? undefined}
               disabled={studySet.cards.length < 2}
+              showArticleDrill={hasArticleDrillCards}
             />
             {studySet.cards.length < 2 ? (
               <p className="mt-3 text-sm text-muted">You need at least two cards to study.</p>

@@ -286,6 +286,23 @@ export function initialProgress(
   };
 }
 
+/**
+ * Phase 3C's article drill: a simple attempt/correct counter, per card, for
+ * "which article is this noun" practice — NOT a second spaced-repetition
+ * system. Deliberately has none of `CardProgress`'s scheduler state, due
+ * dates, or mastery score: getting an article wrong here must never affect
+ * the card's own FSRS schedule, and this type has no field that could.
+ * Stored in its own Firestore subcollection (`articleDrillProgress`),
+ * written by its own server function, never touched by `recordReview`.
+ */
+export type ArticleDrillProgress = {
+  cardId: string;
+  setId: string;
+  attempts: number;
+  correct: number;
+  lastAttemptAt: number;
+};
+
 /** One graded review. The raw, append-only log everything else is derived from. */
 export type ReviewEvent = {
   id: string;
