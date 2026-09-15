@@ -593,6 +593,22 @@ export function CardEditor({
               </div>
             </div>
           ) : null}
+          {card.enrichment?.governs?.length ? (
+            <div className="mt-2 space-y-1.5">
+              <Label>Verb + preposition</Label>
+              <div className="flex flex-wrap gap-1.5">
+                {card.enrichment.governs.map((g) => (
+                  <span
+                    key={`${g.preposition}-${g.case}`}
+                    className="rounded-full bg-surface-2 px-2.5 py-1 text-xs font-medium text-fg"
+                  >
+                    {card.term.trim()} <strong>{g.preposition}</strong> +{" "}
+                    {g.case === "akkusativ" ? "Akkusativ" : "Dativ"}
+                  </span>
+                ))}
+              </div>
+            </div>
+          ) : null}
           <div className="mt-2 flex justify-end">
             <Button
               type="button"
