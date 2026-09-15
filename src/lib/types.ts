@@ -35,9 +35,23 @@ export type CardEnrichmentSource = "dict" | "ai" | "user";
  * still `source: "dict"`: the dictionary produced it, it just isn't sure.
  * Absent (never `false`) when the value isn't a guess.
  */
+/** A fixed preposition + case a verb governs, e.g. "warten" + "auf" +
+ *  "akkusativ". An array because a verb can take more than one such
+ *  construction with a different meaning each time ("sprechen mit + Dativ"
+ *  vs "sprechen über + Akkusativ") — each pair is its own entry, never
+ *  collapsed into one ambiguous record. Noun-only (gender/plural) and this
+ *  are mutually exclusive in practice: German orthography itself routes a
+ *  card to one or the other (capitalized term = noun lookup, lowercase =
+ *  verb lookup), so a card is never expected to carry both. */
+export type VerbGovernment = {
+  preposition: string;
+  case: "akkusativ" | "dativ";
+};
+
 export type CardEnrichment = {
   gender?: GrammaticalGender;
   plural?: string;
+  governs?: VerbGovernment[];
   source: CardEnrichmentSource;
   inferred?: true;
 };
