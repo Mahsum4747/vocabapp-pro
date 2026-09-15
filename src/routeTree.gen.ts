@@ -18,6 +18,7 @@ import { Route as SetsSetIdRouteImport } from './routes/sets.$setId'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as SetsSetIdIndexRouteImport } from './routes/sets.$setId.index'
 import { Route as SetsSetIdArticlesRouteImport } from './routes/sets.$setId.articles'
+import { Route as SetsSetIdClozeRouteImport } from './routes/sets.$setId.cloze'
 import { Route as SetsSetIdEditRouteImport } from './routes/sets.$setId.edit'
 import { Route as SetsSetIdFlashcardsRouteImport } from './routes/sets.$setId.flashcards'
 import { Route as SetsSetIdLearnRouteImport } from './routes/sets.$setId.learn'
@@ -69,6 +70,11 @@ const SetsSetIdArticlesRoute = SetsSetIdArticlesRouteImport.update({
   path: '/articles',
   getParentRoute: () => SetsSetIdRoute,
 } as any)
+const SetsSetIdClozeRoute = SetsSetIdClozeRouteImport.update({
+  id: '/cloze',
+  path: '/cloze',
+  getParentRoute: () => SetsSetIdRoute,
+} as any)
 const SetsSetIdEditRoute = SetsSetIdEditRouteImport.update({
   id: '/edit',
   path: '/edit',
@@ -104,6 +110,7 @@ export interface FileRoutesByFullPath {
   '/sets/$setId': typeof SetsSetIdRouteWithChildren
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/sets/$setId/articles': typeof SetsSetIdArticlesRoute
+  '/sets/$setId/cloze': typeof SetsSetIdClozeRoute
   '/sets/$setId/edit': typeof SetsSetIdEditRoute
   '/sets/$setId/flashcards': typeof SetsSetIdFlashcardsRoute
   '/sets/$setId/learn': typeof SetsSetIdLearnRoute
@@ -119,6 +126,7 @@ export interface FileRoutesByTo {
   '/review': typeof ReviewRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/sets/$setId/articles': typeof SetsSetIdArticlesRoute
+  '/sets/$setId/cloze': typeof SetsSetIdClozeRoute
   '/sets/$setId/edit': typeof SetsSetIdEditRoute
   '/sets/$setId/flashcards': typeof SetsSetIdFlashcardsRoute
   '/sets/$setId/learn': typeof SetsSetIdLearnRoute
@@ -136,6 +144,7 @@ export interface FileRoutesById {
   '/sets/$setId': typeof SetsSetIdRouteWithChildren
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/sets/$setId/articles': typeof SetsSetIdArticlesRoute
+  '/sets/$setId/cloze': typeof SetsSetIdClozeRoute
   '/sets/$setId/edit': typeof SetsSetIdEditRoute
   '/sets/$setId/flashcards': typeof SetsSetIdFlashcardsRoute
   '/sets/$setId/learn': typeof SetsSetIdLearnRoute
@@ -154,6 +163,7 @@ export interface FileRouteTypes {
     | '/sets/$setId'
     | '/api/auth/$'
     | '/sets/$setId/articles'
+    | '/sets/$setId/cloze'
     | '/sets/$setId/edit'
     | '/sets/$setId/flashcards'
     | '/sets/$setId/learn'
@@ -169,6 +179,7 @@ export interface FileRouteTypes {
     | '/review'
     | '/api/auth/$'
     | '/sets/$setId/articles'
+    | '/sets/$setId/cloze'
     | '/sets/$setId/edit'
     | '/sets/$setId/flashcards'
     | '/sets/$setId/learn'
@@ -185,6 +196,7 @@ export interface FileRouteTypes {
     | '/sets/$setId'
     | '/api/auth/$'
     | '/sets/$setId/articles'
+    | '/sets/$setId/cloze'
     | '/sets/$setId/edit'
     | '/sets/$setId/flashcards'
     | '/sets/$setId/learn'
@@ -268,6 +280,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SetsSetIdArticlesRouteImport
       parentRoute: typeof SetsSetIdRoute
     }
+    '/sets/$setId/cloze': {
+      id: '/sets/$setId/cloze'
+      path: '/cloze'
+      fullPath: '/sets/$setId/cloze'
+      preLoaderRoute: typeof SetsSetIdClozeRouteImport
+      parentRoute: typeof SetsSetIdRoute
+    }
     '/sets/$setId/edit': {
       id: '/sets/$setId/edit'
       path: '/edit'
@@ -308,6 +327,7 @@ declare module '@tanstack/react-router' {
 
 interface SetsSetIdRouteChildren {
   SetsSetIdArticlesRoute: typeof SetsSetIdArticlesRoute
+  SetsSetIdClozeRoute: typeof SetsSetIdClozeRoute
   SetsSetIdEditRoute: typeof SetsSetIdEditRoute
   SetsSetIdFlashcardsRoute: typeof SetsSetIdFlashcardsRoute
   SetsSetIdLearnRoute: typeof SetsSetIdLearnRoute
@@ -318,6 +338,7 @@ interface SetsSetIdRouteChildren {
 
 const SetsSetIdRouteChildren: SetsSetIdRouteChildren = {
   SetsSetIdArticlesRoute: SetsSetIdArticlesRoute,
+  SetsSetIdClozeRoute: SetsSetIdClozeRoute,
   SetsSetIdEditRoute: SetsSetIdEditRoute,
   SetsSetIdFlashcardsRoute: SetsSetIdFlashcardsRoute,
   SetsSetIdLearnRoute: SetsSetIdLearnRoute,

@@ -46,11 +46,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { clozeBlankForCard } from "@/lib/cloze";
 import { masteryScoreFor, masteryStats, type ProgressMap } from "@/lib/quiz";
 import { reviewSummary } from "@/lib/srs";
 import { serializeSetExport } from "@/lib/parse-cards";
 import { useSet, useSetProgress, useStudyStore } from "@/lib/store";
-import { resolveSetLanguages } from "@/lib/types";
+import { isCardActive, resolveSetLanguages } from "@/lib/types";
 import { profileFor } from "@/lib/lang/profiles";
 import type { Card, CardStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -89,6 +90,10 @@ function SetPage() {
   const hasArticleDrillCards =
     termProfile.hasNounEnrichment &&
     (studySet?.cards.some((card) => card.enrichment?.gender) ?? false);
+  // Gates the Cloze tile — only when at least one active card's own example
+  // can actually be blanked (not German-specific, unlike the article drill).
+  const hasClozeCards =
+    studySet?.cards.some((card) => isCardActive(card) && clozeBlankForCard(card) !== null) ?? false;
   const progress = useSetProgress(setId);
   const navigate = useNavigate();
   const deleteSet = useStudyStore((s) => s.deleteSet);
@@ -318,6 +323,7 @@ function SetPage() {
               box={selectedBox ?? undefined}
               disabled={studySet.cards.length < 2}
               showArticleDrill={hasArticleDrillCards}
+              showCloze={hasClozeCards}
             />
             {studySet.cards.length < 2 ? (
               <p className="mt-3 text-sm text-muted">You need at least two cards to study.</p>
