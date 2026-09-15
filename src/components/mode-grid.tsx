@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { GraduationCap, Layers, LayoutGrid, ListChecks } from "lucide-react";
+import { GraduationCap, Layers, LayoutGrid, ListChecks, SpellCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const MODES = [
@@ -25,19 +25,31 @@ const MODES = [
   },
 ];
 
+const ARTICLE_DRILL_MODE = {
+  to: "/sets/$setId/articles" as const,
+  title: "Articles",
+  icon: SpellCheck,
+};
+
 export function ModeGrid({
   setId,
   box,
   disabled,
+  /** Show the der/die/das drill tile — only when the set has at least one
+   *  German card with a known gender (Phase 3C Part B). Never shown
+   *  otherwise: no color, no drill entry for a set that can't use it. */
+  showArticleDrill = false,
 }: {
   setId: string;
   /** Restrict the study session to just this Leitner box (0..MASTERY_MAX). */
   box?: number;
   disabled?: boolean;
+  showArticleDrill?: boolean;
 }) {
+  const modes = showArticleDrill ? [...MODES, ARTICLE_DRILL_MODE] : MODES;
   return (
     <div className="flex flex-wrap gap-2">
-      {MODES.map((mode) => {
+      {modes.map((mode) => {
         const Icon = mode.icon;
         const className = cn(
           "flex min-w-28 flex-1 items-center justify-center gap-2 rounded-xl bg-surface px-4 py-3 text-sm font-medium shadow-[var(--shadow-border)] transition-[transform,box-shadow] duration-200 ease-[var(--ease-smooth-out)]",
@@ -56,6 +68,16 @@ export function ModeGrid({
             <div key={mode.title} className={className}>
               {inner}
             </div>
+          );
+        }
+        // The article drill has its own separate card pool (gendered German
+        // nouns only) — a Leitner box filter from the other four modes
+        // doesn't apply to it.
+        if (mode.to === "/sets/$setId/articles") {
+          return (
+            <Link key={mode.title} to={mode.to} params={{ setId }} className={className}>
+              {inner}
+            </Link>
           );
         }
         return (

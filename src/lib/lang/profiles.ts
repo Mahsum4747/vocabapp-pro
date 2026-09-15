@@ -119,8 +119,25 @@ export function articleizedTerm(
   enrichment: CardEnrichment | null | undefined,
   profile: LanguageProfile,
 ): string {
+  const { article, rest } = articleParts(term, enrichment, profile);
+  return article ? `${article} ${rest}` : rest;
+}
+
+/**
+ * Same inputs as `articleizedTerm`, split into the article word and the rest
+ * of the term instead of one concatenated string — what a caller needs to
+ * color the article differently from the noun (Phase 3C's der/die/das
+ * color coding) without duplicating the gender/profile logic above. `article`
+ * is `null` under the exact same conditions `articleizedTerm` would have
+ * returned the bare term.
+ */
+export function articleParts(
+  term: string,
+  enrichment: CardEnrichment | null | undefined,
+  profile: LanguageProfile,
+): { article: string | null; rest: string } {
   const article = enrichment?.gender && profile.articleFor?.(enrichment.gender);
-  return article ? `${article} ${term}` : term;
+  return { article: article || null, rest: term };
 }
 
 /**

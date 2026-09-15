@@ -18,6 +18,11 @@
   --color-streak: #e07a3d;
   --color-slate: #3a5a6b;
   --color-ring: #1f4d3a;
+  /* der/die/das color-coding mnemonic — kept distinct from success/danger,
+     which already use green/orange-red for status, not grammar. */
+  --color-article-der: #1d5b96;
+  --color-article-die: #b7293f;
+  --color-article-das: #2f7a3d;
   --font-sans: "Figtree", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Geist", ui-sans-serif, system-ui, sans-serif;
   --radius-xs: 4px;
@@ -55,6 +60,9 @@
     --color-streak: #e07a3d;
     --color-slate: #5c8fa3;
     --color-ring: #2a6b4f;
+    --color-article-der: #7ab3e8;
+    --color-article-die: #e8828f;
+    --color-article-das: #8fd19e;
     --shadow-border:
       0 0 0 1px rgb(0 0 0 / 0.4), 0 1px 2px -1px rgb(0 0 0 / 0.3), 0 2px 4px 0 rgb(0 0 0 / 0.2);
     --shadow-border-hover:

@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/app-shell";
+import { ArticleizedTerm } from "@/components/articleized-term";
 import { OwnerGate, OwnershipStatus } from "@/components/owner-gate";
 import { ModeGrid } from "@/components/mode-grid";
 import { LeitnerBoxes } from "@/components/leitner-boxes";
@@ -50,7 +51,7 @@ import { reviewSummary } from "@/lib/srs";
 import { serializeSetExport } from "@/lib/parse-cards";
 import { useSet, useSetProgress, useStudyStore } from "@/lib/store";
 import { resolveSetLanguages } from "@/lib/types";
-import { articleizedTerm, profileFor } from "@/lib/lang/profiles";
+import { profileFor } from "@/lib/lang/profiles";
 import type { Card, CardStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -82,6 +83,12 @@ function SetPage() {
   const studySet = useSet(setId);
   const setLanguages = resolveSetLanguages(studySet ?? {});
   const termProfile = profileFor(setLanguages.term);
+  // Gates the Articles drill tile (Phase 3C Part B) — only when the set has
+  // at least one German card with a known gender. Non-German sets and
+  // ungendered German cards never see it.
+  const hasArticleDrillCards =
+    termProfile.hasNounEnrichment &&
+    (studySet?.cards.some((card) => card.enrichment?.gender) ?? false);
   const progress = useSetProgress(setId);
   const navigate = useNavigate();
   const deleteSet = useStudyStore((s) => s.deleteSet);
@@ -310,6 +317,7 @@ function SetPage() {
               setId={setId}
               box={selectedBox ?? undefined}
               disabled={studySet.cards.length < 2}
+              showArticleDrill={hasArticleDrillCards}
             />
             {studySet.cards.length < 2 ? (
               <p className="mt-3 text-sm text-muted">You need at least two cards to study.</p>
@@ -458,7 +466,11 @@ function SetPage() {
                               studySet.isReference && "text-base md:text-lg",
                             )}
                           >
-                            {articleizedTerm(card.term, card.enrichment, termProfile)}
+                            <ArticleizedTerm
+                              term={card.term}
+                              enrichment={card.enrichment}
+                              profile={termProfile}
+                            />
                           </p>
                           <SpeakButton text={card.term} language={setLanguages.term ?? studySet.termLanguage} />
                           {isExcluded ? (

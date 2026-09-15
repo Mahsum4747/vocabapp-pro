@@ -17,6 +17,7 @@ import { Route as ReviewRouteImport } from './routes/review'
 import { Route as SetsSetIdRouteImport } from './routes/sets.$setId'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as SetsSetIdIndexRouteImport } from './routes/sets.$setId.index'
+import { Route as SetsSetIdArticlesRouteImport } from './routes/sets.$setId.articles'
 import { Route as SetsSetIdEditRouteImport } from './routes/sets.$setId.edit'
 import { Route as SetsSetIdFlashcardsRouteImport } from './routes/sets.$setId.flashcards'
 import { Route as SetsSetIdLearnRouteImport } from './routes/sets.$setId.learn'
@@ -63,6 +64,11 @@ const SetsSetIdIndexRoute = SetsSetIdIndexRouteImport.update({
   path: '/',
   getParentRoute: () => SetsSetIdRoute,
 } as any)
+const SetsSetIdArticlesRoute = SetsSetIdArticlesRouteImport.update({
+  id: '/articles',
+  path: '/articles',
+  getParentRoute: () => SetsSetIdRoute,
+} as any)
 const SetsSetIdEditRoute = SetsSetIdEditRouteImport.update({
   id: '/edit',
   path: '/edit',
@@ -97,6 +103,7 @@ export interface FileRoutesByFullPath {
   '/review': typeof ReviewRoute
   '/sets/$setId': typeof SetsSetIdRouteWithChildren
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/sets/$setId/articles': typeof SetsSetIdArticlesRoute
   '/sets/$setId/edit': typeof SetsSetIdEditRoute
   '/sets/$setId/flashcards': typeof SetsSetIdFlashcardsRoute
   '/sets/$setId/learn': typeof SetsSetIdLearnRoute
@@ -111,6 +118,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/review': typeof ReviewRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/sets/$setId/articles': typeof SetsSetIdArticlesRoute
   '/sets/$setId/edit': typeof SetsSetIdEditRoute
   '/sets/$setId/flashcards': typeof SetsSetIdFlashcardsRoute
   '/sets/$setId/learn': typeof SetsSetIdLearnRoute
@@ -127,6 +135,7 @@ export interface FileRoutesById {
   '/review': typeof ReviewRoute
   '/sets/$setId': typeof SetsSetIdRouteWithChildren
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/sets/$setId/articles': typeof SetsSetIdArticlesRoute
   '/sets/$setId/edit': typeof SetsSetIdEditRoute
   '/sets/$setId/flashcards': typeof SetsSetIdFlashcardsRoute
   '/sets/$setId/learn': typeof SetsSetIdLearnRoute
@@ -144,6 +153,7 @@ export interface FileRouteTypes {
     | '/review'
     | '/sets/$setId'
     | '/api/auth/$'
+    | '/sets/$setId/articles'
     | '/sets/$setId/edit'
     | '/sets/$setId/flashcards'
     | '/sets/$setId/learn'
@@ -158,6 +168,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/review'
     | '/api/auth/$'
+    | '/sets/$setId/articles'
     | '/sets/$setId/edit'
     | '/sets/$setId/flashcards'
     | '/sets/$setId/learn'
@@ -173,6 +184,7 @@ export interface FileRouteTypes {
     | '/review'
     | '/sets/$setId'
     | '/api/auth/$'
+    | '/sets/$setId/articles'
     | '/sets/$setId/edit'
     | '/sets/$setId/flashcards'
     | '/sets/$setId/learn'
@@ -249,6 +261,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SetsSetIdIndexRouteImport
       parentRoute: typeof SetsSetIdRoute
     }
+    '/sets/$setId/articles': {
+      id: '/sets/$setId/articles'
+      path: '/articles'
+      fullPath: '/sets/$setId/articles'
+      preLoaderRoute: typeof SetsSetIdArticlesRouteImport
+      parentRoute: typeof SetsSetIdRoute
+    }
     '/sets/$setId/edit': {
       id: '/sets/$setId/edit'
       path: '/edit'
@@ -288,6 +307,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface SetsSetIdRouteChildren {
+  SetsSetIdArticlesRoute: typeof SetsSetIdArticlesRoute
   SetsSetIdEditRoute: typeof SetsSetIdEditRoute
   SetsSetIdFlashcardsRoute: typeof SetsSetIdFlashcardsRoute
   SetsSetIdLearnRoute: typeof SetsSetIdLearnRoute
@@ -297,6 +317,7 @@ interface SetsSetIdRouteChildren {
 }
 
 const SetsSetIdRouteChildren: SetsSetIdRouteChildren = {
+  SetsSetIdArticlesRoute: SetsSetIdArticlesRoute,
   SetsSetIdEditRoute: SetsSetIdEditRoute,
   SetsSetIdFlashcardsRoute: SetsSetIdFlashcardsRoute,
   SetsSetIdLearnRoute: SetsSetIdLearnRoute,
