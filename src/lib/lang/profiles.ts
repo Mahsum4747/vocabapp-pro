@@ -55,6 +55,23 @@ export interface LanguageProfile {
    * profile with this flag `true`, not new code.
    */
   hasExampleSuggestions: boolean;
+  /**
+   * Whether this language has a bundled (offline, pre-extracted) example +
+   * translation dataset, looked up with zero AI calls. Independent of
+   * `hasExampleSuggestions` on purpose — same reasoning as that flag's own
+   * doc comment: AI generation and a bundled dataset are genuinely
+   * different capabilities (one needs a Gemini call, the other is a Map
+   * lookup against committed data), and a language can plausibly have one
+   * without the other. Gates both the editor's bundled-first example panel
+   * and the Definition field's tap-to-fill translation chips, and the
+   * server function's own refusal to build the dictionary index for a
+   * language that hasn't been enabled.
+   *
+   * Only German is `true` today, backed by src/lib/german/examples-data.ts
+   * (see EXAMPLES-ATTRIBUTION.md) — a data-availability limit, not a
+   * technical one.
+   */
+  hasBundledSuggestions: boolean;
 }
 
 const GERMAN_ARTICLES: Record<GrammaticalGender, string> = { m: "der", f: "die", n: "das" };
@@ -64,6 +81,7 @@ const GERMAN_PROFILE: LanguageProfile = {
   articleFor: (gender) => GERMAN_ARTICLES[gender],
   articleWords: Object.values(GERMAN_ARTICLES),
   hasExampleSuggestions: true,
+  hasBundledSuggestions: true,
 };
 
 /** Every language without a profile below: no enrichment, no per-language
@@ -72,6 +90,7 @@ export const EMPTY_PROFILE: LanguageProfile = {
   hasNounEnrichment: false,
   articleWords: [],
   hasExampleSuggestions: false,
+  hasBundledSuggestions: false,
 };
 
 const PROFILES: Partial<Record<LanguageCode, LanguageProfile>> = {
