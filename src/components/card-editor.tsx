@@ -6,6 +6,7 @@ import { suggestCardContent } from "@/lib/suggest-card";
 import { suggestExampleSentences } from "@/lib/example-suggestions";
 import { previewGermanEnrichment } from "@/lib/german/preview-enrichment";
 import { lookupBundledSuggestions } from "@/lib/german/bundled-suggestions";
+import { suggestTermPrefix } from "@/lib/german/term-suggestions";
 import { profileFor } from "@/lib/lang/profiles";
 import type { LanguageCode } from "@/lib/lang/languages";
 import type { CardEnrichment, GrammaticalGender } from "@/lib/types";
@@ -42,6 +43,11 @@ export type EditorCard = {
 const IMAGE_UPLOAD_ENABLED = false;
 
 const MAX_IMAGE_MB = MAX_IMAGE_BYTES / (1024 * 1024);
+
+/** How long to wait after the last Term keystroke before asking for
+ *  autocomplete suggestions — short enough to feel live, long enough that a
+ *  fast typist doesn't fire a lookup per letter. */
+const TERM_SUGGESTION_DEBOUNCE_MS = 200;
 
 export function CardEditor({
   cards,
@@ -123,6 +129,17 @@ export function CardEditor({
   const [bundled, setBundled] = useState<Record<string, { term: string; entry: BundledEntry | null }>>(
     {},
   );
+  // Term-field autocomplete: an independent trigger (debounced onChange) and
+  // independent state from the blur-triggered `bundled`/enrichment lookups
+  // above, so the two can never race or duplicate each other. Same
+  // term-matches-current-value staleness gate as `bundled` — a response for
+  // an older keystroke is simply never shown once the term has moved on,
+  // no separate cancellation needed.
+  const [termSuggestions, setTermSuggestions] = useState<
+    Record<string, { term: string; options: string[] }>
+  >({});
+  const [activeSuggestionId, setActiveSuggestionId] = useState<string | null>(null);
+  const suggestionTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   // Per-card inline example-suggestion panel: never written to except by
   // the explicit actions below (open the panel, retry, pick a suggestion,
   // close it) — nothing here is triggered by typing or by the term
@@ -304,6 +321,58 @@ export function CardEditor({
     const term = card.term.trim();
     const cached = bundled[card.id];
     return cached && cached.term === term ? cached.entry : null;
+  }
+
+  /**
+   * Debounced Term-field autocomplete — fires on every keystroke, unlike
+   * checkGermanEnrichment/checkBundledSuggestions above (blur-only): a
+   * genuinely different trigger, writing to its own `termSuggestions`
+   * state, so it can never race or duplicate those lookups.
+   */
+  function scheduleTermSuggestions(id: string, term: string) {
+    if (!profile.hasTermAutocomplete) return;
+    const timers = suggestionTimers.current;
+    if (timers[id] !== undefined) clearTimeout(timers[id]);
+    const trimmed = term.trim();
+    if (!trimmed) return;
+    timers[id] = setTimeout(() => {
+      void fetchTermSuggestions(id, trimmed);
+    }, TERM_SUGGESTION_DEBOUNCE_MS);
+  }
+
+  async function fetchTermSuggestions(id: string, term: string) {
+    let options: string[] = [];
+    try {
+      options = await suggestTermPrefix({ data: { prefix: term } });
+    } catch {
+      options = [];
+    }
+    setTermSuggestions((prev) => ({ ...prev, [id]: { term, options } }));
+  }
+
+  /** The cached suggestion list for a card's CURRENT term, or `[]` — same
+   *  staleness gate as `bundledEntryFor`: a response that arrives after the
+   *  term has moved on again is cached under its own (now-old) key and
+   *  simply never matches, no separate cancellation needed. */
+  function termSuggestionsFor(card: EditorCard): string[] {
+    const term = card.term.trim();
+    const cached = termSuggestions[card.id];
+    return cached && cached.term === term ? cached.options : [];
+  }
+
+  /**
+   * Fill the Term field from a picked suggestion — nothing else. The
+   * existing blur-triggered `checkGermanEnrichment`/`checkBundledSuggestions`
+   * do the rest naturally, exactly as they would for a hand-typed term:
+   * this fires on `onMouseDown`, not `onClick`, specifically so it runs
+   * BEFORE the input's blur — by the time those handlers read
+   * `cardsRef.current`, it already reflects the picked term, the same
+   * ref-freshness guarantee documented on `cardsRef` above. Not a new
+   * fill mechanism, just the existing one given a moment to see the update.
+   */
+  function pickTermSuggestion(id: string, word: string) {
+    update(id, { term: word });
+    setActiveSuggestionId(null);
   }
 
   /** en/tr/ku words from a bundled entry for one resolved definition-
@@ -521,16 +590,41 @@ export function CardEditor({
           <div className="grid gap-3 md:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor={`term-${card.id}`}>Term</Label>
-              <Input
-                id={`term-${card.id}`}
-                value={card.term}
-                onChange={(e) => update(card.id, { term: e.target.value })}
-                onBlur={() => {
-                  void checkGermanEnrichment(card.id);
-                  void checkBundledSuggestions(card.id);
-                }}
-                placeholder="e.g. mitochondria"
-              />
+              <div className="relative">
+                <Input
+                  id={`term-${card.id}`}
+                  value={card.term}
+                  onChange={(e) => {
+                    update(card.id, { term: e.target.value });
+                    scheduleTermSuggestions(card.id, e.target.value);
+                    setActiveSuggestionId(card.id);
+                  }}
+                  onFocus={() => setActiveSuggestionId(card.id)}
+                  onBlur={() => {
+                    void checkGermanEnrichment(card.id);
+                    void checkBundledSuggestions(card.id);
+                    setActiveSuggestionId(null);
+                  }}
+                  placeholder="e.g. mitochondria"
+                  autoComplete="off"
+                />
+                {profile.hasTermAutocomplete &&
+                activeSuggestionId === card.id &&
+                termSuggestionsFor(card).length > 0 ? (
+                  <div className="absolute z-10 mt-1 w-full space-y-0.5 rounded-lg bg-surface p-1 shadow-[var(--shadow-border)]">
+                    {termSuggestionsFor(card).map((word) => (
+                      <button
+                        key={word}
+                        type="button"
+                        onMouseDown={() => pickTermSuggestion(card.id, word)}
+                        className="block w-full rounded-md px-2.5 py-1.5 text-left text-sm text-fg hover:bg-surface-2"
+                      >
+                        {word}
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
             </div>
             <div className="space-y-1.5">
               <Label htmlFor={`def-${card.id}`}>Definition</Label>
