@@ -32,6 +32,23 @@ export interface NounEntry {
   pos: string[];
 }
 
+/**
+ * One bundled example/translation lookup result — the shape
+ * `examples.server.ts` parses a TSV row into. Kept in this plain (non-
+ * `.server.ts`) file, same reasoning `NounEntry` above already is: a client
+ * component needs the TYPE (for `bundled-suggestions.ts`'s return value)
+ * without ever importing the server-only module itself.
+ */
+export interface BundledEntry {
+  /** The dictionary's own canonical spelling — never the query string's. */
+  lemma: string;
+  pos: string;
+  gender: string | null;
+  plural: string | null;
+  examples: string[];
+  translations: { en: string[]; tr: string[]; ku: string[] };
+}
+
 /** Tags that mark a record as a name rather than an ordinary noun. */
 export const NAME_POS = ["Vorname", "Nachname", "Familienname", "Eigenname", "Toponym", "Straßenname", "Ortsnamengrundwort"] as const;
 

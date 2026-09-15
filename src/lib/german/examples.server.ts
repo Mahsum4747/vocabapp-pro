@@ -1,4 +1,5 @@
 import { EXAMPLES_TSV } from "./examples-data.ts";
+import type { BundledEntry } from "./types.ts";
 
 /**
  * Server-only lookup for the bundled German example/translation dataset —
@@ -27,19 +28,6 @@ interface Dictionary {
    *  misses — same fallback nouns.server.ts uses, for the same reason: a
    *  user typing "Fussball" should still find "Fußball". */
   byFolded: Map<string, RowRef>;
-}
-
-export interface BundledEntry {
-  /** The dictionary's own canonical spelling — NEVER the query string's
-   *  casing. A lookup for "haus" must still report "Haus", exactly as
-   *  Wiktionary capitalizes it; nothing here ever echoes user input back
-   *  as if it were a fact about the word. */
-  lemma: string;
-  pos: string;
-  gender: string | null;
-  plural: string | null;
-  examples: string[];
-  translations: { en: string[]; tr: string[]; ku: string[] };
 }
 
 function fold(value: string): string {

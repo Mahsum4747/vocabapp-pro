@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { authMiddleware } from "@/lib/auth/middleware";
-import type { BundledEntry } from "./examples.server.ts";
+import type { BundledEntry } from "./types.ts";
 
 /**
  * Client-callable lookup for the bundled (offline, zero-AI-call) example/
