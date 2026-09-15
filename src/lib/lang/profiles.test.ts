@@ -142,6 +142,19 @@ describe("hasBundledSuggestions", () => {
 
 });
 
+describe("hasTermAutocomplete", () => {
+  it("is enabled for German only", () => {
+    assert.equal(profileFor("de").hasTermAutocomplete, true);
+  });
+
+  it("is disabled for every other language and the empty profile", () => {
+    for (const code of ["en", "tr", "ku", "ckb", "fr", "ru"] as const) {
+      assert.equal(profileFor(code).hasTermAutocomplete, false, code);
+    }
+    assert.equal(EMPTY_PROFILE.hasTermAutocomplete, false);
+  });
+});
+
 describe("stripArticle", () => {
   const german = profileFor("de");
 

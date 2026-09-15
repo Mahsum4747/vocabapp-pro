@@ -38,11 +38,17 @@ describe("no automatic generation — the component cannot auto-fetch even by ac
     assert.doesNotMatch(source, /useEffect/);
   });
 
-  it("the Term field's onChange only updates the term, never triggers a fetch", () => {
+  it("the Term field's onChange never triggers the AI call — a free autocomplete lookup is fine, Gemini is not", () => {
     const source = readSource();
-    const match = source.match(/onChange=\{\(e\) => update\(card\.id, \{ term: e\.target\.value \}\)\}/);
-    assert.ok(match, "expected to find the term input's onChange handler");
-    assert.doesNotMatch(match![0], /fetchExampleSuggestions|suggestExampleSentences/);
+    const start = source.indexOf(`onChange={(e) => {\n                    update(card.id, { term: e.target.value });`);
+    assert.notEqual(start, -1, "expected to find the term input's onChange handler");
+    const body = source.slice(start, source.indexOf("}}", start));
+    // scheduleTermSuggestions is a debounced, zero-AI-call prefix lookup —
+    // allowed here on the same "no quota to protect" grounds
+    // checkBundledSuggestions is already allowed to run on blur. Only the
+    // paid Gemini path must never be reachable from typing.
+    assert.doesNotMatch(body, /fetchExampleSuggestions|suggestExampleSentences/);
+    assert.match(body, /scheduleTermSuggestions\(card\.id, e\.target\.value\)/);
   });
 
   it("fetchExampleSuggestions (the AI call) is only ever reachable from explicit click handlers", () => {
@@ -154,10 +160,14 @@ describe("bundled Definition chips never touch `term` or `example`", () => {
     assert.match(body, /definition2: word/);
   });
 
-  it("nothing in the file writes to `term` outside the Term field's own onChange", () => {
+  it("`term` is written from exactly two places: the Term field's own onChange, and picking an autocomplete suggestion", () => {
     const source = readSource();
     const writes = [...source.matchAll(/update\([^,]+,\s*\{[^}]*\bterm:/g)];
-    assert.equal(writes.length, 1, "expected exactly one `term:` writer — the Term field's onChange");
+    assert.equal(
+      writes.length,
+      2,
+      "expected exactly two `term:` writers — the Term field's onChange, and pickTermSuggestion",
+    );
   });
 
   it("chipWordsFor never echoes the query back — it only ever reads translations off a BundledEntry", () => {
@@ -252,5 +262,23 @@ describe("stale-closure hardening: handlers read cardsRef, never a captured `car
     // suggest, checkBundledSuggestions, toggleExampleSuggestions,
     // pickTranslationChip, checkGermanEnrichment, setEnrichmentField.
     assert.equal(finds.length, 6, `expected 6 cardsRef.current.find(...) call sites, found ${finds.length}`);
+  });
+
+  it("picking a Term autocomplete suggestion fires on mousedown, not click, so it runs before the input's blur", () => {
+    const source = readSource();
+    // The same race this whole describe block guards against, from a new
+    // angle: a <button> click moves focus (and so fires blur on the Term
+    // input) BEFORE the button's own onClick runs. If picking a suggestion
+    // wrote the term from onClick, checkGermanEnrichment/
+    // checkBundledSuggestions would already have fired on blur against the
+    // stale, pre-selection term. onMouseDown fires first, so cardsRef.current
+    // is updated in time for blur's handlers to see the picked word.
+    const idx = source.indexOf("onMouseDown={() => pickTermSuggestion(card.id, word)}");
+    assert.notEqual(idx, -1, "expected the suggestion button to use onMouseDown");
+    assert.doesNotMatch(
+      source,
+      /onClick=\{\(\) => pickTermSuggestion/,
+      "must not also (or instead) fire from onClick — that runs after blur",
+    );
   });
 });

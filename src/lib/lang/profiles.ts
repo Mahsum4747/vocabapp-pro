@@ -72,6 +72,28 @@ export interface LanguageProfile {
    * technical one.
    */
   hasBundledSuggestions: boolean;
+  /**
+   * Whether the Term field offers prefix-match autocomplete from the bundled
+   * examples dataset as the user types (Phase 3C, "Smart Suggestions").
+   * Independent of `hasBundledSuggestions` on purpose — same reasoning as
+   * that flag's own doc comment: this reads the same underlying dataset but
+   * is a different capability (a live prefix index the user types against,
+   * not a per-term lookup fired on blur), and a language could plausibly
+   * get one without the other. Gates both the editor's dropdown and the
+   * server function's own refusal to build the index for a language that
+   * hasn't been enabled.
+   *
+   * Only German is `true` today, sourced from the same
+   * src/lib/german/examples-data.ts the bundled suggestions use — a
+   * data-availability limit, not a technical one. Deliberately NOT sourced
+   * from the much larger noun dictionary (~102k, unranked, nouns-only):
+   * that dataset has no frequency signal at all, so a prefix match against
+   * it would surface obscure words ahead of common ones with no way to
+   * tell the difference — worse than no autocomplete. The examples dataset
+   * is frequency-*bounded* (built from a top-N frequency list) even though
+   * it isn't frequency-*ranked* within itself.
+   */
+  hasTermAutocomplete: boolean;
 }
 
 const GERMAN_ARTICLES: Record<GrammaticalGender, string> = { m: "der", f: "die", n: "das" };
@@ -82,6 +104,7 @@ const GERMAN_PROFILE: LanguageProfile = {
   articleWords: Object.values(GERMAN_ARTICLES),
   hasExampleSuggestions: true,
   hasBundledSuggestions: true,
+  hasTermAutocomplete: true,
 };
 
 /** Every language without a profile below: no enrichment, no per-language
@@ -91,6 +114,7 @@ export const EMPTY_PROFILE: LanguageProfile = {
   articleWords: [],
   hasExampleSuggestions: false,
   hasBundledSuggestions: false,
+  hasTermAutocomplete: false,
 };
 
 const PROFILES: Partial<Record<LanguageCode, LanguageProfile>> = {
