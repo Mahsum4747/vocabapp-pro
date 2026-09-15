@@ -5,9 +5,11 @@ import { ALLOWED_IMAGE_TYPES, MAX_IMAGE_BYTES, uploadCardImage } from "@/lib/car
 import { suggestCardContent } from "@/lib/suggest-card";
 import { suggestExampleSentences } from "@/lib/example-suggestions";
 import { previewGermanEnrichment } from "@/lib/german/preview-enrichment";
+import { lookupBundledSuggestions } from "@/lib/german/bundled-suggestions";
 import { profileFor } from "@/lib/lang/profiles";
 import type { LanguageCode } from "@/lib/lang/languages";
 import type { CardEnrichment, GrammaticalGender } from "@/lib/types";
+import type { BundledEntry } from "@/lib/german/types";
 import { Button } from "./ui/button";
 import { Input, Select, Textarea } from "./ui/input";
 import { Label } from "./ui/label";
@@ -44,7 +46,9 @@ export function CardEditor({
   onChange,
   termLanguage,
   termLangCode,
+  defLangCode,
   definitionLanguage2,
+  definitionLanguage2Code,
   topic,
 }: {
   cards: EditorCard[];
@@ -58,9 +62,18 @@ export function CardEditor({
    *  gate in card-enrichment-policy.ts without a second `=== 'de'` check
    *  here. */
   termLangCode?: LanguageCode;
+  /** The set's resolved PRIMARY definition-language code, if known. Used
+   *  only to decide whether the bundled Definition tap-to-fill chips have
+   *  anything to show (en/tr/ku) — unrelated to `suggest()`'s AI path,
+   *  which is hardcoded to `DEFAULT_DEFINITION_LANGUAGE` regardless of this
+   *  value (a pre-existing, out-of-scope behavior, left untouched here). */
+  defLangCode?: LanguageCode;
   /** The set's second definition language, if it has one — shows a "Second
    *  definition" field per card, with its own AI suggestion. */
   definitionLanguage2?: string;
+  /** Resolved code for `definitionLanguage2`, same purpose as `defLangCode`
+   *  but for the second definition field's chip row. */
+  definitionLanguage2Code?: LanguageCode;
   /** The set's subject/topic ("Family", "Travel", ...), if meaningfully
    *  set — passed to example suggestions as prompt flavour only (never
    *  part of the cache key; see example-suggestions.ts). The default
@@ -73,27 +86,46 @@ export function CardEditor({
   // and second-definition suggestions are independent requests and can
   // genuinely overlap, same reasoning as two different cards overlapping.
   const [suggestingKeys, setSuggestingKeys] = useState<ReadonlySet<string>>(new Set());
-  // Track pending suggestion awaiting user confirmation
+  // Track pending suggestion awaiting user confirmation. `example` is
+  // optional: an AI suggestion always includes one, a bundled-translation
+  // chip pick never does (there's only one example field, already
+  // independent of which language's translation was tapped) — confirmReplace
+  // must not treat a missing `example` as "clear the field".
   const [confirmDialog, setConfirmDialog] = useState<{
     cardId: string;
     field: "primary" | "second";
-    suggestion: { definition: string; example: string };
+    suggestion: { definition: string; example?: string };
   } | null>(null);
+  // Per-card cache of the bundled (offline, zero-AI-call) lookup — checked
+  // once per term change (Term field blur), feeding BOTH the example
+  // panel's bundled-first step and the Definition field's tap-to-fill
+  // chips from the same network call. `entry: null` means "checked, found
+  // nothing bundled" — distinct from "not checked for this term yet"
+  // (no key present, or `term` doesn't match the card's current term).
+  const [bundled, setBundled] = useState<Record<string, { term: string; entry: BundledEntry | null }>>(
+    {},
+  );
   // Per-card inline example-suggestion panel: never written to except by
   // the explicit actions below (open the panel, retry, pick a suggestion,
   // close it) — nothing here is triggered by typing or by the term
   // changing. Keyed by card id; a card not present here has never opened
   // its panel.
+  //
+  // Statuses: "checking" (bundled lookup in flight, right after opening) ->
+  // either "bundled" (examples found, shown alongside a "Generate with AI"
+  // action) or "ai-only" (nothing bundled — the panel shows ONLY that AI
+  // action, never auto-fetches); clicking it moves to "loading-ai" -> "ready"
+  // or "error", exactly like the pre-bundled flow did.
   const [exampleSuggestions, setExampleSuggestions] = useState<
     Record<
       string,
       {
         open: boolean;
-        status: "loading" | "ready" | "error";
+        status: "checking" | "bundled" | "ai-only" | "loading-ai" | "ready" | "error";
         examples: string[];
         error?: string;
         /** The term this result is for — a stale result from before an
-         *  edit is never shown as current; toggling back open re-fetches
+         *  edit is never shown as current; toggling back open re-checks
          *  instead. */
         fetchedForTerm: string;
       }
@@ -198,7 +230,14 @@ export function CardEditor({
     if (!confirmDialog) return;
     const { cardId, field, suggestion } = confirmDialog;
     if (field === "primary") {
-      update(cardId, { definition: suggestion.definition, example: suggestion.example });
+      // `example` is only ever present for an AI suggestion (see
+      // `confirmDialog`'s doc comment) — omitting the key entirely when
+      // it's absent, rather than passing `undefined`, so a translation
+      // chip's confirm-replace can never blank out an existing example.
+      update(cardId, {
+        definition: suggestion.definition,
+        ...(suggestion.example !== undefined ? { example: suggestion.example } : {}),
+      });
     } else {
       update(cardId, { definition2: suggestion.definition });
     }
@@ -206,16 +245,98 @@ export function CardEditor({
   }
 
   /**
-   * Fetch 2–3 example-sentence candidates for one card and open its panel —
-   * called ONLY from the "Suggest example" button's click and its inline
-   * Retry action, never from typing or a term change. Errors leave the
-   * card's `example` field completely untouched; they only set this panel's
-   * own error state, which the compact retry action reads.
+   * The bundled (offline, zero-AI-call) lookup for one card — fired on
+   * blurring the Term field, alongside `checkGermanEnrichment`, and reused
+   * by the example panel's opening step below rather than re-fetched. Feeds
+   * two independent consumers from one network call: the example panel's
+   * bundled-first step, and the Definition field's tap-to-fill chips.
+   *
+   * A failed lookup degrades to "nothing bundled" (`entry: null`) rather
+   * than surfacing an error — same "best-effort preview only" reasoning
+   * `checkGermanEnrichment` already applies: nothing here is load-bearing,
+   * the AI/manual paths are always still available regardless.
+   *
+   * Returns the entry too (not just caching it in state), because a
+   * caller that needs the value immediately after awaiting this — the
+   * example panel's opening step — cannot rely on reading `bundled` back
+   * out of the same render's stale closure.
+   */
+  async function checkBundledSuggestions(id: string): Promise<BundledEntry | null> {
+    if (!profile.hasBundledSuggestions) return null;
+    const card = cards.find((c) => c.id === id);
+    const term = card?.term.trim();
+    if (!term) return null;
+    let entry: BundledEntry | null = null;
+    try {
+      entry = await lookupBundledSuggestions({ data: { term } });
+    } catch {
+      entry = null;
+    }
+    setBundled((prev) => ({ ...prev, [id]: { term, entry } }));
+    return entry;
+  }
+
+  /** The cached bundled entry for a card, or `null` if there isn't one YET
+   *  for its current term — distinct from "checked, found nothing", which
+   *  callers get by awaiting `checkBundledSuggestions` instead. Used by the
+   *  Definition chip rows, which only ever want to read the cache, never
+   *  trigger a fetch themselves (blurring the Term field already did). */
+  function bundledEntryFor(card: EditorCard): BundledEntry | null {
+    const term = card.term.trim();
+    const cached = bundled[card.id];
+    return cached && cached.term === term ? cached.entry : null;
+  }
+
+  /** en/tr/ku words from a bundled entry for one resolved definition-
+   *  language code, or `[]` for anything else (no entry yet, no code
+   *  resolved, or a language this dataset doesn't cover) — the same "no
+   *  data, no panel" rule the example side already follows. */
+  function chipWordsFor(entry: BundledEntry | null, code: LanguageCode | undefined): string[] {
+    if (!entry || !code) return [];
+    if (code === "en" || code === "tr" || code === "ku") return entry.translations[code];
+    return [];
+  }
+
+  /**
+   * Opens the example panel for a card, checking the bundled dataset FIRST
+   * — reusing an already-fresh `bundled` cache entry (the common case,
+   * since the Term field's blur already ran this) rather than fetching
+   * again. Bundled examples found -> shown immediately, zero AI calls.
+   * Nothing bundled -> the panel shows ONLY the "Generate with AI" action;
+   * it never auto-fetches from Gemini on its own.
+   */
+  async function openExamplePanel(id: string, term: string) {
+    setExampleSuggestions((prev) => ({
+      ...prev,
+      [id]: { open: true, status: "checking", examples: [], fetchedForTerm: term },
+    }));
+    const cachedFresh = bundled[id]?.term === term;
+    const entry = cachedFresh ? (bundled[id]?.entry ?? null) : await checkBundledSuggestions(id);
+    if (entry && entry.examples.length > 0) {
+      setExampleSuggestions((prev) => ({
+        ...prev,
+        [id]: { open: true, status: "bundled", examples: entry.examples, fetchedForTerm: term },
+      }));
+    } else {
+      setExampleSuggestions((prev) => ({
+        ...prev,
+        [id]: { open: true, status: "ai-only", examples: [], fetchedForTerm: term },
+      }));
+    }
+  }
+
+  /**
+   * Fetch 2–3 AI example-sentence candidates for one card — called ONLY
+   * from the panel's "Generate with AI" action (shown alongside bundled
+   * results, or alone when there are none) and the inline Retry action,
+   * never from typing or a term change. Errors leave the card's `example`
+   * field completely untouched; they only set this panel's own error
+   * state, which the compact retry action reads.
    */
   async function fetchExampleSuggestions(id: string, term: string) {
     setExampleSuggestions((prev) => ({
       ...prev,
-      [id]: { open: true, status: "loading", examples: [], fetchedForTerm: term },
+      [id]: { open: true, status: "loading-ai", examples: [], fetchedForTerm: term },
     }));
     const otherTerms = cards
       .filter((c) => c.id !== id && c.term.trim())
@@ -261,10 +382,13 @@ export function CardEditor({
 
   /**
    * The "Suggest example" button's click handler — the ONLY place besides
-   * Retry that fetches. Toggles the panel closed if already open (whatever
-   * its state); otherwise reuses an already-fetched, still-current result
-   * without a network call, and only fetches fresh when there's nothing
-   * usable yet for this exact term.
+   * the panel's own actions (Generate with AI, Retry) that fetches or
+   * checks anything. Toggles the panel closed if already open (whatever
+   * its state); otherwise reuses an already-settled, still-current result
+   * without any network call, and only re-checks when there's nothing
+   * usable yet for this exact term. "checking"/"loading-ai" are
+   * deliberately excluded from the reusable set: reopening mid-flight
+   * should never be mistaken for a finished result.
    */
   function toggleExampleSuggestions(id: string) {
     const term = cards.find((c) => c.id === id)?.term.trim();
@@ -274,11 +398,12 @@ export function CardEditor({
       setExampleSuggestions((prev) => ({ ...prev, [id]: { ...state, open: false } }));
       return;
     }
-    if (state?.status === "ready" && state.fetchedForTerm === term) {
+    const settled = state && state.status !== "checking" && state.status !== "loading-ai";
+    if (settled && state.fetchedForTerm === term) {
       setExampleSuggestions((prev) => ({ ...prev, [id]: { ...state, open: true } }));
       return;
     }
-    void fetchExampleSuggestions(id, term);
+    void openExamplePanel(id, term);
   }
 
   function closeExampleSuggestions(id: string) {
@@ -293,6 +418,28 @@ export function CardEditor({
   function pickExampleSuggestion(id: string, sentence: string) {
     update(id, { example: sentence });
     closeExampleSuggestions(id);
+  }
+
+  /**
+   * A tap on a bundled Definition/Definition2 translation chip — the ONLY
+   * writer of `definition`/`definition2` outside `suggest()`'s own AI flow.
+   * Same fill-or-confirm shape as `suggest()`: applies directly when the
+   * field is empty, otherwise opens the existing confirm dialog (reused as-
+   * is; `suggestion.example` is simply omitted, which `confirmReplace`
+   * treats as "don't touch the example field").
+   */
+  function pickTranslationChip(id: string, field: "primary" | "second", word: string) {
+    const card = cards.find((c) => c.id === id);
+    const currentValue = field === "primary" ? card?.definition : card?.definition2;
+    if (currentValue?.trim()) {
+      setConfirmDialog({ cardId: id, field, suggestion: { definition: word } });
+      return;
+    }
+    if (field === "primary") {
+      update(id, { definition: word });
+    } else {
+      update(id, { definition2: word });
+    }
   }
 
   /**
@@ -359,7 +506,10 @@ export function CardEditor({
                 id={`term-${card.id}`}
                 value={card.term}
                 onChange={(e) => update(card.id, { term: e.target.value })}
-                onBlur={() => void checkGermanEnrichment(card.id)}
+                onBlur={() => {
+                  void checkGermanEnrichment(card.id);
+                  void checkBundledSuggestions(card.id);
+                }}
                 placeholder="e.g. mitochondria"
               />
             </div>
@@ -372,6 +522,24 @@ export function CardEditor({
                 placeholder="A short, clear definition"
                 className="min-h-11 md:min-h-20"
               />
+              {/* Quizlet-style tap-to-fill: bundled translations only, never
+                  AI-generated. Nothing renders when there's no bundled hit
+                  for this term/language — same "no empty state" rule the
+                  example panel follows. */}
+              {chipWordsFor(bundledEntryFor(card), defLangCode).length > 0 ? (
+                <div className="flex flex-wrap gap-1.5 pt-0.5">
+                  {chipWordsFor(bundledEntryFor(card), defLangCode).map((word) => (
+                    <button
+                      key={word}
+                      type="button"
+                      onClick={() => pickTranslationChip(card.id, "primary", word)}
+                      className="rounded-full bg-surface-2 px-2.5 py-1 text-xs font-medium text-fg hover:bg-border"
+                    >
+                      {word}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
             </div>
           </div>
           {profile.hasNounEnrichment ? (
@@ -452,7 +620,12 @@ export function CardEditor({
                 row is the only path that writes to `example`. */}
             {exampleSuggestions[card.id]?.open ? (
               <div className="space-y-1.5 rounded-lg bg-surface-2 p-2.5">
-                {exampleSuggestions[card.id]?.status === "loading" ? (
+                {exampleSuggestions[card.id]?.status === "checking" ? (
+                  <div className="flex items-center gap-2 py-1 text-sm text-muted">
+                    <Loader2 className="size-3.5 animate-spin" />
+                    Checking…
+                  </div>
+                ) : exampleSuggestions[card.id]?.status === "loading-ai" ? (
                   <div className="flex items-center gap-2 py-1 text-sm text-muted">
                     <Loader2 className="size-3.5 animate-spin" />
                     Loading suggestions…
@@ -471,6 +644,18 @@ export function CardEditor({
                       Retry
                     </Button>
                   </div>
+                ) : exampleSuggestions[card.id]?.status === "ai-only" ? (
+                  // Nothing bundled for this term — the AI action is the
+                  // ONLY thing shown, and it is never fired automatically.
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => void fetchExampleSuggestions(card.id, card.term.trim())}
+                  >
+                    <Sparkles className="size-3.5" />
+                    Generate with AI
+                  </Button>
                 ) : (
                   <>
                     {exampleSuggestions[card.id]?.examples.map((sentence, i) => (
@@ -483,13 +668,27 @@ export function CardEditor({
                         {sentence}
                       </button>
                     ))}
-                    <button
-                      type="button"
-                      onClick={() => closeExampleSuggestions(card.id)}
-                      className="px-0.5 text-xs text-muted hover:text-fg"
-                    >
-                      Hide suggestions
-                    </button>
+                    <div className="flex items-center justify-between gap-2 pt-0.5">
+                      <button
+                        type="button"
+                        onClick={() => closeExampleSuggestions(card.id)}
+                        className="px-0.5 text-xs text-muted hover:text-fg"
+                      >
+                        Hide suggestions
+                      </button>
+                      {exampleSuggestions[card.id]?.status === "bundled" ? (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-auto py-0.5"
+                          onClick={() => void fetchExampleSuggestions(card.id, card.term.trim())}
+                        >
+                          <Sparkles className="size-3.5" />
+                          Generate with AI
+                        </Button>
+                      ) : null}
+                    </div>
                   </>
                 )}
               </div>
@@ -505,6 +704,20 @@ export function CardEditor({
                 placeholder={`The definition in ${definitionLanguage2}`}
                 className="min-h-11"
               />
+              {chipWordsFor(bundledEntryFor(card), definitionLanguage2Code).length > 0 ? (
+                <div className="flex flex-wrap gap-1.5">
+                  {chipWordsFor(bundledEntryFor(card), definitionLanguage2Code).map((word) => (
+                    <button
+                      key={word}
+                      type="button"
+                      onClick={() => pickTranslationChip(card.id, "second", word)}
+                      className="rounded-full bg-surface-2 px-2.5 py-1 text-xs font-medium text-fg hover:bg-border"
+                    >
+                      {word}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
               <div className="flex justify-end">
                 <Button
                   type="button"

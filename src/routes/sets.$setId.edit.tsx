@@ -304,7 +304,9 @@ function EditPage() {
               onChange={setCards}
               termLanguage={termLang.text.trim() || undefined}
               termLangCode={termLang.code ?? undefined}
+              defLangCode={defLang.code ?? undefined}
               definitionLanguage2={definitionLanguage2Enabled ? defLang2.text.trim() : undefined}
+              definitionLanguage2Code={definitionLanguage2Enabled ? (defLang2.code ?? undefined) : undefined}
               topic={subject}
             />
             <div className="sticky bottom-4 flex justify-end gap-2">
