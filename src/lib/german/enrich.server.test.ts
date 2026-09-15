@@ -137,6 +137,51 @@ describe("enrichGermanTerm — verb government (Rektion)", () => {
   });
 });
 
+describe("enrichGermanTerm — nominalized-infinitive collision (the 'das sehen' bug)", () => {
+  // Real production bug: "sehen" (a verb) got gender "n" from "das Sehen"
+  // (the nominalized infinitive, sight/seeing) — a genuine, different noun
+  // sense of the exact same lowercase-folded string. Rendering then drew
+  // "das sehen" for a card that should never carry an article at all.
+  // Root cause: enrichGermanTerm's verb-first routing tries the small
+  // curated verb-government dataset first, but on a miss (most verbs
+  // aren't preposition-governing) fell straight through to the full noun
+  // dictionary, which readily matches almost any verb infinitive's
+  // nominalization.
+  it("never fills gender/plural for verbs whose only noun sense is their own nominalization", () => {
+    for (const verb of ["sehen", "essen", "laufen", "gehen"]) {
+      const result = enrichGermanTerm(verb);
+      assert.equal(result, null, `${verb} should get no enrichment, got ${JSON.stringify(result)}`);
+    }
+  });
+
+  it("essen's mixed-sense plural collision (with the unrelated noun 'Esse') is also suppressed, not partially filled", () => {
+    // Before the fix: essen's nominalization ("Essen", neuter) made gender
+    // ambiguous against the unrelated feminine noun "Esse" (chimney,
+    // plural also "Essen") — but their shared plural "Essen" still agreed
+    // and silently filled a plural field onto a verb card. The exclusion
+    // has to run BEFORE sense-aggregation to catch this, not just gate the
+    // final gender.
+    const result = enrichGermanTerm("essen");
+    assert.equal(result, null);
+  });
+
+  it("brauchen (no preposition, no noun homograph) is unaffected — still null, for the pre-existing reason", () => {
+    assert.equal(enrichGermanTerm("brauchen"), null);
+  });
+
+  it("still fills gender/plural for an ordinary noun typed lowercase (tisch -> Tisch)", () => {
+    // The tolerance this fix must NOT regress: "tisch" is masculine, not
+    // neuter, so the nominalized-infinitive exclusion never applies to it.
+    assert.deepEqual(enrichGermanTerm("tisch"), enrichGermanTerm("Tisch"));
+    assert.equal(enrichGermanTerm("tisch")?.gender, "m");
+  });
+
+  it("still fills governs for a preposition-taking verb, unaffected by the noun-collision check", () => {
+    assert.deepEqual(enrichGermanTerm("warten")?.governs, [{ preposition: "auf", case: "akkusativ" }]);
+    assert.deepEqual(enrichGermanTerm("denken")?.governs, [{ preposition: "an", case: "akkusativ" }]);
+  });
+});
+
 describe("enrichGermanTerm — input handling", () => {
   it("returns null for empty or whitespace-only input", () => {
     assert.equal(enrichGermanTerm(""), null);
