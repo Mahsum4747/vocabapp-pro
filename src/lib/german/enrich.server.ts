@@ -59,6 +59,35 @@ function enrichmentFrom(entries: readonly NounEntry[], inferred: boolean): CardE
   };
 }
 
+/** A lowercase term shaped like a German infinitive — every standard
+ *  infinitive ends in "n" (almost always "-en"; a handful like "wandern",
+ *  "tun" still end in "n"). Only meaningful combined with the lowercase
+ *  check that gates where this is called: an uppercase word ending in "n"
+ *  ("Wagen") is an ordinary noun, not a verb-routing question at all. */
+function looksLikeInfinitive(term: string): boolean {
+  return /^\p{Ll}/u.test(term) && term.endsWith("n");
+}
+
+/**
+ * Whether `entries` (from `lookupNoun(term)`) contain `term`'s own
+ * nominalized-infinitive sense — a noun whose lemma is exactly `term`
+ * recapitalized ("Sehen" for "sehen") AND whose gender is neuter, the one
+ * gender German's infinitive-nominalization rule always produces, with no
+ * exceptions.
+ *
+ * Known, accepted false-negative: an ordinary neuter noun that happens to
+ * end in "-en" too, with no real verb behind it ("Kissen"), is
+ * indistinguishable from a genuine nominalization by this check alone —
+ * both are "neuter noun, lemma = recapitalized term". Typing "kissen"
+ * lowercase would go unfilled rather than resolve to "Kissen", same
+ * "answer less often, be right every time" tradeoff compound.ts already
+ * makes elsewhere. There is no signal left in the string to do better.
+ */
+function hasNominalizedInfinitiveSense(term: string, entries: readonly NounEntry[]): boolean {
+  const capitalized = term.charAt(0).toUpperCase() + term.slice(1);
+  return entries.some((entry) => entry.lemma === capitalized && entry.genus.includes("n"));
+}
+
 /** The lemma of a compound's head (its last part) — the sense that decides
  *  German compound gender and plural — or `null` if the word doesn't split,
  *  or splits ambiguously enough that picking one guess's head would be
@@ -96,7 +125,23 @@ export function enrichGermanTerm(term: string): CardEnrichment | null {
     if (governs.length > 0) return { governs, source: "dict" };
   }
 
-  const direct = enrichmentFrom(lookupNoun(trimmed), false);
+  const nounEntries = lookupNoun(trimmed);
+  // German productively nominalizes almost any verb infinitive into a
+  // neuter noun ("sehen" -> "das Sehen", "essen" -> "das Essen") — a
+  // lowercase, infinitive-shaped term whose only noun sense IS its own
+  // nominalization is genuinely ambiguous between "the verb" and "the
+  // nominalized noun", not a case the dictionary can resolve. Guessing the
+  // noun sense here would wrongly attach a gender/plural — and so, at
+  // display time, an article — to what the user almost certainly meant as
+  // a verb, the exact bug this guards (a verb term rendering as "das
+  // sehen"). Checked BEFORE aggregating senses, not after, so a mixed
+  // result (e.g. "essen" also plural-matching the unrelated noun "Esse")
+  // can't leak a partial answer through either.
+  if (looksLikeInfinitive(trimmed) && hasNominalizedInfinitiveSense(trimmed, nounEntries)) {
+    return null;
+  }
+
+  const direct = enrichmentFrom(nounEntries, false);
   if (direct) return direct;
 
   const headLemma = compoundHeadLemma(trimmed);
