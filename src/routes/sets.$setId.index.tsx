@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/app-shell";
+import { ArticleizedTerm } from "@/components/articleized-term";
 import { OwnerGate, OwnershipStatus } from "@/components/owner-gate";
 import { ModeGrid } from "@/components/mode-grid";
 import { LeitnerBoxes } from "@/components/leitner-boxes";
@@ -50,7 +51,7 @@ import { reviewSummary } from "@/lib/srs";
 import { serializeSetExport } from "@/lib/parse-cards";
 import { useSet, useSetProgress, useStudyStore } from "@/lib/store";
 import { resolveSetLanguages } from "@/lib/types";
-import { articleizedTerm, profileFor } from "@/lib/lang/profiles";
+import { profileFor } from "@/lib/lang/profiles";
 import type { Card, CardStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -458,7 +459,11 @@ function SetPage() {
                               studySet.isReference && "text-base md:text-lg",
                             )}
                           >
-                            {articleizedTerm(card.term, card.enrichment, termProfile)}
+                            <ArticleizedTerm
+                              term={card.term}
+                              enrichment={card.enrichment}
+                              profile={termProfile}
+                            />
                           </p>
                           <SpeakButton text={card.term} language={setLanguages.term ?? studySet.termLanguage} />
                           {isExcluded ? (

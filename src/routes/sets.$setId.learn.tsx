@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/app-shell";
+import { ArticleizedTerm } from "@/components/articleized-term";
 import { Definition2Line } from "@/components/definition2-line";
 import { EmptyState } from "@/components/empty-state";
 import { ExampleLine } from "@/components/example-line";
@@ -19,7 +20,7 @@ import { isCardActive, resolveSetLanguages } from "@/lib/types";
 import { answersMatch, parseIntSearchParam, cn } from "@/lib/utils";
 import { queuedCards } from "@/lib/srs";
 import { ratingForOutcome, useReviewLogger } from "@/lib/review-log";
-import { articleWordsForAnswer, articleizedTerm, profileFor } from "@/lib/lang/profiles";
+import { articleWordsForAnswer, profileFor } from "@/lib/lang/profiles";
 
 type Search = { box?: number };
 
@@ -270,9 +271,18 @@ function LearnPage() {
           />
           {revealed ? (
             <p className={cn("text-sm", isCorrect ? "text-success" : "text-danger")}>
-              {isCorrect
-                ? "Correct"
-                : `Correct answer: ${articleizedTerm(item.answer, answerCard?.enrichment, termProfile)}`}
+              {isCorrect ? (
+                "Correct"
+              ) : (
+                <>
+                  Correct answer:{" "}
+                  <ArticleizedTerm
+                    term={item.answer}
+                    enrichment={answerCard?.enrichment}
+                    profile={termProfile}
+                  />
+                </>
+              )}
             </p>
           ) : null}
           <Button type="submit" className="w-full">

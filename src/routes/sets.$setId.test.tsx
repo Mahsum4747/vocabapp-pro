@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/app-shell";
+import { ArticleizedTerm } from "@/components/articleized-term";
 import { Definition2Line } from "@/components/definition2-line";
 import { EmptyState } from "@/components/empty-state";
 import { ExampleLine } from "@/components/example-line";
@@ -13,7 +14,7 @@ import { useSet, useSetProgress, useStudyStore } from "@/lib/store";
 import { isCardActive, resolveSetLanguages } from "@/lib/types";
 import { answersMatch, parseIntSearchParam, cn } from "@/lib/utils";
 import { ratingForOutcome, useReviewLogger } from "@/lib/review-log";
-import { articleWordsForAnswer, articleizedTerm, profileFor } from "@/lib/lang/profiles";
+import { articleWordsForAnswer, profileFor } from "@/lib/lang/profiles";
 
 type Search = { box?: number };
 
@@ -202,7 +203,9 @@ function TestPage() {
     ignorableLeadingWords: articleWordsForAnswer(answerCard?.enrichment, termProfile),
   };
   const displayAnswer =
-    q.type === "written" ? articleizedTerm(q.answer, answerCard?.enrichment, termProfile) : "";
+    q.type === "written" ? (
+      <ArticleizedTerm term={q.answer} enrichment={answerCard?.enrichment} profile={termProfile} />
+    ) : null;
 
   return (
     <StudyChrome
@@ -284,9 +287,11 @@ function TestPage() {
                 answersMatch(written, q.answer, matchOptions) ? "text-success" : "text-danger",
               )}
             >
-              {answersMatch(written, q.answer, matchOptions)
-                ? "Correct"
-                : `Correct answer: ${displayAnswer}`}
+              {answersMatch(written, q.answer, matchOptions) ? (
+                "Correct"
+              ) : (
+                <>Correct answer: {displayAnswer}</>
+              )}
             </p>
           ) : null}
           <Button type="submit" className="w-full">

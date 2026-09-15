@@ -1,6 +1,7 @@
+import { ArticleizedTerm } from "./articleized-term";
 import { SpeakButton } from "./speak-button";
 import { cn } from "@/lib/utils";
-import { articleizedTerm, profileFor } from "@/lib/lang/profiles";
+import { profileFor } from "@/lib/lang/profiles";
 import type { LanguageCode } from "@/lib/lang/languages";
 import type { CardEnrichment } from "@/lib/types";
 
@@ -35,7 +36,6 @@ export function FlashCard({
   onFlip: () => void;
 }) {
   const profile = profileFor(termLangCode);
-  const displayTerm = articleizedTerm(term, enrichment, profile);
   return (
     <button
       type="button"
@@ -79,7 +79,11 @@ export function FlashCard({
               : "font-display text-3xl font-semibold tracking-tight md:text-4xl",
           )}
         >
-          {flipped ? definition : displayTerm}
+          {flipped ? (
+            definition
+          ) : (
+            <ArticleizedTerm term={term} enrichment={enrichment} profile={profile} />
+          )}
         </span>
         {/* Second definition sits right under the primary one — same side,
             same question, just a different language. Never leaks the term. */}
