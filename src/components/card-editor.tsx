@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { HelpCircle, ImagePlus, Loader2, Plus, Sparkles, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { ALLOWED_IMAGE_TYPES, MAX_IMAGE_BYTES, uploadCardImage } from "@/lib/card-images";
@@ -81,6 +81,22 @@ export function CardEditor({
   topic?: string;
 }) {
   const profile = profileFor(termLangCode);
+  // Every handler below that needs "the current card/term" but might run
+  // asynchronously (an onBlur-triggered network call, a promise
+  // continuation) reads THIS, not the `cards` prop directly. A plain
+  // closure over `cards` is only ever as fresh as the render that created
+  // it — if a browser dispatches blur before React has committed the
+  // render from the last keystroke (observed, reproducibly, when blur is
+  // triggered by a mouse click to another field right after typing), the
+  // handler's own `cards` closure can still be the PRE-typing snapshot
+  // even though the input's live value and this ref both already show the
+  // typed term. A ref's `.current` is mutated synchronously on every
+  // render, before the browser can dispatch any event reacting to that
+  // render, so dereferencing it here is never stale in the way a captured
+  // `cards` binding can be. `update()` writes through it too, so a patch
+  // computed from a stale closure can never clobber a newer one.
+  const cardsRef = useRef(cards);
+  cardsRef.current = cards;
   const [uploadingId, setUploadingId] = useState<string | null>(null);
   // Keyed `${cardId}:${field}` rather than just the card id: a card's primary
   // and second-definition suggestions are independent requests and can
@@ -133,15 +149,16 @@ export function CardEditor({
   >({});
 
   function update(id: string, patch: Partial<EditorCard>) {
-    onChange(cards.map((card) => (card.id === id ? { ...card, ...patch } : card)));
+    onChange(cardsRef.current.map((card) => (card.id === id ? { ...card, ...patch } : card)));
   }
 
   function remove(id: string) {
-    onChange(cards.length <= 1 ? cards : cards.filter((card) => card.id !== id));
+    const current = cardsRef.current;
+    onChange(current.length <= 1 ? current : current.filter((card) => card.id !== id));
   }
 
   function add() {
-    onChange([...cards, { id: crypto.randomUUID(), term: "", definition: "" }]);
+    onChange([...cardsRef.current, { id: crypto.randomUUID(), term: "", definition: "" }]);
   }
 
   async function uploadImage(id: string, file: File) {
@@ -181,7 +198,7 @@ export function CardEditor({
    * whose language wasn't even the term's.
    */
   async function suggest(id: string, field: "primary" | "second") {
-    const card = cards.find((c) => c.id === id);
+    const card = cardsRef.current.find((c) => c.id === id);
     const term = card?.term.trim();
     if (!term) return;
     if (field === "second" && !definitionLanguage2?.trim()) return;
@@ -263,7 +280,7 @@ export function CardEditor({
    */
   async function checkBundledSuggestions(id: string): Promise<BundledEntry | null> {
     if (!profile.hasBundledSuggestions) return null;
-    const card = cards.find((c) => c.id === id);
+    const card = cardsRef.current.find((c) => c.id === id);
     const term = card?.term.trim();
     if (!term) return null;
     let entry: BundledEntry | null = null;
@@ -338,7 +355,7 @@ export function CardEditor({
       ...prev,
       [id]: { open: true, status: "loading-ai", examples: [], fetchedForTerm: term },
     }));
-    const otherTerms = cards
+    const otherTerms = cardsRef.current
       .filter((c) => c.id !== id && c.term.trim())
       .map((c) => c.term.trim())
       .slice(0, 5);
@@ -391,7 +408,7 @@ export function CardEditor({
    * should never be mistaken for a finished result.
    */
   function toggleExampleSuggestions(id: string) {
-    const term = cards.find((c) => c.id === id)?.term.trim();
+    const term = cardsRef.current.find((c) => c.id === id)?.term.trim();
     if (!term) return;
     const state = exampleSuggestions[id];
     if (state?.open) {
@@ -429,7 +446,7 @@ export function CardEditor({
    * treats as "don't touch the example field").
    */
   function pickTranslationChip(id: string, field: "primary" | "second", word: string) {
-    const card = cards.find((c) => c.id === id);
+    const card = cardsRef.current.find((c) => c.id === id);
     const currentValue = field === "primary" ? card?.definition : card?.definition2;
     if (currentValue?.trim()) {
       setConfirmDialog({ cardId: id, field, suggestion: { definition: word } });
@@ -455,7 +472,7 @@ export function CardEditor({
    */
   async function checkGermanEnrichment(id: string) {
     if (!profile.hasNounEnrichment) return;
-    const card = cards.find((c) => c.id === id);
+    const card = cardsRef.current.find((c) => c.id === id);
     const term = card?.term.trim();
     if (!term || card?.enrichment?.source === "user") return;
     try {
@@ -470,7 +487,7 @@ export function CardEditor({
    *  always starts from what's currently shown (dictionary guess or not)
    *  so correcting one field doesn't blank out the other. */
   function setEnrichmentField(id: string, field: "gender" | "plural", value: string) {
-    const current = cards.find((c) => c.id === id)?.enrichment;
+    const current = cardsRef.current.find((c) => c.id === id)?.enrichment;
     const gender: GrammaticalGender | undefined =
       field === "gender" ? (value as GrammaticalGender) || undefined : current?.gender;
     const plural = field === "plural" ? value.trim() || undefined : current?.plural;

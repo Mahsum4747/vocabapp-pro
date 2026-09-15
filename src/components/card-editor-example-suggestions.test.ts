@@ -213,3 +213,44 @@ describe("generation failure does not destroy existing input", () => {
     assert.match(block, /status: "error"/);
   });
 });
+
+describe("stale-closure hardening: handlers read cardsRef, never a captured `cards` binding", () => {
+  // Real bug: a mouse click moving focus away from the Term field right
+  // after typing can dispatch `blur` before React has committed the render
+  // from the last keystroke. A handler that closes over `cards` directly
+  // is then stale — `checkGermanEnrichment`/`checkBundledSuggestions` see
+  // the PRE-typing term and silently no-op, even though the input's own
+  // live value already shows what was typed. `cardsRef.current` is mutated
+  // synchronously every render, before any event dispatched in reaction to
+  // that render can run, so it can't go stale the same way.
+  it("no handler reads `cards.` directly — only the JSX render's own cards.map", () => {
+    const source = readSource();
+    const matches = [...source.matchAll(/\bcards\.(?!map\()/g)];
+    assert.equal(
+      matches.length,
+      0,
+      "found a direct `cards.` read outside cards.map — should read cardsRef.current instead",
+    );
+  });
+
+  it("cardsRef is declared and kept in sync every render", () => {
+    const source = readSource();
+    assert.match(source, /const cardsRef = useRef\(cards\);/);
+    assert.match(source, /cardsRef\.current = cards;/);
+  });
+
+  it("update(), the single write path, reads cardsRef.current as its base", () => {
+    const source = readSource();
+    const start = source.indexOf("function update(id");
+    const body = source.slice(start, start + 200);
+    assert.match(body, /cardsRef\.current\.map/);
+  });
+
+  it("every id-lookup helper (checkGermanEnrichment, checkBundledSuggestions, suggest, toggleExampleSuggestions, pickTranslationChip, setEnrichmentField) reads cardsRef.current", () => {
+    const source = readSource();
+    const finds = [...source.matchAll(/cardsRef\.current\.find\(/g)];
+    // suggest, checkBundledSuggestions, toggleExampleSuggestions,
+    // pickTranslationChip, checkGermanEnrichment, setEnrichmentField.
+    assert.equal(finds.length, 6, `expected 6 cardsRef.current.find(...) call sites, found ${finds.length}`);
+  });
+});
