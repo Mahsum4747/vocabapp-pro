@@ -4,13 +4,22 @@ import { readFileSync } from "node:fs";
 
 /**
  * Source-scan regression tests for the example-suggestion panel's core
- * promise: it never fires on its own. There is no component-render harness
- * in this repo (`no browser testing`), and the property these guard —
- * "the network call only happens from an explicit click, never from typing,
- * a term change, or an effect" — is a property of the SOURCE's wiring, not
- * of any one render's output. Same technique as mc-article-safety.test.ts,
- * for the same reason: cheap, and it fails loudly if a future edit
- * reintroduces an automatic call as a side effect of something unrelated.
+ * promise: the AI call never fires on its own. There is no component-render
+ * harness in this repo (`no browser testing`), and the property these
+ * guard — "the Gemini call only happens from an explicit click, never from
+ * typing, a term change, or an effect" — is a property of the SOURCE's
+ * wiring, not of any one render's output. Same technique as
+ * mc-article-safety.test.ts, for the same reason: cheap, and it fails
+ * loudly if a future edit reintroduces an automatic call as a side effect
+ * of something unrelated.
+ *
+ * Extended to cover the bundled-first flow (checkBundledSuggestions /
+ * openExamplePanel / the Definition tap-to-fill chips): the FREE bundled
+ * lookup is allowed to run on Term-field blur (no quota to protect), but
+ * the AI call must still only ever be reachable from an explicit click —
+ * "bundled first, AI only on request" is the property these additions
+ * guard, plus the separate, explicitly-required invariant that a bundled
+ * result never rewrites the user's own Term casing or touches `example`.
  */
 
 const SOURCE_PATH = "src/components/card-editor.tsx";
@@ -36,19 +45,43 @@ describe("no automatic generation — the component cannot auto-fetch even by ac
     assert.doesNotMatch(match![0], /fetchExampleSuggestions|suggestExampleSentences/);
   });
 
-  it("fetchExampleSuggestions is only ever called from two explicit click handlers", () => {
+  it("fetchExampleSuggestions (the AI call) is only ever reachable from explicit click handlers", () => {
     const source = readSource();
     const callSites = [...source.matchAll(/fetchExampleSuggestions\(/g)];
-    // 1 definition + 1 internal call from toggle (first open) + 1 from the
-    // Retry button's onClick. Three total, none of them typing- or
-    // term-change-triggered.
-    assert.equal(callSites.length, 3, "unexpected number of fetchExampleSuggestions references");
+    // 1 definition + 3 explicit onClick call sites: the Retry button, the
+    // "Generate with AI" action shown alongside bundled results, and the
+    // one shown alone when nothing is bundled. `toggleExampleSuggestions`
+    // (the panel's open/close toggle) no longer calls this directly — it
+    // goes through `openExamplePanel`'s bundled-first check instead. None
+    // of the four is typing- or term-change-triggered.
+    assert.equal(callSites.length, 4, "unexpected number of fetchExampleSuggestions references");
   });
 
   it("suggestExampleSentences (the server call) is invoked from exactly one place", () => {
     const source = readSource();
     const callSites = [...source.matchAll(/suggestExampleSentences\(\{/g)];
     assert.equal(callSites.length, 1, "the AI call must have exactly one call site: inside fetchExampleSuggestions");
+  });
+
+  it("lookupBundledSuggestions (the free, bundled call) is invoked from exactly one place", () => {
+    const source = readSource();
+    const callSites = [...source.matchAll(/lookupBundledSuggestions\(\{/g)];
+    assert.equal(callSites.length, 1, "expected exactly one call site: inside checkBundledSuggestions");
+  });
+
+  it("checkBundledSuggestions is gated on hasBundledSuggestions before it does anything else", () => {
+    const source = readSource();
+    const start = source.indexOf("async function checkBundledSuggestions");
+    const body = source.slice(start, start + 200);
+    assert.match(body, /if \(!profile\.hasBundledSuggestions\) return null;/);
+  });
+
+  it("the Term field's blur checks both the dictionary and the bundled dataset, nothing else", () => {
+    const source = readSource();
+    const idx = source.indexOf("onBlur={() => {");
+    const block = source.slice(idx, idx + 200);
+    assert.match(block, /void checkGermanEnrichment\(card\.id\)/);
+    assert.match(block, /void checkBundledSuggestions\(card\.id\)/);
   });
 });
 
@@ -65,11 +98,73 @@ describe("explicit click triggers generation", () => {
     assert.match(nearby, /Suggest example/);
   });
 
-  it("toggleExampleSuggestions calls fetchExampleSuggestions when opening fresh", () => {
+  it("toggleExampleSuggestions checks the bundled dataset FIRST when opening fresh, not the AI call directly", () => {
     const source = readSource();
     const start = source.indexOf("function toggleExampleSuggestions");
     const body = source.slice(start, start + 700);
-    assert.match(body, /void fetchExampleSuggestions\(id, term\)/);
+    assert.match(body, /void openExamplePanel\(id, term\)/);
+    assert.doesNotMatch(body, /void fetchExampleSuggestions/);
+  });
+
+  it("openExamplePanel decides bundled-vs-AI-only from the lookup result, never fetches AI itself", () => {
+    const source = readSource();
+    const start = source.indexOf("async function openExamplePanel");
+    const end = source.indexOf("\n  async function fetchExampleSuggestions");
+    assert.ok(start !== -1 && end !== -1 && end > start);
+    const body = source.slice(start, end);
+    assert.doesNotMatch(body, /fetchExampleSuggestions/);
+    assert.match(body, /status: "bundled"/);
+    assert.match(body, /status: "ai-only"/);
+  });
+});
+
+describe("bundled-first: no automatic AI call, ever, when nothing is bundled", () => {
+  it('the "ai-only" panel branch renders the Generate action, not the bundled examples list', () => {
+    const source = readSource();
+    const idx = source.indexOf('status === "ai-only" ? (');
+    assert.notEqual(idx, -1, 'expected an "ai-only" branch in the panel JSX');
+    const branch = source.slice(idx, source.indexOf(") : (", idx));
+    assert.match(branch, /Generate with AI/);
+    assert.doesNotMatch(branch, /\.examples\.map/);
+  });
+
+  it('a "Generate with AI" label is actually rendered in exactly two JSX positions', () => {
+    const source = readSource();
+    // Matches only the rendered text nodes (indented on their own line,
+    // right after a <Sparkles /> icon) — not the several doc-comment
+    // mentions of the same phrase elsewhere in the file.
+    const rendered = [...source.matchAll(/<Sparkles className="size-3\.5" \/>\s*\n\s*Generate with AI/g)];
+    // One shown alongside bundled results, one shown alone when there are
+    // none. Both sit next to an explicit onClick — checked by the
+    // fetchExampleSuggestions call-site count test above.
+    assert.equal(rendered.length, 2);
+  });
+});
+
+describe("bundled Definition chips never touch `term` or `example`", () => {
+  it("pickTranslationChip only ever writes definition/definition2, never term or example", () => {
+    const source = readSource();
+    const start = source.indexOf("function pickTranslationChip");
+    const end = source.indexOf("\n  return (", start);
+    assert.ok(start !== -1 && end !== -1);
+    const body = source.slice(start, end);
+    assert.doesNotMatch(body, /\bterm:/);
+    assert.doesNotMatch(body, /\bexample:/);
+    assert.match(body, /definition: word/);
+    assert.match(body, /definition2: word/);
+  });
+
+  it("nothing in the file writes to `term` outside the Term field's own onChange", () => {
+    const source = readSource();
+    const writes = [...source.matchAll(/update\([^,]+,\s*\{[^}]*\bterm:/g)];
+    assert.equal(writes.length, 1, "expected exactly one `term:` writer — the Term field's onChange");
+  });
+
+  it("chipWordsFor never echoes the query back — it only ever reads translations off a BundledEntry", () => {
+    const source = readSource();
+    const start = source.indexOf("function chipWordsFor");
+    const body = source.slice(start, start + 400);
+    assert.doesNotMatch(body, /card\.term/, "chip words must come from the dictionary entry, not the typed term");
   });
 });
 
