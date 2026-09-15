@@ -103,6 +103,40 @@ describe("enrichGermanTerm — compound-derived values are marked as guesses", (
   });
 });
 
+describe("enrichGermanTerm — verb government (Rektion)", () => {
+  it("fills governs for a known verb, lowercase term", () => {
+    const result = enrichGermanTerm("warten");
+    assert.deepEqual(result?.governs, [{ preposition: "auf", case: "akkusativ" }]);
+    assert.equal(result?.source, "dict");
+    assert.equal(result?.gender, undefined);
+    assert.equal(result?.plural, undefined);
+  });
+
+  it("only routes to the verb path for a lowercase term", () => {
+    assert.deepEqual(enrichGermanTerm("warten")?.governs, [{ preposition: "auf", case: "akkusativ" }]);
+    // Capitalized "Warten" is a real noun match too — not the nominalized
+    // infinitive, but "die Warte" (a lookout point)'s plural, found via the
+    // ordinary case-insensitive noun/plural lookup. The point of this case:
+    // a capitalized term must go through the noun path and never the verb
+    // dataset, whatever that noun path happens to resolve to.
+    const result = enrichGermanTerm("Warten");
+    assert.equal(result?.governs, undefined);
+    assert.equal(result?.gender, "f");
+  });
+
+  it("never fills both gender/plural and governs on the same result", () => {
+    const nounResult = enrichGermanTerm("Tisch");
+    assert.equal(nounResult?.governs, undefined);
+    const verbResult = enrichGermanTerm("denken");
+    assert.equal(verbResult?.gender, undefined);
+    assert.equal(verbResult?.plural, undefined);
+  });
+
+  it("returns null for a lowercase word with no noun or verb match", () => {
+    assert.equal(enrichGermanTerm("xyzzyfoo"), null);
+  });
+});
+
 describe("enrichGermanTerm — input handling", () => {
   it("returns null for empty or whitespace-only input", () => {
     assert.equal(enrichGermanTerm(""), null);

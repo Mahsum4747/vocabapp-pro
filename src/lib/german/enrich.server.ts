@@ -1,5 +1,6 @@
 import { analyzeCompound } from "./compound.ts";
 import { germanNouns, lookupNoun } from "./nouns.server.ts";
+import { lookupVerbGovernment } from "./verb-government.server.ts";
 import { isNameOnly, type NounEntry } from "./types.ts";
 import type { CardEnrichment, GrammaticalGender } from "../types.ts";
 
@@ -74,10 +75,35 @@ export function enrichGermanTerm(term: string): CardEnrichment | null {
   const trimmed = term.trim();
   if (!trimmed) return null;
 
+  // Verb government is tried FIRST, but only for a term that starts
+  // lowercase — the same nouns-are-capitalized/verbs-are-not signal German
+  // orthography already gives every other card, and the reason this has to
+  // come before the noun lookup rather than after it: `lookupNoun` indexes
+  // plural forms case-insensitively alongside lemmas, so a lowercase verb
+  // can coincidentally collide with some unrelated noun's plural ("warten"
+  // case-folds onto "Warten", the plural of "die Warte" — a lookout point,
+  // nothing to do with the verb "to wait"). Trying the small, precise verb
+  // dataset first avoids ever surfacing a wrong noun guess for an actual
+  // verb card. A capitalized term never reaches this at all, so it can
+  // never steal a real noun's gender/plural the other way.
+  //
+  // Known edge case, not expected to matter: a verb IS capitalized in
+  // imperative mood at the start of a sentence ("Warte auf mich!"). `term`
+  // fields hold a single dictionary-form word ("warten"), never a sentence,
+  // so that capitalization rule has nothing to trigger on here.
+  if (/^\p{Ll}/u.test(trimmed)) {
+    const governs = lookupVerbGovernment(trimmed);
+    if (governs.length > 0) return { governs, source: "dict" };
+  }
+
   const direct = enrichmentFrom(lookupNoun(trimmed), false);
   if (direct) return direct;
 
   const headLemma = compoundHeadLemma(trimmed);
-  if (!headLemma) return null;
-  return enrichmentFrom(lookupNoun(headLemma), true);
+  if (headLemma) {
+    const compound = enrichmentFrom(lookupNoun(headLemma), true);
+    if (compound) return compound;
+  }
+
+  return null;
 }
