@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { GraduationCap, Layers, LayoutGrid, ListChecks, SpellCheck } from "lucide-react";
+import { GraduationCap, Layers, LayoutGrid, ListChecks, SpellCheck, TextCursorInput } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const MODES = [
@@ -31,6 +31,12 @@ const ARTICLE_DRILL_MODE = {
   icon: SpellCheck,
 };
 
+const CLOZE_MODE = {
+  to: "/sets/$setId/cloze" as const,
+  title: "Cloze",
+  icon: TextCursorInput,
+};
+
 export function ModeGrid({
   setId,
   box,
@@ -39,14 +45,24 @@ export function ModeGrid({
    *  German card with a known gender (Phase 3C Part B). Never shown
    *  otherwise: no color, no drill entry for a set that can't use it. */
   showArticleDrill = false,
+  /** Show the cloze (fill-in-the-blank) tile — only when the set has at
+   *  least one card whose own example sentence can be blanked. Unlike the
+   *  article drill, cloze grades through the real FSRS/CardProgress path,
+   *  so it stays in the normal box-filtered mode list, not split out. */
+  showCloze = false,
 }: {
   setId: string;
   /** Restrict the study session to just this Leitner box (0..MASTERY_MAX). */
   box?: number;
   disabled?: boolean;
   showArticleDrill?: boolean;
+  showCloze?: boolean;
 }) {
-  const modes = showArticleDrill ? [...MODES, ARTICLE_DRILL_MODE] : MODES;
+  const modes = [
+    ...MODES,
+    ...(showCloze ? [CLOZE_MODE] : []),
+    ...(showArticleDrill ? [ARTICLE_DRILL_MODE] : []),
+  ];
   return (
     <div className="flex flex-wrap gap-2">
       {modes.map((mode) => {
