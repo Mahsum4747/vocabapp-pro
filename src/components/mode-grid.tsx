@@ -89,10 +89,10 @@ export function ModeGrid({
       {modes.map((mode) => {
         const Icon = mode.icon;
         const className = cn(
-          "flex min-w-28 flex-1 items-center justify-center gap-2 rounded-xl bg-surface px-4 py-3 text-sm font-medium shadow-[var(--shadow-border)] transition-[transform,box-shadow] duration-200 ease-[var(--ease-smooth-out)]",
+          "flex min-w-28 flex-1 items-center justify-center gap-2 rounded-xl bg-surface px-4 py-3 text-sm font-medium shadow-[var(--elevation-1)] transition-[transform,box-shadow] duration-[var(--duration-base)] ease-[var(--ease-standard)]",
           disabled
             ? "opacity-50"
-            : "hover:-translate-y-0.5 hover:shadow-[var(--shadow-border-hover)]",
+            : "hover:-translate-y-0.5 hover:shadow-[var(--elevation-2)]",
         );
         const inner = (
           <>

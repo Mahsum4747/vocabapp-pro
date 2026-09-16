@@ -4,15 +4,15 @@ import type { ButtonHTMLAttributes } from "react";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-[transform,background-color,color,box-shadow,opacity] duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 disabled:pointer-events-none disabled:opacity-40 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 active:not-disabled:scale-[0.96]",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-[transform,background-color,color,box-shadow,opacity] duration-[var(--duration-fast)] ease-[var(--ease-standard)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 disabled:pointer-events-none disabled:opacity-40 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 active:not-disabled:scale-[0.96]",
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-fg shadow-[var(--shadow-border)] hover:opacity-90",
+        default: "bg-primary text-primary-fg shadow-[var(--elevation-1)] hover:-translate-y-0.5 hover:shadow-[var(--elevation-2)] hover:opacity-90",
         secondary:
           "bg-surface-2 text-fg hover:bg-border",
         outline:
-          "bg-surface text-fg shadow-[var(--shadow-border)] hover:shadow-[var(--shadow-border-hover)]",
+          "bg-surface text-fg shadow-[var(--elevation-1)] hover:-translate-y-0.5 hover:shadow-[var(--elevation-2)]",
         ghost: "text-fg hover:bg-surface-2",
         danger: "bg-danger text-primary-fg hover:opacity-90",
       },

@@ -45,11 +45,12 @@ export function FlashCard({
       type="button"
       onClick={onFlip}
       className={cn(
-        "flex min-h-80 w-full flex-col justify-between gap-4 rounded-2xl p-8 text-left shadow-[var(--shadow-card)] transition-[background-color,color,transform] duration-200 ease-[var(--ease-smooth-out)] md:min-h-96",
+        "flex min-h-80 w-full flex-col justify-between gap-4 rounded-2xl p-8 text-left shadow-[var(--elevation-2)] transition-[background-color,color] duration-[var(--duration-base)] ease-[var(--ease-standard)] md:min-h-96",
         flipped ? "bg-primary text-primary-fg" : "bg-surface text-fg",
       )}
       aria-label={flipped ? "Show term" : "Show definition"}
     >
+      <div key={flipped ? "back" : "front"} className="card-face flex flex-1 flex-col justify-between gap-4">
       <div className="flex items-center justify-between">
         <span
           className={cn(
@@ -125,6 +126,7 @@ export function FlashCard({
       <span className={cn("text-sm", flipped ? "text-primary-fg/70" : "text-subtle")}>
         Tap to flip
       </span>
+      </div>
     </button>
   );
 }
