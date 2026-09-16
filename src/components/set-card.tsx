@@ -95,7 +95,7 @@ export function SetCard({ set }: { set: StudySet }) {
               {notStarted > 0 ? ` · ${notStarted} not started` : ""}
             </span>
           </div>
-          <Progress value={mastery} />
+          <Progress value={mastery} tone="mastery" />
         </div>
       )}
       <p className="mt-4 text-xs text-subtle">{when}</p>

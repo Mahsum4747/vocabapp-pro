@@ -297,7 +297,7 @@ function SetPage() {
                   {mastery}%{notStarted > 0 ? ` · ${notStarted} not started` : ""}
                 </span>
               </div>
-              <Progress value={mastery} className="mt-1.5" />
+              <Progress value={mastery} tone="mastery" className="mt-1.5" />
             </div>
             <LeitnerBoxes
               cards={studySet.cards}

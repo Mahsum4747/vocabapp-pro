@@ -36,6 +36,12 @@ export function LeitnerBoxes({
       {boxes.map((count, box) => {
         const clickable = count > 0;
         const isSelected = selectedBox === box;
+        // Higher boxes read as more mastered, so the row itself shows
+        // progress at a glance: B0-B1 stay neutral, B2-B3 pick up a light
+        // success tint, and B4-B5 (near/at MASTERY_MAX) get the fuller tint
+        // plus a small glow — all from the existing success tokens, nothing
+        // new. Selection always wins, same as before.
+        const tier = box <= 1 ? "low" : box <= 3 ? "mid" : "high";
         return (
           <button
             key={box}
@@ -46,20 +52,31 @@ export function LeitnerBoxes({
             onClick={() => onSelectBox(isSelected ? null : box)}
             className={cn(
               "flex min-w-10 flex-col items-center gap-0.5 rounded-lg px-2 py-1.5 transition-colors",
-              isSelected ? "bg-primary text-primary-fg" : "bg-surface-2",
-              clickable && !isSelected && "hover:bg-border",
+              isSelected
+                ? "bg-primary text-primary-fg"
+                : tier === "high"
+                  ? "bg-success-strong shadow-[var(--glow-success)]"
+                  : tier === "mid"
+                    ? "bg-tier-mid"
+                    : "bg-tier-neutral",
+              clickable && !isSelected && tier === "low" && "hover:bg-border",
               !clickable && "cursor-not-allowed opacity-50",
             )}
           >
             <p
               className={cn(
                 "text-[9px] font-medium tracking-wide uppercase",
-                isSelected ? "text-primary-fg/70" : "text-muted",
+                isSelected ? "text-primary-fg/70" : tier === "high" ? "text-success" : "text-muted",
               )}
             >
               B{box}
             </p>
-            <p className="text-xs font-medium tabular-nums">
+            <p
+              className={cn(
+                "text-xs font-medium tabular-nums",
+                !isSelected && tier === "high" && "text-success",
+              )}
+            >
               <AnimatedNumber value={count} />
             </p>
           </button>
@@ -83,11 +100,11 @@ export function LeitnerBoxes({
       ) : null}
       {notStarted > 0 ? (
         <span
-          className="flex min-w-10 flex-col items-center gap-0.5 rounded-lg bg-surface-2 px-2 py-1.5"
+          className="flex min-w-10 flex-col items-center gap-0.5 rounded-lg bg-streak/10 px-2 py-1.5"
           aria-label={`${notStarted} card${notStarted === 1 ? "" : "s"} not started`}
         >
-          <p className="text-[9px] font-medium tracking-wide text-muted uppercase">New</p>
-          <p className="text-xs font-medium tabular-nums">
+          <p className="text-[9px] font-medium tracking-wide text-streak uppercase">New</p>
+          <p className="text-xs font-medium text-streak tabular-nums">
             <AnimatedNumber value={notStarted} />
           </p>
         </span>
