@@ -23,6 +23,7 @@ import { Route as SetsSetIdEditRouteImport } from './routes/sets.$setId.edit'
 import { Route as SetsSetIdFlashcardsRouteImport } from './routes/sets.$setId.flashcards'
 import { Route as SetsSetIdLearnRouteImport } from './routes/sets.$setId.learn'
 import { Route as SetsSetIdMatchRouteImport } from './routes/sets.$setId.match'
+import { Route as SetsSetIdSatzbauRouteImport } from './routes/sets.$setId.satzbau'
 import { Route as SetsSetIdTestRouteImport } from './routes/sets.$setId.test'
 
 const IndexRoute = IndexRouteImport.update({
@@ -95,6 +96,11 @@ const SetsSetIdMatchRoute = SetsSetIdMatchRouteImport.update({
   path: '/match',
   getParentRoute: () => SetsSetIdRoute,
 } as any)
+const SetsSetIdSatzbauRoute = SetsSetIdSatzbauRouteImport.update({
+  id: '/satzbau',
+  path: '/satzbau',
+  getParentRoute: () => SetsSetIdRoute,
+} as any)
 const SetsSetIdTestRoute = SetsSetIdTestRouteImport.update({
   id: '/test',
   path: '/test',
@@ -115,6 +121,7 @@ export interface FileRoutesByFullPath {
   '/sets/$setId/flashcards': typeof SetsSetIdFlashcardsRoute
   '/sets/$setId/learn': typeof SetsSetIdLearnRoute
   '/sets/$setId/match': typeof SetsSetIdMatchRoute
+  '/sets/$setId/satzbau': typeof SetsSetIdSatzbauRoute
   '/sets/$setId/test': typeof SetsSetIdTestRoute
   '/sets/$setId/': typeof SetsSetIdIndexRoute
 }
@@ -131,6 +138,7 @@ export interface FileRoutesByTo {
   '/sets/$setId/flashcards': typeof SetsSetIdFlashcardsRoute
   '/sets/$setId/learn': typeof SetsSetIdLearnRoute
   '/sets/$setId/match': typeof SetsSetIdMatchRoute
+  '/sets/$setId/satzbau': typeof SetsSetIdSatzbauRoute
   '/sets/$setId/test': typeof SetsSetIdTestRoute
   '/sets/$setId': typeof SetsSetIdIndexRoute
 }
@@ -149,6 +157,7 @@ export interface FileRoutesById {
   '/sets/$setId/flashcards': typeof SetsSetIdFlashcardsRoute
   '/sets/$setId/learn': typeof SetsSetIdLearnRoute
   '/sets/$setId/match': typeof SetsSetIdMatchRoute
+  '/sets/$setId/satzbau': typeof SetsSetIdSatzbauRoute
   '/sets/$setId/test': typeof SetsSetIdTestRoute
   '/sets/$setId/': typeof SetsSetIdIndexRoute
 }
@@ -168,6 +177,7 @@ export interface FileRouteTypes {
     | '/sets/$setId/flashcards'
     | '/sets/$setId/learn'
     | '/sets/$setId/match'
+    | '/sets/$setId/satzbau'
     | '/sets/$setId/test'
     | '/sets/$setId/'
   fileRoutesByTo: FileRoutesByTo
@@ -184,6 +194,7 @@ export interface FileRouteTypes {
     | '/sets/$setId/flashcards'
     | '/sets/$setId/learn'
     | '/sets/$setId/match'
+    | '/sets/$setId/satzbau'
     | '/sets/$setId/test'
     | '/sets/$setId'
   id:
@@ -201,6 +212,7 @@ export interface FileRouteTypes {
     | '/sets/$setId/flashcards'
     | '/sets/$setId/learn'
     | '/sets/$setId/match'
+    | '/sets/$setId/satzbau'
     | '/sets/$setId/test'
     | '/sets/$setId/'
   fileRoutesById: FileRoutesById
@@ -315,6 +327,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SetsSetIdMatchRouteImport
       parentRoute: typeof SetsSetIdRoute
     }
+    '/sets/$setId/satzbau': {
+      id: '/sets/$setId/satzbau'
+      path: '/satzbau'
+      fullPath: '/sets/$setId/satzbau'
+      preLoaderRoute: typeof SetsSetIdSatzbauRouteImport
+      parentRoute: typeof SetsSetIdRoute
+    }
     '/sets/$setId/test': {
       id: '/sets/$setId/test'
       path: '/test'
@@ -332,6 +351,7 @@ interface SetsSetIdRouteChildren {
   SetsSetIdFlashcardsRoute: typeof SetsSetIdFlashcardsRoute
   SetsSetIdLearnRoute: typeof SetsSetIdLearnRoute
   SetsSetIdMatchRoute: typeof SetsSetIdMatchRoute
+  SetsSetIdSatzbauRoute: typeof SetsSetIdSatzbauRoute
   SetsSetIdTestRoute: typeof SetsSetIdTestRoute
   SetsSetIdIndexRoute: typeof SetsSetIdIndexRoute
 }
@@ -343,6 +363,7 @@ const SetsSetIdRouteChildren: SetsSetIdRouteChildren = {
   SetsSetIdFlashcardsRoute: SetsSetIdFlashcardsRoute,
   SetsSetIdLearnRoute: SetsSetIdLearnRoute,
   SetsSetIdMatchRoute: SetsSetIdMatchRoute,
+  SetsSetIdSatzbauRoute: SetsSetIdSatzbauRoute,
   SetsSetIdTestRoute: SetsSetIdTestRoute,
   SetsSetIdIndexRoute: SetsSetIdIndexRoute,
 }
