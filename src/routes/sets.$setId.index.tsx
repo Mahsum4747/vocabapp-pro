@@ -47,6 +47,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { clozeBlankForCard } from "@/lib/cloze";
+import { satzbauChipsForCard } from "@/lib/satzbau";
 import { masteryScoreFor, masteryStats, type ProgressMap } from "@/lib/quiz";
 import { reviewSummary } from "@/lib/srs";
 import { serializeSetExport } from "@/lib/parse-cards";
@@ -94,6 +95,12 @@ function SetPage() {
   // can actually be blanked (not German-specific, unlike the article drill).
   const hasClozeCards =
     studySet?.cards.some((card) => isCardActive(card) && clozeBlankForCard(card) !== null) ?? false;
+  // Gates the Satzbau tile — only when at least one active card's example is
+  // in the 4-12 word range this mode is scoped to (not language-specific,
+  // same as Cloze).
+  const hasSatzbauCards =
+    studySet?.cards.some((card) => isCardActive(card) && satzbauChipsForCard(card) !== null) ??
+    false;
   const progress = useSetProgress(setId);
   const navigate = useNavigate();
   const deleteSet = useStudyStore((s) => s.deleteSet);
@@ -324,6 +331,7 @@ function SetPage() {
               disabled={studySet.cards.length < 2}
               showArticleDrill={hasArticleDrillCards}
               showCloze={hasClozeCards}
+              showSatzbau={hasSatzbauCards}
             />
             {studySet.cards.length < 2 ? (
               <p className="mt-3 text-sm text-muted">You need at least two cards to study.</p>

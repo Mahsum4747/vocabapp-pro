@@ -1,5 +1,13 @@
 import { Link } from "@tanstack/react-router";
-import { GraduationCap, Layers, LayoutGrid, ListChecks, SpellCheck, TextCursorInput } from "lucide-react";
+import {
+  GraduationCap,
+  Layers,
+  LayoutGrid,
+  ListChecks,
+  Shuffle,
+  SpellCheck,
+  TextCursorInput,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const MODES = [
@@ -37,6 +45,12 @@ const CLOZE_MODE = {
   icon: TextCursorInput,
 };
 
+const SATZBAU_MODE = {
+  to: "/sets/$setId/satzbau" as const,
+  title: "Satzbau",
+  icon: Shuffle,
+};
+
 export function ModeGrid({
   setId,
   box,
@@ -50,6 +64,11 @@ export function ModeGrid({
    *  article drill, cloze grades through the real FSRS/CardProgress path,
    *  so it stays in the normal box-filtered mode list, not split out. */
   showCloze = false,
+  /** Show the Satzbau (word-order) tile — only when the set has at least
+   *  one card whose own example sentence is in the 4-12 word range this
+   *  mode is scoped to. Same real-FSRS treatment as Cloze, for the same
+   *  reason: it exercises the card's own content, not an isolated skill. */
+  showSatzbau = false,
 }: {
   setId: string;
   /** Restrict the study session to just this Leitner box (0..MASTERY_MAX). */
@@ -57,10 +76,12 @@ export function ModeGrid({
   disabled?: boolean;
   showArticleDrill?: boolean;
   showCloze?: boolean;
+  showSatzbau?: boolean;
 }) {
   const modes = [
     ...MODES,
     ...(showCloze ? [CLOZE_MODE] : []),
+    ...(showSatzbau ? [SATZBAU_MODE] : []),
     ...(showArticleDrill ? [ARTICLE_DRILL_MODE] : []),
   ];
   return (
