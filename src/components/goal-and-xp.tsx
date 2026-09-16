@@ -17,12 +17,16 @@ import { Progress } from "./ui/progress";
 export function DailyGoalCard({ className }: { className?: string }) {
   const profile = useStudyStore((s) => s.profile);
   const today = useStudyStore((s) => s.today);
+  const done = today?.uniqueWordsReviewed ?? 0;
+  // Called unconditionally, before the early return below — a hook can never
+  // sit after a conditional return, or the hook count changes the moment
+  // `profile` finishes loading and trips "Rendered more hooks than during
+  // the previous render" (see the motion/depth branch postmortem).
+  const animatedDone = useAnimatedNumber(profile ? Math.min(done, profile.dailyGoal) : 0);
 
   if (!profile || profile.dailyGoal <= 0) return null;
 
-  const done = today?.uniqueWordsReviewed ?? 0;
   const met = done >= profile.dailyGoal;
-  const animatedDone = useAnimatedNumber(Math.min(done, profile.dailyGoal));
 
   return (
     <div
@@ -85,10 +89,12 @@ export function WeakWordsCard({ count, className }: { count: number; className?:
 /** Level and XP, with the bar filling towards the next level. */
 export function XpCard({ className }: { className?: string }) {
   const profile = useStudyStore((s) => s.profile);
+  // Called unconditionally, before the early return below — see the same
+  // note in DailyGoalCard just above.
+  const animatedXp = useAnimatedNumber(profile?.totalXP ?? 0);
   if (!profile) return null;
 
   const { level, xpIntoLevel, nextLevelAt, xpToNextLevel } = levelFromXp(profile.totalXP);
-  const animatedXp = useAnimatedNumber(profile.totalXP);
 
   return (
     <Link
