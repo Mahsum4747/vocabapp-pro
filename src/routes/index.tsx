@@ -403,7 +403,18 @@ function Home() {
         </AuthGate>
       ) : otherPublicSets.length === 0 ? (
         <div className="mt-8">
-          <EmptyState title="No public sets" description="No one has shared a set yet." />
+          <EmptyState
+            title="No public sets"
+            description={
+              // otherPublicSets excludes the viewer's own sets, so a signed-in
+              // visitor who owns every currently-public set sees this as
+              // empty too — say so, rather than implying nobody has shared
+              // anything at all.
+              sets.length > 0
+                ? "You're the only one sharing sets right now."
+                : "No one has shared a set yet."
+            }
+          />
         </div>
       ) : (
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
