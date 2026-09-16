@@ -106,4 +106,55 @@ export const DATIVE_VERB_DATA: readonly DativeVerbEntry[] = [
   // entry (A1); "leidtun" has no source-tagged level.
   { verb: "wehtun", level: "A1" },
   { verb: "leidtun" },
+
+  // E-VALBU (IDS Mannheim) Kdat-filtered result set, single-source (not
+  // cross-checked against a second source the way the 65 entries above
+  // are) — restricted to the ditransitive dat+akk verbs among its hits
+  // (give/tell/sell/rent/write-type, same character as "geben"/"bringen"/
+  // "schenken" already above). No CEFR level: neither E-VALBU nor Duden/
+  // DWDS tags one. See DATIVE-ATTRIBUTION.md for what was excluded and why.
+  { verb: "abgeben" },
+  { verb: "anbieten" },
+  { verb: "aufschreiben" },
+  { verb: "ausstellen" },
+  { verb: "bekannt geben" },
+  { verb: "berichten" },
+  { verb: "bestätigen" },
+  { verb: "bestellen" },
+  { verb: "beweisen" },
+  { verb: "bezahlen" },
+  { verb: "bieten" },
+  { verb: "erklären" },
+  { verb: "erlauben" },
+  { verb: "erzählen" },
+  { verb: "kündigen" },
+  { verb: "leihen" },
+  { verb: "liefern" },
+  { verb: "melden" },
+  { verb: "mitteilen" },
+  { verb: "nennen" },
+  { verb: "reservieren" },
+  { verb: "sagen" },
+  { verb: "schicken" },
+  { verb: "schreiben" },
+  { verb: "senden" },
+  { verb: "überweisen" },
+  { verb: "verbieten" },
+  { verb: "verkaufen" },
+  { verb: "vermieten" },
+  { verb: "verschreiben" },
+  { verb: "versichern" },
+  { verb: "vorschlagen" },
+  { verb: "vorstellen" },
+  { verb: "widmen" },
+  { verb: "zahlen" },
+  { verb: "zeigen" },
+
+  // Duden/DWDS, single-source, checked because E-VALBU's ~700-verb
+  // headword list doesn't include any of these three at all (verified by
+  // browsing S/I/M directly with all filters cleared, not just a Kdat-tag
+  // miss). All three are undisputed, dictionary-confirmed dative verbs.
+  { verb: "schmeicheln" },
+  { verb: "imponieren" },
+  { verb: "missfallen" },
 ];
