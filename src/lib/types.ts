@@ -48,10 +48,17 @@ export type VerbGovernment = {
   case: "akkusativ" | "dativ";
 };
 
+/** A verb's OWN direct object is fixed to this case, with no preposition
+ *  involved ("helfen" + dative, "jemandem"). Distinct from `governs`, which
+ *  is always a preposition + case pair. `'dativ'` only for now — accusative
+ *  is the default case for German transitive verbs, not an exception, so
+ *  there is no principled closed list to source it from yet (see
+ *  DATIVE-ATTRIBUTION.md); add `'akkusativ'` here only if one is. */
 export type CardEnrichment = {
   gender?: GrammaticalGender;
   plural?: string;
   governs?: VerbGovernment[];
+  directCase?: "dativ";
   source: CardEnrichmentSource;
   inferred?: true;
 };

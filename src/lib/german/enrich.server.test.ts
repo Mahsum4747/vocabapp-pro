@@ -137,6 +137,42 @@ describe("enrichGermanTerm — verb government (Rektion)", () => {
   });
 });
 
+describe("enrichGermanTerm — fixed dative object (no preposition)", () => {
+  it("fills directCase for a known dative verb with no separate government fact", () => {
+    const result = enrichGermanTerm("gefallen");
+    assert.equal(result?.directCase, "dativ");
+    assert.equal(result?.source, "dict");
+    assert.equal(result?.governs, undefined);
+  });
+
+  it("fills both governs and directCase when a verb has both facts (helfen + bei)", () => {
+    const result = enrichGermanTerm("helfen");
+    assert.equal(result?.directCase, "dativ");
+    assert.deepEqual(result?.governs, [{ preposition: "bei", case: "dativ" }]);
+  });
+
+  it("fills both governs and directCase when a verb has both facts (danken)", () => {
+    // "jemandem danken" (bare dative) and "danken für + Akkusativ" are two
+    // independent, simultaneously-true facts about the same verb.
+    const result = enrichGermanTerm("danken");
+    assert.equal(result?.directCase, "dativ");
+    assert.deepEqual(result?.governs, [{ preposition: "für", case: "akkusativ" }]);
+  });
+
+  it("does not fill directCase for a capitalized term", () => {
+    assert.equal(enrichGermanTerm("Helfen")?.directCase, undefined);
+  });
+
+  it("does not fill directCase for a plain accusative verb", () => {
+    assert.equal(enrichGermanTerm("essen")?.directCase, undefined);
+  });
+
+  it("fills directCase for the single-word wehtun/leidtun lemmas", () => {
+    assert.equal(enrichGermanTerm("wehtun")?.directCase, "dativ");
+    assert.equal(enrichGermanTerm("leidtun")?.directCase, "dativ");
+  });
+});
+
 describe("enrichGermanTerm — nominalized-infinitive collision (the 'das sehen' bug)", () => {
   // Real production bug: "sehen" (a verb) got gender "n" from "das Sehen"
   // (the nominalized infinitive, sight/seeing) — a genuine, different noun

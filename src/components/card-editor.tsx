@@ -705,6 +705,16 @@ export function CardEditor({
               </div>
             </div>
           ) : null}
+          {card.enrichment?.directCase ? (
+            <div className="mt-2 space-y-1.5">
+              <Label>Direct object</Label>
+              <div className="flex flex-wrap gap-1.5">
+                <span className="rounded-full bg-surface-2 px-2.5 py-1 text-xs font-medium text-fg">
+                  {card.term.trim()} + <strong>jemandem</strong> (Dativ)
+                </span>
+              </div>
+            </div>
+          ) : null}
           <div className="mt-2 flex justify-end">
             <Button
               type="button"

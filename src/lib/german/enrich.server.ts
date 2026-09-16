@@ -1,6 +1,7 @@
 import { analyzeCompound } from "./compound.ts";
 import { germanNouns, lookupNoun } from "./nouns.server.ts";
 import { lookupVerbGovernment } from "./verb-government.server.ts";
+import { isDativeVerb } from "./dative-verbs.server.ts";
 import { isNameOnly, type NounEntry } from "./types.ts";
 import type { CardEnrichment, GrammaticalGender } from "../types.ts";
 
@@ -122,7 +123,18 @@ export function enrichGermanTerm(term: string): CardEnrichment | null {
   // so that capitalization rule has nothing to trigger on here.
   if (/^\p{Ll}/u.test(trimmed)) {
     const governs = lookupVerbGovernment(trimmed);
-    if (governs.length > 0) return { governs, source: "dict" };
+    const directCase = isDativeVerb(trimmed) ? ("dativ" as const) : undefined;
+    // Not mutually exclusive: a verb like "danken" both takes a bare dative
+    // object ("jemandem danken") AND governs "für" + Akkusativ for the
+    // thing being thanked for — two independent facts about the same verb,
+    // so both are attached when both datasets have a hit.
+    if (governs.length > 0 || directCase) {
+      return {
+        ...(governs.length > 0 ? { governs } : {}),
+        ...(directCase ? { directCase } : {}),
+        source: "dict",
+      };
+    }
   }
 
   const nounEntries = lookupNoun(trimmed);
