@@ -23,6 +23,19 @@
   --color-article-der: #1d5b96;
   --color-article-die: #b7293f;
   --color-article-das: #2f7a3d;
+  /* A third, more saturated success step for the top mastery tier — blended
+     from the two success tones above rather than a new raw color. Dark mode
+     below uses a stronger mix ratio: contrast against --color-surface turned
+     out not to track the light-mode ratio 1:1 (verified with WCAG contrast
+     math, not eyeballed — see leitner-boxes.tsx tier colors), so this can't
+     be left to inherit unchanged like most derived tokens here. */
+  --color-success-strong: color-mix(in oklab, var(--color-success-soft) 55%, var(--color-success) 45%);
+  /* Leitner "low" and "mid" tier backgrounds, split out from the shared
+     --color-surface-2 / --color-success-soft so dark mode can be tuned for
+     contrast against the card without changing those tokens everywhere else
+     they're used. Light mode just aliases the originals — unchanged. */
+  --color-tier-neutral: var(--color-surface-2);
+  --color-tier-mid: var(--color-success-soft);
   --font-sans: "Figtree", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Geist", ui-sans-serif, system-ui, sans-serif;
   --radius-xs: 4px;
@@ -57,6 +70,16 @@
   --duration-fast: 150ms;
   --duration-base: 220ms;
   --duration-slow: 400ms;
+
+  /* Mastery visualization — derived from the existing success/subtle tokens
+     above, not new colors. --gradient-mastery picks up whichever
+     --color-success is active for the current scheme with no override
+     needed; --glow-success gets a dark-mode-specific boost below (the light
+     version reads fine as-is, the dark one measured too faint). */
+  --glow-success:
+    0 0 0 1px color-mix(in oklab, var(--color-success) 35%, transparent),
+    0 0 14px -2px color-mix(in oklab, var(--color-success) 60%, transparent);
+  --gradient-mastery: linear-gradient(to right, var(--color-subtle), var(--color-success));
 }
 
 @media (prefers-color-scheme: dark) {
@@ -89,6 +112,25 @@
     --elevation-2: var(--shadow-border-hover);
     --elevation-3: 0 0 0 1px rgb(0 0 0 / 0.5), 0 20px 48px -16px rgb(0 0 0 / 0.45);
     --elevation-4: 0 0 0 1px rgb(0 0 0 / 0.55), 0 32px 64px -20px rgb(0 0 0 / 0.55);
+
+    /* Leitner tier contrast, tuned for dark mode specifically. Measured with
+       WCAG contrast ratios against --color-surface (the card these boxes sit
+       on), light mode as the baseline:
+         light:  surface-2 1.20 · success-soft 1.86 · success-strong(45%) 3.37
+         dark (unadjusted): surface-2 1.10 · success-soft 1.33 · success-strong(45%) 3.19
+       The low and mid steps were both well under their light-mode baseline —
+       B0/B1 nearly matched the card, and the B2/B3 -> B4/B5 jump barely
+       registered. These three replace that with a verified 1.60 / 2.38 / 4.25
+       ladder, each exceeding its light-mode counterpart, while low stays a
+       neutral (fg-mixed, no hue) and mid/high stay on the success hue. */
+    --color-tier-neutral: color-mix(in oklab, var(--color-surface-2) 85%, var(--color-fg) 15%);
+    --color-tier-mid: color-mix(in oklab, var(--color-success-soft) 70%, var(--color-success) 30%);
+    --color-success-strong: color-mix(in oklab, var(--color-success-soft) 40%, var(--color-success) 60%);
+    /* Same reasoning as the elevation shadows above: a dark-on-dark ring
+       needs more opacity and spread than a dark-on-light one to read at all. */
+    --glow-success:
+      0 0 0 1px color-mix(in oklab, var(--color-success) 45%, transparent),
+      0 0 20px -1px color-mix(in oklab, var(--color-success) 75%, transparent);
   }
 }
 
