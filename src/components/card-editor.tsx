@@ -9,6 +9,7 @@ import { lookupBundledSuggestions } from "@/lib/german/bundled-suggestions";
 import { suggestTermPrefix } from "@/lib/german/term-suggestions";
 import { profileFor } from "@/lib/lang/profiles";
 import type { LanguageCode } from "@/lib/lang/languages";
+import { insertAtCursor } from "@/lib/insert-at-cursor";
 import type { CardEnrichment, GrammaticalGender } from "@/lib/types";
 import type { BundledEntry } from "@/lib/german/types";
 import { Button } from "./ui/button";
@@ -48,6 +49,36 @@ const MAX_IMAGE_MB = MAX_IMAGE_BYTES / (1024 * 1024);
  *  autocomplete suggestions — short enough to feel live, long enough that a
  *  fast typist doesn't fire a lookup per letter. */
 const TERM_SUGGESTION_DEBOUNCE_MS = 200;
+
+/** German special characters this editor helps type — no uppercase ẞ: real
+ *  German keyboards have no physical key for it either, it's typed only via
+ *  autocorrect/rare manual entry, so it's out of scope here. */
+const GERMAN_DIACRITICS = ["ä", "ö", "ü", "ß", "Ä", "Ö", "Ü"];
+
+/** A row of small buttons that insert a German special character at the
+ *  current cursor position — desktop convenience for non-German keyboard
+ *  layouts (mobile already gets this from the OS's own German keyboard).
+ *  Stateless: the caller owns the actual insert. */
+function DiacriticRow({ onInsert }: { onInsert: (char: string) => void }) {
+  return (
+    <div className="flex flex-wrap gap-1">
+      {GERMAN_DIACRITICS.map((char) => (
+        <button
+          key={char}
+          type="button"
+          // Prevents the browser's default focus-shift-to-button on click,
+          // so the target field never blurs and its selectionStart/End
+          // (read in onClick) are still whatever the user left them at.
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => onInsert(char)}
+          className="rounded-md bg-surface-2 px-2 py-0.5 text-xs font-medium text-fg hover:bg-border"
+        >
+          {char}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 export function CardEditor({
   cards,
@@ -105,6 +136,17 @@ export function CardEditor({
   // computed from a stale closure can never clobber a newer one.
   const cardsRef = useRef(cards);
   cardsRef.current = cards;
+  // DOM nodes for fields the diacritic row can insert into, keyed by the
+  // same `${field}-${card.id}` string already used as each field's `id`
+  // (the htmlFor/id pairing already in use everywhere in this file). Only
+  // populated for fields that actually render a DiacriticRow.
+  const fieldRefs = useRef(new Map<string, HTMLInputElement | HTMLTextAreaElement>());
+  function registerFieldRef(fieldId: string) {
+    return (node: HTMLInputElement | HTMLTextAreaElement | null) => {
+      if (node) fieldRefs.current.set(fieldId, node);
+      else fieldRefs.current.delete(fieldId);
+    };
+  }
   const [uploadingId, setUploadingId] = useState<string | null>(null);
   // Keyed `${cardId}:${field}` rather than just the card id: a card's primary
   // and second-definition suggestions are independent requests and can
@@ -169,6 +211,34 @@ export function CardEditor({
 
   function update(id: string, patch: Partial<EditorCard>) {
     onChange(cardsRef.current.map((card) => (card.id === id ? { ...card, ...patch } : card)));
+  }
+
+  /**
+   * Insert a diacritic at the field's current cursor position, preserving
+   * both focus and caret. Goes through the exact same `update()` path as
+   * typing — never a separate write path that could desync from
+   * `cardsRef` or the onChange/onBlur-triggered enrichment logic. Restoring
+   * the caret has to wait a frame: the DOM node's `value` only reflects the
+   * new prop after React commits the re-render `update()` triggers.
+   */
+  function insertDiacritic(
+    id: string,
+    field: "term" | "definition" | "example" | "definition2",
+    fieldId: string,
+    char: string,
+  ) {
+    const node = fieldRefs.current.get(fieldId);
+    const card = cardsRef.current.find((c) => c.id === id);
+    if (!node || !card) return;
+    const current = card[field] ?? "";
+    const start = node.selectionStart ?? current.length;
+    const end = node.selectionEnd ?? current.length;
+    const { value, cursor } = insertAtCursor(current, start, end, char);
+    update(id, { [field]: value } as Partial<EditorCard>);
+    requestAnimationFrame(() => {
+      node.focus();
+      node.setSelectionRange(cursor, cursor);
+    });
   }
 
   function remove(id: string) {
@@ -593,6 +663,7 @@ export function CardEditor({
               <div className="relative">
                 <Input
                   id={`term-${card.id}`}
+                  ref={registerFieldRef(`term-${card.id}`)}
                   value={card.term}
                   onChange={(e) => {
                     update(card.id, { term: e.target.value });
@@ -625,16 +696,31 @@ export function CardEditor({
                   </div>
                 ) : null}
               </div>
+              {termLangCode === "de" ? (
+                <DiacriticRow
+                  onInsert={(char) =>
+                    insertDiacritic(card.id, "term", `term-${card.id}`, char)
+                  }
+                />
+              ) : null}
             </div>
             <div className="space-y-1.5">
               <Label htmlFor={`def-${card.id}`}>Definition</Label>
               <Textarea
                 id={`def-${card.id}`}
+                ref={registerFieldRef(`def-${card.id}`)}
                 value={card.definition}
                 onChange={(e) => update(card.id, { definition: e.target.value })}
                 placeholder="A short, clear definition"
                 className="min-h-11 md:min-h-20"
               />
+              {defLangCode === "de" ? (
+                <DiacriticRow
+                  onInsert={(char) =>
+                    insertDiacritic(card.id, "definition", `def-${card.id}`, char)
+                  }
+                />
+              ) : null}
               {/* Quizlet-style tap-to-fill: bundled translations only, never
                   AI-generated. Nothing renders when there's no bundled hit
                   for this term/language — same "no empty state" rule the
@@ -750,10 +836,21 @@ export function CardEditor({
             </div>
             <Input
               id={`example-${card.id}`}
+              ref={registerFieldRef(`example-${card.id}`)}
               value={card.example ?? ""}
               onChange={(e) => update(card.id, { example: e.target.value })}
               placeholder="A sentence using the term"
             />
+            {termLangCode === "de" ? (
+              // Example is written in the set's term language (see
+              // Card.example's own doc comment), so it shares Term's gate,
+              // not Definition's.
+              <DiacriticRow
+                onInsert={(char) =>
+                  insertDiacritic(card.id, "example", `example-${card.id}`, char)
+                }
+              />
+            ) : null}
             {/* Inline, optional, non-destructive: opened only by the button
                 above, never by typing or by the term changing. Selecting a
                 row is the only path that writes to `example`. */}
@@ -848,11 +945,19 @@ export function CardEditor({
               <Label htmlFor={`def2-${card.id}`}>Second definition ({definitionLanguage2})</Label>
               <Textarea
                 id={`def2-${card.id}`}
+                ref={registerFieldRef(`def2-${card.id}`)}
                 value={card.definition2 ?? ""}
                 onChange={(e) => update(card.id, { definition2: e.target.value })}
                 placeholder={`The definition in ${definitionLanguage2}`}
                 className="min-h-11"
               />
+              {definitionLanguage2Code === "de" ? (
+                <DiacriticRow
+                  onInsert={(char) =>
+                    insertDiacritic(card.id, "definition2", `def2-${card.id}`, char)
+                  }
+                />
+              ) : null}
               {chipWordsFor(bundledEntryFor(card), definitionLanguage2Code).length > 0 ? (
                 <div className="flex flex-wrap gap-1.5">
                   {chipWordsFor(bundledEntryFor(card), definitionLanguage2Code).map((word) => (

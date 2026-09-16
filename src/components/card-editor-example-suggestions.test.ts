@@ -256,12 +256,13 @@ describe("stale-closure hardening: handlers read cardsRef, never a captured `car
     assert.match(body, /cardsRef\.current\.map/);
   });
 
-  it("every id-lookup helper (checkGermanEnrichment, checkBundledSuggestions, suggest, toggleExampleSuggestions, pickTranslationChip, setEnrichmentField) reads cardsRef.current", () => {
+  it("every id-lookup helper (checkGermanEnrichment, checkBundledSuggestions, suggest, toggleExampleSuggestions, pickTranslationChip, setEnrichmentField, insertDiacritic) reads cardsRef.current", () => {
     const source = readSource();
     const finds = [...source.matchAll(/cardsRef\.current\.find\(/g)];
     // suggest, checkBundledSuggestions, toggleExampleSuggestions,
-    // pickTranslationChip, checkGermanEnrichment, setEnrichmentField.
-    assert.equal(finds.length, 6, `expected 6 cardsRef.current.find(...) call sites, found ${finds.length}`);
+    // pickTranslationChip, checkGermanEnrichment, setEnrichmentField,
+    // insertDiacritic.
+    assert.equal(finds.length, 7, `expected 7 cardsRef.current.find(...) call sites, found ${finds.length}`);
   });
 
   it("picking a Term autocomplete suggestion fires on mousedown, not click, so it runs before the input's blur", () => {
