@@ -10,7 +10,6 @@ import { DueBadge } from "./review-status";
 import { cn } from "@/lib/utils";
 import { Badge } from "./ui/badge";
 import { Progress } from "./ui/progress";
-import { AnimatedNumber } from "@/hooks/use-animated-number";
 
 /**
  * Glance-level signal: one tiny bar per Leitner box, terracotta (needs review)
@@ -60,7 +59,7 @@ export function SetCard({ set }: { set: StudySet }) {
     <Link
       to="/sets/$setId"
       params={{ setId: set.id }}
-      className="group flex flex-col rounded-xl bg-surface p-5 shadow-[var(--elevation-1)] transition-[transform,box-shadow] duration-[var(--duration-base)] ease-[var(--ease-standard)] hover:-translate-y-0.5 hover:shadow-[var(--elevation-2)]"
+      className="group flex flex-col rounded-xl bg-surface p-5 shadow-[var(--shadow-border)] transition-[transform,box-shadow] duration-200 ease-[var(--ease-smooth-out)] hover:-translate-y-0.5 hover:shadow-[var(--shadow-border-hover)]"
     >
       <div className="flex items-center justify-between gap-3">
         <Badge>{set.subject}</Badge>
@@ -91,8 +90,7 @@ export function SetCard({ set }: { set: StudySet }) {
           <div className="flex items-center justify-between text-xs text-muted">
             <span>Progress</span>
             <span className="tabular-nums">
-              <AnimatedNumber value={mastery} />%
-              {notStarted > 0 ? ` · ${notStarted} not started` : ""}
+              {mastery}%{notStarted > 0 ? ` · ${notStarted} not started` : ""}
             </span>
           </div>
           <Progress value={mastery} />

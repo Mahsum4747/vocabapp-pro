@@ -3,7 +3,6 @@ import { leitnerBoxCounts, type ProgressMap } from "@/lib/quiz";
 import { weakCards } from "@/lib/srs";
 import type { Card } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { AnimatedNumber } from "@/hooks/use-animated-number";
 
 /**
  * The Leitner boxes for one set, plus the cards that are in no box at all.
@@ -59,9 +58,7 @@ export function LeitnerBoxes({
             >
               B{box}
             </p>
-            <p className="text-xs font-medium tabular-nums">
-              <AnimatedNumber value={count} />
-            </p>
+            <p className="text-xs font-medium tabular-nums">{count}</p>
           </button>
         );
       })}
@@ -76,9 +73,7 @@ export function LeitnerBoxes({
           className="flex min-w-10 flex-col items-center gap-0.5 rounded-lg bg-danger-soft px-2 py-1.5 transition-opacity hover:opacity-80"
         >
           <p className="text-[9px] font-medium tracking-wide text-danger uppercase">Weak</p>
-          <p className="text-xs font-medium text-danger tabular-nums">
-            <AnimatedNumber value={weak} />
-          </p>
+          <p className="text-xs font-medium text-danger tabular-nums">{weak}</p>
         </Link>
       ) : null}
       {notStarted > 0 ? (
@@ -87,9 +82,7 @@ export function LeitnerBoxes({
           aria-label={`${notStarted} card${notStarted === 1 ? "" : "s"} not started`}
         >
           <p className="text-[9px] font-medium tracking-wide text-muted uppercase">New</p>
-          <p className="text-xs font-medium tabular-nums">
-            <AnimatedNumber value={notStarted} />
-          </p>
+          <p className="text-xs font-medium tabular-nums">{notStarted}</p>
         </span>
       ) : null}
     </div>

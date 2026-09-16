@@ -11,7 +11,7 @@ export function Progress({ value, className }: { value: number; className?: stri
       aria-valuemax={100}
     >
       <div
-        className="h-full rounded-full bg-primary transition-[width] duration-[var(--duration-base)] ease-[var(--ease-standard)]"
+        className="h-full rounded-full bg-primary transition-[width] duration-200 ease-[var(--ease-smooth-out)]"
         style={{ width: `${clamped}%` }}
       />
     </div>

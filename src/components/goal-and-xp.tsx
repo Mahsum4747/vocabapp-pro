@@ -3,7 +3,6 @@ import { AlertTriangle, Check, Target, Zap } from "lucide-react";
 import { levelFromXp, XP_PER_LEVEL } from "@/lib/gamification";
 import { useStudyStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
-import { useAnimatedNumber } from "@/hooks/use-animated-number";
 import { ProgressRing } from "./progress-ring";
 import { Progress } from "./ui/progress";
 
@@ -22,16 +21,20 @@ export function DailyGoalCard({ className }: { className?: string }) {
 
   const done = today?.uniqueWordsReviewed ?? 0;
   const met = done >= profile.dailyGoal;
-  const animatedDone = useAnimatedNumber(Math.min(done, profile.dailyGoal));
 
   return (
     <div
       className={cn(
-        "flex items-center gap-4 rounded-2xl bg-surface p-5 shadow-[var(--elevation-1)]",
+        "flex items-center gap-4 rounded-2xl bg-surface p-5 shadow-[var(--shadow-border)]",
         className,
       )}
     >
-      <ProgressRing value={done} max={profile.dailyGoal} size={64} label={`${animatedDone}`} />
+      <ProgressRing
+        value={done}
+        max={profile.dailyGoal}
+        size={64}
+        label={`${Math.min(done, profile.dailyGoal)}`}
+      />
       <div className="min-w-0">
         <p className="flex items-center gap-1.5 text-xs font-medium tracking-wide text-muted uppercase">
           {met ? <Check className="size-3.5 text-success" /> : <Target className="size-3.5" />}
@@ -66,7 +69,7 @@ export function WeakWordsCard({ count, className }: { count: number; className?:
       to="/review"
       search={{ filter: "weak" as const }}
       className={cn(
-        "block rounded-2xl bg-surface p-5 shadow-[var(--elevation-1)] transition-[box-shadow,transform] duration-[var(--duration-base)] ease-[var(--ease-standard)] hover:-translate-y-0.5 hover:shadow-[var(--elevation-2)]",
+        "block rounded-2xl bg-surface p-5 shadow-[var(--shadow-border)] transition-shadow hover:shadow-[var(--shadow-border-hover)]",
         className,
       )}
     >
@@ -88,13 +91,12 @@ export function XpCard({ className }: { className?: string }) {
   if (!profile) return null;
 
   const { level, xpIntoLevel, nextLevelAt, xpToNextLevel } = levelFromXp(profile.totalXP);
-  const animatedXp = useAnimatedNumber(profile.totalXP);
 
   return (
     <Link
       to="/account"
       className={cn(
-        "block rounded-2xl bg-surface p-5 shadow-[var(--elevation-1)] transition-[box-shadow,transform] duration-[var(--duration-base)] ease-[var(--ease-standard)] hover:-translate-y-0.5 hover:shadow-[var(--elevation-2)]",
+        "block rounded-2xl bg-surface p-5 shadow-[var(--shadow-border)] transition-shadow hover:shadow-[var(--shadow-border-hover)]",
         className,
       )}
     >
@@ -105,7 +107,7 @@ export function XpCard({ className }: { className?: string }) {
       <p className="mt-1 font-display text-xl font-medium tracking-tight">
         Level {level}
         <span className="ml-2 text-base text-muted tabular-nums">
-          {animatedXp} / {nextLevelAt} XP
+          {profile.totalXP} / {nextLevelAt} XP
         </span>
       </p>
       <Progress value={(xpIntoLevel / XP_PER_LEVEL) * 100} className="mt-3" />

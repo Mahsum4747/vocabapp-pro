@@ -40,23 +40,6 @@
   --shadow-card: 0 0 0 1px rgb(26 26 26 / 0.06), 0 8px 24px -12px rgb(26 26 26 / 0.12);
   --ease-smooth-out: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
-
-  /* Elevation system — 5 documented levels, light values.
-     0 flat ground (no shadow), 1 resting card, 2 hover/active card,
-     3 modal/dropdown, 4 fullscreen overlay. Every layered surface should
-     reference one of these rather than an ad-hoc shadow. */
-  --elevation-0: none;
-  --elevation-1: var(--shadow-border);
-  --elevation-2: var(--shadow-border-hover);
-  --elevation-3: 0 0 0 1px rgb(26 26 26 / 0.08), 0 20px 48px -16px rgb(26 26 26 / 0.24);
-  --elevation-4: 0 0 0 1px rgb(26 26 26 / 0.08), 0 32px 64px -20px rgb(26 26 26 / 0.32);
-
-  /* Motion tokens — shared easing + duration for hover/press/enter transitions. */
-  --ease-standard: var(--ease-smooth-out);
-  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-  --duration-fast: 150ms;
-  --duration-base: 220ms;
-  --duration-slow: 400ms;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -85,10 +68,6 @@
     --shadow-border-hover:
       0 0 0 1px rgb(0 0 0 / 0.5), 0 1px 2px -1px rgb(0 0 0 / 0.3), 0 8px 24px -12px rgb(0 0 0 / 0.4);
     --shadow-card: 0 0 0 1px rgb(0 0 0 / 0.5), 0 8px 24px -12px rgb(0 0 0 / 0.35);
-    --elevation-1: var(--shadow-border);
-    --elevation-2: var(--shadow-border-hover);
-    --elevation-3: 0 0 0 1px rgb(0 0 0 / 0.5), 0 20px 48px -16px rgb(0 0 0 / 0.45);
-    --elevation-4: 0 0 0 1px rgb(0 0 0 / 0.55), 0 32px 64px -20px rgb(0 0 0 / 0.55);
   }
 }
 
@@ -183,32 +162,6 @@
     opacity: 1;
     transform: translateY(0);
     filter: blur(0);
-  }
-}
-
-/* Flashcard face swap — see src/components/flash-card.tsx. Content is keyed
-   by `flipped` so React remounts it on flip, which restarts this animation
-   in place of an instant text swap. Spring easing gives it a soft settle
-   instead of a hard cut, without a 3D rotate (the label/content differ in
-   length between sides, so a rotate would show the wrong face mid-turn). */
-@keyframes card-face-in {
-  from {
-    opacity: 0;
-    transform: scale(0.97);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-.card-face {
-  animation: card-face-in var(--duration-slow) var(--ease-spring) both;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .card-face {
-    animation: none;
   }
 }
 
