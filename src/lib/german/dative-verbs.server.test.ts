@@ -16,6 +16,20 @@ describe("isDativeVerb", () => {
     assert.equal(isDativeVerb("leidtun"), true);
   });
 
+  it("includes the E-VALBU ditransitive batch and the Duden/DWDS-only verbs", () => {
+    assert.equal(isDativeVerb("zeigen"), true);
+    assert.equal(isDativeVerb("verkaufen"), true);
+    assert.equal(isDativeVerb("schmeicheln"), true);
+    assert.equal(isDativeVerb("imponieren"), true);
+    assert.equal(isDativeVerb("missfallen"), true);
+  });
+
+  it("excludes marginal/polysemous verbs whose dative sense is not their defining valence", () => {
+    for (const verb of ["gehen", "kommen", "sein", "werden", "stehen", "liegen", "bleiben"]) {
+      assert.equal(isDativeVerb(verb), false, `${verb} should not be tagged as a dative verb`);
+    }
+  });
+
   it("is case-insensitive", () => {
     assert.equal(isDativeVerb("Helfen"), true);
     assert.equal(isDativeVerb("HELFEN"), true);
@@ -36,6 +50,6 @@ describe("isDativeVerb", () => {
   });
 
   it("dataset is non-trivial and has no duplicate entries", () => {
-    assert.ok(dativeVerbDatasetSize() > 60);
+    assert.ok(dativeVerbDatasetSize() > 100);
   });
 });

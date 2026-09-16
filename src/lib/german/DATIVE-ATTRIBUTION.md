@@ -11,12 +11,14 @@ is why it's worth curating the same way prepositional government is.
 
 ## Sources checked
 
-- **IDS Mannheim (grammis.ids-mannheim.de)** — checked and ruled out. Their
-  only relevant resource is E-VALBU, a ~700-verb searchable valency
-  *dictionary* (tags complements as Kdat/Kakk/etc. per entry), not a
-  browsable list page; there is no separate static "verbs with dative
-  object" list to extract from, beyond the VmP-Listen (prepositional verbs)
-  already used for `verb-government-data.ts`.
+- **IDS Mannheim (grammis.ids-mannheim.de), E-VALBU** — initially checked
+  and (wrongly) believed to have no bulk/list access, only per-verb lookup.
+  Corrected on a follow-up pass: its search form (`grammis.ids-mannheim.de`
+  → Wörterbuch zur Verbvalenz) has a "Komplemente" checkbox filter (Ksub/
+  Kakk/Kdat/...) plus a "Suche nach Verben" mode that returns a flat list —
+  checking Kdat and searching returns all ~700 headwords with at least one
+  dative-bearing reading. Used for the second-pass batch below. See that
+  section for what was and wasn't taken from this result set.
 - **Deutschlernerblog.de** — checked and ruled out. No "Verben mit Dativ"
   page exists on the site; it only publishes prepositional-verb lists
   (wrong category — governed by a preposition, not a bare dative object).
@@ -65,7 +67,61 @@ the Term field. "wehtun" carries easy-deutsch.de's A1 level (its own list
 spells the verb this same fused way); "leidtun" has no source-tagged
 level.
 
-**Total: 65 entries** (32 + 13 + 18 + 2).
+**Total after the first pass: 65 entries** (32 + 13 + 18 + 2).
+
+## Second-pass extension: E-VALBU Kdat filter + Duden/DWDS (39 entries)
+
+A follow-up pass checked whether E-VALBU's Kdat filter (see "Sources
+checked" above) could extend this dataset, and whether three verbs known
+to be missing (schmeicheln, imponieren, missfallen) could be sourced.
+
+**Important caveat carried over from the investigation, not resolved by
+this batch**: the Kdat filter returns any verb with *at least one reading*
+that includes a dative complement — 117 hits total. It does not
+distinguish this file's target category (a verb's own object is fixed to
+dative) from (a) ditransitive dat+akk verbs, (b) marginal/idiomatic senses
+of extremely common polysemous verbs where dative is one of dozens of
+readings (e.g. "gehen" only via "es geht jemandem gut"), or (c)
+Pertinenzdativ (dative-of-possession, "ich putze ihm die Schuhe" — a
+general construction available on many verbs given the right object, not
+a lexical fact about that verb; E-VALBU tags this separately under its own
+"Pertinenzelemente" filter, which this pass did not use to filter (b)/(c)
+out).
+
+**Only (a) was taken. (b) and (c) were excluded entirely** — not flagged
+as "maybe later", just left out. Tagging "gehen" or "sein" as a dative
+verb because of one obscure sense would be actively wrong for the
+ordinary sense a learner meets first, the same reasoning that ruled out a
+general plain-accusative list earlier in this document. Examples of what
+was excluded this way: gehen, kommen, sein, werden, stehen, liegen,
+bleiben, lassen, nehmen, tun, gelten, geschehen, kosten, entsprechen.
+
+**36 ditransitive dat+akk verbs added**, same character as
+geben/bringen/schenken already in the first-pass set (give/tell/sell/
+rent/write-type): abgeben, anbieten, aufschreiben, ausstellen, bekannt
+geben, berichten, bestätigen, bestellen, beweisen, bezahlen, bieten,
+erklären, erlauben, erzählen, kündigen, leihen, liefern, melden,
+mitteilen, nennen, reservieren, sagen, schicken, schreiben, senden,
+überweisen, verbieten, verkaufen, vermieten, verschreiben, versichern,
+vorschlagen, vorstellen, widmen, zahlen, zeigen.
+
+**Single-source, not cross-checked**: unlike the 65-entry first pass
+(two independent sources, cross-checked entry by entry), this batch of 36
+comes from E-VALBU alone. No second source was checked against it —
+lower confidence than the rest of the file, noted here for the same
+transparency reason the accusative-list single-source caveat was raised
+earlier in this project.
+
+**3 verbs added from Duden/DWDS**: schmeicheln, imponieren, missfallen.
+Checked here because E-VALBU's ~700-verb headword list doesn't contain
+any of the three at all — confirmed by browsing its S/I/M letter-index
+directly with all filters cleared (S: 65 verbs, no schmeicheln; I: 0
+verbs; M: 16 verbs, no missfallen/imponieren), not just a missed Kdat tag.
+Each is individually dictionary-confirmed as dative-governing ("jemandem
+schmeicheln/imponieren", "(jemandem) missfallen"). Also single-source per
+verb.
+
+**Total after this pass: 104 entries** (65 + 36 + 3).
 
 ## What this dataset deliberately is NOT
 
@@ -91,7 +147,7 @@ structure.
 
 ## User-visible framing (if ever surfaced)
 
-The dataset contains 65 dative-governing verb lemmas/constructions
-identified from the selected pedagogical source sets. This is not intended
-as an exhaustive inventory of all German verbs that can govern a dative
-object.
+The dataset contains 104 dative-governing verb lemmas/constructions
+identified from the selected pedagogical and reference sources. This is
+not intended as an exhaustive inventory of all German verbs that can
+govern a dative object.
