@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { AppShell } from "@/components/app-shell";
 import { AuthGate } from "@/components/auth-gate";
 import { DailyGoalPicker } from "@/components/daily-goal-dialog";
+import { LibraryProgressPanel } from "@/components/library-progress-panel";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogClose } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -54,12 +55,18 @@ function AccountPage() {
   const streak = useStudyStore((s) => s.streak);
   const fetchProfile = useStudyStore((s) => s.fetchProfile);
   const fetchStreak = useStudyStore((s) => s.fetchStreak);
+  // Needed for the progress panel's review/weak-word counts — this route
+  // otherwise never loads sets or progress.
+  const fetchSets = useStudyStore((s) => s.fetchSets);
+  const fetchAllProgress = useStudyStore((s) => s.fetchAllProgress);
   const [tab, setTab] = useState<TabId>("xp");
 
   useEffect(() => {
     void fetchProfile();
     void fetchStreak();
-  }, [fetchProfile, fetchStreak]);
+    void fetchSets();
+    void fetchAllProgress();
+  }, [fetchProfile, fetchStreak, fetchSets, fetchAllProgress]);
 
   if (!profile) {
     return (
@@ -74,6 +81,8 @@ function AccountPage() {
   return (
     <AppShell>
       <h1 className="font-display text-3xl font-medium tracking-tight">Account</h1>
+
+      <LibraryProgressPanel className="mt-6" />
 
       <div className="mt-6 flex gap-1 overflow-x-auto border-b border-border/80">
         {TABS.map((entry) => (
