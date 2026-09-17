@@ -13,7 +13,22 @@ import { ReviewCallout, ReviewCounts } from "./review-status";
  * a different question and live where they already did.
  */
 export function LibraryProgressPanel({ className }: { className?: string }) {
-  const { library, weakCount } = useLibraryReview();
+  const { library, weakCount, isLoaded } = useLibraryReview();
+
+  // Sets/progress haven't come back yet — show a placeholder instead of the
+  // "nothing due" shape sets/progress being empty would otherwise produce.
+  // Callers render the rest of the page around this without waiting on it.
+  if (!isLoaded) {
+    return (
+      <div className={className}>
+        <div className="h-[92px] animate-pulse rounded-2xl bg-surface shadow-[var(--shadow-border)]" />
+        <div className="mt-6 grid gap-4 md:grid-cols-2">
+          <div className="h-[92px] animate-pulse rounded-2xl bg-surface shadow-[var(--elevation-1)]" />
+          <div className="h-[92px] animate-pulse rounded-2xl bg-surface shadow-[var(--elevation-1)]" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={className}>

@@ -596,10 +596,18 @@ export function useSetProgress(setId: string | undefined) {
  *
  * Reads `sets`/`progress` already in the store; callers are responsible for
  * having fetched them (fetchSets/fetchAllProgress), same as every other
- * selector here.
+ * selector here. `isLoaded` mirrors `fetchSets`'s own flag — false until that
+ * first fetch resolves — so a caller can tell "nothing due" apart from
+ * "haven't checked yet" instead of flashing an empty state while sets/progress
+ * are still in flight.
  */
-export function useLibraryReview(): { library: LibraryReview; weakCount: number } {
+export function useLibraryReview(): {
+  library: LibraryReview;
+  weakCount: number;
+  isLoaded: boolean;
+} {
   const sets = useStudyStore((s) => s.sets);
+  const isLoaded = useStudyStore((s) => s.isLoaded);
   const progress = useProgress();
 
   return useMemo(() => {
@@ -608,6 +616,6 @@ export function useLibraryReview(): { library: LibraryReview; weakCount: number 
     const weakCount = sets
       .filter(isStudiableSet)
       .reduce((total, set) => total + weakCards(set.cards, progress, { now }).length, 0);
-    return { library, weakCount };
-  }, [sets, progress]);
+    return { library, weakCount, isLoaded };
+  }, [sets, progress, isLoaded]);
 }
