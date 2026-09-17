@@ -307,14 +307,36 @@ export function StudyDeck({
       {/* The four FSRS ratings. How hard the recall felt is real information —
           it is what lets the scheduler separate "barely remembered" from
           "instant", so it is worth the extra buttons here. */}
+      {/* Colored by how the rating reads on a bad->good spectrum — danger,
+          warning, success, and (already) the strong primary green for Easy.
+          Each pairs its fill with text-bg rather than the usual text-fg/
+          text-primary-fg: --color-danger/--color-warning/--color-success all
+          go dark-in-light-mode, pale-in-dark-mode, and text-bg is the one
+          color that stays legible against both ends of that (verified via
+          WCAG contrast, see styles.css). Only the fill/text classes are
+          new — variant="outline" keeps the existing elevation+lift hover
+          from the motion/depth phase; hover:opacity-90 layers on the same
+          dimming the default/danger button variants already use elsewhere. */}
       <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
-        <Button variant="outline" onClick={() => handleGrade("again")}>
+        <Button
+          variant="outline"
+          className="bg-danger text-bg hover:opacity-90"
+          onClick={() => handleGrade("again")}
+        >
           Again
         </Button>
-        <Button variant="outline" onClick={() => handleGrade("hard")}>
+        <Button
+          variant="outline"
+          className="bg-warning text-bg hover:opacity-90"
+          onClick={() => handleGrade("hard")}
+        >
           Hard
         </Button>
-        <Button variant="secondary" onClick={() => handleGrade("good")}>
+        <Button
+          variant="outline"
+          className="bg-success text-bg hover:opacity-90"
+          onClick={() => handleGrade("good")}
+        >
           Good
         </Button>
         <Button onClick={() => handleGrade("easy")}>Easy</Button>
