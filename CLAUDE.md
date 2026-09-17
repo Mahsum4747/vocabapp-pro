@@ -29,6 +29,7 @@ TanStack Start + Vite + Nitro tabanlı bir Almanca kelime öğrenme uygulaması.
 
 ## Çalışma kuralı
 - Kod değişikliğinden sonra sadece `npm run typecheck` çalıştır. Tarayıcıdan test etme, deploy tetikleme, kendi kendine ek doğrulama yapma — kullanıcı kendisi test edip sonucu bildirecek.
+- Skip browser-based visual self-verification (no qa-*.tsx debug routes, no localhost screenshots, no standalone review HTML files) unless explicitly asked for one in the task prompt. Numeric/computed verification (WCAG contrast ratios, exact computed style values, typecheck, build) is sufficient proof of correctness for visual/CSS changes and should be used instead — it's cheaper and catches real regressions just as well. This applies project-wide, not just to the current UX/UI redesign work.
 - Basit değişikliklerde (tek dosya, açık neden-sonuç) doğrudan eyleme geç.
 - Kök nedeni belirsiz bug'larda (build/bundling hataları, cross-file state sorunları) önce kısaca hangi hipotezi test ettiğini belirt, sonra düzelt — burada acele etme.
 - Bitince kısa özet ver.
