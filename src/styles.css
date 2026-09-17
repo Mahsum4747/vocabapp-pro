@@ -36,6 +36,16 @@
      they're used. Light mode just aliases the originals — unchanged. */
   --color-tier-neutral: var(--color-surface-2);
   --color-tier-mid: var(--color-success-soft);
+  /* Amber/warning step for the "Hard" review rating, blended from the
+     existing streak accent (the only warm-orange token here) rather than a
+     new hue. --color-streak itself is the same hex in both color schemes, so
+     used as a solid button fill it would need a different text color per
+     mode with no single choice working for both (checked: neither text-fg
+     nor text-bg clears 4.5:1 in both). Blending it toward --color-fg here
+     (light) and --color-primary-fg (dark) instead gives it the same
+     dark-in-light/pale-in-dark shape --color-danger and --color-success
+     already have, so it can pair with the same fixed text color as they do. */
+  --color-warning: color-mix(in oklab, var(--color-streak) 65%, var(--color-fg) 35%);
   --font-sans: "Figtree", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Geist", ui-sans-serif, system-ui, sans-serif;
   --radius-xs: 4px;
@@ -131,6 +141,20 @@
     --glow-success:
       0 0 0 1px color-mix(in oklab, var(--color-success) 45%, transparent),
       0 0 20px -1px color-mix(in oklab, var(--color-success) 75%, transparent);
+
+    /* Review rating buttons (again/hard/good/easy). --color-danger and
+       --color-success already followed this dark-in-light/pale-in-dark
+       shape and measured well against --color-bg (the page background these
+       buttons sit on, not a card) with a single fixed text color, --color-bg
+       itself, in both modes:
+         Again(danger)  light 5.35 · dark 5.15
+         Good(success)  light 7.01 · dark 9.24
+       --color-warning needs its own dark-mode ratio for the same reason —
+       lightening it the same amount as the light-mode formula darkens it
+       would overshoot into near-white, so this mixes toward
+       --color-primary-fg instead of the (already light) --color-fg, at a
+       ratio verified to land at 8.90 vs --color-bg. */
+    --color-warning: color-mix(in oklab, var(--color-streak) 60%, var(--color-primary-fg) 40%);
   }
 }
 
