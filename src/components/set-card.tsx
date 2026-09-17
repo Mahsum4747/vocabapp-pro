@@ -76,7 +76,7 @@ export function SetCard({ set }: { set: StudySet }) {
         {set.title}
       </h3>
       {set.isReference ? (
-        <span className="mt-3 inline-flex w-fit items-center gap-1 rounded-full bg-slate/10 px-2 py-1 text-[11px] font-medium text-slate">
+        <span className="mt-3 inline-flex w-fit items-center gap-1 rounded-full bg-slate/10 px-2 py-1 text-2xs font-medium text-slate">
           <BookOpen className="size-3" />
           Reference
         </span>

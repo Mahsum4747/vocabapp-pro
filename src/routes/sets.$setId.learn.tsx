@@ -5,6 +5,7 @@ import { ArticleizedTerm } from "@/components/articleized-term";
 import { Definition2Line } from "@/components/definition2-line";
 import { EmptyState } from "@/components/empty-state";
 import { ExampleLine } from "@/components/example-line";
+import { Feedback, feedbackToneClasses } from "@/components/feedback";
 import { StudyChrome } from "@/components/study-chrome";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -244,8 +245,8 @@ function LearnPage() {
                 className={cn(
                   "rounded-lg bg-surface px-4 py-3.5 text-left text-sm shadow-[var(--shadow-border)] transition-[background-color,box-shadow] duration-150",
                   !revealed && "hover:shadow-[var(--shadow-border-hover)]",
-                  show && option === item.answer && "bg-success-soft text-success",
-                  show && chosen && option !== item.answer && "bg-danger-soft text-danger",
+                  show && option === item.answer && feedbackToneClasses("correct"),
+                  show && chosen && option !== item.answer && feedbackToneClasses("incorrect"),
                 )}
               >
                 {option}
@@ -270,7 +271,7 @@ function LearnPage() {
             autoFocus
           />
           {revealed ? (
-            <p className={cn("text-sm", isCorrect ? "text-success" : "text-danger")}>
+            <Feedback tone={isCorrect ? "correct" : "incorrect"}>
               {isCorrect ? (
                 "Correct"
               ) : (
@@ -283,7 +284,7 @@ function LearnPage() {
                   />
                 </>
               )}
-            </p>
+            </Feedback>
           ) : null}
           <Button type="submit" className="w-full">
             {revealed ? "Continue" : "Check"}

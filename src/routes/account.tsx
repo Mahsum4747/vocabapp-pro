@@ -197,7 +197,7 @@ function XpChart({ rows }: { rows: DailyStats[] }) {
               className={cn("w-full rounded-md", row.xpEarned > 0 ? "bg-primary" : "bg-surface-2")}
               style={{ height: Math.max(4, height) }}
             />
-            <span className="text-[11px] text-subtle">{format(`${row.date}T00:00`, "EEE")}</span>
+            <span className="text-2xs text-subtle">{format(`${row.date}T00:00`, "EEE")}</span>
           </div>
         );
       })}

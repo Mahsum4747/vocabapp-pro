@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { EmptyState } from "@/components/empty-state";
+import { Feedback } from "@/components/feedback";
 import { StudyChrome } from "@/components/study-chrome";
 import { Button } from "@/components/ui/button";
 import { leitnerBoxOf } from "@/lib/quiz";
@@ -10,7 +11,7 @@ import { ratingForOutcome, useReviewLogger } from "@/lib/review-log";
 import { satzbauChipsForCard, shuffleChips } from "@/lib/satzbau";
 import { useSet, useSetProgress, useStudyStore } from "@/lib/store";
 import { isCardActive, type Card } from "@/lib/types";
-import { parseIntSearchParam, cn } from "@/lib/utils";
+import { parseIntSearchParam } from "@/lib/utils";
 
 type Search = { box?: number };
 
@@ -255,9 +256,9 @@ function SatzbauPage() {
       </div>
 
       {checked ? (
-        <p className={cn("mt-4 text-sm", correct ? "text-success" : "text-danger")}>
+        <Feedback tone={correct ? "correct" : "incorrect"} className="mt-4">
           {correct ? "Correct" : <>Correct order: {q.chips.join(" ")}</>}
-        </p>
+        </Feedback>
       ) : null}
 
       <Button

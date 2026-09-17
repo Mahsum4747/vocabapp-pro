@@ -250,7 +250,7 @@ export function StudyDeck({
           {entry.bandLabel ? (
             <span
               className={cn(
-                "rounded-full px-2 py-0.5 text-[11px] font-medium whitespace-nowrap",
+                "rounded-full px-2 py-0.5 text-2xs font-medium whitespace-nowrap",
                 entry.bandTone === "danger"
                   ? "bg-danger-soft text-danger"
                   : entry.bandTone === "primary"

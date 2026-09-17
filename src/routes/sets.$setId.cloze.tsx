@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { EmptyState } from "@/components/empty-state";
+import { Feedback } from "@/components/feedback";
 import { StudyChrome } from "@/components/study-chrome";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,7 +12,7 @@ import { queuedCards } from "@/lib/srs";
 import { ratingForOutcome, useReviewLogger } from "@/lib/review-log";
 import { useSet, useSetProgress, useStudyStore } from "@/lib/store";
 import { isCardActive, type Card } from "@/lib/types";
-import { answersMatch, parseIntSearchParam, cn } from "@/lib/utils";
+import { answersMatch, parseIntSearchParam } from "@/lib/utils";
 
 type Search = { box?: number };
 
@@ -219,9 +220,9 @@ function ClozePage() {
           autoFocus
         />
         {revealed ? (
-          <p className={cn("text-sm", correct ? "text-success" : "text-danger")}>
+          <Feedback tone={correct ? "correct" : "incorrect"}>
             {correct ? "Correct" : <>Correct answer: {q.blank.answer}</>}
-          </p>
+          </Feedback>
         ) : null}
         <Button type="submit" className="w-full">
           {revealed ? "Continue" : "Check"}

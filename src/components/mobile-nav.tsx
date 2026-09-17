@@ -11,7 +11,7 @@ const AccountNavItem = lazy(() =>
 );
 
 const itemClass =
-  "flex flex-1 flex-col items-center justify-center gap-0.5 px-2 py-2 text-[11px] font-medium text-muted";
+  "flex flex-1 flex-col items-center justify-center gap-0.5 px-2 py-2 text-2xs font-medium text-muted";
 
 export function MobileNav() {
   const location = useLocation();
