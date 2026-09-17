@@ -1,9 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { AlertCircle, ChevronDown, ChevronRight, Plus, Search, Sparkles } from "lucide-react";
+import { ChevronDown, ChevronRight, Plus, Search, Sparkles } from "lucide-react";
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { AuthGate } from "@/components/auth-gate";
 import { EmptyState } from "@/components/empty-state";
+import { LibraryProgressPanel } from "@/components/library-progress-panel";
 import { SetCard } from "@/components/set-card";
 import { PublicSetCard } from "@/components/public-set-card";
 import { StreakIndicator } from "@/components/streak-indicator";
@@ -12,11 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SUBJECTS } from "@/lib/types";
 import { masteryStats } from "@/lib/quiz";
-import { isStudiableSet, summarizeLibrary, weakCards } from "@/lib/srs";
-import { ReviewCallout, ReviewCounts } from "@/components/review-status";
-import { DailyGoalCard, WeakWordsCard, XpCard } from "@/components/goal-and-xp";
 import { useProgress, useStudyStore } from "@/lib/store";
-import { cn } from "@/lib/utils";
 
 // Lazy: pulls in the auth client (better-auth/react), which must stay out of
 // this route's eager bundle — see auth-gate.tsx's RequireAuth for why. Only
@@ -92,38 +89,11 @@ function Home() {
     return publicSets.filter((set) => !ownIds.has(set.id));
   }, [publicSets, sets]);
 
-  /**
-   * What the whole library owes, and which set to open first.
-   *
-   * Derived from the progress map this page already loads for the mastery
-   * bars — no extra query, and no counter of its own that could drift from
-   * what a session actually serves.
-   */
-  const reviewNow = useMemo(
-    () => summarizeLibrary(sets, progress, { now: Date.now() }),
-    [sets, progress],
-  );
-
   const continueSet = useMemo(() => {
     return [...sets]
       .filter((s) => s.lastStudiedAt)
       .sort((a, b) => (b.lastStudiedAt ?? 0) - (a.lastStudiedAt ?? 0))[0];
   }, [sets]);
-
-  /**
-   * How many cards are giving this learner trouble.
-   *
-   * Derived from the progress map this page already loads for the mastery
-   * bars — no extra query — and from the same `isWeakWord` the weak-words
-   * session filters on, so the number on the card is the number of cards the
-   * round will serve.
-   */
-  const weakCount = useMemo(() => {
-    const now = Date.now();
-    return sets
-      .filter(isStudiableSet)
-      .reduce((total, set) => total + weakCards(set.cards, progress, { now }).length, 0);
-  }, [sets, progress]);
 
   const continueMastery = useMemo(
     () => masteryStats(continueSet?.cards ?? [], progress),
@@ -217,57 +187,7 @@ function Home() {
         </div>
       </section>
 
-      {/* Reviews come first when any are waiting: the engine already knows
-          what is due, and this is the way in.
-
-          Two shapes, never both. When cards are actually due, the library-wide
-          Review session is the entry point. When nothing is due but a set has
-          new cards, there is nothing to review — so the per-set callout offers
-          to start learning instead. */}
-      {reviewNow.totals.due > 0 ? (
-        <Link
-          to="/review"
-          className="mt-8 flex flex-col justify-between gap-4 rounded-2xl bg-surface p-6 shadow-[var(--shadow-border)] transition-shadow hover:shadow-[var(--shadow-border-hover)] sm:flex-row sm:items-center"
-        >
-          <div className="min-w-0">
-            <p
-              className={cn(
-                "flex items-center gap-1.5 text-xs font-medium tracking-wide uppercase",
-                reviewNow.totals.overdue > 0 ? "text-danger" : "text-muted",
-              )}
-            >
-              {reviewNow.totals.overdue > 0 ? (
-                <AlertCircle className="size-3.5" />
-              ) : (
-                <Sparkles className="size-3.5" />
-              )}
-              Review
-            </p>
-            <h2 className="mt-2 font-display text-2xl font-medium tracking-tight">
-              {reviewNow.totals.due} card{reviewNow.totals.due === 1 ? "" : "s"} due
-            </h2>
-            <ReviewCounts summary={reviewNow.totals} className="mt-1 text-muted" />
-          </div>
-          <span className="inline-flex h-11 shrink-0 items-center rounded-md bg-primary px-4 text-sm font-medium text-primary-fg">
-            Start review
-          </span>
-        </Link>
-      ) : reviewNow.target ? (
-        <ReviewCallout
-          setId={reviewNow.target.set.id}
-          summary={reviewNow.totals}
-          title={reviewNow.target.set.title}
-          className="mt-8"
-        />
-      ) : null}
-
-      {/* Goal first, then XP: one is today's commitment, the other is the
-          long game. Both hide themselves when there is nothing to show. */}
-      <div className="mt-6 grid gap-4 md:grid-cols-2">
-        <DailyGoalCard />
-        <XpCard />
-        <WeakWordsCard count={weakCount} />
-      </div>
+      <LibraryProgressPanel className="mt-8" />
 
       {continueSet ? (
         <Link

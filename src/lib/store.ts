@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { create } from "zustand";
 import type { CardEnrichment, CardProgress, CardStatus, DailyStats, ReviewRating, StudySet } from "./types";
 import { emptyDailyStats } from "./types";
@@ -28,6 +28,7 @@ import {
 import { getStreak as getStreakFn, type StreakInfo } from "./streak";
 import { localDateKey } from "./utils";
 import type { LanguageCode } from "./lang/languages";
+import { isStudiableSet, summarizeLibrary, weakCards, type LibraryReview } from "./srs";
 
 type DraftCard = {
   term: string;
@@ -586,4 +587,35 @@ export function useSetProgress(setId: string | undefined) {
   }, [resolvedId, loaded, fetchSetProgress]);
 
   return progress;
+}
+
+/**
+ * Account-wide review standing: what's waiting across every set, and how many
+ * cards are weak. Shared by the home page and account page's progress panel
+ * — both need the same numbers, computed the same way, so they never disagree.
+ *
+ * Reads `sets`/`progress` already in the store; callers are responsible for
+ * having fetched them (fetchSets/fetchAllProgress), same as every other
+ * selector here. `isLoaded` mirrors `fetchSets`'s own flag — false until that
+ * first fetch resolves — so a caller can tell "nothing due" apart from
+ * "haven't checked yet" instead of flashing an empty state while sets/progress
+ * are still in flight.
+ */
+export function useLibraryReview(): {
+  library: LibraryReview;
+  weakCount: number;
+  isLoaded: boolean;
+} {
+  const sets = useStudyStore((s) => s.sets);
+  const isLoaded = useStudyStore((s) => s.isLoaded);
+  const progress = useProgress();
+
+  return useMemo(() => {
+    const now = Date.now();
+    const library = summarizeLibrary(sets, progress, { now });
+    const weakCount = sets
+      .filter(isStudiableSet)
+      .reduce((total, set) => total + weakCards(set.cards, progress, { now }).length, 0);
+    return { library, weakCount, isLoaded };
+  }, [sets, progress, isLoaded]);
 }
