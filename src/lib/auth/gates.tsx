@@ -241,7 +241,7 @@ export function AccountNavItem({ className }: { className?: string }) {
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button type="button" className={cn(className, "outline-none")}>
-            <span className="grid size-5 shrink-0 place-items-center overflow-hidden rounded-full bg-primary text-[10px] font-medium text-primary-fg">
+            <span className="grid size-5 shrink-0 place-items-center overflow-hidden rounded-full bg-primary text-2xs font-medium text-primary-fg">
               {user.profileImageUrl ? (
                 <img src={user.profileImageUrl} alt="" className="size-5 object-cover" />
               ) : (

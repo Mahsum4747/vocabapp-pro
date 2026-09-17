@@ -488,7 +488,7 @@ function SetPage() {
                           </p>
                           <SpeakButton text={card.term} language={setLanguages.term ?? studySet.termLanguage} />
                           {isExcluded ? (
-                            <span className="shrink-0 rounded-full bg-surface-2 px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-muted uppercase">
+                            <span className="shrink-0 rounded-full bg-surface-2 px-1.5 py-0.5 text-2xs font-medium tracking-wide text-muted uppercase">
                               Excluded
                             </span>
                           ) : null}

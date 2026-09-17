@@ -49,7 +49,7 @@ export function DueBadge({ summary }: { summary: ReviewSummary }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium tabular-nums",
+        "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-2xs font-medium tabular-nums",
         summary.overdue > 0
           ? "bg-danger-soft text-danger"
           : summary.due > 0

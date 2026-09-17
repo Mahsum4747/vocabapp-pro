@@ -65,7 +65,7 @@ export function LeitnerBoxes({
           >
             <p
               className={cn(
-                "text-[9px] font-medium tracking-wide uppercase",
+                "text-3xs font-medium tracking-wide uppercase",
                 isSelected ? "text-primary-fg/70" : tier === "high" ? "text-success" : "text-muted",
               )}
             >
@@ -92,7 +92,7 @@ export function LeitnerBoxes({
           aria-label={`Study ${weak} weak word${weak === 1 ? "" : "s"}`}
           className="flex min-w-10 flex-col items-center gap-0.5 rounded-lg bg-danger-soft px-2 py-1.5 transition-opacity hover:opacity-80"
         >
-          <p className="text-[9px] font-medium tracking-wide text-danger uppercase">Weak</p>
+          <p className="text-3xs font-medium tracking-wide text-danger uppercase">Weak</p>
           <p className="text-xs font-medium text-danger tabular-nums">
             <AnimatedNumber value={weak} />
           </p>
@@ -103,7 +103,7 @@ export function LeitnerBoxes({
           className="flex min-w-10 flex-col items-center gap-0.5 rounded-lg bg-streak/10 px-2 py-1.5"
           aria-label={`${notStarted} card${notStarted === 1 ? "" : "s"} not started`}
         >
-          <p className="text-[9px] font-medium tracking-wide text-streak uppercase">New</p>
+          <p className="text-3xs font-medium tracking-wide text-streak uppercase">New</p>
           <p className="text-xs font-medium text-streak tabular-nums">
             <AnimatedNumber value={notStarted} />
           </p>
