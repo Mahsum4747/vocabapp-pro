@@ -22,7 +22,7 @@
      which already use green/orange-red for status, not grammar. */
   --color-article-der: #1d5b96;
   --color-article-die: #b7293f;
-  --color-article-das: #2f7a3d;
+  --color-article-das: #1f7a6b;
   /* A third, more saturated success step for the top mastery tier — blended
      from the two success tones above rather than a new raw color. Dark mode
      below uses a stronger mix ratio: contrast against --color-surface turned
@@ -112,7 +112,7 @@
     --color-ring: #2a6b4f;
     --color-article-der: #7ab3e8;
     --color-article-die: #e8828f;
-    --color-article-das: #8fd19e;
+    --color-article-das: #6fc9b8;
     --shadow-border:
       0 0 0 1px rgb(0 0 0 / 0.4), 0 1px 2px -1px rgb(0 0 0 / 0.3), 0 2px 4px 0 rgb(0 0 0 / 0.2);
     --shadow-border-hover:
