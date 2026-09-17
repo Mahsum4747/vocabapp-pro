@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { EmptyState } from "@/components/empty-state";
+import { feedbackToneClasses } from "@/components/feedback";
 import { StudyChrome } from "@/components/study-chrome";
 import { Button } from "@/components/ui/button";
 import { leitnerBoxOf } from "@/lib/quiz";
@@ -211,7 +212,7 @@ function MatchPage() {
                   tile.kind === "term" ? "bg-primary text-primary-fg" : "bg-surface text-fg",
                   isOn && "ring-2 ring-ring ring-offset-2 ring-offset-bg",
                   isMatch && "opacity-35",
-                  isWrong && "bg-danger-soft text-danger",
+                  isWrong && feedbackToneClasses("incorrect"),
                 )}
               >
                 <span className="mb-1 block text-xs font-medium tracking-wide uppercase opacity-70">

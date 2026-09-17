@@ -5,6 +5,7 @@ import { ArticleizedTerm } from "@/components/articleized-term";
 import { Definition2Line } from "@/components/definition2-line";
 import { EmptyState } from "@/components/empty-state";
 import { ExampleLine } from "@/components/example-line";
+import { Feedback, feedbackToneClasses } from "@/components/feedback";
 import { StudyChrome } from "@/components/study-chrome";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -253,8 +254,8 @@ function TestPage() {
                 }}
                 className={cn(
                   "rounded-lg bg-surface px-4 py-3.5 text-left text-sm shadow-[var(--shadow-border)]",
-                  show && option === q.answer && "bg-success-soft text-success",
-                  show && chosen && option !== q.answer && "bg-danger-soft text-danger",
+                  show && option === q.answer && feedbackToneClasses("correct"),
+                  show && chosen && option !== q.answer && feedbackToneClasses("incorrect"),
                 )}
               >
                 {option}
@@ -281,18 +282,13 @@ function TestPage() {
             autoFocus
           />
           {revealed ? (
-            <p
-              className={cn(
-                "text-sm",
-                answersMatch(written, q.answer, matchOptions) ? "text-success" : "text-danger",
-              )}
-            >
+            <Feedback tone={answersMatch(written, q.answer, matchOptions) ? "correct" : "incorrect"}>
               {answersMatch(written, q.answer, matchOptions) ? (
                 "Correct"
               ) : (
                 <>Correct answer: {displayAnswer}</>
               )}
-            </p>
+            </Feedback>
           ) : null}
           <Button type="submit" className="w-full">
             {revealed ? "Continue" : "Check"}
@@ -321,8 +317,8 @@ function TestPage() {
                   }}
                   className={cn(
                     "h-12 rounded-lg bg-surface text-sm font-medium shadow-[var(--shadow-border)]",
-                    show && value === q.answer && "bg-success-soft text-success",
-                    show && chosen && value !== q.answer && "bg-danger-soft text-danger",
+                    show && value === q.answer && feedbackToneClasses("correct"),
+                    show && chosen && value !== q.answer && feedbackToneClasses("incorrect"),
                   )}
                 >
                   {label}

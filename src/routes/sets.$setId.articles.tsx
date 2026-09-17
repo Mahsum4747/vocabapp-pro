@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { EmptyState } from "@/components/empty-state";
+import { feedbackToneClasses } from "@/components/feedback";
 import { StudyChrome } from "@/components/study-chrome";
 import { Button } from "@/components/ui/button";
 import { getArticleDrillProgress, recordArticleDrillAttempt } from "@/lib/article-drill";
@@ -195,8 +196,8 @@ function ArticleDrillPage() {
               className={cn(
                 "rounded-lg bg-surface px-4 py-6 text-center text-lg font-semibold shadow-[var(--shadow-border)] transition-[background-color,box-shadow] duration-150",
                 !revealed && "hover:shadow-[var(--shadow-border-hover)]",
-                show && isCorrectOption && "bg-success-soft text-success",
-                show && isChosen && !isCorrectOption && "bg-danger-soft text-danger",
+                show && isCorrectOption && feedbackToneClasses("correct"),
+                show && isChosen && !isCorrectOption && feedbackToneClasses("incorrect"),
               )}
             >
               {option}
