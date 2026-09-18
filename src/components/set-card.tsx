@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { BookOpen, Layers } from "lucide-react";
+import { BookOpen, Check, Layers } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import type { Card, StudySet } from "@/lib/types";
 import { MASTERY_MAX } from "@/lib/types";
@@ -45,7 +45,19 @@ function MiniLeitner({ cards, progress }: { cards: Card[]; progress: ProgressMap
   );
 }
 
-export function SetCard({ set }: { set: StudySet }) {
+export function SetCard({
+  set,
+  selectable = false,
+  selected = false,
+  onToggleSelect,
+}: {
+  set: StudySet;
+  /** Bulk-organize mode: clicking the card toggles selection instead of
+   *  opening the set. */
+  selectable?: boolean;
+  selected?: boolean;
+  onToggleSelect?: () => void;
+}) {
   // Whatever progress the library page has already loaded; an unstudied set
   // simply reads as 0.
   const progress = useProgress();
@@ -56,14 +68,28 @@ export function SetCard({ set }: { set: StudySet }) {
     ? formatDistanceToNow(set.lastStudiedAt, { addSuffix: true })
     : "Not studied yet";
 
-  return (
-    <Link
-      to="/sets/$setId"
-      params={{ setId: set.id }}
-      className="group flex flex-col rounded-xl bg-surface p-5 shadow-[var(--elevation-1)] transition-[transform,box-shadow] duration-[var(--duration-base)] ease-[var(--ease-standard)] hover:-translate-y-0.5 hover:shadow-[var(--elevation-2)]"
-    >
+  const className = cn(
+    "group relative flex flex-col rounded-xl bg-surface p-5 text-left shadow-[var(--elevation-1)] transition-[transform,box-shadow] duration-[var(--duration-base)] ease-[var(--ease-standard)]",
+    selectable
+      ? cn("w-full", selected ? "ring-2 ring-primary" : "hover:shadow-[var(--elevation-2)]")
+      : "hover:-translate-y-0.5 hover:shadow-[var(--elevation-2)]",
+  );
+
+  const content = (
+    <>
+      {selectable ? (
+        <span
+          aria-hidden="true"
+          className={cn(
+            "absolute top-3 left-3 z-10 flex size-6 items-center justify-center rounded-full border-2 bg-surface",
+            selected ? "border-primary bg-primary text-primary-fg" : "border-border",
+          )}
+        >
+          {selected ? <Check className="size-3.5" /> : null}
+        </span>
+      ) : null}
       <div className="flex items-center justify-between gap-3">
-        <Badge>{set.subject}</Badge>
+        {set.folder?.trim() ? <Badge>{set.folder.trim()}</Badge> : <span />}
         <div className="flex items-center gap-2">
           {set.isReference ? null : <DueBadge summary={summary} />}
           <span className="inline-flex items-center gap-1 text-xs text-muted tabular-nums">
@@ -99,6 +125,20 @@ export function SetCard({ set }: { set: StudySet }) {
         </div>
       )}
       <p className="mt-4 text-xs text-subtle">{when}</p>
+    </>
+  );
+
+  if (selectable) {
+    return (
+      <button type="button" onClick={onToggleSelect} aria-pressed={selected} className={className}>
+        {content}
+      </button>
+    );
+  }
+
+  return (
+    <Link to="/sets/$setId" params={{ setId: set.id }} className={className}>
+      {content}
     </Link>
   );
 }

@@ -12,7 +12,8 @@ import { Input, Textarea } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { LanguageSelect } from "@/components/language-select";
 import { NO_LANGUAGE, storedLanguageChoice, type LanguageChoice } from "@/lib/lang/choice";
-import { SUBJECTS, resolveSetLanguages, type StudySet } from "@/lib/types";
+import { suggestFolder } from "@/lib/folder-suggest";
+import { resolveSetLanguages, type StudySet } from "@/lib/types";
 import { useSet, useStudyStore } from "@/lib/store";
 
 export const Route = createFileRoute("/sets/$setId/edit")({
@@ -52,7 +53,6 @@ function EditPage() {
 
   const [title, setTitle] = useState(studySet?.title ?? "");
   const [description, setDescription] = useState(studySet?.description ?? "");
-  const [subject, setSubject] = useState(studySet?.subject ?? "General");
   const [isReference, setIsReference] = useState(studySet?.isReference ?? false);
   const [termLang, setTermLang] = useState<LanguageChoice>(() => termChoiceFor(studySet));
   const [defLang, setDefLang] = useState<LanguageChoice>(() => defChoiceFor(studySet));
@@ -78,7 +78,6 @@ function EditPage() {
     if (!studySet) return;
     setTitle(studySet.title);
     setDescription(studySet.description);
-    setSubject(studySet.subject);
     setIsReference(studySet.isReference ?? false);
     setTermLang(termChoiceFor(studySet));
     setDefLang(defChoiceFor(studySet));
@@ -132,7 +131,6 @@ function EditPage() {
     updateSetMeta(setId, {
       title,
       description,
-      subject,
       isReference,
       termLanguage: termLang.text.trim(),
       // `null` clears the stored code outright; an omitted key would survive
@@ -185,7 +183,12 @@ function EditPage() {
               onGenerated={(generated) => {
                 setTitle(generated.title);
                 setDescription(generated.description ?? "");
-                setSubject(generated.subject || subject);
+                // Same match the create form offers while typing, applied
+                // to the generated title — still just a prefill of the
+                // editable field, never a silent assignment.
+                setFolder((current) =>
+                  current.trim() ? current : (suggestFolder(generated.title, folderOptions) ?? current),
+                );
                 setCards(
                   generated.cards.map((card) => ({
                     id: crypto.randomUUID(),
@@ -259,19 +262,6 @@ function EditPage() {
                 placeholder="e.g. English"
               />
             </div>
-            <div className="flex flex-wrap gap-2">
-              {SUBJECTS.map((name) => (
-                <Button
-                  key={name}
-                  type="button"
-                  size="sm"
-                  variant={subject === name ? "default" : "secondary"}
-                  onClick={() => setSubject(name)}
-                >
-                  {name}
-                </Button>
-              ))}
-            </div>
             <label className="flex items-center gap-2 text-sm text-fg select-none">
               <input
                 type="checkbox"
@@ -309,7 +299,7 @@ function EditPage() {
               defLangCode={defLang.code ?? undefined}
               definitionLanguage2={definitionLanguage2Enabled ? defLang2.text.trim() : undefined}
               definitionLanguage2Code={definitionLanguage2Enabled ? (defLang2.code ?? undefined) : undefined}
-              topic={subject}
+              topic={studySet.subject}
             />
             <div className="sticky bottom-4 flex justify-end gap-2">
               <Button type="button" variant="ghost" asChild>

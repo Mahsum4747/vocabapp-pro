@@ -4,14 +4,14 @@ import { useStudyStore, useLibraryReview } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import { DailyGoalCard, WeakWordsCard, XpCard } from "./goal-and-xp";
 import { ReviewCallout, ReviewCounts } from "./review-status";
-import { StreakIndicator } from "./streak-indicator";
 
 /**
  * The account-wide "where do I stand" block: what's due across every set,
- * the streak, today's goal and XP, and how many words are weak — in that
- * fixed order, on every account-level screen (home, account). Never shown on
- * a study screen, and never mixed with a single set's own mastery bar — those
- * answer a different question and live where they already did.
+ * today's goal (with the streak riding along) and XP, and how many words
+ * are weak — in that fixed order, on every account-level screen (home,
+ * account). Never shown on a study screen, and never mixed with a single
+ * set's own mastery bar — those answer a different question and live where
+ * they already did.
  */
 export function LibraryProgressPanel({
   className,
@@ -29,7 +29,6 @@ export function LibraryProgressPanel({
   const { library, weakCount, isLoaded } = useLibraryReview();
   const streak = useStudyStore((s) => s.streak);
   const reviewShown = showReview && (library.totals.due > 0 || Boolean(library.target));
-  const streakShown = Boolean(streak && streak.currentStreak > 0);
 
   // Sets/progress haven't come back yet — show a placeholder instead of the
   // "nothing due" shape sets/progress being empty would otherwise produce.
@@ -86,16 +85,12 @@ export function LibraryProgressPanel({
         />
       ) : null}
 
-      {streakShown ? (
-        <div className={reviewShown ? "mt-6" : undefined}>
-          <StreakIndicator days={streak!.currentStreak} />
-        </div>
-      ) : null}
-
-      <div className={cn("grid gap-4 md:grid-cols-2", (reviewShown || streakShown) && "mt-6")}>
-        <DailyGoalCard />
+      <div className={cn("grid gap-4 md:grid-cols-2", reviewShown && "mt-6")}>
+        <DailyGoalCard streakDays={streak?.currentStreak} />
         <XpCard />
-        <WeakWordsCard count={weakCount} />
+        {/* Full width rather than a third column-1 card with nothing
+            balancing it in column 2 — a deliberate row, not a stray leftover. */}
+        <WeakWordsCard count={weakCount} className="md:col-span-2" />
       </div>
     </div>
   );

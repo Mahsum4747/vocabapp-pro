@@ -19,10 +19,10 @@ import { PublicSetCard } from "@/components/public-set-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { SUBJECTS } from "@/lib/types";
 import { masteryStats } from "@/lib/quiz";
 import { useLibraryReview, useProgress, useStudyStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 // Lazy: pulls in the auth client (better-auth/react), which must stay out of
 // this route's eager bundle — see auth-gate.tsx's RequireAuth for why. Only
@@ -49,6 +49,7 @@ function Home() {
   const fetchStreak = useStudyStore((s) => s.fetchStreak);
   const fetchAllProgress = useStudyStore((s) => s.fetchAllProgress);
   const fetchProfile = useStudyStore((s) => s.fetchProfile);
+  const updateSetMeta = useStudyStore((s) => s.updateSetMeta);
   const progress = useProgress();
   // Same hook LibraryProgressPanel uses — no extra fetch, just a second read
   // of the store state this route already loads, so the primary CTA and the
@@ -67,8 +68,11 @@ function Home() {
   }, [fetchSets, fetchPublicSets, fetchStreak, fetchAllProgress, fetchProfile]);
   const { view: viewParam } = Route.useSearch();
   const [query, setQuery] = useState("");
-  const [subject, setSubject] = useState<string>("All");
   const [collapsedFolders, setCollapsedFolders] = useState<Set<string>>(new Set());
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [moveFolder, setMoveFolder] = useState("");
+  const [moving, setMoving] = useState(false);
   // Starts on "public" — the only tab that works before we know whether this
   // visitor is signed in (see AuthGate below) — and flips to "mine" once
   // `ReportSignedIn` resolves, unless an explicit `?view=` or a manual click
@@ -114,22 +118,18 @@ function Home() {
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return sets.filter((set) => {
-      if (subject !== "All" && set.subject !== subject) return false;
-      if (!q) return true;
-      return (
+    if (!q) return sets;
+    return sets.filter(
+      (set) =>
         set.title.toLowerCase().includes(q) ||
         set.description.toLowerCase().includes(q) ||
         set.subject.toLowerCase().includes(q) ||
         set.cards.some(
           (card) =>
             card.term.toLowerCase().includes(q) || card.definition.toLowerCase().includes(q),
-        )
-      );
-    });
-  }, [sets, query, subject]);
-
-  const subjects = ["All", ...SUBJECTS.filter((name) => sets.some((s) => s.subject === name))];
+        ),
+    );
+  }, [sets, query]);
 
   const UNCATEGORIZED = "Uncategorized";
   const folderGroups = useMemo(() => {
@@ -154,6 +154,55 @@ function Home() {
       else next.add(name);
       return next;
     });
+  }
+
+  const folderOptions = useMemo(
+    () =>
+      Array.from(new Set(sets.map((s) => s.folder?.trim()).filter((f): f is string => !!f))).sort(
+        (a, b) => a.localeCompare(b),
+      ),
+    [sets],
+  );
+
+  const uncategorizedCount = useMemo(
+    () => sets.filter((s) => !s.folder?.trim()).length,
+    [sets],
+  );
+  const uncategorizedRatio = sets.length > 0 ? uncategorizedCount / sets.length : 0;
+
+  function toggleSelectMode(next: boolean) {
+    setSelectMode(next);
+    setSelectedIds(new Set());
+    setMoveFolder("");
+  }
+
+  function toggleSelected(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  async function moveSelectedToFolder() {
+    const target = moveFolder.trim();
+    if (!target || selectedIds.size === 0) return;
+    setMoving(true);
+    try {
+      await Promise.all(
+        Array.from(selectedIds).map((id) => updateSetMeta(id, { folder: target })),
+      );
+      toast.success(
+        `Moved ${selectedIds.size} set${selectedIds.size === 1 ? "" : "s"} to "${target}".`,
+      );
+      toggleSelectMode(false);
+    } catch (error) {
+      console.error("Failed to move sets to folder:", error);
+      toast.error("Couldn't move those sets, try again.");
+    } finally {
+      setMoving(false);
+    }
   }
 
   return (
@@ -183,7 +232,7 @@ function Home() {
         {/* Frequent, but secondary to today's actual work above — a visitor
             with a full library still reaches for these often enough that
             they stay one tap away, just lighter than the CTA. */}
-        <div className="mt-4 flex flex-wrap gap-2">
+        <div className="mt-3 flex flex-wrap gap-2">
           <Button asChild variant="ghost" size="sm">
             <Link to="/create">
               <Plus />
@@ -199,13 +248,13 @@ function Home() {
         </div>
       </section>
 
-      <LibraryProgressPanel className="mt-8" showReview={false} />
+      <LibraryProgressPanel className="mt-6" showReview={false} />
 
       {continueSet ? (
         <Link
           to="/sets/$setId"
           params={{ setId: continueSet.id }}
-          className="mt-10 flex flex-col justify-between gap-4 rounded-2xl bg-primary p-6 text-primary-fg shadow-[var(--shadow-card)] md:flex-row md:items-end"
+          className="mt-8 flex flex-col justify-between gap-4 rounded-2xl bg-primary p-6 text-primary-fg shadow-[var(--shadow-card)] md:flex-row md:items-end"
         >
           <div>
             <p className="text-xs font-medium tracking-wide text-primary-fg/70 uppercase">
@@ -225,7 +274,7 @@ function Home() {
         </Link>
       ) : null}
 
-      <div className="mt-10 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      <div className="mt-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="flex gap-2">
           <button type="button" onClick={() => chooseView("mine")}>
             <Badge tone={view === "mine" ? "primary" : "muted"}>My Library</Badge>
@@ -255,26 +304,59 @@ function Home() {
         // signed out (e.g. a visitor who came for Public Sets clicks this tab).
         <AuthGate>
           <>
-            <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
-              {subjects.map((name) => (
-                <button
-                  key={name}
+            {selectMode ? (
+              <div className="mt-4 flex flex-col gap-2 rounded-lg bg-surface-2 p-3 sm:flex-row sm:items-center sm:justify-between">
+                <span className="text-sm text-muted tabular-nums">
+                  {selectedIds.size} selected
+                </span>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Input
+                    list="library-folder-options"
+                    value={moveFolder}
+                    onChange={(e) => setMoveFolder(e.target.value)}
+                    placeholder="Move to folder…"
+                    className="h-9 w-48"
+                  />
+                  <datalist id="library-folder-options">
+                    {folderOptions.map((name) => (
+                      <option key={name} value={name} />
+                    ))}
+                  </datalist>
+                  <Button
+                    type="button"
+                    size="sm"
+                    disabled={!moveFolder.trim() || selectedIds.size === 0 || moving}
+                    onClick={moveSelectedToFolder}
+                  >
+                    Move
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => toggleSelectMode(false)}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            ) : sets.length > 0 && uncategorizedRatio > 0.5 ? (
+              // Most of the library has no folder — the light one-line tip
+              // stopped being enough to notice, so this offers the fix
+              // directly instead of pointing at "edit a set" one at a time.
+              <div className="mt-4 flex flex-col gap-2 rounded-lg bg-surface-2 p-3 text-xs text-muted sm:flex-row sm:items-center sm:justify-between">
+                <span>
+                  {uncategorizedCount} of {sets.length} sets have no folder yet.
+                </span>
+                <Button
                   type="button"
-                  onClick={() => setSubject(name)}
-                  className="shrink-0"
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => toggleSelectMode(true)}
                 >
-                  <Badge tone={subject === name ? "primary" : "muted"}>{name}</Badge>
-                </button>
-              ))}
-            </div>
-
-            {/* Folders exist but go unnoticed since nothing ever points at them —
-                show this once, and only while every set is still ungrouped. */}
-            {sets.length > 0 && !sets.some((s) => s.folder?.trim()) ? (
-              <p className="mt-3 text-xs text-muted">
-                Tip: give a set a folder (e.g. "German A2") to group related sets
-                together — edit a set to add one.
-              </p>
+                  Organize into folders
+                </Button>
+              </div>
             ) : null}
 
             {filtered.length === 0 ? (
@@ -322,7 +404,13 @@ function Home() {
                       {!collapsed ? (
                         <div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                           {group.sets.map((set) => (
-                            <SetCard key={set.id} set={set} />
+                            <SetCard
+                              key={set.id}
+                              set={set}
+                              selectable={selectMode}
+                              selected={selectedIds.has(set.id)}
+                              onToggleSelect={() => toggleSelected(set.id)}
+                            />
                           ))}
                         </div>
                       ) : null}
