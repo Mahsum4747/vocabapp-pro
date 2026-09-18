@@ -335,6 +335,22 @@ export type ArticleDrillProgress = {
   lastAttemptAt: number;
 };
 
+/**
+ * One wrong article-drill attempt. Append-only, mirrors `ReviewEvent`'s
+ * shape/purpose but stays in its own subcollection — pure data collection for
+ * future error-type analysis (e.g. rule suggestions), not read by anything
+ * today. Correct attempts are not logged here, only wrong ones.
+ */
+export type ArticleDrillErrorEvent = {
+  id: string;
+  cardId: string;
+  setId: string;
+  selectedArticle: string;
+  correctArticle: string;
+  /** Server clock, not the browser's. */
+  occurredAt: number;
+};
+
 /** One graded review. The raw, append-only log everything else is derived from. */
 export type ReviewEvent = {
   id: string;

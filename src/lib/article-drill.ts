@@ -16,11 +16,14 @@ import type { ArticleDrillProgress, StudySet } from "./types";
  */
 
 const idSchema = z.string().trim().min(1).max(200);
+const articleSchema = z.string().trim().min(1).max(50);
 
 const recordAttemptSchema = z.object({
   cardId: idSchema,
   setId: idSchema,
   correct: z.boolean(),
+  selectedArticle: articleSchema,
+  correctArticle: articleSchema,
 });
 
 const setQuerySchema = z.object({ setId: idSchema });
@@ -46,11 +49,8 @@ export const recordArticleDrillAttempt = createServerFn({ method: "POST" })
       throw new Error("You don't have permission to study that set.");
     }
 
-    const ref = db
-      .collection("users")
-      .doc(context.userId)
-      .collection("articleDrillProgress")
-      .doc(data.cardId);
+    const userRef = db.collection("users").doc(context.userId);
+    const ref = userRef.collection("articleDrillProgress").doc(data.cardId);
 
     const now = Date.now();
     await ref.set(
@@ -63,6 +63,24 @@ export const recordArticleDrillAttempt = createServerFn({ method: "POST" })
       },
       { merge: true },
     );
+
+    // Append-only error log, wrong attempts only — pure data collection for
+    // future error-type analysis, no scheduler/mastery implications. A
+    // separate write, not part of the update above: its failure must never
+    // stop the user's attempt (the counters above) from being recorded.
+    if (!data.correct) {
+      try {
+        await userRef.collection("articleDrillErrors").add({
+          cardId: data.cardId,
+          setId: data.setId,
+          selectedArticle: data.selectedArticle,
+          correctArticle: data.correctArticle,
+          occurredAt: now,
+        });
+      } catch {
+        // Best-effort log only; swallow so the attempt above still counts.
+      }
+    }
 
     return { ok: true as const };
   });
