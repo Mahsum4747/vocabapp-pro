@@ -100,7 +100,15 @@ function ArticleDrillPage() {
     const ok = option === correctArticle;
     setSelected(option);
     if (ok) setCorrectCount((n) => n + 1);
-    void recordArticleDrillAttempt({ data: { cardId: card.id, setId: studySet.id, correct: ok } });
+    void recordArticleDrillAttempt({
+      data: {
+        cardId: card.id,
+        setId: studySet.id,
+        correct: ok,
+        selectedArticle: option,
+        correctArticle: correctArticle ?? "",
+      },
+    });
   }
 
   function next() {
