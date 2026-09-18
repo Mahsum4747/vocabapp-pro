@@ -8,12 +8,46 @@ import { Button } from "@/components/ui/button";
 import { getArticleDrillProgress, recordArticleDrillAttempt } from "@/lib/article-drill";
 import { profileFor } from "@/lib/lang/profiles";
 import { useSet, useStudyStore } from "@/lib/store";
-import { isCardActive, resolveSetLanguages, type ArticleDrillProgress, type Card } from "@/lib/types";
+import {
+  isCardActive,
+  resolveSetLanguages,
+  type ArticleDrillProgress,
+  type Card,
+  type GrammaticalGender,
+} from "@/lib/types";
 import { cn, shuffle } from "@/lib/utils";
 
 export const Route = createFileRoute("/sets/$setId/articles")({
   component: ArticleDrillPage,
 });
+
+const GENDER_LABEL: Record<GrammaticalGender, string> = {
+  m: "masculine",
+  f: "feminine",
+  n: "neuter",
+};
+
+// A round's errors are "concentrated" (worth a callout) only when one gender
+// accounts for a clear majority, not just a plurality — three roughly equal
+// genders (~33% each) must stay silent. Also require a few errors so 1-of-2
+// doesn't read as a pattern.
+const CONCENTRATION_MIN_ERRORS = 3;
+const CONCENTRATION_MIN_SHARE = 0.5;
+
+/** One line describing this round's dominant error gender, or null if there isn't one. */
+function summarizeErrorPattern(
+  errors: GrammaticalGender[],
+  articleFor: (gender: GrammaticalGender) => string | undefined,
+): string | null {
+  if (errors.length < CONCENTRATION_MIN_ERRORS) return null;
+  const counts = new Map<GrammaticalGender, number>();
+  for (const gender of errors) counts.set(gender, (counts.get(gender) ?? 0) + 1);
+  const [topGender, topCount] = [...counts.entries()].sort((a, b) => b[1] - a[1])[0];
+  if (topCount / errors.length <= CONCENTRATION_MIN_SHARE) return null;
+  const article = articleFor(topGender);
+  const genderPhrase = article ? `${GENDER_LABEL[topGender]} words (${article})` : `${GENDER_LABEL[topGender]} words`;
+  return `${topCount} of ${errors.length} errors were ${genderPhrase}.`;
+}
 
 /**
  * Phase 3C Part B: tests ONLY the article (der/die/das) for a German noun —
@@ -78,6 +112,9 @@ function ArticleDrillPage() {
   const [selected, setSelected] = useState<string | null>(null);
   const [correctCount, setCorrectCount] = useState(0);
   const [done, setDone] = useState(false);
+  // This round's wrong-answer genders, kept only in memory — not a read from
+  // articleDrillErrors, just today's `choose()` outcomes, cleared on restart.
+  const [roundErrorGenders, setRoundErrorGenders] = useState<GrammaticalGender[]>([]);
 
   useEffect(() => {
     markStudied(setId);
@@ -88,6 +125,7 @@ function ArticleDrillPage() {
     setSelected(null);
     setCorrectCount(0);
     setDone(false);
+    setRoundErrorGenders([]);
     setRound((n) => n + 1);
   }
 
@@ -99,7 +137,11 @@ function ArticleDrillPage() {
     if (!card || !studySet || revealed) return;
     const ok = option === correctArticle;
     setSelected(option);
-    if (ok) setCorrectCount((n) => n + 1);
+    if (ok) {
+      setCorrectCount((n) => n + 1);
+    } else if (card.enrichment?.gender) {
+      setRoundErrorGenders((gs) => [...gs, card.enrichment!.gender!]);
+    }
     void recordArticleDrillAttempt({
       data: {
         cardId: card.id,
@@ -149,6 +191,7 @@ function ArticleDrillPage() {
 
   if (done) {
     const pct = Math.round((correctCount / order.length) * 100);
+    const errorPattern = summarizeErrorPattern(roundErrorGenders, (g) => termProfile.articleFor?.(g));
     return (
       <StudyChrome
         setId={setId}
@@ -165,6 +208,7 @@ function ArticleDrillPage() {
           <p className="mt-2 text-sm text-muted">
             {correctCount} / {order.length} correct
           </p>
+          {errorPattern ? <p className="mt-1 text-xs text-muted">{errorPattern}</p> : null}
           <div className="mt-6 flex flex-col gap-2">
             <Button onClick={restart}>Practice again</Button>
             <Button asChild variant="outline">
