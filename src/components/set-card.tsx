@@ -63,7 +63,7 @@ export function SetCard({ set }: { set: StudySet }) {
       className="group flex flex-col rounded-xl bg-surface p-5 shadow-[var(--elevation-1)] transition-[transform,box-shadow] duration-[var(--duration-base)] ease-[var(--ease-standard)] hover:-translate-y-0.5 hover:shadow-[var(--elevation-2)]"
     >
       <div className="flex items-center justify-between gap-3">
-        <Badge>{set.subject}</Badge>
+        {set.folder?.trim() ? <Badge>{set.folder.trim()}</Badge> : <span />}
         <div className="flex items-center gap-2">
           {set.isReference ? null : <DueBadge summary={summary} />}
           <span className="inline-flex items-center gap-1 text-xs text-muted tabular-nums">

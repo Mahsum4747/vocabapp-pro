@@ -19,7 +19,6 @@ import { PublicSetCard } from "@/components/public-set-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { SUBJECTS } from "@/lib/types";
 import { masteryStats } from "@/lib/quiz";
 import { useLibraryReview, useProgress, useStudyStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
@@ -67,7 +66,6 @@ function Home() {
   }, [fetchSets, fetchPublicSets, fetchStreak, fetchAllProgress, fetchProfile]);
   const { view: viewParam } = Route.useSearch();
   const [query, setQuery] = useState("");
-  const [subject, setSubject] = useState<string>("All");
   const [collapsedFolders, setCollapsedFolders] = useState<Set<string>>(new Set());
   // Starts on "public" — the only tab that works before we know whether this
   // visitor is signed in (see AuthGate below) — and flips to "mine" once
@@ -114,22 +112,18 @@ function Home() {
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return sets.filter((set) => {
-      if (subject !== "All" && set.subject !== subject) return false;
-      if (!q) return true;
-      return (
+    if (!q) return sets;
+    return sets.filter(
+      (set) =>
         set.title.toLowerCase().includes(q) ||
         set.description.toLowerCase().includes(q) ||
         set.subject.toLowerCase().includes(q) ||
         set.cards.some(
           (card) =>
             card.term.toLowerCase().includes(q) || card.definition.toLowerCase().includes(q),
-        )
-      );
-    });
-  }, [sets, query, subject]);
-
-  const subjects = ["All", ...SUBJECTS.filter((name) => sets.some((s) => s.subject === name))];
+        ),
+    );
+  }, [sets, query]);
 
   const UNCATEGORIZED = "Uncategorized";
   const folderGroups = useMemo(() => {
@@ -255,23 +249,10 @@ function Home() {
         // signed out (e.g. a visitor who came for Public Sets clicks this tab).
         <AuthGate>
           <>
-            <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
-              {subjects.map((name) => (
-                <button
-                  key={name}
-                  type="button"
-                  onClick={() => setSubject(name)}
-                  className="shrink-0"
-                >
-                  <Badge tone={subject === name ? "primary" : "muted"}>{name}</Badge>
-                </button>
-              ))}
-            </div>
-
             {/* Folders exist but go unnoticed since nothing ever points at them —
                 show this once, and only while every set is still ungrouped. */}
             {sets.length > 0 && !sets.some((s) => s.folder?.trim()) ? (
-              <p className="mt-3 text-xs text-muted">
+              <p className="mt-4 text-xs text-muted">
                 Tip: give a set a folder (e.g. "German A2") to group related sets
                 together — edit a set to add one.
               </p>

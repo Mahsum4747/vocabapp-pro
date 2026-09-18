@@ -56,10 +56,6 @@ function buildResponseSchema(wantsSecondDefinition: boolean) {
     properties: {
       title: { type: "STRING" },
       description: { type: "STRING" },
-      subject: {
-        type: "STRING",
-        enum: ["Language", "Science", "History", "Geography", "Software", "General"],
-      },
       cards: {
         type: "ARRAY",
         items: {
@@ -145,7 +141,6 @@ function buildPrompt(data: z.infer<typeof inputSchema>): string {
     ...definitionExampleLines("  "),
     'A full correct card: term: "zurückgeben", definition: "to give back",',
     '  example: "Kannst du mir das Buch morgen zurückgeben?"',
-    'Pick a fitting "subject" from: Language, Science, History, Geography, Software, General.',
   ].join("\n");
 }
 
