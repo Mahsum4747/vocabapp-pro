@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { AuthGate } from "@/components/auth-gate";
 import { CardEditor, type EditorCard } from "@/components/card-editor";
@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/input";
+import { suggestFolder } from "@/lib/folder-suggest";
 import { useStudyStore } from "@/lib/store";
 import { toast } from "sonner";
 
@@ -50,6 +51,13 @@ function CreatePage() {
   const folderOptions = Array.from(
     new Set(sets.map((s) => s.folder?.trim()).filter((f): f is string => !!f)),
   ).sort((a, b) => a.localeCompare(b));
+
+  // Only offered while the field is empty — a learner who already typed or
+  // picked a folder isn't nagged about a different guess.
+  const folderSuggestion = useMemo(
+    () => (folder.trim() ? undefined : suggestFolder(title, folderOptions)),
+    [title, folder, folderOptions],
+  );
 
   useEffect(() => {
     if (ai) setAiOpenSignal((n) => n + 1);
@@ -140,16 +148,7 @@ function CreatePage() {
                 placeholder="e.g. European capitals"
               />
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="desc">Description</Label>
-              <Textarea
-                id="desc"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="What is this set for?"
-              />
-            </div>
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 rounded-xl bg-surface-2 p-4">
               <Label htmlFor="folder">Folder</Label>
               {/* A placeholder alone disappears the moment someone starts typing —
                   this stays visible so the grouping feature is actually noticed. */}
@@ -168,6 +167,24 @@ function CreatePage() {
                   <option key={name} value={name} />
                 ))}
               </datalist>
+              {folderSuggestion ? (
+                <button
+                  type="button"
+                  onClick={() => setFolder(folderSuggestion)}
+                  className="text-xs text-primary hover:underline"
+                >
+                  Use "{folderSuggestion}"?
+                </button>
+              ) : null}
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="desc">Description</Label>
+              <Textarea
+                id="desc"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="What is this set for?"
+              />
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <LanguageSelect
