@@ -12,6 +12,7 @@ import { Input, Textarea } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { LanguageSelect } from "@/components/language-select";
 import { NO_LANGUAGE, storedLanguageChoice, type LanguageChoice } from "@/lib/lang/choice";
+import { suggestFolder } from "@/lib/folder-suggest";
 import { resolveSetLanguages, type StudySet } from "@/lib/types";
 import { useSet, useStudyStore } from "@/lib/store";
 
@@ -182,6 +183,12 @@ function EditPage() {
               onGenerated={(generated) => {
                 setTitle(generated.title);
                 setDescription(generated.description ?? "");
+                // Same match the create form offers while typing, applied
+                // to the generated title — still just a prefill of the
+                // editable field, never a silent assignment.
+                setFolder((current) =>
+                  current.trim() ? current : (suggestFolder(generated.title, folderOptions) ?? current),
+                );
                 setCards(
                   generated.cards.map((card) => ({
                     id: crypto.randomUUID(),

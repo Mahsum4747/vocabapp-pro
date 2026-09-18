@@ -114,6 +114,12 @@ function CreatePage() {
               onGenerated={(generated) => {
                 setTitle(generated.title);
                 setDescription(generated.description ?? "");
+                // Same match A3 offers while typing, applied to the
+                // generated title — still just a prefill of the editable
+                // field, never a silent assignment.
+                setFolder((current) =>
+                  current.trim() ? current : (suggestFolder(generated.title, folderOptions) ?? current),
+                );
                 setCards(
                   generated.cards.map((card) => ({
                     id: crypto.randomUUID(),
