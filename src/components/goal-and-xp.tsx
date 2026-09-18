@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { AlertTriangle, Check, Target, Zap } from "lucide-react";
+import { AlertTriangle, ArrowRight, Check, Target, Zap } from "lucide-react";
 import { levelFromXp, XP_PER_LEVEL } from "@/lib/gamification";
 import { useStudyStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
@@ -90,18 +90,27 @@ export function WeakWordsCard({ count, className }: { count: number; className?:
       to="/review"
       search={{ filter: "weak" as const }}
       className={cn(
-        "block rounded-2xl bg-surface p-5 shadow-[var(--elevation-1)] transition-[box-shadow,transform] duration-[var(--duration-base)] ease-[var(--ease-standard)] hover:-translate-y-0.5 hover:shadow-[var(--elevation-2)]",
+        "flex items-center justify-between gap-4 rounded-2xl bg-surface p-5 shadow-[var(--elevation-1)] transition-[box-shadow,transform] duration-[var(--duration-base)] ease-[var(--ease-standard)] hover:-translate-y-0.5 hover:shadow-[var(--elevation-2)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40",
         className,
       )}
     >
-      <p className="flex items-center gap-1.5 text-xs font-medium tracking-wide text-muted uppercase">
-        <AlertTriangle className="size-3.5" />
-        Weak words
-      </p>
-      <p className="mt-1 font-display text-xl font-medium tracking-tight tabular-nums">
-        {count} word{count === 1 ? "" : "s"} giving you trouble
-      </p>
-      <p className="mt-2 text-sm text-muted">Cards you keep missing, hardest first.</p>
+      <div className="min-w-0">
+        <p className="flex items-center gap-1.5 text-xs font-medium tracking-wide text-muted uppercase">
+          <AlertTriangle className="size-3.5" />
+          Weak words
+        </p>
+        <p className="mt-1 font-display text-xl font-medium tracking-tight tabular-nums">
+          {count} word{count === 1 ? "" : "s"} giving you trouble
+        </p>
+        <p className="mt-2 text-sm text-muted">Cards you keep missing, hardest first.</p>
+      </div>
+      {/* The other two cards in this row are read-only status; this one is
+          an action, so — unlike them — it says so, instead of relying only
+          on the shared hover lift to signal that. */}
+      <span className="inline-flex h-9 shrink-0 items-center gap-1 rounded-md bg-primary px-3 text-sm font-medium text-primary-fg">
+        Practice
+        <ArrowRight className="size-3.5" />
+      </span>
     </Link>
   );
 }
