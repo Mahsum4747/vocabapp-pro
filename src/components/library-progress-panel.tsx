@@ -1,19 +1,35 @@
 import { Link } from "@tanstack/react-router";
 import { AlertCircle, Sparkles } from "lucide-react";
-import { useLibraryReview } from "@/lib/store";
+import { useStudyStore, useLibraryReview } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import { DailyGoalCard, WeakWordsCard, XpCard } from "./goal-and-xp";
 import { ReviewCallout, ReviewCounts } from "./review-status";
+import { StreakIndicator } from "./streak-indicator";
 
 /**
  * The account-wide "where do I stand" block: what's due across every set,
- * today's goal and XP, and how many words are weak — in that fixed order,
- * on every account-level screen (home, account). Never shown on a study
- * screen, and never mixed with a single set's own mastery bar — those answer
- * a different question and live where they already did.
+ * the streak, today's goal and XP, and how many words are weak — in that
+ * fixed order, on every account-level screen (home, account). Never shown on
+ * a study screen, and never mixed with a single set's own mastery bar — those
+ * answer a different question and live where they already did.
  */
-export function LibraryProgressPanel({ className }: { className?: string }) {
+export function LibraryProgressPanel({
+  className,
+  showReview = true,
+}: {
+  className?: string;
+  /**
+   * The home page's own primary CTA already covers "what's due" more
+   * prominently than this panel's review card/callout would — set false
+   * there to avoid showing the same number twice. Account page has no such
+   * block, so it keeps the default.
+   */
+  showReview?: boolean;
+}) {
   const { library, weakCount, isLoaded } = useLibraryReview();
+  const streak = useStudyStore((s) => s.streak);
+  const reviewShown = showReview && (library.totals.due > 0 || Boolean(library.target));
+  const streakShown = Boolean(streak && streak.currentStreak > 0);
 
   // Sets/progress haven't come back yet — show a placeholder instead of the
   // "nothing due" shape sets/progress being empty would otherwise produce.
@@ -21,8 +37,10 @@ export function LibraryProgressPanel({ className }: { className?: string }) {
   if (!isLoaded) {
     return (
       <div className={className}>
-        <div className="h-[92px] animate-pulse rounded-2xl bg-surface shadow-[var(--shadow-border)]" />
-        <div className="mt-6 grid gap-4 md:grid-cols-2">
+        {showReview ? (
+          <div className="h-[92px] animate-pulse rounded-2xl bg-surface shadow-[var(--shadow-border)]" />
+        ) : null}
+        <div className={cn("grid gap-4 md:grid-cols-2", showReview && "mt-6")}>
           <div className="h-[92px] animate-pulse rounded-2xl bg-surface shadow-[var(--elevation-1)]" />
           <div className="h-[92px] animate-pulse rounded-2xl bg-surface shadow-[var(--elevation-1)]" />
         </div>
@@ -32,7 +50,7 @@ export function LibraryProgressPanel({ className }: { className?: string }) {
 
   return (
     <div className={className}>
-      {library.totals.due > 0 ? (
+      {showReview && library.totals.due > 0 ? (
         <Link
           to="/review"
           className="flex flex-col justify-between gap-4 rounded-2xl bg-surface p-6 shadow-[var(--shadow-border)] transition-shadow hover:shadow-[var(--shadow-border-hover)] sm:flex-row sm:items-center"
@@ -60,7 +78,7 @@ export function LibraryProgressPanel({ className }: { className?: string }) {
             Start review
           </span>
         </Link>
-      ) : library.target ? (
+      ) : showReview && library.target ? (
         <ReviewCallout
           setId={library.target.set.id}
           summary={library.totals}
@@ -68,7 +86,13 @@ export function LibraryProgressPanel({ className }: { className?: string }) {
         />
       ) : null}
 
-      <div className="mt-6 grid gap-4 md:grid-cols-2">
+      {streakShown ? (
+        <div className={reviewShown ? "mt-6" : undefined}>
+          <StreakIndicator days={streak!.currentStreak} />
+        </div>
+      ) : null}
+
+      <div className={cn("grid gap-4 md:grid-cols-2", (reviewShown || streakShown) && "mt-6")}>
         <DailyGoalCard />
         <XpCard />
         <WeakWordsCard count={weakCount} />

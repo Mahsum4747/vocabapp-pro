@@ -1,5 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ChevronDown, ChevronRight, Plus, Search, Sparkles } from "lucide-react";
+import {
+  AlertCircle,
+  AlertTriangle,
+  Check,
+  ChevronDown,
+  ChevronRight,
+  Plus,
+  Search,
+  Sparkles,
+} from "lucide-react";
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { AuthGate } from "@/components/auth-gate";
@@ -7,13 +16,13 @@ import { EmptyState } from "@/components/empty-state";
 import { LibraryProgressPanel } from "@/components/library-progress-panel";
 import { SetCard } from "@/components/set-card";
 import { PublicSetCard } from "@/components/public-set-card";
-import { StreakIndicator } from "@/components/streak-indicator";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SUBJECTS } from "@/lib/types";
 import { masteryStats } from "@/lib/quiz";
-import { useProgress, useStudyStore } from "@/lib/store";
+import { useLibraryReview, useProgress, useStudyStore } from "@/lib/store";
+import { cn } from "@/lib/utils";
 
 // Lazy: pulls in the auth client (better-auth/react), which must stay out of
 // this route's eager bundle — see auth-gate.tsx's RequireAuth for why. Only
@@ -34,7 +43,6 @@ export const Route = createFileRoute("/")({
 function Home() {
   const sets = useStudyStore((s) => s.sets);
   const publicSets = useStudyStore((s) => s.publicSets);
-  const streak = useStudyStore((s) => s.streak);
   const restoreSeeds = useStudyStore((s) => s.restoreSeeds);
   const fetchSets = useStudyStore((s) => s.fetchSets);
   const fetchPublicSets = useStudyStore((s) => s.fetchPublicSets);
@@ -42,6 +50,10 @@ function Home() {
   const fetchAllProgress = useStudyStore((s) => s.fetchAllProgress);
   const fetchProfile = useStudyStore((s) => s.fetchProfile);
   const progress = useProgress();
+  // Same hook LibraryProgressPanel uses — no extra fetch, just a second read
+  // of the store state this route already loads, so the primary CTA and the
+  // panel below it can never disagree.
+  const { library, weakCount, isLoaded } = useLibraryReview();
 
   useEffect(() => {
     fetchSets();
@@ -159,26 +171,26 @@ function Home() {
         />
       </Suspense>
       <section className="stagger-in">
-        <p className="text-sm font-medium text-muted">Personal library</p>
-        <h1 className="mt-2 max-w-xl font-display text-4xl font-medium tracking-tight md:text-5xl">
-          What will you study today?
-        </h1>
-        <p className="mt-3 max-w-lg text-muted">
-          Flip cards, learn, test, and match. Your sets sync across all your devices.
-        </p>
-        {streak ? (
-          <div className="mt-4">
-            <StreakIndicator days={streak.currentStreak} />
-          </div>
-        ) : null}
-        <div className="mt-6 flex flex-wrap gap-2">
-          <Button asChild>
+        <TodayCta
+          isLoaded={isLoaded}
+          libraryEmpty={sets.length === 0}
+          due={library.totals.due}
+          overdue={library.totals.overdue}
+          weakCount={weakCount}
+          onLoadSamples={() => restoreSeeds()}
+        />
+
+        {/* Frequent, but secondary to today's actual work above — a visitor
+            with a full library still reaches for these often enough that
+            they stay one tap away, just lighter than the CTA. */}
+        <div className="mt-4 flex flex-wrap gap-2">
+          <Button asChild variant="ghost" size="sm">
             <Link to="/create">
               <Plus />
               New set
             </Link>
           </Button>
-          <Button asChild variant="outline">
+          <Button asChild variant="ghost" size="sm">
             <Link to="/create" search={{ ai: true }}>
               <Sparkles />
               Generate from topic
@@ -187,7 +199,7 @@ function Home() {
         </div>
       </section>
 
-      <LibraryProgressPanel className="mt-8" />
+      <LibraryProgressPanel className="mt-8" showReview={false} />
 
       {continueSet ? (
         <Link
@@ -344,5 +356,128 @@ function Home() {
         </div>
       )}
     </AppShell>
+  );
+}
+
+/**
+ * "What do I do today?" — the page's single heaviest element, answering the
+ * question the old "What will you study today?" heading only asked. Four
+ * shapes, in priority order: cards due beats weak words beats "all caught
+ * up" beats an empty library, since an empty library has no due/weak counts
+ * of its own to show.
+ */
+function TodayCta({
+  isLoaded,
+  libraryEmpty,
+  due,
+  overdue,
+  weakCount,
+  onLoadSamples,
+}: {
+  isLoaded: boolean;
+  libraryEmpty: boolean;
+  due: number;
+  overdue: number;
+  weakCount: number;
+  onLoadSamples: () => void;
+}) {
+  if (!isLoaded) {
+    return <div className="h-[172px] animate-pulse rounded-2xl bg-surface shadow-[var(--shadow-border)]" />;
+  }
+
+  if (libraryEmpty) {
+    return (
+      <div className="rounded-2xl bg-surface p-8 text-center shadow-[var(--shadow-border)]">
+        <p className="flex items-center justify-center gap-1.5 text-xs font-medium tracking-wide text-muted uppercase">
+          <Sparkles className="size-3.5" />
+          Today
+        </p>
+        <h1 className="mt-2 font-display text-3xl font-medium tracking-tight">
+          Start your first set
+        </h1>
+        <p className="mt-2 text-muted">Create a set or load ready-made sample sets to begin.</p>
+        <div className="mt-5 flex flex-wrap justify-center gap-2">
+          <Button asChild>
+            <Link to="/create">Create a set</Link>
+          </Button>
+          <Button variant="outline" onClick={onLoadSamples}>
+            Load samples
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (due > 0) {
+    return (
+      <Link
+        to="/review"
+        className="block rounded-2xl bg-primary p-8 text-primary-fg shadow-[var(--shadow-card)] transition-shadow hover:shadow-[var(--elevation-3)]"
+      >
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <p
+              className={cn(
+                "flex items-center gap-1.5 text-xs font-medium tracking-wide uppercase",
+                overdue > 0 ? "text-primary-fg" : "text-primary-fg/70",
+              )}
+            >
+              {overdue > 0 ? <AlertCircle className="size-3.5" /> : <Sparkles className="size-3.5" />}
+              Today
+            </p>
+            <h1 className="mt-2 font-display text-4xl font-medium tracking-tight">
+              {due} word{due === 1 ? "" : "s"} waiting
+            </h1>
+            {overdue > 0 ? (
+              <p className="mt-1 text-sm text-primary-fg/80">
+                {overdue} overdue{overdue === due ? "" : ` · ${due} due total`}
+              </p>
+            ) : null}
+          </div>
+          <span className="inline-flex h-12 shrink-0 items-center rounded-md bg-primary-fg px-6 text-base font-medium text-primary">
+            Start review
+          </span>
+        </div>
+      </Link>
+    );
+  }
+
+  if (weakCount > 0) {
+    return (
+      <Link
+        to="/review"
+        search={{ filter: "weak" as const }}
+        className="block rounded-2xl bg-surface p-8 shadow-[var(--shadow-border)] transition-shadow hover:shadow-[var(--shadow-border-hover)]"
+      >
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <p className="flex items-center gap-1.5 text-xs font-medium tracking-wide text-muted uppercase">
+              <AlertTriangle className="size-3.5" />
+              Today
+            </p>
+            <h1 className="mt-2 font-display text-4xl font-medium tracking-tight">
+              {weakCount} word{weakCount === 1 ? "" : "s"} need another look
+            </h1>
+            <p className="mt-1 text-sm text-muted">Nothing due right now — these keep slipping.</p>
+          </div>
+          <span className="inline-flex h-12 shrink-0 items-center rounded-md bg-primary px-6 text-base font-medium text-primary-fg">
+            Practice weak words
+          </span>
+        </div>
+      </Link>
+    );
+  }
+
+  return (
+    <div className="rounded-2xl bg-surface p-8 shadow-[var(--shadow-border)]">
+      <p className="flex items-center gap-1.5 text-xs font-medium tracking-wide text-muted uppercase">
+        <Check className="size-3.5 text-success" />
+        Today
+      </p>
+      <h1 className="mt-2 font-display text-4xl font-medium tracking-tight">All caught up</h1>
+      <p className="mt-1 text-sm text-muted">
+        Nothing due, nothing weak. Add a new set or grow this one below.
+      </p>
+    </div>
   );
 }
