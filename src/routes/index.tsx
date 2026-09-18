@@ -232,7 +232,7 @@ function Home() {
         {/* Frequent, but secondary to today's actual work above — a visitor
             with a full library still reaches for these often enough that
             they stay one tap away, just lighter than the CTA. */}
-        <div className="mt-4 flex flex-wrap gap-2">
+        <div className="mt-3 flex flex-wrap gap-2">
           <Button asChild variant="ghost" size="sm">
             <Link to="/create">
               <Plus />
@@ -248,13 +248,13 @@ function Home() {
         </div>
       </section>
 
-      <LibraryProgressPanel className="mt-8" showReview={false} />
+      <LibraryProgressPanel className="mt-6" showReview={false} />
 
       {continueSet ? (
         <Link
           to="/sets/$setId"
           params={{ setId: continueSet.id }}
-          className="mt-10 flex flex-col justify-between gap-4 rounded-2xl bg-primary p-6 text-primary-fg shadow-[var(--shadow-card)] md:flex-row md:items-end"
+          className="mt-8 flex flex-col justify-between gap-4 rounded-2xl bg-primary p-6 text-primary-fg shadow-[var(--shadow-card)] md:flex-row md:items-end"
         >
           <div>
             <p className="text-xs font-medium tracking-wide text-primary-fg/70 uppercase">
@@ -274,7 +274,7 @@ function Home() {
         </Link>
       ) : null}
 
-      <div className="mt-10 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      <div className="mt-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="flex gap-2">
           <button type="button" onClick={() => chooseView("mine")}>
             <Badge tone={view === "mine" ? "primary" : "muted"}>My Library</Badge>
