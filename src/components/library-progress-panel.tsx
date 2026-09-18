@@ -88,7 +88,9 @@ export function LibraryProgressPanel({
       <div className={cn("grid gap-4 md:grid-cols-2", reviewShown && "mt-6")}>
         <DailyGoalCard streakDays={streak?.currentStreak} />
         <XpCard />
-        <WeakWordsCard count={weakCount} />
+        {/* Full width rather than a third column-1 card with nothing
+            balancing it in column 2 — a deliberate row, not a stray leftover. */}
+        <WeakWordsCard count={weakCount} className="md:col-span-2" />
       </div>
     </div>
   );
