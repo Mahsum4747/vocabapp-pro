@@ -69,7 +69,7 @@ export function SetCard({
     : "Not studied yet";
 
   const className = cn(
-    "group relative flex flex-col rounded-xl bg-surface p-5 text-left shadow-[var(--elevation-1)] transition-[transform,box-shadow] duration-[var(--duration-base)] ease-[var(--ease-standard)]",
+    "group relative flex flex-col rounded-card bg-surface p-card text-left shadow-[var(--elevation-1)] transition-[transform,box-shadow] duration-[var(--duration-base)] ease-[var(--ease-standard)]",
     selectable
       ? cn("w-full", selected ? "ring-2 ring-primary" : "hover:shadow-[var(--elevation-2)]")
       : "hover:-translate-y-0.5 hover:shadow-[var(--elevation-2)]",
@@ -88,7 +88,7 @@ export function SetCard({
           {selected ? <Check className="size-3.5" /> : null}
         </span>
       ) : null}
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex min-h-7 items-center justify-between gap-3">
         {set.folder?.trim() ? <Badge>{set.folder.trim()}</Badge> : <span />}
         <div className="flex items-center gap-2">
           {set.isReference ? null : <DueBadge summary={summary} />}

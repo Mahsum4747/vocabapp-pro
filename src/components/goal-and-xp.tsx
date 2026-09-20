@@ -42,7 +42,7 @@ export function DailyGoalCard({
   return (
     <div
       className={cn(
-        "flex flex-wrap items-center gap-4 rounded-2xl bg-surface p-5 shadow-[var(--elevation-1)]",
+        "flex flex-wrap items-center gap-4 rounded-card bg-surface p-card shadow-[var(--elevation-1)]",
         className,
       )}
     >
@@ -90,7 +90,7 @@ export function WeakWordsCard({ count, className }: { count: number; className?:
       to="/review"
       search={{ filter: "weak" as const }}
       className={cn(
-        "flex items-center justify-between gap-4 rounded-2xl bg-surface p-5 shadow-[var(--elevation-1)] transition-[box-shadow,transform] duration-[var(--duration-base)] ease-[var(--ease-standard)] hover:-translate-y-0.5 hover:shadow-[var(--elevation-2)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40",
+        "flex items-center justify-between gap-4 rounded-card bg-surface p-card shadow-[var(--elevation-1)] transition-[box-shadow,transform] duration-[var(--duration-base)] ease-[var(--ease-standard)] hover:-translate-y-0.5 hover:shadow-[var(--elevation-2)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40",
         className,
       )}
     >
@@ -107,7 +107,7 @@ export function WeakWordsCard({ count, className }: { count: number; className?:
       {/* The other two cards in this row are read-only status; this one is
           an action, so — unlike them — it says so, instead of relying only
           on the shared hover lift to signal that. */}
-      <span className="inline-flex h-9 shrink-0 items-center gap-1 rounded-md bg-primary px-3 text-sm font-medium text-primary-fg">
+      <span className="inline-flex h-9 shrink-0 items-center gap-1 rounded-control bg-primary px-3 text-sm font-medium text-primary-fg">
         Practice
         <ArrowRight className="size-3.5" />
       </span>
@@ -129,7 +129,7 @@ export function XpCard({ className }: { className?: string }) {
     <Link
       to="/account"
       className={cn(
-        "block rounded-2xl bg-surface p-5 shadow-[var(--elevation-1)] transition-[box-shadow,transform] duration-[var(--duration-base)] ease-[var(--ease-standard)] hover:-translate-y-0.5 hover:shadow-[var(--elevation-2)]",
+        "flex flex-col justify-center rounded-card bg-surface p-card shadow-[var(--elevation-1)] transition-[box-shadow,transform] duration-[var(--duration-base)] ease-[var(--ease-standard)] hover:-translate-y-0.5 hover:shadow-[var(--elevation-2)]",
         className,
       )}
     >

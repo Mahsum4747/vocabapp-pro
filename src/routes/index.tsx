@@ -248,13 +248,13 @@ function Home() {
         </div>
       </section>
 
-      <LibraryProgressPanel className="mt-6" showReview={false} />
+      <LibraryProgressPanel className="mt-section" showReview={false} />
 
       {continueSet ? (
         <Link
           to="/sets/$setId"
           params={{ setId: continueSet.id }}
-          className="mt-8 flex flex-col justify-between gap-4 rounded-2xl bg-primary p-6 text-primary-fg shadow-[var(--elevation-raised)] md:flex-row md:items-end"
+          className="mt-section flex flex-col justify-between gap-4 rounded-card bg-primary p-card text-primary-fg shadow-[var(--elevation-raised)] md:flex-row md:items-end"
         >
           <div>
             <p className="text-xs font-medium tracking-wide text-primary-fg/70 uppercase">
@@ -268,13 +268,13 @@ function Home() {
               {continueMastery.notStarted > 0 ? ` · ${continueMastery.notStarted} not started` : ""}
             </p>
           </div>
-          <span className="inline-flex h-11 items-center rounded-md bg-primary-fg px-4 text-sm font-medium text-primary">
+          <span className="inline-flex h-11 items-center rounded-control bg-primary-fg px-4 text-sm font-medium text-primary">
             Continue
           </span>
         </Link>
       ) : null}
 
-      <div className="mt-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      <div className="mt-section flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="flex gap-2">
           <button type="button" onClick={() => chooseView("mine")}>
             <Badge tone={view === "mine" ? "primary" : "muted"}>My Library</Badge>
@@ -305,7 +305,7 @@ function Home() {
         <AuthGate>
           <>
             {selectMode ? (
-              <div className="mt-4 flex flex-col gap-2 rounded-lg bg-surface-2 p-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="mt-4 flex flex-col gap-2 rounded-control bg-surface-2 p-3 sm:flex-row sm:items-center sm:justify-between">
                 <span className="text-sm text-muted tabular-nums">
                   {selectedIds.size} selected
                 </span>
@@ -344,7 +344,7 @@ function Home() {
               // Most of the library has no folder — the light one-line tip
               // stopped being enough to notice, so this offers the fix
               // directly instead of pointing at "edit a set" one at a time.
-              <div className="mt-4 flex flex-col gap-2 rounded-lg bg-surface-2 p-3 text-xs text-muted sm:flex-row sm:items-center sm:justify-between">
+              <div className="mt-4 flex flex-col gap-2 rounded-control bg-surface-2 p-3 text-xs text-muted sm:flex-row sm:items-center sm:justify-between">
                 <span>
                   {uncategorizedCount} of {sets.length} sets have no folder yet.
                 </span>
@@ -383,7 +383,7 @@ function Home() {
                 />
               </div>
             ) : (
-              <div className="mt-6 space-y-6">
+              <div className="mt-section space-y-section">
                 {folderGroups.map((group) => {
                   const collapsed = collapsedFolders.has(group.name);
                   return (
@@ -402,7 +402,7 @@ function Home() {
                         <span className="tabular-nums">({group.sets.length})</span>
                       </button>
                       {!collapsed ? (
-                        <div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                        <div className="mt-3 grid gap-gutter sm:grid-cols-2 lg:grid-cols-3">
                           {group.sets.map((set) => (
                             <SetCard
                               key={set.id}
@@ -437,7 +437,7 @@ function Home() {
           />
         </div>
       ) : (
-        <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-section grid gap-gutter sm:grid-cols-2 lg:grid-cols-3">
           {otherPublicSets.map((set) => (
             <PublicSetCard key={set.id} set={set} />
           ))}
@@ -470,12 +470,12 @@ function TodayCta({
   onLoadSamples: () => void;
 }) {
   if (!isLoaded) {
-    return <div className="h-skeleton-cta animate-pulse rounded-2xl bg-surface shadow-[var(--elevation-1)]" />;
+    return <div className="h-skeleton-cta animate-pulse rounded-card bg-surface shadow-[var(--elevation-1)]" />;
   }
 
   if (libraryEmpty) {
     return (
-      <div className="rounded-2xl bg-surface p-8 text-center shadow-[var(--elevation-1)]">
+      <div className="rounded-card bg-surface p-card text-center shadow-[var(--elevation-1)]">
         <p className="flex items-center justify-center gap-1.5 text-xs font-medium tracking-wide text-muted uppercase">
           <Sparkles className="size-3.5" />
           Today
@@ -500,7 +500,7 @@ function TodayCta({
     return (
       <Link
         to="/review"
-        className="block rounded-2xl bg-primary p-8 text-primary-fg shadow-[var(--elevation-raised)] transition-shadow hover:shadow-[var(--elevation-3)]"
+        className="block rounded-card bg-primary p-card text-primary-fg shadow-[var(--elevation-raised)] transition-colors duration-[var(--duration-fast)] ease-[var(--ease-standard)] hover:bg-primary-hover"
       >
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
@@ -513,7 +513,7 @@ function TodayCta({
               {overdue > 0 ? <AlertCircle className="size-3.5" /> : <Sparkles className="size-3.5" />}
               Today
             </p>
-            <h1 className="mt-2 font-display text-4xl font-medium tracking-tight">
+            <h1 className="mt-2 font-display text-3xl font-medium tracking-tight">
               {due} word{due === 1 ? "" : "s"} waiting
             </h1>
             {overdue > 0 ? (
@@ -522,7 +522,7 @@ function TodayCta({
               </p>
             ) : null}
           </div>
-          <span className="inline-flex h-12 shrink-0 items-center rounded-md bg-primary-fg px-6 text-base font-medium text-primary">
+          <span className="inline-flex h-11 shrink-0 items-center justify-center rounded-control bg-primary-fg px-5 text-sm font-medium text-primary">
             Start review
           </span>
         </div>
@@ -535,7 +535,7 @@ function TodayCta({
       <Link
         to="/review"
         search={{ filter: "weak" as const }}
-        className="block rounded-2xl bg-surface p-8 shadow-[var(--elevation-1)] transition-shadow hover:shadow-[var(--elevation-2)]"
+        className="block rounded-card bg-surface p-card shadow-[var(--elevation-1)] transition-shadow hover:shadow-[var(--elevation-2)]"
       >
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
@@ -543,12 +543,12 @@ function TodayCta({
               <AlertTriangle className="size-3.5" />
               Today
             </p>
-            <h1 className="mt-2 font-display text-4xl font-medium tracking-tight">
+            <h1 className="mt-2 font-display text-3xl font-medium tracking-tight">
               {weakCount} word{weakCount === 1 ? "" : "s"} need another look
             </h1>
             <p className="mt-1 text-sm text-muted">Nothing due right now — these keep slipping.</p>
           </div>
-          <span className="inline-flex h-12 shrink-0 items-center rounded-md bg-primary px-6 text-base font-medium text-primary-fg">
+          <span className="inline-flex h-11 shrink-0 items-center justify-center rounded-control bg-primary px-5 text-sm font-medium text-primary-fg">
             Practice weak words
           </span>
         </div>
@@ -557,7 +557,7 @@ function TodayCta({
   }
 
   return (
-    <div className="rounded-2xl bg-surface p-8 shadow-[var(--elevation-1)]">
+    <div className="rounded-card bg-surface p-card shadow-[var(--elevation-1)]">
       <p className="flex items-center gap-1.5 text-xs font-medium tracking-wide text-muted uppercase">
         <Check className="size-3.5 text-success" />
         Today

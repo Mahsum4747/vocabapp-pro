@@ -71,6 +71,8 @@
   --spacing-page: 1rem;
   --spacing-section: 2rem;
   --spacing-card: 1.5rem;
+  /* Gap between sibling cards in a grid. */
+  --spacing-gutter: 1rem;
   /* Loading-skeleton and stat-row sizes (were inline [92px] / [172px] / [200px]). */
   --spacing-skeleton-stat: 5.75rem;
   --spacing-skeleton-cta: 10.75rem;
@@ -96,14 +98,12 @@
      3 modal/dropdown, 4 fullscreen overlay. Every layered surface should
      reference one of these rather than an ad-hoc shadow. */
   --elevation-0: none;
-  --elevation-1:
-    0 0 0 1px rgb(26 26 26 / 0.06), 0 1px 2px -1px rgb(26 26 26 / 0.06),
-    0 2px 4px 0 rgb(26 26 26 / 0.04);
-  --elevation-2:
-    0 0 0 1px rgb(26 26 26 / 0.08), 0 1px 2px -1px rgb(26 26 26 / 0.08),
-    0 8px 24px -12px rgb(26 26 26 / 0.16);
+  /* Hairline-first: a 1px ring does the edge work, the blur is barely there.
+     Hover darkens the ring and adds a small, tight shadow. */
+  --elevation-1: 0 0 0 1px rgb(26 26 26 / 0.07), 0 1px 2px 0 rgb(26 26 26 / 0.04);
+  --elevation-2: 0 0 0 1px rgb(26 26 26 / 0.12), 0 2px 8px -2px rgb(26 26 26 / 0.1);
   /* Feature surfaces (the Today banner, the continue-where-you-left-off card). */
-  --elevation-raised: 0 0 0 1px rgb(26 26 26 / 0.06), 0 8px 24px -12px rgb(26 26 26 / 0.12);
+  --elevation-raised: 0 0 0 1px rgb(26 26 26 / 0.06), 0 1px 3px 0 rgb(26 26 26 / 0.1);
   --elevation-3: 0 0 0 1px rgb(26 26 26 / 0.08), 0 20px 48px -16px rgb(26 26 26 / 0.24);
   --elevation-4: 0 0 0 1px rgb(26 26 26 / 0.08), 0 32px 64px -20px rgb(26 26 26 / 0.32);
 
@@ -149,11 +149,11 @@
     --color-article-der: #7ab3e8;
     --color-article-die: #e8828f;
     --color-article-das: #6fc9b8;
-    --elevation-1:
-      0 0 0 1px rgb(0 0 0 / 0.4), 0 1px 2px -1px rgb(0 0 0 / 0.3), 0 2px 4px 0 rgb(0 0 0 / 0.2);
-    --elevation-2:
-      0 0 0 1px rgb(0 0 0 / 0.5), 0 1px 2px -1px rgb(0 0 0 / 0.3), 0 8px 24px -12px rgb(0 0 0 / 0.4);
-    --elevation-raised: 0 0 0 1px rgb(0 0 0 / 0.5), 0 8px 24px -12px rgb(0 0 0 / 0.35);
+    /* On dark a black ring vanishes into the surface, so the hairline is a
+       faint white one instead. */
+    --elevation-1: 0 0 0 1px rgb(255 255 255 / 0.08), 0 1px 2px 0 rgb(0 0 0 / 0.3);
+    --elevation-2: 0 0 0 1px rgb(255 255 255 / 0.14), 0 2px 8px -2px rgb(0 0 0 / 0.4);
+    --elevation-raised: 0 0 0 1px rgb(255 255 255 / 0.07), 0 1px 3px 0 rgb(0 0 0 / 0.35);
     --elevation-3: 0 0 0 1px rgb(0 0 0 / 0.5), 0 20px 48px -16px rgb(0 0 0 / 0.45);
     --elevation-4: 0 0 0 1px rgb(0 0 0 / 0.55), 0 32px 64px -20px rgb(0 0 0 / 0.55);
 

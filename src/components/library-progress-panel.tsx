@@ -37,11 +37,11 @@ export function LibraryProgressPanel({
     return (
       <div className={className}>
         {showReview ? (
-          <div className="h-skeleton-stat animate-pulse rounded-2xl bg-surface shadow-[var(--elevation-1)]" />
+          <div className="h-skeleton-stat animate-pulse rounded-card bg-surface shadow-[var(--elevation-1)]" />
         ) : null}
-        <div className={cn("grid gap-4 md:grid-cols-2", showReview && "mt-6")}>
-          <div className="h-skeleton-stat animate-pulse rounded-2xl bg-surface shadow-[var(--elevation-1)]" />
-          <div className="h-skeleton-stat animate-pulse rounded-2xl bg-surface shadow-[var(--elevation-1)]" />
+        <div className={cn("grid gap-gutter md:grid-cols-2", showReview && "mt-6")}>
+          <div className="h-skeleton-stat animate-pulse rounded-card bg-surface shadow-[var(--elevation-1)]" />
+          <div className="h-skeleton-stat animate-pulse rounded-card bg-surface shadow-[var(--elevation-1)]" />
         </div>
       </div>
     );
@@ -52,7 +52,7 @@ export function LibraryProgressPanel({
       {showReview && library.totals.due > 0 ? (
         <Link
           to="/review"
-          className="flex flex-col justify-between gap-4 rounded-2xl bg-surface p-6 shadow-[var(--elevation-1)] transition-shadow hover:shadow-[var(--elevation-2)] sm:flex-row sm:items-center"
+          className="flex flex-col justify-between gap-4 rounded-card bg-surface p-card shadow-[var(--elevation-1)] transition-shadow hover:shadow-[var(--elevation-2)] sm:flex-row sm:items-center"
         >
           <div className="min-w-0">
             <p
@@ -73,7 +73,7 @@ export function LibraryProgressPanel({
             </h2>
             <ReviewCounts summary={library.totals} className="mt-1 text-muted" />
           </div>
-          <span className="inline-flex h-11 shrink-0 items-center rounded-md bg-primary px-4 text-sm font-medium text-primary-fg">
+          <span className="inline-flex h-11 shrink-0 items-center rounded-control bg-primary px-4 text-sm font-medium text-primary-fg">
             Start review
           </span>
         </Link>
@@ -85,7 +85,7 @@ export function LibraryProgressPanel({
         />
       ) : null}
 
-      <div className={cn("grid gap-4 md:grid-cols-2", reviewShown && "mt-6")}>
+      <div className={cn("grid gap-gutter md:grid-cols-2", reviewShown && "mt-6")}>
         <DailyGoalCard streakDays={streak?.currentStreak} />
         <XpCard />
         {/* Full width rather than a third column-1 card with nothing
