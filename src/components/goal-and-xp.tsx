@@ -46,7 +46,7 @@ export function DailyGoalCard({
         className,
       )}
     >
-      <div className="flex min-w-[200px] flex-1 items-center gap-4">
+      <div className="flex min-w-goal-min flex-1 items-center gap-4">
         <ProgressRing value={done} max={profile.dailyGoal} size={64} label={`${animatedDone}`} />
         <div className="min-w-0">
           <p className="flex items-center gap-1.5 text-xs font-medium tracking-wide text-muted uppercase">

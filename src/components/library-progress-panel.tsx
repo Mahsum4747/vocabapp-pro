@@ -37,11 +37,11 @@ export function LibraryProgressPanel({
     return (
       <div className={className}>
         {showReview ? (
-          <div className="h-[92px] animate-pulse rounded-2xl bg-surface shadow-[var(--shadow-border)]" />
+          <div className="h-skeleton-stat animate-pulse rounded-2xl bg-surface shadow-[var(--elevation-1)]" />
         ) : null}
         <div className={cn("grid gap-4 md:grid-cols-2", showReview && "mt-6")}>
-          <div className="h-[92px] animate-pulse rounded-2xl bg-surface shadow-[var(--elevation-1)]" />
-          <div className="h-[92px] animate-pulse rounded-2xl bg-surface shadow-[var(--elevation-1)]" />
+          <div className="h-skeleton-stat animate-pulse rounded-2xl bg-surface shadow-[var(--elevation-1)]" />
+          <div className="h-skeleton-stat animate-pulse rounded-2xl bg-surface shadow-[var(--elevation-1)]" />
         </div>
       </div>
     );
@@ -52,7 +52,7 @@ export function LibraryProgressPanel({
       {showReview && library.totals.due > 0 ? (
         <Link
           to="/review"
-          className="flex flex-col justify-between gap-4 rounded-2xl bg-surface p-6 shadow-[var(--shadow-border)] transition-shadow hover:shadow-[var(--shadow-border-hover)] sm:flex-row sm:items-center"
+          className="flex flex-col justify-between gap-4 rounded-2xl bg-surface p-6 shadow-[var(--elevation-1)] transition-shadow hover:shadow-[var(--elevation-2)] sm:flex-row sm:items-center"
         >
           <div className="min-w-0">
             <p

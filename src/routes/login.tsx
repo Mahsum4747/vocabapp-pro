@@ -71,7 +71,7 @@ function LoginPage() {
         <div className="mb-6 flex justify-center">
           <Logo />
         </div>
-        <div className="rounded-2xl bg-surface p-8 shadow-[var(--shadow-card)]">
+        <div className="rounded-2xl bg-surface p-8 shadow-[var(--elevation-raised)]">
           <h1 className="mb-1 font-display text-2xl font-medium tracking-tight">
             {mode === "signin" ? "Sign in" : "Create an account"}
           </h1>

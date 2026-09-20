@@ -10,7 +10,7 @@ export function EmptyState({
   action?: ReactNode;
 }) {
   return (
-    <div className="rounded-xl bg-surface px-6 py-16 text-center shadow-[var(--shadow-border)]">
+    <div className="rounded-xl bg-surface px-6 py-16 text-center shadow-[var(--elevation-1)]">
       <h2 className="font-display text-2xl font-medium tracking-tight">{title}</h2>
       <p className="mx-auto mt-2 max-w-md text-sm text-muted">{description}</p>
       {action ? <div className="mt-6 flex justify-center">{action}</div> : null}

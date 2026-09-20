@@ -31,7 +31,7 @@ export function ShareLink({ shareId }: { shareId: string }) {
   }
 
   return (
-    <div className="mt-4 rounded-xl bg-surface p-4 shadow-[var(--shadow-border)]">
+    <div className="mt-4 rounded-xl bg-surface p-4 shadow-[var(--elevation-1)]">
       <p className="flex items-center gap-1.5 text-xs font-medium tracking-wide text-muted uppercase">
         <Link2 className="size-3.5" />
         Share link

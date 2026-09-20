@@ -147,7 +147,7 @@ function XpTab({ totalXP, totalReviews }: { totalXP: number; totalReviews: numbe
 
   return (
     <div className="space-y-8">
-      <section className="rounded-2xl bg-surface p-6 shadow-[var(--shadow-border)]">
+      <section className="rounded-2xl bg-surface p-6 shadow-[var(--elevation-1)]">
         <p className="flex items-center gap-1.5 text-xs font-medium tracking-wide text-muted uppercase">
           <Zap className="size-3.5" />
           Level {level}
@@ -258,7 +258,7 @@ function AchievementCard({
   return (
     <div
       className={cn(
-        "flex gap-4 rounded-xl p-4 shadow-[var(--shadow-border)]",
+        "flex gap-4 rounded-xl p-4 shadow-[var(--elevation-1)]",
         isUnlocked ? "bg-surface" : "bg-surface/50",
       )}
     >
@@ -304,7 +304,7 @@ function SoundTab() {
 
   return (
     <div className="max-w-md space-y-6">
-      <label className="flex items-center justify-between gap-4 rounded-xl bg-surface p-4 shadow-[var(--shadow-border)]">
+      <label className="flex items-center justify-between gap-4 rounded-xl bg-surface p-4 shadow-[var(--elevation-1)]">
         <span>
           <span className="block font-medium">Sound effects</span>
           <span className="block text-sm text-muted">
@@ -319,7 +319,7 @@ function SoundTab() {
         />
       </label>
 
-      <div className="rounded-xl bg-surface p-4 shadow-[var(--shadow-border)]">
+      <div className="rounded-xl bg-surface p-4 shadow-[var(--elevation-1)]">
         <div className="flex items-center justify-between">
           <label htmlFor="volume" className="font-medium">
             Volume
@@ -393,7 +393,7 @@ function AccountTab() {
 
   return (
     <div className="max-w-md space-y-4">
-      <div className="rounded-xl bg-danger-soft p-4 shadow-[var(--shadow-border)]">
+      <div className="rounded-xl bg-danger-soft p-4 shadow-[var(--elevation-1)]">
         <h3 className="font-medium text-danger">Delete account</h3>
         <p className="mt-2 text-sm text-danger/80">
           This permanently deletes your account, all study sets, cards, and progress. This action

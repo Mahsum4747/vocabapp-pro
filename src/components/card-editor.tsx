@@ -642,7 +642,7 @@ export function CardEditor({
       {cards.map((card, index) => (
         <div
           key={card.id}
-          className="rounded-xl bg-surface p-4 shadow-[var(--shadow-border)] md:p-5"
+          className="rounded-xl bg-surface p-4 shadow-[var(--elevation-1)] md:p-5"
         >
           <div className="mb-3 flex items-center justify-between">
             <span className="text-xs font-medium text-muted tabular-nums">{index + 1}</span>
@@ -682,7 +682,7 @@ export function CardEditor({
                 {profile.hasTermAutocomplete &&
                 activeSuggestionId === card.id &&
                 termSuggestionsFor(card).length > 0 ? (
-                  <div className="absolute z-10 mt-1 w-full space-y-0.5 rounded-lg bg-surface p-1 shadow-[var(--shadow-border)]">
+                  <div className="absolute z-10 mt-1 w-full space-y-0.5 rounded-lg bg-surface p-1 shadow-[var(--elevation-1)]">
                     {termSuggestionsFor(card).map((word) => (
                       <button
                         key={word}
@@ -899,7 +899,7 @@ export function CardEditor({
                         key={i}
                         type="button"
                         onClick={() => pickExampleSuggestion(card.id, sentence)}
-                        className="block w-full rounded-md bg-surface px-2.5 py-2 text-left text-sm text-fg shadow-[var(--shadow-border)] hover:bg-border"
+                        className="block w-full rounded-md bg-surface px-2.5 py-2 text-left text-sm text-fg shadow-[var(--elevation-1)] hover:bg-border"
                       >
                         {sentence}
                       </button>
@@ -997,13 +997,13 @@ export function CardEditor({
                   <img
                     src={card.imageUrl}
                     alt=""
-                    className="h-20 w-20 rounded-lg object-cover shadow-[var(--shadow-border)]"
+                    className="h-20 w-20 rounded-lg object-cover shadow-[var(--elevation-1)]"
                   />
                   <button
                     type="button"
                     onClick={() => update(card.id, { imageUrl: null })}
                     aria-label="Remove image"
-                    className="absolute -top-2 -right-2 grid size-6 place-items-center rounded-full bg-danger text-primary-fg shadow-[var(--shadow-border)]"
+                    className="absolute -top-2 -right-2 grid size-6 place-items-center rounded-full bg-danger text-primary-fg shadow-[var(--elevation-1)]"
                   >
                     <X className="size-3.5" />
                   </button>

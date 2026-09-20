@@ -174,7 +174,7 @@ function BadgeToast({ id }: { id: AchievementId }) {
 
   return (
     <div className="pointer-events-none fixed inset-x-0 top-6 z-[65] grid place-items-center px-4">
-      <span className="celebrate-badge flex items-center gap-2 rounded-full bg-fg px-4 py-2 text-sm font-medium text-bg shadow-[var(--shadow-card)]">
+      <span className="celebrate-badge flex items-center gap-2 rounded-full bg-fg px-4 py-2 text-sm font-medium text-bg shadow-[var(--elevation-raised)]">
         <Trophy className="size-4" />
         {achievement.name}
       </span>

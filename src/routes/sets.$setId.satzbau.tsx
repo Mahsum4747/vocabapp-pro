@@ -182,7 +182,7 @@ function SatzbauPage() {
         total={questions.length}
         filterLabel={filterLabel}
       >
-        <div className="mx-auto max-w-md rounded-xl bg-surface p-8 text-center shadow-[var(--shadow-border)]">
+        <div className="mx-auto max-w-md rounded-xl bg-surface p-8 text-center shadow-[var(--elevation-1)]">
           <p className="text-sm text-muted">Round result</p>
           <p className="mt-2 font-display text-5xl font-medium tracking-tight tabular-nums">
             {pct}%
@@ -206,7 +206,7 @@ function SatzbauPage() {
   if (!q) return null;
 
   const chipClass =
-    "rounded-full bg-surface-2 px-3 py-1.5 text-sm font-medium text-fg shadow-[var(--shadow-border)] transition-transform hover:-translate-y-0.5 disabled:pointer-events-none disabled:opacity-50";
+    "rounded-full bg-surface-2 px-3 py-1.5 text-sm font-medium text-fg shadow-[var(--elevation-1)] transition-transform hover:-translate-y-0.5 disabled:pointer-events-none disabled:opacity-50";
 
   return (
     <StudyChrome

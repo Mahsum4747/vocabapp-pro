@@ -157,7 +157,7 @@ function ClozePage() {
         total={questions.length}
         filterLabel={filterLabel}
       >
-        <div className="mx-auto max-w-md rounded-xl bg-surface p-8 text-center shadow-[var(--shadow-border)]">
+        <div className="mx-auto max-w-md rounded-xl bg-surface p-8 text-center shadow-[var(--elevation-1)]">
           <p className="text-sm text-muted">Round result</p>
           <p className="mt-2 font-display text-5xl font-medium tracking-tight tabular-nums">
             {pct}%

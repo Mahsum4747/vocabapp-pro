@@ -157,7 +157,7 @@ function TestPage() {
         total={questions.length}
         filterLabel={filterLabel}
       >
-        <div className="mx-auto max-w-md rounded-xl bg-surface p-8 text-center shadow-[var(--shadow-border)]">
+        <div className="mx-auto max-w-md rounded-xl bg-surface p-8 text-center shadow-[var(--elevation-1)]">
           <p className="text-sm text-muted">Test result</p>
           <p className="mt-2 font-display text-5xl font-medium tracking-tight tabular-nums">
             {pct}%
@@ -224,7 +224,7 @@ function TestPage() {
         <img
           src={q.imageUrl}
           alt=""
-          className="mt-3 max-h-48 rounded-lg object-contain shadow-[var(--shadow-border)]"
+          className="mt-3 max-h-48 rounded-lg object-contain shadow-[var(--elevation-1)]"
         />
       ) : null}
       <h2 className="mt-3 font-display text-3xl font-medium tracking-tight text-balance whitespace-pre-line">
@@ -253,7 +253,7 @@ function TestPage() {
                   finish(option === q.answer);
                 }}
                 className={cn(
-                  "rounded-lg bg-surface px-4 py-3.5 text-left text-sm shadow-[var(--shadow-border)]",
+                  "rounded-lg bg-surface px-4 py-3.5 text-left text-sm shadow-[var(--elevation-1)]",
                   show && option === q.answer && feedbackToneClasses("correct"),
                   show && chosen && option !== q.answer && feedbackToneClasses("incorrect"),
                 )}
@@ -298,7 +298,7 @@ function TestPage() {
 
       {q.type === "tf" ? (
         <div className="mt-8 space-y-4">
-          <p className="rounded-lg bg-surface px-4 py-4 text-lg whitespace-pre-line shadow-[var(--shadow-border)]">
+          <p className="rounded-lg bg-surface px-4 py-4 text-lg whitespace-pre-line shadow-[var(--elevation-1)]">
             {q.statement}
           </p>
           <div className="grid grid-cols-2 gap-2">
@@ -316,7 +316,7 @@ function TestPage() {
                     finish(value === q.answer);
                   }}
                   className={cn(
-                    "h-12 rounded-lg bg-surface text-sm font-medium shadow-[var(--shadow-border)]",
+                    "h-12 rounded-lg bg-surface text-sm font-medium shadow-[var(--elevation-1)]",
                     show && value === q.answer && feedbackToneClasses("correct"),
                     show && chosen && value !== q.answer && feedbackToneClasses("incorrect"),
                   )}

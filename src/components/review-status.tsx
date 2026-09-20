@@ -123,7 +123,7 @@ export function ReviewCallout({
   return (
     <div
       className={cn(
-        "flex flex-col gap-3 rounded-xl p-4 shadow-[var(--shadow-border)] sm:flex-row sm:items-center sm:justify-between",
+        "flex flex-col gap-3 rounded-xl p-4 shadow-[var(--elevation-1)] sm:flex-row sm:items-center sm:justify-between",
         urgent ? "bg-danger-soft" : "bg-surface",
         className,
       )}

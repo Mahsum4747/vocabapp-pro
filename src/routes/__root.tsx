@@ -16,7 +16,6 @@ export const Route = createRootRoute({
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: APP_NAME },
       { name: "description", content: "Learn with flashcards — your personal study sets." },
-      { name: "theme-color", content: "#F7F4EF" },
     ],
     links: [
       { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
@@ -39,6 +38,12 @@ function Root() {
     <html lang="en" className="antialiased" suppressHydrationWarning>
       <head>
         <HeadContent />
+        {/* Browser chrome colour per scheme. Rendered here rather than in head():
+            the router de-duplicates meta tags by name, which would keep only one
+            of these two. Meta tags can't read CSS variables, so they mirror
+            --color-bg (light and dark) in styles.css — keep in sync. */}
+        <meta name="theme-color" content="#f7f4ef" media="(prefers-color-scheme: light)" />
+        <meta name="theme-color" content="#1c1b19" media="(prefers-color-scheme: dark)" />
       </head>
       <body className="bg-bg text-fg">
         <PreviewHostBridge />

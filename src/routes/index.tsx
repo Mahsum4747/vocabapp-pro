@@ -254,7 +254,7 @@ function Home() {
         <Link
           to="/sets/$setId"
           params={{ setId: continueSet.id }}
-          className="mt-8 flex flex-col justify-between gap-4 rounded-2xl bg-primary p-6 text-primary-fg shadow-[var(--shadow-card)] md:flex-row md:items-end"
+          className="mt-8 flex flex-col justify-between gap-4 rounded-2xl bg-primary p-6 text-primary-fg shadow-[var(--elevation-raised)] md:flex-row md:items-end"
         >
           <div>
             <p className="text-xs font-medium tracking-wide text-primary-fg/70 uppercase">
@@ -470,12 +470,12 @@ function TodayCta({
   onLoadSamples: () => void;
 }) {
   if (!isLoaded) {
-    return <div className="h-[172px] animate-pulse rounded-2xl bg-surface shadow-[var(--shadow-border)]" />;
+    return <div className="h-skeleton-cta animate-pulse rounded-2xl bg-surface shadow-[var(--elevation-1)]" />;
   }
 
   if (libraryEmpty) {
     return (
-      <div className="rounded-2xl bg-surface p-8 text-center shadow-[var(--shadow-border)]">
+      <div className="rounded-2xl bg-surface p-8 text-center shadow-[var(--elevation-1)]">
         <p className="flex items-center justify-center gap-1.5 text-xs font-medium tracking-wide text-muted uppercase">
           <Sparkles className="size-3.5" />
           Today
@@ -500,7 +500,7 @@ function TodayCta({
     return (
       <Link
         to="/review"
-        className="block rounded-2xl bg-primary p-8 text-primary-fg shadow-[var(--shadow-card)] transition-shadow hover:shadow-[var(--elevation-3)]"
+        className="block rounded-2xl bg-primary p-8 text-primary-fg shadow-[var(--elevation-raised)] transition-shadow hover:shadow-[var(--elevation-3)]"
       >
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
@@ -535,7 +535,7 @@ function TodayCta({
       <Link
         to="/review"
         search={{ filter: "weak" as const }}
-        className="block rounded-2xl bg-surface p-8 shadow-[var(--shadow-border)] transition-shadow hover:shadow-[var(--shadow-border-hover)]"
+        className="block rounded-2xl bg-surface p-8 shadow-[var(--elevation-1)] transition-shadow hover:shadow-[var(--elevation-2)]"
       >
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
@@ -557,7 +557,7 @@ function TodayCta({
   }
 
   return (
-    <div className="rounded-2xl bg-surface p-8 shadow-[var(--shadow-border)]">
+    <div className="rounded-2xl bg-surface p-8 shadow-[var(--elevation-1)]">
       <p className="flex items-center gap-1.5 text-xs font-medium tracking-wide text-muted uppercase">
         <Check className="size-3.5 text-success" />
         Today
