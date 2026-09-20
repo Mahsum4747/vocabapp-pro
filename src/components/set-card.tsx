@@ -69,10 +69,10 @@ export function SetCard({
     : "Not studied yet";
 
   const className = cn(
-    "group relative flex flex-col rounded-card bg-surface p-card text-left shadow-[var(--elevation-1)] transition-[transform,box-shadow] duration-[var(--duration-base)] ease-[var(--ease-standard)]",
+    "group relative flex flex-col rounded-card bg-surface p-card text-left shadow-[var(--elevation-1)] transition-[box-shadow] duration-[var(--duration-fast)] ease-[var(--ease-out)]",
     selectable
       ? cn("w-full", selected ? "ring-2 ring-primary" : "hover:shadow-[var(--elevation-2)]")
-      : "hover:-translate-y-0.5 hover:shadow-[var(--elevation-2)]",
+      : "hover:shadow-[var(--elevation-2)]",
   );
 
   const content = (

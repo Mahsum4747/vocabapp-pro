@@ -77,8 +77,12 @@ export function StudyDeck({
   const [order, setOrder] = useState<string[]>([]);
   const [index, setIndex] = useState(0);
   const [flipped, setFlipped] = useState(false);
-  const flip = useCallback(() => {
+  // Where the last flip/move came from. Keyboard-initiated changes are shown
+  // without a transition (see FlashCard `instant`); this is display state only.
+  const [fromKeyboard, setFromKeyboard] = useState(false);
+  const flip = useCallback((source: "pointer" | "key" = "pointer") => {
     playSound("cardFlip");
+    setFromKeyboard(source === "key");
     setFlipped((f) => !f);
   }, []);
   const [done, setDone] = useState(false);
@@ -113,7 +117,8 @@ export function StudyDeck({
   const card = entry?.card;
 
   const go = useCallback(
-    (delta: number) => {
+    (delta: number, source: "pointer" | "key" = "pointer") => {
+      setFromKeyboard(source === "key");
       setFlipped(false);
       setIndex((i) => {
         const next = i + delta;
@@ -155,9 +160,9 @@ export function StudyDeck({
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
       if (e.key === " " || e.key === "Enter") {
         e.preventDefault();
-        flip();
-      } else if (e.key === "ArrowRight") go(1);
-      else if (e.key === "ArrowLeft") go(-1);
+        flip("key");
+      } else if (e.key === "ArrowRight") go(1, "key");
+      else if (e.key === "ArrowLeft") go(-1, "key");
       else if (e.key.toLowerCase() === "s" && entry && onToggleStar) onToggleStar(entry);
     }
     window.addEventListener("keydown", onKey);
@@ -281,7 +286,8 @@ export function StudyDeck({
         termLangCode={entry.termLangCode}
         note={card.note}
         flipped={flipped}
-        onFlip={flip}
+        instant={fromKeyboard}
+        onFlip={() => flip("pointer")}
       />
       {/* Which set this card came from — a mixed round pulls from the whole
           library, so this is the only thing on screen that says which one. A
@@ -320,26 +326,31 @@ export function StudyDeck({
       <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
         <Button
           variant="outline"
-          className="bg-danger text-bg hover:opacity-90"
+          className="bg-rating-again text-rating-fg hover:opacity-90"
           onClick={() => handleGrade("again")}
         >
           Again
         </Button>
         <Button
           variant="outline"
-          className="bg-warning text-bg hover:opacity-90"
+          className="bg-rating-hard text-rating-fg hover:opacity-90"
           onClick={() => handleGrade("hard")}
         >
           Hard
         </Button>
         <Button
           variant="outline"
-          className="bg-success text-bg hover:opacity-90"
+          className="bg-rating-good text-rating-fg hover:opacity-90"
           onClick={() => handleGrade("good")}
         >
           Good
         </Button>
-        <Button onClick={() => handleGrade("easy")}>Easy</Button>
+        <Button
+          className="bg-rating-easy text-primary-fg hover:bg-rating-easy hover:opacity-90"
+          onClick={() => handleGrade("easy")}
+        >
+          Easy
+        </Button>
       </div>
       <p className="mt-6 text-center text-xs text-subtle">
         Space to flip · arrow keys to move{onToggleStar ? " · S to star" : ""}

@@ -56,6 +56,15 @@
      dark-in-light/pale-in-dark shape --color-danger and --color-success
      already have, so it can pair with the same fixed text color as they do. */
   --color-warning: color-mix(in oklab, var(--color-streak) 65%, var(--color-fg) 35%);
+  /* Review rating buttons (Again / Hard / Good / Easy). Light mode reuses the
+     status colours, which already pair with --color-bg as text; dark mode
+     overrides all four so they read as one family (see the dark block). */
+  --color-rating-again: var(--color-danger);
+  --color-rating-hard: var(--color-warning);
+  --color-rating-good: var(--color-success);
+  --color-rating-easy: var(--color-primary);
+  /* Text on Again / Hard / Good. Easy takes --color-primary-fg. */
+  --color-rating-fg: var(--color-bg);
   --font-sans: "Figtree", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Geist", ui-sans-serif, system-ui, sans-serif;
   --radius-xs: 4px;
@@ -114,6 +123,8 @@
   --duration-fast: 160ms;
   --duration-base: 200ms;
   --duration-slow: 300ms;
+  /* Entrance of page-level blocks (stagger-in). */
+  --duration-enter: 240ms;
 
   /* Mastery visualization — derived from the existing success/subtle tokens
      above, not new colors. --gradient-mastery picks up whichever
@@ -189,6 +200,17 @@
        --color-primary-fg instead of the (already light) --color-fg, at a
        ratio verified to land at 8.90 vs --color-bg. */
     --color-warning: color-mix(in oklab, var(--color-streak) 60%, var(--color-primary-fg) 40%);
+
+    /* Rating buttons in dark. Before, Again was a mid terracotta while Hard
+       and Good were pale peach / mint (luminance 0.26 / 0.49 / 0.51), so the
+       row looked like three unrelated buttons next to a dark green one. Again,
+       Hard and Good now share one luminance band (about 0.30-0.37) and carry
+       the dark page colour as text; Easy stays the saturated primary green with
+       light text. Contrast is checked numerically, not by eye. */
+    --color-rating-again: #cf8060;
+    --color-rating-hard: #d19a4d;
+    --color-rating-good: #7fae8f;
+    --color-rating-easy: #2f7a5a;
   }
 }
 
@@ -235,17 +257,8 @@
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .stagger-in > * {
-    animation: none !important;
-    opacity: 1 !important;
-    filter: none !important;
-    transform: none !important;
-  }
-}
-
 .stagger-in > * {
-  animation: rise-in var(--duration-slow) var(--ease-out) both;
+  animation: rise-in var(--duration-enter) var(--ease-out) both;
 }
 
 .stagger-in > *:nth-child(1) {
@@ -276,39 +289,61 @@
 @keyframes rise-in {
   from {
     opacity: 0;
-    transform: translateY(12px);
-    filter: blur(4px);
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
     transform: translateY(0);
-    filter: blur(0);
   }
 }
 
-/* Flashcard face swap — see src/components/flash-card.tsx. Content is keyed
-   by `flipped` so React remounts it on flip, which restarts this animation
-   in place of an instant text swap. Spring easing gives it a soft settle
-   instead of a hard cut, without a 3D rotate (the label/content differ in
-   length between sides, so a rotate would show the wrong face mid-turn). */
-@keyframes card-face-in {
+/* Reduced motion keeps the fade (it tells you something arrived) and drops the
+   travel. Not zero: fewer and gentler, per the motion guidance. */
+@keyframes fade-in {
   from {
     opacity: 0;
-    transform: scale(0.97);
   }
   to {
     opacity: 1;
-    transform: scale(1);
   }
 }
 
+/* Flashcard face swap — see src/components/flash-card.tsx. The face is keyed by
+   `flipped`, so React mounts a fresh element on every flip; @starting-style
+   turns that mount into a short transition (a transition, not a keyframe, so a
+   quick second flip just starts again from wherever it is). Deliberately
+   near-imperceptible: a card is flipped tens of times a session, so it is a
+   160ms fade from 40% with a 1.5% settle, no overshoot.
+
+   A flip from the keyboard (Space/Enter) is not animated at all: it is a
+   repeated, keyboard-initiated action. FlashCard marks that with
+   data-motion="instant". */
 .card-face {
-  animation: card-face-in var(--duration-slow) var(--ease-spring) both;
+  transition:
+    opacity var(--duration-fast) var(--ease-out),
+    transform var(--duration-fast) var(--ease-out);
+}
+
+@starting-style {
+  .card-face {
+    opacity: 0.4;
+    transform: scale(0.985);
+  }
+}
+
+.card-face[data-motion="instant"] {
+  transition: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
+  /* Keep the fade, drop the scale. */
+  @starting-style {
+    .card-face {
+      transform: none;
+    }
+  }
   .card-face {
-    animation: none;
+    transition: opacity var(--duration-fast) var(--ease-out);
   }
 }
 
@@ -410,5 +445,31 @@ body[data-celebrate="correct"] .study-pulse {
   .celebrate-badge {
     animation-duration: 1ms;
     animation-fill-mode: forwards;
+  }
+}
+
+/* Global reduced motion: fewer and gentler, not zero.
+   - tw-animate-css (dialogs, dropdowns, tooltips) enters/exits with fade +
+     scale/slide. Neutralise the movement variables and keep the fade.
+   - Component hover/press movement is gated per component with `motion-safe:`.
+   - Colour, opacity and shadow transitions are left alone: they carry meaning
+     (hover, focus, progress) without moving anything. */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    --tw-enter-translate-x: 0 !important;
+    --tw-enter-translate-y: 0 !important;
+    --tw-enter-scale: 1 !important;
+    --tw-enter-rotate: 0 !important;
+    --tw-enter-blur: 0 !important;
+    --tw-exit-translate-x: 0 !important;
+    --tw-exit-translate-y: 0 !important;
+    --tw-exit-scale: 1 !important;
+    --tw-exit-rotate: 0 !important;
+    --tw-exit-blur: 0 !important;
+  }
+
+  .stagger-in > * {
+    animation: fade-in var(--duration-fast) var(--ease-out) both;
+    animation-delay: 0ms !important;
   }
 }

@@ -40,7 +40,7 @@ export function PublicSetCard({ set }: { set: StudySet }) {
       // Prefer the share id so browsing public sets doesn't expose document
       // ids; sets predating the shareId backfill still link by document id.
       params={{ setId: set.shareId ?? set.id }}
-      className="group flex flex-col rounded-xl bg-surface p-5 shadow-[var(--elevation-1)] transition-[transform,box-shadow] duration-[var(--duration-base)] ease-[var(--ease-standard)] hover:-translate-y-0.5 hover:shadow-[var(--elevation-2)]"
+      className="group flex flex-col rounded-xl bg-surface p-5 shadow-[var(--elevation-1)] transition-[box-shadow] duration-[var(--duration-fast)] ease-[var(--ease-out)] hover:shadow-[var(--elevation-2)]"
     >
       <div className="flex items-center justify-between gap-3">
         <Badge tone="accent">{set.subject}</Badge>

@@ -17,6 +17,7 @@ export function FlashCard({
   termLangCode,
   note,
   flipped,
+  instant = false,
   onFlip,
 }: {
   term: string;
@@ -37,6 +38,10 @@ export function FlashCard({
    *  when reviewing, so it's shown here too, not just in the editor. */
   note?: string | null;
   flipped: boolean;
+  /** True when the last flip came from the keyboard: the face swap then skips
+   *  its transition (a repeated, keyboard-initiated action is never animated).
+   *  View-layer only — it does not change what is shown or graded. */
+  instant?: boolean;
   onFlip: () => void;
 }) {
   const profile = profileFor(termLangCode);
@@ -45,12 +50,18 @@ export function FlashCard({
       type="button"
       onClick={onFlip}
       className={cn(
-        "flex min-h-80 w-full flex-col justify-between gap-4 rounded-2xl p-8 text-left shadow-[var(--elevation-2)] transition-[background-color,color] duration-[var(--duration-base)] ease-[var(--ease-standard)] md:min-h-96",
+        "flex min-h-80 w-full flex-col justify-between gap-4 rounded-2xl p-8 text-left shadow-[var(--elevation-2)] md:min-h-96",
+        !instant &&
+          "transition-[background-color,color] duration-[var(--duration-fast)] ease-[var(--ease-out)]",
         flipped ? "bg-primary text-primary-fg" : "bg-surface text-fg",
       )}
       aria-label={flipped ? "Show term" : "Show definition"}
     >
-      <div key={flipped ? "back" : "front"} className="card-face flex flex-1 flex-col justify-between gap-4">
+      <div
+        key={flipped ? "back" : "front"}
+        data-motion={instant ? "instant" : undefined}
+        className="card-face flex flex-1 flex-col justify-between gap-4"
+      >
       <div className="flex items-center justify-between">
         <span
           className={cn(
