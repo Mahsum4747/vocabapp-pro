@@ -1,9 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/app-shell";
+import { AnswerFeedbackSheet } from "@/components/answer-feedback-sheet";
 import { EmptyState } from "@/components/empty-state";
-import { Feedback } from "@/components/feedback";
-import { StudyChrome } from "@/components/study-chrome";
+import { StudySessionShell } from "@/components/study-session-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { clozeBlankForCard, type ClozeBlank } from "@/lib/cloze";
@@ -130,7 +130,7 @@ function ClozePage() {
 
   if (questions.length === 0) {
     return (
-      <StudyChrome
+      <StudySessionShell
         setId={setId}
         title={studySet.title}
         mode="Cloze"
@@ -142,14 +142,14 @@ function ClozePage() {
           title="Nothing to fill in"
           description="This set has no cards with a usable example sentence yet."
         />
-      </StudyChrome>
+      </StudySessionShell>
     );
   }
 
   if (done) {
     const pct = Math.round((score / questions.length) * 100);
     return (
-      <StudyChrome
+      <StudySessionShell
         setId={setId}
         title={studySet.title}
         mode="Cloze"
@@ -174,7 +174,7 @@ function ClozePage() {
             </Button>
           </div>
         </div>
-      </StudyChrome>
+      </StudySessionShell>
     );
   }
 
@@ -182,14 +182,20 @@ function ClozePage() {
 
   const correct = answersMatch(written, q.blank.answer);
 
+  function submitWritten() {
+    if (!revealed) finish(correct);
+    else next();
+  }
+
   return (
-    <StudyChrome
+    <StudySessionShell
       setId={setId}
       title={studySet.title}
       mode="Cloze"
       index={index}
       total={questions.length}
       filterLabel={filterLabel}
+      primaryAction={{ label: revealed ? "Continue" : "Check", onClick: submitWritten }}
     >
       <p className="text-xs font-medium tracking-wide text-muted uppercase">Fill in the blank</p>
       <h2 className="mt-3 font-display text-3xl font-medium tracking-tight text-balance whitespace-pre-line">
@@ -208,8 +214,7 @@ function ClozePage() {
         className="mt-8 space-y-3"
         onSubmit={(e) => {
           e.preventDefault();
-          if (!revealed) finish(correct);
-          else next();
+          submitWritten();
         }}
       >
         <Input
@@ -220,14 +225,11 @@ function ClozePage() {
           autoFocus
         />
         {revealed ? (
-          <Feedback tone={correct ? "correct" : "incorrect"}>
+          <AnswerFeedbackSheet tone={correct ? "correct" : "incorrect"}>
             {correct ? "Correct" : <>Correct answer: {q.blank.answer}</>}
-          </Feedback>
+          </AnswerFeedbackSheet>
         ) : null}
-        <Button type="submit" className="w-full">
-          {revealed ? "Continue" : "Check"}
-        </Button>
       </form>
-    </StudyChrome>
+    </StudySessionShell>
   );
 }
