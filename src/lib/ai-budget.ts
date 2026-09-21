@@ -19,11 +19,12 @@ export const AI_DAILY_CAP_PER_USER = 5;
 export const GLOBAL_TRIPWIRE_FRACTION = 0.7;
 
 /**
- * Project-wide requests per day the Gemini console allows. 20 is the free-tier
- * figure `example-suggestions.ts` already documents; set GEMINI_DAILY_CEILING to
- * whatever the console actually shows.
+ * Project-wide requests per day the Gemini console allows. 1,500 is the Flash
+ * free-tier figure; the "20/day" mentioned in `example-suggestions.ts` is an
+ * older quota and would trip the tripwire after a handful of users. Set
+ * GEMINI_DAILY_CEILING to whatever AI Studio actually shows for this key.
  */
-export const DEFAULT_GLOBAL_CEILING = 20;
+export const DEFAULT_GLOBAL_CEILING = 1500;
 
 export const USER_CAP_MESSAGE =
   "You've used today's AI quota. Tomorrow's quota resets at midnight UTC.";

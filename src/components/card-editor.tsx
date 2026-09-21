@@ -637,13 +637,30 @@ export function CardEditor({
   /** A user typing directly into the gender/plural row always wins, and
    *  always starts from what's currently shown (dictionary guess or not)
    *  so correcting one field doesn't blank out the other. */
-  function setEnrichmentField(id: string, field: "gender" | "plural", value: string) {
+  function setEnrichmentField(
+    id: string,
+    field: "gender" | "plural" | "noPlural",
+    value: string,
+  ) {
     const current = cardsRef.current.find((c) => c.id === id)?.enrichment;
     const gender: GrammaticalGender | undefined =
       field === "gender" ? (value as GrammaticalGender) || undefined : current?.gender;
-    const plural = field === "plural" ? value.trim() || undefined : current?.plural;
+    // "No plural" is a complete answer, distinct from a blank plural: ticking it
+    // clears any plural, typing a plural unticks it, and the other fields carry it over.
+    const noPlural =
+      field === "noPlural" ? value === "1" : field === "plural" ? false : current?.noPlural === true;
+    const plural = noPlural
+      ? undefined
+      : field === "plural"
+        ? value.trim() || undefined
+        : current?.plural;
     update(id, {
-      enrichment: { source: "user", ...(gender ? { gender } : {}), ...(plural ? { plural } : {}) },
+      enrichment: {
+        source: "user",
+        ...(gender ? { gender } : {}),
+        ...(plural ? { plural } : {}),
+        ...(noPlural ? { noPlural: true as const } : {}),
+      },
     });
   }
 
@@ -798,13 +815,23 @@ export function CardEditor({
                 <Input
                   value={card.enrichment?.plural ?? ""}
                   onChange={(e) => setEnrichmentField(card.id, "plural", e.target.value)}
-                  placeholder="Plural, e.g. Tische"
+                  placeholder={card.enrichment?.noPlural ? "No plural" : "Plural, e.g. Tische"}
                   aria-label="Plural"
+                  disabled={card.enrichment?.noPlural === true}
                   autoCapitalize="none"
                   autoCorrect="off"
                   spellCheck={false}
                 />
               </div>
+              <label className="flex items-center gap-2 text-xs text-muted select-none">
+                <input
+                  type="checkbox"
+                  checked={card.enrichment?.noPlural === true}
+                  onChange={(e) => setEnrichmentField(card.id, "noPlural", e.target.checked ? "1" : "")}
+                  className="size-4 rounded border-border accent-primary-ink"
+                />
+                This noun has no plural (e.g. Milch)
+              </label>
             </div>
           ) : null}
           {card.enrichment?.governs?.length ? (

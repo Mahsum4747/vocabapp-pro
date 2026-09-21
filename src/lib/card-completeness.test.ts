@@ -46,3 +46,18 @@ describe("isNounShaped", () => {
     assert.equal(isNounShaped("Guten Morgen"), false);
   });
 });
+
+describe("noPlural", () => {
+  it("an explicit 'no plural' is complete; a blank plural is still missing", () => {
+    const milch = {
+      term: "Milch",
+      example: "Ich trinke Milch.",
+      enrichment: { gender: "f" as const, noPlural: true as const, source: "user" as const },
+    };
+    assert.deepEqual(missingNounFields(milch, true), []);
+    assert.deepEqual(
+      missingNounFields({ ...milch, enrichment: { gender: "f", source: "user" } }, true),
+      ["plural"],
+    );
+  });
+});
