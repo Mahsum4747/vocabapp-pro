@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { EmptyState } from "@/components/empty-state";
 import { feedbackToneClasses } from "@/components/feedback";
-import { StudyChrome } from "@/components/study-chrome";
+import { StudySessionShell } from "@/components/study-session-shell";
 import { Button } from "@/components/ui/button";
 import { leitnerBoxOf } from "@/lib/quiz";
 import { useSet, useSetProgress, useStudyStore } from "@/lib/store";
@@ -150,7 +150,7 @@ function MatchPage() {
 
   if (tiles.length < 4) {
     return (
-      <StudyChrome
+      <StudySessionShell
         setId={setId}
         title={studySet.title}
         mode="Match"
@@ -159,7 +159,7 @@ function MatchPage() {
         filterLabel={filterLabel}
       >
         <EmptyState title="Not enough cards" description="Match needs at least two cards." />
-      </StudyChrome>
+      </StudySessionShell>
     );
   }
 
@@ -167,7 +167,7 @@ function MatchPage() {
   const ss = String(seconds % 60).padStart(2, "0");
 
   return (
-    <StudyChrome
+    <StudySessionShell
       setId={setId}
       title={studySet.title}
       mode="Match"
@@ -224,6 +224,6 @@ function MatchPage() {
           })}
         </div>
       )}
-    </StudyChrome>
+    </StudySessionShell>
   );
 }
