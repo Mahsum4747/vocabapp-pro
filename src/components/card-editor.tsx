@@ -36,6 +36,10 @@ export type EditorCard = {
   enrichment?: CardEnrichment | null;
   /** Free-text personal memory aid — 100% user-authored, never suggested. */
   note?: string | null;
+  /** Came from AI generation: held back from saving until noun cards are complete. */
+  aiGenerated?: boolean;
+  /** What this AI draft still lacks (gender/plural/example) — shown as a flag. */
+  missing?: string[];
 };
 
 // Card images need Firebase Storage on a paid plan, which we're not on yet.
@@ -211,7 +215,12 @@ export function CardEditor({
   >({});
 
   function update(id: string, patch: Partial<EditorCard>) {
-    onChange(cardsRef.current.map((card) => (card.id === id ? { ...card, ...patch } : card)));
+    // Any edit makes the draft flag stale; the next save re-checks and re-flags.
+    onChange(
+      cardsRef.current.map((card) =>
+        card.id === id ? { ...card, missing: undefined, ...patch } : card,
+      ),
+    );
   }
 
   /**
@@ -751,6 +760,12 @@ export function CardEditor({
             <div className="mt-2 space-y-1.5">
               <div className="flex items-center gap-1.5">
                 <Label htmlFor={`gender-${card.id}`}>Gender &amp; plural (optional)</Label>
+                {card.missing && card.missing.length > 0 ? (
+                  <Badge tone="danger" className="gap-1 px-1.5 py-0.5">
+                    <HelpCircle className="size-3" />
+                    draft: needs {card.missing.join(", ")}
+                  </Badge>
+                ) : null}
                 {isIncompleteNoun(card, profile) ? (
                   <Tooltip content="No article yet — cards show the term as stored until you pick one">
                     <Badge tone="accent" className="gap-1 px-1.5 py-0.5">

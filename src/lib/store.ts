@@ -93,6 +93,7 @@ type StudyState = {
     definitionLanguage2?: string;
     defLang2Code?: LanguageCode;
     folder?: string;
+    aiGenerated?: boolean;
   }) => Promise<string>;
   /** `patch` language codes accept `null` to clear them; see `SetMetaPatch`. */
   updateSetMeta: (id: string, patch: SetMetaPatch) => Promise<void>;
@@ -222,6 +223,7 @@ export const useStudyStore = create<StudyState>()((set, get) => ({
     definitionLanguage2,
     defLang2Code,
     folder,
+    aiGenerated,
   }) => {
     const next = await createSet({
       data: {
@@ -236,6 +238,7 @@ export const useStudyStore = create<StudyState>()((set, get) => ({
         definitionLanguage2,
         defLang2Code,
         folder,
+        aiGenerated,
       },
     });
     set({ sets: [next, ...get().sets] });

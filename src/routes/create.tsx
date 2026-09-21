@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/input";
 import { suggestFolder } from "@/lib/folder-suggest";
+import { checkAiDraftCards } from "@/lib/ai-draft";
 import { useStudyStore } from "@/lib/store";
 import { toast } from "sonner";
 
@@ -63,6 +64,26 @@ function CreatePage() {
     if (ai) setAiOpenSignal((n) => n + 1);
   }, [ai]);
 
+  /** Flag the AI-drafted noun cards that still lack gender/plural/example. */
+  async function flagAiDrafts(list: EditorCard[]): Promise<Record<string, string[]>> {
+    const drafts = list.filter((c) => c.aiGenerated && c.term.trim());
+    if (drafts.length === 0) return {};
+    const issues = await checkAiDraftCards({
+      data: {
+        cards: drafts.map((c) => ({
+          id: c.id,
+          term: c.term,
+          example: c.example ?? null,
+          enrichment: c.enrichment ?? undefined,
+        })),
+        termLanguage: termLang.text.trim() || undefined,
+        termLangCode: termLang.code ?? undefined,
+      },
+    });
+    setCards((prev) => prev.map((c) => (c.aiGenerated ? { ...c, missing: issues[c.id] } : c)));
+    return issues;
+  }
+
   async function save() {
     const filled = cards.filter((c) => c.term.trim() && c.definition.trim());
     if (!title.trim()) {
@@ -73,20 +94,37 @@ function CreatePage() {
       toast.error("Add at least two cards.");
       return;
     }
-    const id = await addSet({
-      title,
-      description,
-      subject: "General",
-      cards: filled,
-      isReference,
-      termLanguage: termLang.text.trim() || undefined,
-      termLangCode: termLang.code ?? undefined,
-      defLangCode: defLang.code ?? undefined,
-      definitionLanguage2:
-        definitionLanguage2Enabled && defLang2.text.trim() ? defLang2.text.trim() : undefined,
-      defLang2Code: definitionLanguage2Enabled ? (defLang2.code ?? undefined) : undefined,
-      folder: folder.trim() || undefined,
-    });
+    // AI drafts never land incomplete: incomplete nouns stay here, flagged.
+    const issues = await flagAiDrafts(filled);
+    const blocked = filled.filter((c) => c.aiGenerated && issues[c.id]);
+    if (blocked.length > 0) {
+      toast.error(
+        `${blocked.length} generated noun card${blocked.length === 1 ? " needs" : "s need"} a gender, plural and example before saving. They're flagged below.`,
+      );
+      return;
+    }
+    let id: string;
+    try {
+      id = await addSet({
+        aiGenerated: filled.some((c) => c.aiGenerated),
+        title,
+        description,
+        subject: "General",
+        cards: filled,
+        isReference,
+        termLanguage: termLang.text.trim() || undefined,
+        termLangCode: termLang.code ?? undefined,
+        defLangCode: defLang.code ?? undefined,
+        definitionLanguage2:
+          definitionLanguage2Enabled && defLang2.text.trim() ? defLang2.text.trim() : undefined,
+        defLang2Code: definitionLanguage2Enabled ? (defLang2.code ?? undefined) : undefined,
+        folder: folder.trim() || undefined,
+      });
+    } catch (error) {
+      // The server refuses incomplete AI nouns too; show why instead of failing silently.
+      toast.error(error instanceof Error ? error.message : "Couldn't save the set.");
+      return;
+    }
     toast.success("Set saved.");
     void navigate({ to: "/sets/$setId", params: { setId: id } });
   }
@@ -118,17 +156,21 @@ function CreatePage() {
                 // generated title — still just a prefill of the editable
                 // field, never a silent assignment.
                 setFolder((current) =>
-                  current.trim() ? current : (suggestFolder(generated.title, folderOptions) ?? current),
+                  current.trim()
+                    ? current
+                    : (suggestFolder(generated.title, folderOptions) ?? current),
                 );
-                setCards(
-                  generated.cards.map((card) => ({
-                    id: crypto.randomUUID(),
-                    term: card.term,
-                    definition: card.definition,
-                    example: card.example,
-                    definition2: card.definition2,
-                  })),
-                );
+                const drafted: EditorCard[] = generated.cards.map((card) => ({
+                  id: crypto.randomUUID(),
+                  term: card.term,
+                  definition: card.definition,
+                  example: card.example,
+                  definition2: card.definition2,
+                  aiGenerated: true,
+                }));
+                setCards(drafted);
+                // Flag incomplete nouns straight away, before the user reaches Save.
+                void flagAiDrafts(drafted).catch(() => {});
               }}
             />
             <ImportDialog
@@ -245,7 +287,9 @@ function CreatePage() {
               termLangCode={termLang.code ?? undefined}
               defLangCode={defLang.code ?? undefined}
               definitionLanguage2={definitionLanguage2Enabled ? defLang2.text.trim() : undefined}
-              definitionLanguage2Code={definitionLanguage2Enabled ? (defLang2.code ?? undefined) : undefined}
+              definitionLanguage2Code={
+                definitionLanguage2Enabled ? (defLang2.code ?? undefined) : undefined
+              }
             />
             <div className="sticky bottom-4 flex justify-end">
               <Button type="submit" size="lg">

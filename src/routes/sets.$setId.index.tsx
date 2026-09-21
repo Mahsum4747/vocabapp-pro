@@ -92,6 +92,12 @@ function SetPage() {
   const hasArticleDrillCards =
     termProfile.hasNounEnrichment &&
     (studySet?.cards.some((card) => card.enrichment?.gender) ?? false);
+  // Thin cards are allowed when written by hand; the set page says which ones
+  // have no example, since Cloze and Satzbau are built from examples.
+  const cardsWithoutExample =
+    studySet && !studySet.isReference
+      ? studySet.cards.filter((card) => isCardActive(card) && !card.example?.trim())
+      : [];
   // Gates the Cloze tile — only when at least one active card's own example
   // can actually be blanked (not German-specific, unlike the article drill).
   const hasClozeCards =
@@ -343,6 +349,13 @@ function SetPage() {
             />
             {studySet.cards.length < 2 ? (
               <p className="mt-3 text-sm text-muted">You need at least two cards to study.</p>
+            ) : null}
+            {cardsWithoutExample.length > 0 ? (
+              <p className="mt-3 text-sm text-muted">
+                {cardsWithoutExample.length} card{cardsWithoutExample.length === 1 ? " has" : "s have"} no
+                example sentence: {cardsWithoutExample.slice(0, 5).map((c) => c.term).join(", ")}
+                {cardsWithoutExample.length > 5 ? `, +${cardsWithoutExample.length - 5} more` : ""}.
+              </p>
             ) : null}
           </div>
         </>

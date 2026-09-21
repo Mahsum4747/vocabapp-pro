@@ -147,7 +147,7 @@ function buildPrompt(data: z.infer<typeof inputSchema>): string {
 export const generateStudySet = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
   .validator((input: unknown) => inputSchema.parse(input))
-  .handler(async ({ data }) => {
+  .handler(async ({ context, data }) => {
     const { getAdminFirestore } = await import("./firebase-admin.server");
     const cacheKey = await cacheKeyFor(data);
     const db = getAdminFirestore();
@@ -170,6 +170,11 @@ export const generateStudySet = createServerFn({ method: "POST" })
     if (!apiKey) {
       return { ok: false as const, error: "AI generation isn't available in this environment." };
     }
+
+    // One model call for the whole set, however many cards it has — spent only
+    // here, after the cache missed. Over budget is a hard, friendly stop.
+    const budget = await (await import("./ai-budget.server")).spendAiAction(context.userId, "generate");
+    if (!budget.ok) return { ok: false as const, error: budget.error };
 
     let res: Response;
     try {

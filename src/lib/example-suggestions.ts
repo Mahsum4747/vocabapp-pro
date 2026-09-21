@@ -154,7 +154,7 @@ export function buildPrompt(data: z.infer<typeof inputSchema>): string {
 export const suggestExampleSentences = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
   .validator((input: unknown) => inputSchema.parse(input))
-  .handler(async ({ data }) => {
+  .handler(async ({ context, data }) => {
     const termLanguageCode = asLanguageCode(data.termLangCode) ?? normalizeLanguage(data.termLanguage ?? "");
     const profile = profileFor(termLanguageCode);
     if (!profile.hasExampleSuggestions) {
@@ -186,6 +186,9 @@ export const suggestExampleSentences = createServerFn({ method: "POST" })
     if (!apiKey) {
       return { ok: false as const, error: "Example suggestions aren't available in this environment." };
     }
+
+    const budget = await (await import("./ai-budget.server")).spendAiAction(context.userId, "assist");
+    if (!budget.ok) return { ok: false as const, error: budget.error };
 
     let res: Response;
     try {

@@ -6,6 +6,7 @@ import { authMiddleware, optionalAuthMiddleware } from "./auth/middleware";
 import { recordStudyActivityFor, type StreakInfo } from "./streak";
 import { defaultScheduler as scheduler } from "./srs";
 import { planReview } from "./review-plan";
+import { missingNounFields } from "./card-completeness";
 import { isStudiableSet } from "./srs";
 import {
   applyCountDelta,
@@ -329,6 +330,8 @@ export const createSet = createServerFn({ method: "POST" })
       definitionLanguage2?: string;
       defLang2Code?: LanguageCode;
       folder?: string;
+      /** The cards came from AI generation: incomplete nouns are refused. */
+      aiGenerated?: boolean;
     }) => input,
   )
   .handler(async ({ context, data }) => {
@@ -349,6 +352,24 @@ export const createSet = createServerFn({ method: "POST" })
       resolveSetLanguages({ termLanguage: data.termLanguage, termLangCode: termLangCode ?? undefined })
         .term === "de";
     const dictLookup = await germanDictLookup(isGermanTermLanguage);
+    const cards = toCards(data.cards, { isGermanTermLanguage, dictLookup });
+    // AI output never lands as a thin noun card: a noun needs gender, plural and
+    // an example, judged on the enrichment this very save would store. The
+    // editor pre-flags these (`checkAiDraftCards`); this is the backstop, so
+    // Cloze/Satzbau pools can't be silently fed incomplete AI cards.
+    if (data.aiGenerated) {
+      const incomplete = cards.filter(
+        (card) => missingNounFields(card, isGermanTermLanguage).length > 0,
+      );
+      if (incomplete.length > 0) {
+        throw new Error(
+          `${incomplete.length} noun card${incomplete.length === 1 ? " is" : "s are"} missing gender, plural or an example: ${incomplete
+            .slice(0, 5)
+            .map((c) => c.term)
+            .join(", ")}. Complete them to save.`,
+        );
+      }
+    }
     const next: StudySet = {
       id,
       title: data.title.trim() || "Untitled set",
@@ -357,7 +378,7 @@ export const createSet = createServerFn({ method: "POST" })
       createdAt: now,
       updatedAt: now,
       lastStudiedAt: null,
-      cards: toCards(data.cards, { isGermanTermLanguage, dictLookup }),
+      cards,
       ownerId: context.userId,
       isPublic: false,
       shareId: shareIdServer(),
