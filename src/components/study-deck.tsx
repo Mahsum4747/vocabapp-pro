@@ -3,7 +3,7 @@ import { Layers, Shuffle, Star } from "lucide-react";
 import type { ReactNode } from "react";
 import { EmptyState } from "./empty-state";
 import { FlashCard } from "./flash-card";
-import { StudyChrome } from "./study-chrome";
+import { StudySessionShell } from "./study-session-shell";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { useReviewLogger } from "@/lib/review-log";
@@ -194,7 +194,7 @@ export function StudyDeck({
 
   if (done) {
     return (
-      <StudyChrome
+      <StudySessionShell
         setId={backToSetId}
         title={title}
         mode={mode}
@@ -219,13 +219,13 @@ export function StudyDeck({
             {doneAction}
           </div>
         </div>
-      </StudyChrome>
+      </StudySessionShell>
     );
   }
 
   if (!entry || !card) {
     return (
-      <StudyChrome
+      <StudySessionShell
         setId={backToSetId}
         title={title}
         mode={mode}
@@ -236,12 +236,12 @@ export function StudyDeck({
         {emptyState ?? (
           <EmptyState title="No cards" description="There are no cards to study right now." />
         )}
-      </StudyChrome>
+      </StudySessionShell>
     );
   }
 
   return (
-    <StudyChrome
+    <StudySessionShell
       setId={backToSetId}
       title={title}
       mode={mode}
@@ -355,6 +355,6 @@ export function StudyDeck({
       <p className="mt-6 text-center text-xs text-subtle">
         Space to flip · arrow keys to move{onToggleStar ? " · S to star" : ""}
       </p>
-    </StudyChrome>
+    </StudySessionShell>
   );
 }
