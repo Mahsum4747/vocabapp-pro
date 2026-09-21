@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { AppShell } from "@/components/app-shell";
 import { AuthGate } from "@/components/auth-gate";
 import { DailyGoalPicker } from "@/components/daily-goal-dialog";
+import { LearningPrefsSection } from "@/components/learning-prefs";
 import { LibraryProgressPanel } from "@/components/library-progress-panel";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogClose } from "@/components/ui/dialog";
@@ -393,6 +394,7 @@ function AccountTab() {
 
   return (
     <div className="max-w-md space-y-4">
+      <LearningPrefsSection />
       <div className="rounded-card bg-danger-soft p-4 shadow-[var(--elevation-1)]">
         <h3 className="font-medium text-danger">Delete account</h3>
         <p className="mt-2 text-sm text-danger/80">

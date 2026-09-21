@@ -6,6 +6,7 @@ import { authMiddleware, optionalAuthMiddleware } from "./auth/middleware";
 import { recordStudyActivityFor, type StreakInfo } from "./streak";
 import { defaultScheduler as scheduler } from "./srs";
 import { planReview } from "./review-plan";
+import { missingNounFields } from "./card-completeness";
 import { isStudiableSet } from "./srs";
 import {
   applyCountDelta,
@@ -47,6 +48,13 @@ import {
 } from "./types";
 import { asLanguageCode, type LanguageCode } from "./lang/languages";
 import { readSoundSettings, type SoundSettings } from "./sound";
+import {
+  isDirection,
+  isExplanationLanguage,
+  readLearningPrefs,
+  type Direction,
+  type ExplanationLanguage,
+} from "./learning-prefs";
 import { resolveEnrichment, resolveEnrichmentOnOmit } from "./card-enrichment-policy";
 import type { Card, CardEnrichment, CardProgress, DailyStats, StudySet } from "./types";
 
@@ -322,6 +330,8 @@ export const createSet = createServerFn({ method: "POST" })
       definitionLanguage2?: string;
       defLang2Code?: LanguageCode;
       folder?: string;
+      /** The cards came from AI generation: incomplete nouns are refused. */
+      aiGenerated?: boolean;
     }) => input,
   )
   .handler(async ({ context, data }) => {
@@ -342,6 +352,24 @@ export const createSet = createServerFn({ method: "POST" })
       resolveSetLanguages({ termLanguage: data.termLanguage, termLangCode: termLangCode ?? undefined })
         .term === "de";
     const dictLookup = await germanDictLookup(isGermanTermLanguage);
+    const cards = toCards(data.cards, { isGermanTermLanguage, dictLookup });
+    // AI output never lands as a thin noun card: a noun needs gender, plural and
+    // an example, judged on the enrichment this very save would store. The
+    // editor pre-flags these (`checkAiDraftCards`); this is the backstop, so
+    // Cloze/Satzbau pools can't be silently fed incomplete AI cards.
+    if (data.aiGenerated) {
+      const incomplete = cards.filter(
+        (card) => missingNounFields(card, isGermanTermLanguage).length > 0,
+      );
+      if (incomplete.length > 0) {
+        throw new Error(
+          `${incomplete.length} noun card${incomplete.length === 1 ? " is" : "s are"} missing gender, plural or an example: ${incomplete
+            .slice(0, 5)
+            .map((c) => c.term)
+            .join(", ")}. Complete them to save.`,
+        );
+      }
+    }
     const next: StudySet = {
       id,
       title: data.title.trim() || "Untitled set",
@@ -350,7 +378,7 @@ export const createSet = createServerFn({ method: "POST" })
       createdAt: now,
       updatedAt: now,
       lastStudiedAt: null,
-      cards: toCards(data.cards, { isGermanTermLanguage, dictLookup }),
+      cards,
       ownerId: context.userId,
       isPublic: false,
       shareId: shareIdServer(),
@@ -1069,10 +1097,15 @@ type UserDoc = {
   /** Sound preferences, mirrored to the device for instant playback. */
   soundSettings: SoundSettings;
   /**
-   * Cached Home "Today" counts. Absent = "rebuild on next read", which is how
-   * every library edit invalidates it.
+   * Cached Home "Today" counts, kept current by the write paths. Absent =
+   * "build from scratch on the next Home read".
    */
   todaySummary: TodaySummary;
+  /** The two learning preferences — see learning-prefs.ts. Nothing else is asked for. */
+  explanationLanguage: ExplanationLanguage;
+  direction: Direction;
+  /** Set when the learner saves or dismisses the one-time prefs prompt. */
+  prefsPrompted: boolean;
   /** Epoch ms from the server clock, matching every other timestamp we store. */
   createdAt: number;
   updatedAt: number;
@@ -1095,6 +1128,11 @@ const updateDailyGoalSchema = z.object({
 const soundSettingsSchema = z.object({
   enabled: z.boolean(),
   volume: z.number().int().min(0).max(100),
+});
+
+const learningPrefsSchema = z.object({
+  explanationLanguage: z.string().refine(isExplanationLanguage, "unknown explanation language"),
+  direction: z.string().refine(isDirection, "unknown direction"),
 });
 
 const profileQuerySchema = z.object({ date: dateKeySchema });
@@ -1120,6 +1158,8 @@ function readProfile(stored: unknown, masteredCards: number): UserProfile {
     masteredCards,
     achievements,
     soundSettings: readSoundSettings(doc.soundSettings),
+    ...readLearningPrefs(doc),
+    prefsPrompted: doc.prefsPrompted === true,
   };
 }
 
@@ -1147,6 +1187,57 @@ export const updateSoundSettings = createServerFn({ method: "POST" })
     };
     await ref.set(patch, { merge: true });
     return data;
+  });
+
+/**
+ * Store the two learning preferences. Saving from the one-time prompt and from
+ * the Account tab go through here; either way the prompt is marked as seen.
+ */
+export const updateLearningPrefs = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
+  .validator((input: unknown) => learningPrefsSchema.parse(input))
+  .handler(async ({ context, data }) => {
+    const { getAdminFirestore } = await import("./firebase-admin.server");
+    const db = getAdminFirestore();
+    const ref = db.collection("users").doc(context.userId);
+    const now = Date.now();
+    const existing = await ref.get();
+    await ref.set(
+      {
+        id: context.userId,
+        explanationLanguage: data.explanationLanguage,
+        direction: data.direction,
+        prefsPrompted: true,
+        updatedAt: now,
+        ...(existing.exists ? {} : { createdAt: now }),
+      },
+      { merge: true },
+    );
+    return {
+      explanationLanguage: data.explanationLanguage as ExplanationLanguage,
+      direction: data.direction as Direction,
+      prefsPrompted: true as const,
+    };
+  });
+
+/** The learner dismissed the one-time prompt without changing anything. */
+export const dismissLearningPrefsPrompt = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
+  .handler(async ({ context }) => {
+    const { getAdminFirestore } = await import("./firebase-admin.server");
+    const ref = getAdminFirestore().collection("users").doc(context.userId);
+    const now = Date.now();
+    const existing = await ref.get();
+    await ref.set(
+      {
+        id: context.userId,
+        prefsPrompted: true,
+        updatedAt: now,
+        ...(existing.exists ? {} : { createdAt: now }),
+      },
+      { merge: true },
+    );
+    return { prefsPrompted: true as const };
   });
 
 /**

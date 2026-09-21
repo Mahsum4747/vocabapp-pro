@@ -7,7 +7,9 @@ import { StudySessionShell } from "@/components/study-session-shell";
 import { Button } from "@/components/ui/button";
 import { leitnerBoxOf } from "@/lib/quiz";
 import { useSet, useSetProgress, useStudyStore } from "@/lib/store";
-import { isCardActive } from "@/lib/types";
+import { isCardActive, resolveSetLanguages } from "@/lib/types";
+import { profileFor } from "@/lib/lang/profiles";
+import { displayTerm } from "@/lib/term-display";
 import { cn, parseIntSearchParam, shuffle } from "@/lib/utils";
 import { queuedCards } from "@/lib/srs";
 import { ratingForOutcome, useReviewLogger } from "@/lib/review-log";
@@ -32,6 +34,7 @@ function MatchPage() {
   const { setId } = Route.useParams();
   const { box } = Route.useSearch();
   const studySet = useSet(setId);
+  const termProfile = profileFor(resolveSetLanguages(studySet ?? {}).term);
   const progress = useSetProgress(setId);
   const markStudied = useStudyStore((s) => s.markStudied);
   const logReview = useReviewLogger();
@@ -51,7 +54,7 @@ function MatchPage() {
       { now: Date.now() },
     ).slice(0, 6);
     const both: Tile[] = picked.flatMap((card) => [
-      { id: `${card.id}-t`, cardId: card.id, text: card.term, kind: "term" as const },
+      { id: `${card.id}-t`, cardId: card.id, text: displayTerm(card, termProfile), kind: "term" as const },
       {
         id: `${card.id}-d`,
         cardId: card.id,

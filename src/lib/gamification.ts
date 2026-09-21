@@ -1,4 +1,5 @@
 import type { SoundSettings } from "./sound.ts";
+import type { Direction, ExplanationLanguage } from "./learning-prefs.ts";
 import type { ReviewRating } from "./types.ts";
 
 /**
@@ -117,6 +118,10 @@ export type UserProfile = {
   /** Achievement id -> epoch ms it was unlocked. */
   achievements: Record<string, number>;
   soundSettings: SoundSettings;
+  explanationLanguage: ExplanationLanguage;
+  direction: Direction;
+  /** True once the learner has saved or dismissed the one-time prefs prompt. */
+  prefsPrompted: boolean;
 };
 
 /** The stats every achievement is judged against, pulled out of a profile. */

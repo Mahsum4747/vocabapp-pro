@@ -1,17 +1,25 @@
 import { useEffect, useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { authClient } from "@/lib/auth/client";
+import { useCurrentUserState } from "@/lib/auth/use-current-user";
 import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+type Search = { mode?: "signup" };
+
 export const Route = createFileRoute("/login")({
+  validateSearch: (search: Record<string, unknown>): Search => ({
+    mode: search.mode === "signup" ? "signup" : undefined,
+  }),
   component: LoginPage,
 });
 
 function LoginPage() {
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const { mode: initialMode } = Route.useSearch();
+  const { user, isPending } = useCurrentUserState();
+  const [mode, setMode] = useState<"signin" | "signup">(initialMode ?? "signin");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -64,6 +72,10 @@ function LoginPage() {
       setLoading(false);
     }
   }
+
+  // Already signed in: there is nothing to do here. Waits out `isPending` so a
+  // signed-out visitor never sees a redirect flash.
+  if (!isPending && user) return <Navigate to="/" replace />;
 
   return (
     <div className="flex min-h-dvh items-center justify-center bg-bg px-4 text-fg">

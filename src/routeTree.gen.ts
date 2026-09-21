@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AccountRouteImport } from './routes/account'
 import { Route as CreateRouteImport } from './routes/create'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as SignupRouteImport } from './routes/signup'
 import { Route as ReviewRouteImport } from './routes/review'
 import { Route as SetsSetIdRouteImport } from './routes/sets.$setId'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
@@ -44,6 +45,11 @@ const CreateRoute = CreateRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SignupRoute = SignupRouteImport.update({
+  id: '/signup',
+  path: '/signup',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ReviewRoute = ReviewRouteImport.update({
@@ -112,6 +118,7 @@ export interface FileRoutesByFullPath {
   '/account': typeof AccountRoute
   '/create': typeof CreateRoute
   '/login': typeof LoginRoute
+  '/signup': typeof SignupRoute
   '/review': typeof ReviewRoute
   '/sets/$setId': typeof SetsSetIdRouteWithChildren
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -130,6 +137,7 @@ export interface FileRoutesByTo {
   '/account': typeof AccountRoute
   '/create': typeof CreateRoute
   '/login': typeof LoginRoute
+  '/signup': typeof SignupRoute
   '/review': typeof ReviewRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/sets/$setId/articles': typeof SetsSetIdArticlesRoute
@@ -148,6 +156,7 @@ export interface FileRoutesById {
   '/account': typeof AccountRoute
   '/create': typeof CreateRoute
   '/login': typeof LoginRoute
+  '/signup': typeof SignupRoute
   '/review': typeof ReviewRoute
   '/sets/$setId': typeof SetsSetIdRouteWithChildren
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -168,6 +177,7 @@ export interface FileRouteTypes {
     | '/account'
     | '/create'
     | '/login'
+    | '/signup'
     | '/review'
     | '/sets/$setId'
     | '/api/auth/$'
@@ -186,6 +196,7 @@ export interface FileRouteTypes {
     | '/account'
     | '/create'
     | '/login'
+    | '/signup'
     | '/review'
     | '/api/auth/$'
     | '/sets/$setId/articles'
@@ -203,6 +214,7 @@ export interface FileRouteTypes {
     | '/account'
     | '/create'
     | '/login'
+    | '/signup'
     | '/review'
     | '/sets/$setId'
     | '/api/auth/$'
@@ -222,6 +234,7 @@ export interface RootRouteChildren {
   AccountRoute: typeof AccountRoute
   CreateRoute: typeof CreateRoute
   LoginRoute: typeof LoginRoute
+  SignupRoute: typeof SignupRoute
   ReviewRoute: typeof ReviewRoute
   SetsSetIdRoute: typeof SetsSetIdRouteWithChildren
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
@@ -255,6 +268,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/signup': {
+      id: '/signup'
+      path: '/signup'
+      fullPath: '/signup'
+      preLoaderRoute: typeof SignupRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/review': {
@@ -377,6 +397,7 @@ const rootRouteChildren: RootRouteChildren = {
   AccountRoute: AccountRoute,
   CreateRoute: CreateRoute,
   LoginRoute: LoginRoute,
+  SignupRoute: SignupRoute,
   ReviewRoute: ReviewRoute,
   SetsSetIdRoute: SetsSetIdRouteWithChildren,
   ApiAuthSplatRoute: ApiAuthSplatRoute,

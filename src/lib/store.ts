@@ -21,6 +21,8 @@ import {
   getAllProgress as getAllProgressFn,
   getProfile as getProfileFn,
   getTodaySummary as getTodaySummaryFn,
+  updateLearningPrefs as updateLearningPrefsFn,
+  dismissLearningPrefsPrompt as dismissLearningPrefsPromptFn,
   updateDailyGoal as updateDailyGoalFn,
   updateSoundSettings as updateSoundSettingsFn,
   resetSetProgress as resetSetProgressFn,
@@ -29,6 +31,7 @@ import {
 import { getStreak as getStreakFn, type StreakInfo } from "./streak";
 import { localDateKey } from "./utils";
 import type { TodaySummary } from "./today-summary";
+import type { LearningPrefs } from "./learning-prefs";
 import type { LanguageCode } from "./lang/languages";
 import { isStudiableSet, summarizeLibrary, weakCards, type LibraryReview } from "./srs";
 
@@ -90,6 +93,7 @@ type StudyState = {
     definitionLanguage2?: string;
     defLang2Code?: LanguageCode;
     folder?: string;
+    aiGenerated?: boolean;
   }) => Promise<string>;
   /** `patch` language codes accept `null` to clear them; see `SetMetaPatch`. */
   updateSetMeta: (id: string, patch: SetMetaPatch) => Promise<void>;
@@ -128,6 +132,10 @@ type StudyState = {
   /** Load the profile and today's counters — one call, used by the home cards. */
   fetchProfile: () => Promise<void>;
   fetchTodaySummary: () => Promise<void>;
+  /** Save the two learning preferences (also settles the one-time prompt). */
+  setLearningPrefs: (prefs: LearningPrefs) => Promise<void>;
+  /** Close the one-time prefs prompt without changing anything. */
+  dismissPrefsPrompt: () => Promise<void>;
   /** Change the daily goal, recording the viewer's timezone the first time. */
   setDailyGoal: (goal: number) => Promise<void>;
   /** Change the sound preferences, on the server and on this device. */
@@ -215,6 +223,7 @@ export const useStudyStore = create<StudyState>()((set, get) => ({
     definitionLanguage2,
     defLang2Code,
     folder,
+    aiGenerated,
   }) => {
     const next = await createSet({
       data: {
@@ -229,6 +238,7 @@ export const useStudyStore = create<StudyState>()((set, get) => ({
         definitionLanguage2,
         defLang2Code,
         folder,
+        aiGenerated,
       },
     });
     set({ sets: [next, ...get().sets] });
@@ -409,6 +419,23 @@ export const useStudyStore = create<StudyState>()((set, get) => ({
       console.error("Failed to load today summary:", error);
     } finally {
       set({ todaySummarySettled: true });
+    }
+  },
+
+  setLearningPrefs: async (prefs) => {
+    const saved = await updateLearningPrefsFn({ data: prefs });
+    const current = get().profile;
+    if (current) set({ profile: { ...current, ...saved } });
+  },
+
+  dismissPrefsPrompt: async () => {
+    // Optimistic: the prompt must go away even if the write is slow or fails.
+    const current = get().profile;
+    if (current) set({ profile: { ...current, prefsPrompted: true } });
+    try {
+      await dismissLearningPrefsPromptFn({});
+    } catch (error) {
+      console.error("Failed to record prefs prompt dismissal:", error);
     }
   },
 

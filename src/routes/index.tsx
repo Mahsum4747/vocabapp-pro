@@ -21,6 +21,7 @@ import { Input } from "@/components/ui/input";
 import { masteryStats } from "@/lib/quiz";
 import { useProgress, useStudyStore } from "@/lib/store";
 import { DEFAULT_DAILY_GOAL } from "@/lib/daily-goal";
+import { LearningPrefsPrompt } from "@/components/learning-prefs";
 import { buildTodaySummary, describeToday, type TodayQueue } from "@/lib/today-summary";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -244,6 +245,8 @@ function Home() {
           today={todayQueue}
           onLoadSamples={() => restoreSeeds()}
         />
+
+        <LearningPrefsPrompt />
 
         {/* Frequent, but secondary to today's actual work above — a visitor
             with a full library still reaches for these often enough that

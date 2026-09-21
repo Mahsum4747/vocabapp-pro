@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { AnswerFeedbackSheet } from "@/components/answer-feedback-sheet";
 import { ArticleizedTerm } from "@/components/articleized-term";
+import { buildTermDisplay, displayTerm } from "@/lib/term-display";
 import { Definition2Line } from "@/components/definition2-line";
 import { EmptyState } from "@/components/empty-state";
 import { ExampleLine } from "@/components/example-line";
@@ -33,6 +34,8 @@ function TestPage() {
   const studySet = useSet(setId);
   const setLanguages = resolveSetLanguages(studySet ?? {});
   const termProfile = profileFor(setLanguages.term);
+  // A plain call, not a hook: it sits above early returns.
+  const termDisplay = buildTermDisplay(studySet?.cards ?? [], termProfile);
   const progress = useSetProgress(setId);
   const markStudied = useStudyStore((s) => s.markStudied);
   const logReview = useReviewLogger();
@@ -171,7 +174,7 @@ function TestPage() {
               <p className="text-xs font-medium tracking-wide text-muted uppercase">Missed</p>
               <ul className="mt-2 space-y-1 text-sm">
                 {missed.map((term) => (
-                  <li key={term}>{term}</li>
+                  <li key={term}>{termDisplay(term)}</li>
                 ))}
               </ul>
             </div>
@@ -208,6 +211,18 @@ function TestPage() {
     q.type === "written" ? (
       <ArticleizedTerm term={q.answer} enrichment={answerCard?.enrichment} profile={termProfile} />
     ) : null;
+
+  // MC options and the true/false statement carry bare terms; show the article
+  // where the card's gender is known (display only — grading compares the bare
+  // strings above).
+  const showTerm = q.type === "mc" && q.promptSide === "definition" ? termDisplay : (t: string) => t;
+  const tfCard = q.type === "tf" ? studySet.cards.find((c) => c.id === q.cardId) : undefined;
+  const tfStatement =
+    q.type === "tf" && tfCard && q.statement.startsWith(tfCard.term)
+      ? displayTerm(tfCard, termProfile) + q.statement.slice(tfCard.term.length)
+      : q.type === "tf"
+        ? q.statement
+        : "";
 
   function submitWritten() {
     if (!revealed && q.type === "written") finish(answersMatch(written, q.answer, matchOptions));
@@ -272,7 +287,7 @@ function TestPage() {
                   show && chosen && option !== q.answer && feedbackToneClasses("incorrect"),
                 )}
               >
-                {option}
+                {showTerm(option)}
               </button>
             );
           })}
@@ -311,7 +326,7 @@ function TestPage() {
       {q.type === "tf" ? (
         <div className="mt-8 space-y-4">
           <p className="rounded-card bg-surface px-4 py-4 text-lg whitespace-pre-line shadow-[var(--elevation-1)]">
-            {q.statement}
+            {tfStatement}
           </p>
           <div className="grid grid-cols-2 gap-2">
             {[true, false].map((value) => {
