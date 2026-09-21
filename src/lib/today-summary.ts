@@ -1,7 +1,7 @@
 import { addDays, format, isSameDay } from "date-fns";
-import { isStudiableSet, isWeakWord, summarizeLibrary, weakCards } from "./srs/index.ts";
+import { isStudiableSet, isWeakWord, summarizeLibrary } from "./srs/index.ts";
 import { buildLibrarySession } from "./review-session.ts";
-import { isCardActive, type CardProgress, type StudySet } from "./types.ts";
+import { isCardActive, type Card, type CardProgress, type StudySet } from "./types.ts";
 
 /**
  * The cached answer to "what does Today look like?", stored on `users/{uid}`
@@ -86,21 +86,14 @@ export function buildTodaySummary(
   const studiable = sets.filter(isStudiableSet);
   const { totals } = summarizeLibrary(studiable, progress, { now });
 
-  // A weak card that is also due is already in `due`; count it once.
+  const counted = countedCards(studiable);
   let weak = 0;
-  for (const set of studiable) {
-    weak += weakCards(set.cards, progress, { now }).filter(
-      (card) => !isDueNow(progress[card.id], now),
-    ).length;
-  }
+  for (const card of counted) if (isWeakAtRest(progress[card.id])) weak += 1;
 
   let studiedToday = 0;
-  for (const set of studiable) {
-    for (const card of set.cards) {
-      if (!isCardActive(card)) continue;
-      const at = progress[card.id]?.lastReviewedAt;
-      if (typeof at === "number" && utcDayKey(at) === dayKey) studiedToday += 1;
-    }
+  for (const card of counted) {
+    const at = progress[card.id]?.lastReviewedAt;
+    if (typeof at === "number" && utcDayKey(at) === dayKey) studiedToday += 1;
   }
 
   return {
@@ -123,58 +116,162 @@ function isDueNow(progress: CardProgress | undefined, now: number): boolean {
   );
 }
 
-type Bucket = "new" | "due" | "weak" | "other";
+/**
+ * The cards Today counts: active cards of studiable sets — exactly the pool
+ * /review builds its round from.
+ */
+function countedCards(sets: StudySet[]): Card[] {
+  return sets.filter(isStudiableSet).flatMap((set) => set.cards.filter(isCardActive));
+}
 
-/** Which of the summary's counters a card currently sits in. Mirrors `bandOf`. */
-function bucketOf(progress: CardProgress | undefined, now: number): Bucket {
-  if (!progress || progress.state === "new" || progress.dueAt === null) return "new";
-  if (isDueNow(progress, now)) return "due";
-  return isWeakWord(progress, { now }) ? "weak" : "other";
+/** Ids of the cards this set contributes to Today (none if it isn't studiable). */
+export function countedCardIds(set: StudySet | null): Set<string> {
+  return new Set(set ? countedCards([set]).map((card) => card.id) : []);
 }
 
 /**
- * Move one reviewed card between counters — the write-path patch that rides in
- * the review transaction.
+ * Is this card weak on the strength of its own row alone?
  *
- * Returns null when the stored summary can't be safely patched (missing, a
- * different day, or `nextDueAt` already passed); the next Home read rebuilds
- * it, so skipping is always correct, just not free.
+ * `isWeakWord` with the clock taken out: its fourth signal ("past its due
+ * date") is the only one that changes without a write, and a counter kept in
+ * step by writes can only track signals that move on writes. When nothing is
+ * due — the only time Home shows the weak count — the two agree exactly.
+ */
+export function isWeakAtRest(progress: CardProgress | undefined): boolean {
+  return isWeakWord(progress, { now: Number.NEGATIVE_INFINITY });
+}
+
+const isFresh = (p: CardProgress | undefined) => !p || p.state === "new" || p.dueAt === null;
+
+/** What one card contributes to each counter, given its progress row (if any). */
+export type CardCounts = { new: number; due: number; weak: number };
+
+export function cardCounts(progress: CardProgress | undefined, now: number): CardCounts {
+  return {
+    new: isFresh(progress) ? 1 : 0,
+    due: isDueNow(progress, now) ? 1 : 0,
+    weak: isWeakAtRest(progress) ? 1 : 0,
+  };
+}
+
+const clamp0 = (n: number) => Math.max(0, n);
+
+/**
+ * Sentinel for "the clock-dependent fields (`due`, `nextDueAt`) need a
+ * re-count": `nextDueAt` at or before now already fails `isSummaryFresh`, so
+ * setting it to `now` is exactly the existing rebuild trigger, no new field.
+ */
+function markClockStale(summary: TodaySummary, now: number): TodaySummary {
+  return { ...summary, nextDueAt: now };
+}
+
+/**
+ * The write-path patch for one graded review, applied inside its transaction.
+ *
+ * `new`, `weak` and `studiedToday` are always patched — they move only on
+ * writes. `due`/`nextDueAt` are patched only while the clock fields are still
+ * trustworthy; otherwise they are marked for a re-count rather than nudged from
+ * a stale base. A rolled UTC day resets `studiedToday` here too, so the first
+ * review after midnight is not lost to the lazy reset.
  */
 export function applyReviewToSummary(
   summary: TodaySummary | null,
   input: { previous: CardProgress | null; next: CardProgress; now: number },
 ): TodaySummary | null {
   const { previous, next, now } = input;
-  if (!summary || !isSummaryFresh(summary, now)) return null;
+  if (!summary) return null;
 
-  const counts: Record<Bucket, number> = {
-    new: summary.new,
-    due: summary.due,
-    weak: summary.weak,
-    other: 0,
-  };
-  const from = bucketOf(previous ?? undefined, now);
-  const to = bucketOf(next, now);
-  if (from !== "other") counts[from] = Math.max(0, counts[from] - 1);
-  if (to !== "other") counts[to] += 1;
-
-  const today = summary.dayKey;
+  const today = utcDayKey(now);
+  const rolled = summary.dayKey !== today;
+  const clockFresh = isSummaryFresh(summary, now);
+  const before = cardCounts(previous ?? undefined, now);
+  const after = cardCounts(next, now);
   const alreadyToday =
     previous?.lastReviewedAt != null && utcDayKey(previous.lastReviewedAt) === today;
 
-  let nextDueAt = summary.nextDueAt;
-  if (typeof next.dueAt === "number" && next.dueAt > now) {
-    nextDueAt = nextDueAt === null ? next.dueAt : Math.min(nextDueAt, next.dueAt);
-  }
+  let out: TodaySummary = {
+    ...summary,
+    new: clamp0(summary.new + after.new - before.new),
+    weak: clamp0(summary.weak + after.weak - before.weak),
+    studiedToday: (rolled ? 0 : summary.studiedToday) + (alreadyToday ? 0 : 1),
+    dayKey: today,
+  };
 
+  if (clockFresh) {
+    let nextDueAt = summary.nextDueAt;
+    if (typeof next.dueAt === "number" && next.dueAt > now) {
+      nextDueAt = nextDueAt === null ? next.dueAt : Math.min(nextDueAt, next.dueAt);
+    }
+    out = { ...out, due: clamp0(summary.due + after.due - before.due), nextDueAt };
+  } else {
+    out = markClockStale(out, now);
+  }
+  return out;
+}
+
+/**
+ * Apply cards entering or leaving Today's pool (set created/deleted/copied
+ * into, card added/removed/archived, a set becoming studiable, progress reset).
+ *
+ * `new` and `weak` shift by the cards' own contributions. `due` shifts only
+ * while the clock fields are trustworthy — a stale base gets re-counted on the
+ * next read anyway. Never touches `dayKey`/`studiedToday`: the work already done
+ * today doesn't change because a card left.
+ */
+export function applyCountDelta(
+  summary: TodaySummary | null,
+  delta: { added: CardCounts; removed: CardCounts },
+  now: number,
+): TodaySummary | null {
+  if (!summary) return null;
+  const move = (a: number, r: number) => a - r;
   return {
     ...summary,
-    due: counts.due,
-    new: counts.new,
-    weak: counts.weak,
-    studiedToday: summary.studiedToday + (alreadyToday ? 0 : 1),
-    nextDueAt,
+    new: clamp0(summary.new + move(delta.added.new, delta.removed.new)),
+    weak: clamp0(summary.weak + move(delta.added.weak, delta.removed.weak)),
+    due: isSummaryFresh(summary, now)
+      ? clamp0(summary.due + move(delta.added.due, delta.removed.due))
+      : summary.due,
   };
+}
+
+/** Sum of `cardCounts` over rows; `undefined` = a card with no progress row. */
+export function sumCounts(rows: (CardProgress | undefined)[], now: number): CardCounts {
+  return rows.reduce<CardCounts>(
+    (acc, row) => {
+      const c = cardCounts(row, now);
+      return { new: acc.new + c.new, due: acc.due + c.due, weak: acc.weak + c.weak };
+    },
+    { new: 0, due: 0, weak: 0 },
+  );
+}
+
+/**
+ * Re-count the clock fields onto a stored summary: `due` and `nextDueAt` from
+ * the caller's aggregation/limit-1 query. `new`/`weak` are kept as counted by
+ * the write paths; `studiedToday` restarts only if the UTC day really rolled.
+ */
+export function refreshClockFields(
+  summary: TodaySummary,
+  fresh: { due: number; nextDueAt: number | null },
+  now: number,
+): TodaySummary {
+  const today = utcDayKey(now);
+  return {
+    ...summary,
+    due: fresh.due,
+    nextDueAt: fresh.nextDueAt,
+    dayKey: today,
+    studiedToday: summary.dayKey === today ? summary.studiedToday : 0,
+  };
+}
+
+/** A full rebuild is forced after this long, as the drift safety net. */
+export const FULL_REBUILD_AFTER_MS = 7 * 24 * 60 * 60 * 1000;
+
+/** Should a clock-triggered refresh be a full recompute instead of ~2 reads? */
+export function needsFullRebuild(summary: TodaySummary | null, now: number): boolean {
+  return !summary || now - summary.builtAt > FULL_REBUILD_AFTER_MS;
 }
 
 /** New cards still owed today: the goal minus what's been studied, capped by supply. */

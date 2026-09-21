@@ -1,8 +1,14 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  applyCountDelta,
   applyReviewToSummary,
   buildTodaySummary,
+  cardCounts,
+  countedCardIds,
+  needsFullRebuild,
+  refreshClockFields,
+  sumCounts,
   describeToday,
   isSummaryFresh,
   newLeftToday,
@@ -111,7 +117,7 @@ describe("describeToday", () => {
 });
 
 describe("applyReviewToSummary", () => {
-  it("moves a first-ever review from new to scheduled and counts it studied", () => {
+  it("first-ever review: new-1, studied+1, next due tracked", () => {
     const base = summary({ new: 5, studiedToday: 0 });
     const next = progress("a", { dueAt: NOW + DAY, lastReviewedAt: NOW, totalReviews: 1 });
     const out = applyReviewToSummary(base, { previous: null, next, now: NOW });
@@ -120,7 +126,7 @@ describe("applyReviewToSummary", () => {
     assert.equal(out.studiedToday, 1);
     assert.equal(out.nextDueAt, NOW + DAY);
   });
-  it("moves a due card out of due, and does not re-count a card already studied today", () => {
+  it("due card graded: due-1; a card already studied today is not re-counted", () => {
     const base = summary({ due: 3, studiedToday: 2 });
     const previous = progress("a", { dueAt: NOW - 1000, lastReviewedAt: NOW - 1000 });
     const next = progress("a", { dueAt: NOW + 3 * DAY, lastReviewedAt: NOW });
@@ -129,10 +135,91 @@ describe("applyReviewToSummary", () => {
     assert.equal(out.due, 2);
     assert.equal(out.studiedToday, 2);
   });
-  it("declines to patch a stale summary so the next read rebuilds it", () => {
-    const next = progress("a");
-    assert.equal(applyReviewToSummary(summary({ dayKey: "2026-09-20" }), { previous: null, next, now: NOW }), null);
-    assert.equal(applyReviewToSummary(summary({ nextDueAt: NOW - 1 }), { previous: null, next, now: NOW }), null);
-    assert.equal(applyReviewToSummary(null, { previous: null, next, now: NOW }), null);
+  it("weak counter follows the row across the threshold in both directions", () => {
+    const strong = progress("a", { masteryScore: 90, consecutiveCorrect: 4 });
+    const shaky = progress("a", { masteryScore: 30, consecutiveCorrect: 0, dueAt: NOW + 600000 });
+    const down = applyReviewToSummary(summary({ weak: 0 }), { previous: strong, next: shaky, now: NOW });
+    assert.equal(down?.weak, 1);
+    const up = applyReviewToSummary(summary({ weak: 1 }), { previous: shaky, next: strong, now: NOW });
+    assert.equal(up?.weak, 0);
+  });
+  it("a stale clock is marked for re-count, not nudged; new/weak/studied still move", () => {
+    const next = progress("a", { lastReviewedAt: NOW });
+    const out = applyReviewToSummary(summary({ new: 3, due: 9, nextDueAt: NOW - 1 }), {
+      previous: null,
+      next,
+      now: NOW,
+    });
+    assert.ok(out);
+    assert.equal(out.new, 2);
+    assert.equal(out.due, 9);
+    assert.equal(isSummaryFresh(out, NOW), false);
+  });
+  it("first review after the UTC day rolled resets studiedToday and forces a re-count", () => {
+    const out = applyReviewToSummary(
+      summary({ dayKey: "2026-09-20", studiedToday: 12, nextDueAt: null }),
+      { previous: null, next: progress("a", { lastReviewedAt: NOW }), now: NOW },
+    );
+    assert.ok(out);
+    assert.equal(out.studiedToday, 1);
+    assert.equal(out.dayKey, utcDayKey(NOW));
+    assert.equal(isSummaryFresh(out, NOW), false, "clock must still be re-counted");
+  });
+  it("no stored summary: nothing to patch", () => {
+    assert.equal(applyReviewToSummary(null, { previous: null, next: progress("a"), now: NOW }), null);
+  });
+});
+
+describe("card entering / leaving the pool", () => {
+  const dueRow = progress("d", { dueAt: NOW - 1000 });
+  const weakRow = progress("w", { masteryScore: 20, consecutiveCorrect: 0 });
+  it("cardCounts: fresh, due and weak-at-rest are independent", () => {
+    assert.deepEqual(cardCounts(undefined, NOW), { new: 1, due: 0, weak: 0 });
+    assert.deepEqual(cardCounts(dueRow, NOW), { new: 0, due: 1, weak: 0 });
+    assert.deepEqual(cardCounts(weakRow, NOW), { new: 0, due: 0, weak: 1 });
+  });
+  it("adding fresh cards raises new only", () => {
+    const out = applyCountDelta(summary({ new: 4 }), { added: sumCounts([undefined, undefined], NOW), removed: sumCounts([], NOW) }, NOW);
+    assert.equal(out?.new, 6);
+  });
+  it("removing a due + a weak + a fresh card lowers each counter it was in", () => {
+    const out = applyCountDelta(
+      summary({ new: 5, due: 4, weak: 2 }),
+      { added: sumCounts([], NOW), removed: sumCounts([dueRow, weakRow, undefined], NOW) },
+      NOW,
+    );
+    assert.deepEqual([out?.new, out?.due, out?.weak], [4, 3, 1]);
+  });
+  it("never goes below zero, and leaves `due` alone when the clock is stale", () => {
+    const out = applyCountDelta(
+      summary({ new: 0, due: 5, nextDueAt: NOW - 1 }),
+      { added: sumCounts([], NOW), removed: sumCounts([undefined, dueRow], NOW) },
+      NOW,
+    );
+    assert.equal(out?.new, 0);
+    assert.equal(out?.due, 5);
+  });
+  it("countedCardIds: only active cards of studiable sets", () => {
+    const s = set("s", ["a", "b", "c"]);
+    s.cards[2] = { ...s.cards[2], status: "archived" };
+    assert.deepEqual([...countedCardIds(s)].sort(), ["a", "b"]);
+    assert.equal(countedCardIds(set("one", ["a"])).size, 0);
+    assert.equal(countedCardIds({ ...s, isReference: true }).size, 0);
+    assert.equal(countedCardIds(null).size, 0);
+  });
+});
+
+describe("clock refresh and drift safety net", () => {
+  it("re-counts due/nextDueAt, keeps new/weak, resets studiedToday only on a real roll", () => {
+    const base = summary({ new: 7, weak: 2, studiedToday: 5, dayKey: "2026-09-20", nextDueAt: NOW - 1 });
+    const out = refreshClockFields(base, { due: 3, nextDueAt: NOW + DAY }, NOW);
+    assert.deepEqual([out.due, out.new, out.weak, out.studiedToday], [3, 7, 2, 0]);
+    const sameDay = refreshClockFields(summary({ studiedToday: 5, nextDueAt: NOW - 1 }), { due: 1, nextDueAt: null }, NOW);
+    assert.equal(sameDay.studiedToday, 5);
+  });
+  it("forces a full rebuild only with no summary or once it is over a week old", () => {
+    assert.equal(needsFullRebuild(null, NOW), true);
+    assert.equal(needsFullRebuild(summary({ builtAt: NOW - 6 * DAY }), NOW), false);
+    assert.equal(needsFullRebuild(summary({ builtAt: NOW - 8 * DAY }), NOW), true);
   });
 });
