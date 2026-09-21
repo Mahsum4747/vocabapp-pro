@@ -577,3 +577,14 @@ textarea {
     --toast-bottom: calc(4.25rem + var(--spacing-safe-bottom));
   }
 }
+
+/* Button transitions: the press movement uses the strong ease-out; colour, shadow
+   and opacity changes use plain `ease` (hover/colour changes read better on it). */
+@utility button-transition {
+  transition:
+    transform var(--duration-press) var(--ease-out),
+    background-color var(--duration-press) ease,
+    color var(--duration-press) ease,
+    box-shadow var(--duration-press) ease,
+    opacity var(--duration-press) ease;
+}
