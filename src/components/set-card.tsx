@@ -61,12 +61,17 @@ export function SetCard({
   // Whatever progress the library page has already loaded; an unstudied set
   // simply reads as 0.
   const progress = useProgress();
-  const { percent: mastery, notStarted } = masteryStats(set.cards, progress);
+  // `reviewed` = cards with a progress row: the one measure of "studied", so the
+  // mastery line and the "Not studied yet" line can never both be true.
+  const { percent: mastery, notStarted, reviewed: studiedCount } = masteryStats(set.cards, progress);
   // Derived from the progress the library page already loaded — no extra read.
   const summary = reviewSummary(set.cards, progress, { now: Date.now() });
-  const when = set.lastStudiedAt
-    ? formatDistanceToNow(set.lastStudiedAt, { addSuffix: true })
-    : "Not studied yet";
+  const when =
+    studiedCount === 0
+      ? "Not studied yet."
+      : set.lastStudiedAt
+        ? formatDistanceToNow(set.lastStudiedAt, { addSuffix: true })
+        : null;
 
   const className = cn(
     "group relative flex flex-col rounded-card bg-surface p-card text-left shadow-[var(--elevation-1)] transition-[box-shadow] duration-[var(--duration-fast)] ease-[var(--ease-out)]",
@@ -112,19 +117,19 @@ export function SetCard({
       <p className="mt-2 line-clamp-2 min-h-10 text-sm text-muted">
         {set.description || "No description"}
       </p>
-      {set.isReference ? null : (
+      {set.isReference || studiedCount === 0 ? null : (
         <div className="mt-5 space-y-2">
           <div className="flex items-center justify-between text-xs text-muted">
             <span>Progress</span>
             <span className="tabular-nums">
               <AnimatedNumber value={mastery} />%
-              {notStarted > 0 ? ` · ${notStarted} not started` : ""}
+              {notStarted > 0 ? ` · ${notStarted} new` : ""}
             </span>
           </div>
           <Progress value={mastery} tone="mastery" />
         </div>
       )}
-      <p className="mt-4 text-xs text-subtle">{when}</p>
+      {when ? <p className="mt-4 text-xs text-subtle">{when}</p> : null}
     </>
   );
 
