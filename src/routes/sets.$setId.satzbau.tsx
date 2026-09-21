@@ -1,9 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/app-shell";
+import { AnswerFeedbackSheet } from "@/components/answer-feedback-sheet";
 import { EmptyState } from "@/components/empty-state";
-import { Feedback } from "@/components/feedback";
-import { StudyChrome } from "@/components/study-chrome";
+import { StudySessionShell } from "@/components/study-session-shell";
 import { Button } from "@/components/ui/button";
 import { leitnerBoxOf } from "@/lib/quiz";
 import { queuedCards } from "@/lib/srs";
@@ -155,7 +155,7 @@ function SatzbauPage() {
 
   if (questions.length === 0) {
     return (
-      <StudyChrome
+      <StudySessionShell
         setId={setId}
         title={studySet.title}
         mode="Satzbau"
@@ -167,14 +167,14 @@ function SatzbauPage() {
           title="Nothing to build"
           description="This set has no cards with a usable example sentence (4-12 words) yet."
         />
-      </StudyChrome>
+      </StudySessionShell>
     );
   }
 
   if (done) {
     const pct = Math.round((score / questions.length) * 100);
     return (
-      <StudyChrome
+      <StudySessionShell
         setId={setId}
         title={studySet.title}
         mode="Satzbau"
@@ -199,7 +199,7 @@ function SatzbauPage() {
             </Button>
           </div>
         </div>
-      </StudyChrome>
+      </StudySessionShell>
     );
   }
 
@@ -209,13 +209,18 @@ function SatzbauPage() {
     "rounded-full bg-surface-2 px-3 py-1.5 text-sm font-medium text-fg shadow-[var(--elevation-1)] transition-transform hover:-translate-y-0.5 disabled:pointer-events-none disabled:opacity-50";
 
   return (
-    <StudyChrome
+    <StudySessionShell
       setId={setId}
       title={studySet.title}
       mode="Satzbau"
       index={index}
       total={questions.length}
       filterLabel={filterLabel}
+      primaryAction={{
+        label: checked ? "Continue" : "Check",
+        onClick: checked ? next : check,
+        disabled: !checked && !allPlaced,
+      }}
     >
       <p className="text-xs font-medium tracking-wide text-muted uppercase">
         Put the sentence in order
@@ -256,19 +261,10 @@ function SatzbauPage() {
       </div>
 
       {checked ? (
-        <Feedback tone={correct ? "correct" : "incorrect"} className="mt-4">
+        <AnswerFeedbackSheet tone={correct ? "correct" : "incorrect"}>
           {correct ? "Correct" : <>Correct order: {q.chips.join(" ")}</>}
-        </Feedback>
+        </AnswerFeedbackSheet>
       ) : null}
-
-      <Button
-        type="button"
-        className="mt-6 w-full"
-        disabled={!checked && !allPlaced}
-        onClick={checked ? next : check}
-      >
-        {checked ? "Continue" : "Check"}
-      </Button>
-    </StudyChrome>
+    </StudySessionShell>
   );
 }
