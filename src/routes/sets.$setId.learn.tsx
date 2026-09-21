@@ -1,12 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/app-shell";
+import { AnswerFeedbackSheet } from "@/components/answer-feedback-sheet";
 import { ArticleizedTerm } from "@/components/articleized-term";
 import { Definition2Line } from "@/components/definition2-line";
 import { EmptyState } from "@/components/empty-state";
 import { ExampleLine } from "@/components/example-line";
-import { Feedback, feedbackToneClasses } from "@/components/feedback";
-import { StudyChrome } from "@/components/study-chrome";
+import { feedbackToneClasses } from "@/components/feedback";
+import { StudySessionShell } from "@/components/study-session-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -141,7 +142,7 @@ function LearnPage() {
 
   if (items.length === 0) {
     return (
-      <StudyChrome
+      <StudySessionShell
         setId={setId}
         title={studySet.title}
         mode="Learn"
@@ -150,14 +151,14 @@ function LearnPage() {
         filterLabel={filterLabel}
       >
         <EmptyState title="No cards" description="Add cards to start learning." />
-      </StudyChrome>
+      </StudySessionShell>
     );
   }
 
   if (done) {
     const pct = Math.round((correctCount / items.length) * 100);
     return (
-      <StudyChrome
+      <StudySessionShell
         setId={setId}
         title={studySet.title}
         mode="Learn"
@@ -182,7 +183,7 @@ function LearnPage() {
             </Button>
           </div>
         </div>
-      </StudyChrome>
+      </StudySessionShell>
     );
   }
 
@@ -200,14 +201,26 @@ function LearnPage() {
   };
   const isCorrect = isMc ? selected === item.answer : answersMatch(written, item.answer, matchOptions);
 
+  function submitWritten() {
+    if (!revealed) grade(answersMatch(written, item.answer, matchOptions));
+    else next();
+  }
+
   return (
-    <StudyChrome
+    <StudySessionShell
       setId={setId}
       title={studySet.title}
       mode="Learn"
       index={index}
       total={items.length}
       filterLabel={filterLabel}
+      primaryAction={
+        isMc
+          ? revealed
+            ? { label: "Continue", onClick: next }
+            : undefined
+          : { label: revealed ? "Continue" : "Check", onClick: submitWritten }
+      }
     >
       <p className="text-xs font-medium tracking-wide text-muted uppercase">
         Term matching the definition
@@ -259,8 +272,7 @@ function LearnPage() {
           className="mt-8 space-y-3"
           onSubmit={(e) => {
             e.preventDefault();
-            if (!revealed) grade(answersMatch(written, item.answer, matchOptions));
-            else next();
+            submitWritten();
           }}
         >
           <Input
@@ -271,7 +283,7 @@ function LearnPage() {
             autoFocus
           />
           {revealed ? (
-            <Feedback tone={isCorrect ? "correct" : "incorrect"}>
+            <AnswerFeedbackSheet tone={isCorrect ? "correct" : "incorrect"}>
               {isCorrect ? (
                 "Correct"
               ) : (
@@ -284,11 +296,8 @@ function LearnPage() {
                   />
                 </>
               )}
-            </Feedback>
+            </AnswerFeedbackSheet>
           ) : null}
-          <Button type="submit" className="w-full">
-            {revealed ? "Continue" : "Check"}
-          </Button>
         </form>
       )}
 
@@ -296,12 +305,6 @@ function LearnPage() {
       {revealed ? (
         <ExampleLine example={item.example} termLanguage={setLanguages.term ?? studySet.termLanguage} className="mt-4" />
       ) : null}
-
-      {revealed && isMc ? (
-        <Button className="mt-6 w-full" onClick={next}>
-          Continue
-        </Button>
-      ) : null}
-    </StudyChrome>
+    </StudySessionShell>
   );
 }
