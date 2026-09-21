@@ -32,10 +32,10 @@
   --color-streak: #e07a3d;
   --color-slate: #3a5a6b;
   --color-ring: #1f4d3a;
-  /* Keyboard focus ring: the brand green at 40% (what `ring-ring/40` was). Dark
-     mode overrides it with an OPAQUE colour; at 40% no colour can reach 3:1 on
-     the dark surfaces, so alpha lives in the token, not in the class. */
-  --color-focus: color-mix(in oklab, var(--color-primary) 40%, transparent);
+  /* Keyboard focus ring. Opaque in both modes, because a translucent ring cannot
+     reach 3:1 (WCAG non-text contrast). Light: 3.94:1 on the page, 4.32 on
+     surfaces, 3.70 on surface-2. Dark: see the dark block. */
+  --color-focus: #43866a;
   /* der/die/das color-coding mnemonic — kept distinct from success/danger,
      which already use green/orange-red for status, not grammar. */
   --color-article-der: #1d5b96;
@@ -78,10 +78,6 @@
   --font-display: "Geist", ui-sans-serif, system-ui, sans-serif;
   --radius-xs: 4px;
   --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-xl: 20px;
-  --radius-2xl: 24px;
   /* Semantic radii: components say what they are, not how round. */
   --radius-card: 16px;
   --radius-control: 8px;
@@ -110,16 +106,9 @@
   --leading-display: 1.15;
   --text-3xs: 9px;
   --text-2xs: 11px;
-  /* Deprecated aliases — components use --elevation-* now. Kept until every
-     usage has moved and the tests are green, then removed. */
-  --shadow-border: var(--elevation-1);
-  --shadow-border-hover: var(--elevation-2);
-  --shadow-card: var(--elevation-raised);
   /* Strong curves: the built-in CSS easings are too weak to feel intentional. */
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
-  /* Deprecated alias of --ease-out (the two differed by a hair). */
-  --ease-smooth-out: var(--ease-out);
 
   /* Elevation system — 5 documented levels, light values.
      0 flat ground (no shadow), 1 resting card, 2 hover/active card,
@@ -137,7 +126,6 @@
 
   /* Motion tokens — shared easing + duration for hover/press/enter transitions. */
   --ease-standard: var(--ease-out);
-  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   --duration-press: 120ms;
   --duration-fast: 160ms;
   --duration-base: 200ms;

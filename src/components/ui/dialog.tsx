@@ -29,7 +29,7 @@ export function DialogContent({
         {children}
         <DialogPrimitive.Close className="absolute top-4 right-4 rounded-control p-2 pointer-coarse:top-2.5 pointer-coarse:right-2.5 pointer-coarse:p-3.5 text-muted transition-colors hover:bg-surface-2 hover:text-fg">
           <X className="size-4" />
-          <span className="sr-only">Kapat</span>
+          <span className="sr-only">Close</span>
         </DialogPrimitive.Close>
       </DialogPrimitive.Content>
     </DialogPrimitive.Portal>
