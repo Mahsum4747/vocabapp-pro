@@ -21,6 +21,7 @@ import { ArticleizedTerm } from "@/components/articleized-term";
 import { OwnerGate, OwnershipStatus } from "@/components/owner-gate";
 import { ModeGrid } from "@/components/mode-grid";
 import { LeitnerBoxes } from "@/components/leitner-boxes";
+import { LibraryProgressPanel } from "@/components/library-progress-panel";
 import { EmptyState } from "@/components/empty-state";
 import { ExampleLine } from "@/components/example-line";
 import { ReviewCallout } from "@/components/review-status";
@@ -286,6 +287,13 @@ function SetPage() {
           <ShareLink shareId={studySet.shareId} />
         </OwnerGate>
       ) : null}
+
+      {/* Same account-wide streak/goal/XP/weak-words block as Home and
+          Account, directly under the header here too. `showReview={false}`
+          because this page already has its own per-set `ReviewCallout`
+          below — showing the account-wide due count again right above it
+          would just repeat the same kind of prompt at a different scope. */}
+      <LibraryProgressPanel className="mt-6" showReview={false} />
 
       {!studySet.isReference ? (
         <>

@@ -8,10 +8,11 @@ import { ReviewCallout, ReviewCounts } from "./review-status";
 /**
  * The account-wide "where do I stand" block: what's due across every set,
  * today's goal (with the streak riding along) and XP, and how many words
- * are weak — in that fixed order, on every account-level screen (home,
- * account). Never shown on a study screen, and never mixed with a single
- * set's own mastery bar — those answer a different question and live where
- * they already did.
+ * are weak — in that fixed order, on every main/dashboard screen (Home,
+ * Account, and Set Detail, directly under each page's header). Never shown
+ * on a study screen, and never mixed with a single set's own mastery bar or
+ * its interactive Leitner box grid — those answer a different (per-set,
+ * clickable) question and keep their own place on Set Detail.
  */
 export function LibraryProgressPanel({
   className,
