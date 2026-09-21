@@ -8,6 +8,7 @@ import { previewGermanEnrichment } from "@/lib/german/preview-enrichment";
 import { lookupBundledSuggestions } from "@/lib/german/bundled-suggestions";
 import { suggestTermPrefix } from "@/lib/german/term-suggestions";
 import { profileFor } from "@/lib/lang/profiles";
+import { isIncompleteNoun } from "@/lib/term-display";
 import type { LanguageCode } from "@/lib/lang/languages";
 import { insertAtCursor } from "@/lib/insert-at-cursor";
 import type { CardEnrichment, GrammaticalGender } from "@/lib/types";
@@ -750,6 +751,14 @@ export function CardEditor({
             <div className="mt-2 space-y-1.5">
               <div className="flex items-center gap-1.5">
                 <Label htmlFor={`gender-${card.id}`}>Gender &amp; plural (optional)</Label>
+                {isIncompleteNoun(card, profile) ? (
+                  <Tooltip content="No article yet — cards show the term as stored until you pick one">
+                    <Badge tone="accent" className="gap-1 px-1.5 py-0.5">
+                      <HelpCircle className="size-3" />
+                      incomplete
+                    </Badge>
+                  </Tooltip>
+                ) : null}
                 {card.enrichment?.inferred ? (
                   <Tooltip content="Guessed from a compound word — check it">
                     <Badge tone="accent" className="gap-1 px-1.5 py-0.5">
