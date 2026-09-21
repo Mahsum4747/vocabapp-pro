@@ -21,8 +21,8 @@ export function AppShell({
 }) {
   return (
     <div className="min-h-dvh bg-bg text-fg">
-      <header className="sticky top-0 z-30 border-b border-border/80 bg-bg/90 backdrop-blur-sm">
-        <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between gap-3 px-page">
+      <header className="sticky top-0 z-30 border-b border-border/80 bg-bg/90 pt-safe-top backdrop-blur-sm">
+        <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between gap-3 px-page-safe">
           <Logo />
           <div className="flex items-center gap-2">
             {action}
@@ -40,7 +40,7 @@ export function AppShell({
           </div>
         </div>
       </header>
-      <main className="mx-auto w-full max-w-6xl px-page py-section pb-24 md:pb-16">{children}</main>
+      <main className="mx-auto w-full max-w-6xl px-page-safe py-section pb-nav-clearance md:pb-16">{children}</main>
       <MobileNav />
     </div>
   );

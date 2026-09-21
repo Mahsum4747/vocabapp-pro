@@ -24,7 +24,7 @@ const MODES = [
     to: "/sets/$setId/flashcards" as const,
     title: "Flashcards",
     icon: Layers,
-    iconColor: "text-primary",
+    iconColor: "text-primary-ink",
   },
   {
     to: "/sets/$setId/learn" as const,
@@ -50,7 +50,7 @@ const ARTICLE_DRILL_MODE = {
   to: "/sets/$setId/articles" as const,
   title: "Articles",
   icon: SpellCheck,
-  iconColor: "text-primary",
+  iconColor: "text-primary-ink",
 };
 
 // SquareDashed (an empty blank) reads more clearly as "fill this in" than the
@@ -60,7 +60,7 @@ const CLOZE_MODE = {
   to: "/sets/$setId/cloze" as const,
   title: "Cloze",
   icon: SquareDashed,
-  iconColor: "text-primary",
+  iconColor: "text-primary-ink",
 };
 
 // ListOrdered (a numbered sequence) reads as "put these in order" more
@@ -70,7 +70,7 @@ const SATZBAU_MODE = {
   to: "/sets/$setId/satzbau" as const,
   title: "Satzbau",
   icon: ListOrdered,
-  iconColor: "text-primary",
+  iconColor: "text-primary-ink",
 };
 
 export function ModeGrid({

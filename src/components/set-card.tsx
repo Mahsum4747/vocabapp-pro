@@ -72,7 +72,7 @@ export function SetCard({
     "group relative flex flex-col rounded-card bg-surface p-card text-left shadow-[var(--elevation-1)] transition-[box-shadow] duration-[var(--duration-fast)] ease-[var(--ease-out)]",
     selectable
       ? cn("w-full", selected ? "ring-2 ring-primary" : "hover:shadow-[var(--elevation-2)]")
-      : "hover:shadow-[var(--elevation-2)]",
+      : "hover:shadow-[var(--elevation-2)] active:shadow-[var(--elevation-2)]",
   );
 
   const content = (
@@ -98,7 +98,7 @@ export function SetCard({
           </span>
         </div>
       </div>
-      <h3 className="mt-4 font-display text-xl font-medium tracking-tight group-hover:text-primary">
+      <h3 className="mt-4 font-display text-xl font-medium tracking-tight group-hover:text-primary-ink">
         {set.title}
       </h3>
       {set.isReference ? (

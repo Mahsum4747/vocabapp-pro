@@ -71,7 +71,7 @@ function DiacriticRow({ onInsert }: { onInsert: (char: string) => void }) {
           // (read in onClick) are still whatever the user left them at.
           onMouseDown={(e) => e.preventDefault()}
           onClick={() => onInsert(char)}
-          className="rounded-md bg-surface-2 px-2 py-0.5 text-xs font-medium text-fg hover:bg-border"
+          className="rounded-md bg-surface-2 px-2 py-0.5 text-xs font-medium text-fg hover:bg-border active:bg-border pointer-coarse:min-h-11 pointer-coarse:min-w-11"
         >
           {char}
         </button>
@@ -825,7 +825,7 @@ export function CardEditor({
                   type="button"
                   variant="ghost"
                   size="sm"
-                  className="h-auto py-0.5"
+                  className="h-auto py-0.5 pointer-coarse:min-h-11"
                   disabled={!card.term.trim()}
                   onClick={() => toggleExampleSuggestions(card.id)}
                 >

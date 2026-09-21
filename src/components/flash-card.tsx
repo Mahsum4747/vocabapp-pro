@@ -50,7 +50,7 @@ export function FlashCard({
       type="button"
       onClick={onFlip}
       className={cn(
-        "flex min-h-80 w-full flex-col justify-between gap-4 rounded-2xl p-8 text-left shadow-[var(--elevation-2)] md:min-h-96",
+        "flex min-h-80 w-full flex-col justify-between gap-4 rounded-2xl p-8 text-left shadow-[var(--elevation-2)] active:opacity-90 md:min-h-96",
         !instant &&
           "transition-[background-color,color] duration-[var(--duration-fast)] ease-[var(--ease-out)]",
         flipped ? "bg-primary text-primary-fg" : "bg-surface text-fg",

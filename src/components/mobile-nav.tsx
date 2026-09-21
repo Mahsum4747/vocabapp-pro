@@ -11,7 +11,7 @@ const AccountNavItem = lazy(() =>
 );
 
 const itemClass =
-  "flex flex-1 flex-col items-center justify-center gap-0.5 px-2 py-2 text-2xs font-medium text-muted";
+  "flex flex-1 flex-col items-center justify-center gap-0.5 px-2 py-2 text-2xs font-medium text-muted active:bg-surface-2";
 
 export function MobileNav() {
   const location = useLocation();
@@ -22,13 +22,13 @@ export function MobileNav() {
   return (
     <nav
       aria-label="Primary"
-      className="fixed inset-x-0 bottom-0 z-40 flex border-t border-border bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-sm md:hidden"
+      className="fixed inset-x-0 bottom-0 z-40 flex border-t border-border bg-surface/95 pb-safe-bottom pl-safe-left pr-safe-right backdrop-blur-sm md:hidden"
     >
-      <Link to="/" className={cn(itemClass, isHome && "text-primary")}>
+      <Link to="/" className={cn(itemClass, isHome && "text-primary-ink")}>
         <Home className="size-5" />
         Home
       </Link>
-      <Link to="/" search={{ view: "mine" }} className={cn(itemClass, isLibrary && "text-primary")}>
+      <Link to="/" search={{ view: "mine" }} className={cn(itemClass, isLibrary && "text-primary-ink")}>
         <Library className="size-5" />
         My Library
       </Link>

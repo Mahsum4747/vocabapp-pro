@@ -139,7 +139,7 @@ function LoginPage() {
                 <button
                   type="button"
                   onClick={() => setMode("signup")}
-                  className="font-medium text-fg underline underline-offset-2"
+                  className="tap-target font-medium text-fg underline underline-offset-2"
                 >
                   Sign up
                 </button>
@@ -150,7 +150,7 @@ function LoginPage() {
                 <button
                   type="button"
                   onClick={() => setMode("signin")}
-                  className="font-medium text-fg underline underline-offset-2"
+                  className="tap-target font-medium text-fg underline underline-offset-2"
                 >
                   Sign in
                 </button>

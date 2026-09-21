@@ -195,7 +195,7 @@ function SetPage() {
     <AppShell>
       <Link
         to="/"
-        className="inline-flex items-center gap-1 text-sm text-muted transition-colors hover:text-fg"
+        className="tap-target inline-flex items-center gap-1 text-sm text-muted transition-colors hover:text-fg"
       >
         <ArrowLeft className="size-4" />
         Library
@@ -319,7 +319,7 @@ function SetPage() {
                 <button
                   type="button"
                   onClick={() => setSelectedBox(null)}
-                  className="text-primary underline-offset-2 hover:underline"
+                  className="tap-target text-primary-ink underline-offset-2 hover:underline"
                 >
                   Clear
                 </button>
@@ -345,13 +345,13 @@ function SetPage() {
           <>
             <div className="mt-8 mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-2">
-                <button type="button" className="-m-2 p-2" onClick={() => switchView("active")}>
+                <button type="button" className="-m-2.5 p-2.5" onClick={() => switchView("active")}>
                   <Badge tone={cardView === "active" ? "primary" : "muted"}>Cards</Badge>
                 </button>
                 {isOwner ? (
                   <button
                     type="button"
-                    className="-m-2 p-2"
+                    className="-m-2.5 p-2.5"
                     onClick={() => switchView("archived")}
                   >
                     <Badge tone={cardView === "archived" ? "primary" : "muted"}>
@@ -367,7 +367,7 @@ function SetPage() {
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     placeholder="Search cards"
-                    className="h-9 pl-9 text-sm"
+                    className="h-9 pl-9 text-sm pointer-coarse:h-11"
                     aria-label="Search cards"
                   />
                 </div>
@@ -400,7 +400,7 @@ function SetPage() {
                 <div className="flex items-center gap-3 text-sm">
                   <button
                     type="button"
-                    className="-m-2 p-2 text-muted underline-offset-2 hover:text-fg hover:underline"
+                    className="-m-3 p-3 text-muted underline-offset-2 hover:text-fg hover:underline"
                     onClick={selectAll}
                   >
                     Select all
@@ -408,7 +408,7 @@ function SetPage() {
                   {selectedIds.size > 0 ? (
                     <button
                       type="button"
-                      className="-m-2 p-2 text-muted underline-offset-2 hover:text-fg hover:underline"
+                      className="-m-3 p-3 text-muted underline-offset-2 hover:text-fg hover:underline"
                       onClick={clearSelection}
                     >
                       Clear selection
@@ -452,13 +452,17 @@ function SetPage() {
                         isExcluded && "opacity-50",
                       )}
                     >
-                      <input
-                        type="checkbox"
-                        checked={selectedIds.has(card.id)}
-                        onChange={() => toggleSelect(card.id)}
-                        aria-label={`Select ${card.term || "card"}`}
-                        className="mt-3.5 size-4 shrink-0 rounded border-border accent-primary"
-                      />
+                      {/* On touch the label grows the hit area to 44px; the negative
+                          margins cancel the padding, so the layout does not move. */}
+                      <label className="mt-3.5 shrink-0 pointer-coarse:-mx-3.5 pointer-coarse:-mb-3.5 pointer-coarse:mt-0 pointer-coarse:p-3.5">
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.has(card.id)}
+                          onChange={() => toggleSelect(card.id)}
+                          aria-label={`Select ${card.term || "card"}`}
+                          className="block size-4 rounded border-border accent-primary-ink"
+                        />
+                      </label>
                       <button
                         type="button"
                         onClick={() => toggleStar(setId, card.id)}

@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { Progress } from "./ui/progress";
 
 const BACK_LINK =
-  "inline-flex size-11 items-center justify-center rounded-md text-muted transition-colors hover:bg-surface-2 hover:text-fg";
+  "inline-flex size-11 items-center justify-center rounded-md text-muted transition-colors hover:bg-surface-2 hover:text-fg active:bg-surface-2";
 
 export function StudyChrome({
   setId,
@@ -31,8 +31,8 @@ export function StudyChrome({
   const pct = total === 0 ? 0 : Math.round((index / total) * 100);
   return (
     <div className="min-h-dvh bg-bg text-fg">
-      <header className="border-b border-border/80">
-        <div className="mx-auto flex h-16 max-w-4xl items-center gap-3 px-4">
+      <header className="border-b border-border/80 pt-safe-top">
+        <div className="mx-auto flex h-16 max-w-4xl items-center gap-3 px-page-safe">
           {setId ? (
             <Link
               to="/sets/$setId"
@@ -66,7 +66,7 @@ export function StudyChrome({
       </header>
       {/* `study-pulse` is the tier-1 celebration's target: the whole study
           surface taps once on a right answer, in every mode. */}
-      <main className="study-pulse mx-auto w-full max-w-4xl px-4 py-8">{children}</main>
+      <main className="study-pulse mx-auto w-full max-w-4xl px-page-safe pt-8 pb-section-safe">{children}</main>
     </div>
   );
 }

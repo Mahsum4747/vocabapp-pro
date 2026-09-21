@@ -14,6 +14,11 @@
   --color-subtle: #736e66;
   --color-primary: #1f4d3a;
   --color-primary-fg: #f7f4ef;
+  /* The brand green as TEXT, icon or control accent on page/surface colours.
+     Light: the primary itself (8.78:1 on --color-bg). Dark: a lighter green,
+     because --color-primary is a fill colour and only reaches 2.72:1 as text
+     on the dark page (see the dark block). */
+  --color-primary-ink: var(--color-primary);
   /* Hover for filled primary surfaces, replacing an opacity dim. */
   --color-primary-hover: #18402f;
   /* Quiet green tint: selected chips/tabs, soft emphasis on cream. */
@@ -82,6 +87,16 @@
   --spacing-card: 1.5rem;
   /* Gap between sibling cards in a grid. */
   --spacing-gutter: 1rem;
+  /* Device safe areas (notch, home indicator, landscape sides). They are 0px
+     unless the viewport meta has viewport-fit=cover, which it does. */
+  --spacing-safe-top: env(safe-area-inset-top, 0px);
+  --spacing-safe-right: env(safe-area-inset-right, 0px);
+  --spacing-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --spacing-safe-left: env(safe-area-inset-left, 0px);
+  /* Bottom padding that clears the fixed mobile nav and the home indicator. */
+  --spacing-nav-clearance: calc(5.5rem + var(--spacing-safe-bottom));
+  /* --spacing-section plus the home indicator, for screens with no nav. */
+  --spacing-section-safe: calc(2rem + var(--spacing-safe-bottom));
   /* Loading-skeleton and stat-row sizes (were inline [92px] / [172px] / [200px]). */
   --spacing-skeleton-stat: 5.75rem;
   --spacing-skeleton-cta: 10.75rem;
@@ -147,6 +162,9 @@
     --color-subtle: #8f8a81;
     --color-primary: #2a6b4f;
     --color-primary-fg: #f7f4ef;
+    /* Brand green as text/icon/accent on the dark page and surfaces: 6.65:1 on
+       --color-bg, 6.07 on --color-surface, 5.03 on --color-primary-soft. */
+    --color-primary-ink: #6fae8c;
     --color-primary-hover: #327a5c;
     --color-primary-soft: #22352b;
     --color-border: #35332e;
@@ -218,6 +236,15 @@
   html {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    /* Native form controls, scrollbars and the overscroll area follow the OS scheme. */
+    color-scheme: light dark;
+    /* The grey/blue flash iOS and Android paint on tap. Every tappable thing has
+       its own :active state, so the browser's is redundant. */
+    -webkit-tap-highlight-color: transparent;
+    /* No font inflation in landscape. */
+    -webkit-text-size-adjust: 100%;
+    /* A pull-down mid-review must not reload the page and lose the round. */
+    overscroll-behavior-y: none;
   }
 
   html,
@@ -472,4 +499,61 @@ body[data-celebrate="correct"] .study-pulse {
     animation: fade-in var(--duration-fast) var(--ease-out) both;
     animation-delay: 0ms !important;
   }
+}
+
+/* ---- Touch ---------------------------------------------------------------
+   Deliberately outside @layer: these must beat Tailwind utilities such as
+   `text-sm` on an input, which would otherwise win over a base-layer rule. */
+
+/* Taps fire immediately (no double-tap-zoom wait). Pinch zoom still works. */
+a,
+button,
+[role="button"],
+label,
+summary,
+input,
+select,
+textarea {
+  touch-action: manipulation;
+}
+
+@media (pointer: coarse) {
+  /* iOS Safari zooms the page when an input under 16px gets focus and does not
+     zoom back. Fix the cause, never `maximum-scale=1`. Checkboxes, radios and
+     ranges have no text and are left alone. */
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  textarea,
+  select {
+    font-size: 16px;
+  }
+
+  /* Text that IS a control should not be selectable or pop a callout on long
+     press. Body text stays selectable, and so does everything on desktop. */
+  button,
+  [role="button"] {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+}
+
+/* Grows the tappable area of a small control to 44x44 without changing its
+   layout: an invisible ::after box, centred on the element. */
+@utility tap-target {
+  position: relative;
+  &::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: max(100%, 44px);
+    height: max(100%, 44px);
+    transform: translate(-50%, -50%);
+  }
+}
+
+/* Horizontal page padding that never sits under a landscape notch. */
+@utility px-page-safe {
+  padding-left: max(var(--spacing-page), var(--spacing-safe-left));
+  padding-right: max(var(--spacing-page), var(--spacing-safe-right));
 }

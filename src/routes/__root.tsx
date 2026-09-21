@@ -13,7 +13,13 @@ export const Route = createRootRoute({
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
+      {
+        name: "viewport",
+        // viewport-fit=cover lets the page run under the notch (safe-area tokens pad it
+        // back); interactive-widget makes the software keyboard resize the layout
+        // viewport on Android, as iOS already does. Zoom stays enabled.
+        content: "width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content",
+      },
       { title: APP_NAME },
       { name: "description", content: "Learn with flashcards — your personal study sets." },
     ],

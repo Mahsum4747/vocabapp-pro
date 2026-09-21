@@ -276,10 +276,10 @@ function Home() {
 
       <div className="mt-section flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="flex gap-2">
-          <button type="button" onClick={() => chooseView("mine")}>
+          <button type="button" className="tap-target" onClick={() => chooseView("mine")}>
             <Badge tone={view === "mine" ? "primary" : "muted"}>My Library</Badge>
           </button>
-          <button type="button" onClick={() => chooseView("public")}>
+          <button type="button" className="tap-target" onClick={() => chooseView("public")}>
             <Badge tone={view === "public" ? "accent" : "muted"}>Public Sets</Badge>
           </button>
         </div>
@@ -391,7 +391,7 @@ function Home() {
                       <button
                         type="button"
                         onClick={() => toggleFolder(group.name)}
-                        className="flex items-center gap-1.5 text-sm font-medium text-muted hover:text-fg"
+                        className="tap-target flex items-center gap-1.5 text-sm font-medium text-muted hover:text-fg"
                       >
                         {collapsed ? (
                           <ChevronRight className="size-4" />
@@ -500,7 +500,7 @@ function TodayCta({
     return (
       <Link
         to="/review"
-        className="block rounded-card bg-primary p-card text-primary-fg shadow-[var(--elevation-raised)] transition-colors duration-[var(--duration-fast)] ease-[var(--ease-standard)] hover:bg-primary-hover"
+        className="block rounded-card bg-primary p-card text-primary-fg shadow-[var(--elevation-raised)] transition-colors duration-[var(--duration-fast)] ease-[var(--ease-standard)] hover:bg-primary-hover active:bg-primary-hover"
       >
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">

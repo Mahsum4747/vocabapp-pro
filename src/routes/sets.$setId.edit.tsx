@@ -262,22 +262,22 @@ function EditPage() {
                 placeholder="e.g. English"
               />
             </div>
-            <label className="flex items-center gap-2 text-sm text-fg select-none">
+            <label className="flex items-center gap-2 text-sm text-fg select-none pointer-coarse:min-h-11">
               <input
                 type="checkbox"
                 checked={isReference}
                 onChange={(e) => setIsReference(e.target.checked)}
-                className="size-4 rounded border-border accent-primary"
+                className="size-4 rounded border-border accent-primary-ink"
               />
               Reference set (no study modes, just a list)
             </label>
             <div className="space-y-2">
-              <label className="flex items-center gap-2 text-sm text-fg select-none">
+              <label className="flex items-center gap-2 text-sm text-fg select-none pointer-coarse:min-h-11">
                 <input
                   type="checkbox"
                   checked={definitionLanguage2Enabled}
                   onChange={(e) => setDefinitionLanguage2Enabled(e.target.checked)}
-                  className="size-4 rounded border-border accent-primary"
+                  className="size-4 rounded border-border accent-primary-ink"
                 />
                 Add a second definition language
               </label>
