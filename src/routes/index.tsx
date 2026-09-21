@@ -1,6 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
-  AlertCircle,
   AlertTriangle,
   Check,
   ChevronDown,
@@ -20,7 +19,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { masteryStats } from "@/lib/quiz";
-import { useLibraryReview, useProgress, useStudyStore } from "@/lib/store";
+import { useProgress, useStudyStore } from "@/lib/store";
+import { DEFAULT_DAILY_GOAL } from "@/lib/daily-goal";
+import { buildTodaySummary, describeToday, type TodayQueue } from "@/lib/today-summary";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -49,12 +50,27 @@ function Home() {
   const fetchStreak = useStudyStore((s) => s.fetchStreak);
   const fetchAllProgress = useStudyStore((s) => s.fetchAllProgress);
   const fetchProfile = useStudyStore((s) => s.fetchProfile);
+  const fetchTodaySummary = useStudyStore((s) => s.fetchTodaySummary);
+  const todaySummary = useStudyStore((s) => s.todaySummary);
+  const todaySummarySettled = useStudyStore((s) => s.todaySummarySettled);
   const updateSetMeta = useStudyStore((s) => s.updateSetMeta);
   const progress = useProgress();
-  // Same hook LibraryProgressPanel uses — no extra fetch, just a second read
-  // of the store state this route already loads, so the primary CTA and the
-  // panel below it can never disagree.
-  const { library, weakCount, isLoaded } = useLibraryReview();
+  const isLoaded = useStudyStore((s) => s.isLoaded);
+  const profile = useStudyStore((s) => s.profile);
+
+  // The server's cached summary is the source; if it couldn't be fetched (signed
+  // out with local sample sets, or a failed read) fall back to computing the
+  // same summary locally with the same functions.
+  const todayQueue = useMemo<TodayQueue | null>(() => {
+    if (!todaySummarySettled) return null;
+    const now = Date.now();
+    if (todaySummary) return describeToday(todaySummary.summary, todaySummary.dailyGoal, now);
+    return describeToday(
+      buildTodaySummary(sets, progress, now),
+      profile?.dailyGoal ?? DEFAULT_DAILY_GOAL,
+      now,
+    );
+  }, [todaySummary, todaySummarySettled, sets, progress, profile]);
 
   useEffect(() => {
     fetchSets();
@@ -65,7 +81,9 @@ function Home() {
     fetchAllProgress();
     // Goal, XP and today's counters — one call, shared by both cards below.
     fetchProfile();
-  }, [fetchSets, fetchPublicSets, fetchStreak, fetchAllProgress, fetchProfile]);
+    // Cached queue counts for the Today card — one document read when fresh.
+    fetchTodaySummary();
+  }, [fetchSets, fetchPublicSets, fetchStreak, fetchAllProgress, fetchProfile, fetchTodaySummary]);
   const { view: viewParam } = Route.useSearch();
   const [query, setQuery] = useState("");
   const [collapsedFolders, setCollapsedFolders] = useState<Set<string>>(new Set());
@@ -221,11 +239,9 @@ function Home() {
       </Suspense>
       <section className="stagger-in">
         <TodayCta
-          isLoaded={isLoaded}
+          isLoaded={isLoaded && todaySummarySettled}
           libraryEmpty={sets.length === 0}
-          due={library.totals.due}
-          overdue={library.totals.overdue}
-          weakCount={weakCount}
+          today={todayQueue}
           onLoadSamples={() => restoreSeeds()}
         />
 
@@ -457,19 +473,15 @@ function Home() {
 function TodayCta({
   isLoaded,
   libraryEmpty,
-  due,
-  overdue,
-  weakCount,
+  today,
   onLoadSamples,
 }: {
   isLoaded: boolean;
   libraryEmpty: boolean;
-  due: number;
-  overdue: number;
-  weakCount: number;
+  today: TodayQueue | null;
   onLoadSamples: () => void;
 }) {
-  if (!isLoaded) {
+  if (!isLoaded || !today) {
     return <div className="h-skeleton-cta animate-pulse rounded-card bg-surface shadow-[var(--elevation-1)]" />;
   }
 
@@ -496,7 +508,36 @@ function TodayCta({
     );
   }
 
-  if (due > 0) {
+  if (today.kind === "items") {
+    const { due, weak, newLeft } = today;
+
+    // Nothing due or new, only weak words: the weak-words round, as before.
+    if (due === 0 && newLeft === 0) {
+      return (
+        <Link
+          to="/review"
+          search={{ filter: "weak" as const }}
+          className="block rounded-card bg-surface p-card shadow-[var(--elevation-1)] transition-shadow hover:shadow-[var(--elevation-2)]"
+        >
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <p className="flex items-center gap-1.5 text-xs font-medium tracking-wide text-muted uppercase">
+                <AlertTriangle className="size-3.5" />
+                Today
+              </p>
+              <h1 className="mt-2 font-display text-3xl font-medium tracking-tight">
+                {weak} word{weak === 1 ? "" : "s"} need another look
+              </h1>
+              <p className="mt-1 text-sm text-muted">Nothing due right now — these keep slipping.</p>
+            </div>
+            <span className="inline-flex h-11 shrink-0 items-center justify-center rounded-control bg-primary px-5 text-sm font-medium text-primary-fg">
+              Practice weak words
+            </span>
+          </div>
+        </Link>
+      );
+    }
+
     return (
       <Link
         to="/review"
@@ -504,23 +545,16 @@ function TodayCta({
       >
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
-            <p
-              className={cn(
-                "flex items-center gap-1.5 text-xs font-medium tracking-wide uppercase",
-                overdue > 0 ? "text-primary-fg" : "text-primary-fg/70",
-              )}
-            >
-              {overdue > 0 ? <AlertCircle className="size-3.5" /> : <Sparkles className="size-3.5" />}
+            <p className="flex items-center gap-1.5 text-xs font-medium tracking-wide text-primary-fg/70 uppercase">
+              <Sparkles className="size-3.5" />
               Today
             </p>
             <h1 className="mt-2 font-display text-3xl font-medium tracking-tight">
-              {due} word{due === 1 ? "" : "s"} waiting
+              {due > 0
+                ? `${due} word${due === 1 ? "" : "s"} waiting`
+                : `${newLeft} new word${newLeft === 1 ? "" : "s"} ready`}
             </h1>
-            {overdue > 0 ? (
-              <p className="mt-1 text-sm text-primary-fg/80">
-                {overdue} overdue{overdue === due ? "" : ` · ${due} due total`}
-              </p>
-            ) : null}
+            <p className="mt-1 text-sm text-primary-fg/80">{today.line}</p>
           </div>
           <span className="inline-flex h-11 shrink-0 items-center justify-center rounded-control bg-primary-fg px-5 text-sm font-medium text-primary">
             Start review
@@ -530,42 +564,16 @@ function TodayCta({
     );
   }
 
-  if (weakCount > 0) {
-    return (
-      <Link
-        to="/review"
-        search={{ filter: "weak" as const }}
-        className="block rounded-card bg-surface p-card shadow-[var(--elevation-1)] transition-shadow hover:shadow-[var(--elevation-2)]"
-      >
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="min-w-0">
-            <p className="flex items-center gap-1.5 text-xs font-medium tracking-wide text-muted uppercase">
-              <AlertTriangle className="size-3.5" />
-              Today
-            </p>
-            <h1 className="mt-2 font-display text-3xl font-medium tracking-tight">
-              {weakCount} word{weakCount === 1 ? "" : "s"} need another look
-            </h1>
-            <p className="mt-1 text-sm text-muted">Nothing due right now — these keep slipping.</p>
-          </div>
-          <span className="inline-flex h-11 shrink-0 items-center justify-center rounded-control bg-primary px-5 text-sm font-medium text-primary-fg">
-            Practice weak words
-          </span>
-        </div>
-      </Link>
-    );
-  }
-
+  // Nothing owed today — but never "finished": unstudied cards may remain
+  // beyond today's goal, so the way into a set stays open.
   return (
     <div className="rounded-card bg-surface p-card shadow-[var(--elevation-1)]">
       <p className="flex items-center gap-1.5 text-xs font-medium tracking-wide text-muted uppercase">
         <Check className="size-3.5 text-success" />
         Today
       </p>
-      <h1 className="mt-2 font-display text-4xl font-medium tracking-tight">All caught up</h1>
-      <p className="mt-1 text-sm text-muted">
-        Nothing due, nothing weak. Add a new set or grow this one below.
-      </p>
+      <h1 className="mt-2 font-display text-4xl font-medium tracking-tight">Nothing due.</h1>
+      <p className="mt-1 text-sm text-muted">You can still open a set.</p>
+      {today.nextLine ? <p className="mt-1 text-sm text-muted">{today.nextLine}</p> : null}
     </div>
-  );
-}
+  );}

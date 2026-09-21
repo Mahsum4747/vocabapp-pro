@@ -6,6 +6,20 @@ import { authMiddleware, optionalAuthMiddleware } from "./auth/middleware";
 import { recordStudyActivityFor, type StreakInfo } from "./streak";
 import { defaultScheduler as scheduler } from "./srs";
 import { planReview } from "./review-plan";
+import { isStudiableSet } from "./srs";
+import {
+  applyCountDelta,
+  applyReviewToSummary,
+  buildTodaySummary,
+  countedCardIds,
+  isSummaryFresh,
+  needsFullRebuild,
+  readTodaySummary,
+  refreshClockFields,
+  sumCounts,
+  type CardCounts,
+  type TodaySummary,
+} from "./today-summary";
 import {
   applyXp,
   MASTERED_SCORE,
@@ -157,6 +171,97 @@ function toCards(
     .filter((c) => c.term || c.definition);
 }
 
+/**
+ * Keep the cached Home summary's `new`/`weak`/`due` counters in step with a
+ * library edit, by the cards that entered or left Today's pool (active cards of
+ * studiable sets — the same pool /review serves).
+ *
+ * One function for every edit, so the transitions can't drift apart:
+ *   - a card enters the pool (set created/copied, card added or un-archived,
+ *     set becomes studiable)  -> its own contribution is added
+ *   - a card leaves the pool (set deleted, card removed/archived/excluded, set
+ *     becomes a reference or drops below 2 cards)  -> it is subtracted
+ * Brand-new card ids can't have a progress row, so they cost no read; every
+ * other id is read once with `getAll`.
+ *
+ * `deleteIds` are progress rows to delete because their set is gone for good
+ * (only `deleteSet` passes them: never for archived/excluded/reference — those
+ * are reversible — nor for a card removal, term edit or move). Best-effort like the streak: the edit
+ * is already stored, and a failure here only leaves a badge count slightly off
+ * until the weekly full rebuild.
+ */
+async function syncSummaryForSetChange(change: {
+  userId: string;
+  before: StudySet | null;
+  after: StudySet | null;
+  /** Progress rows the caller already read, so they aren't read twice. */
+  knownRows?: Map<string, CardProgress>;
+  deleteIds?: string[];
+}): Promise<void> {
+  try {
+    const { userId, before, after } = change;
+    const beforeIds = countedCardIds(before);
+    const afterIds = countedCardIds(after);
+    const entered = [...afterIds].filter((id) => !beforeIds.has(id));
+    const left = [...beforeIds].filter((id) => !afterIds.has(id));
+    const deleteIds = change.deleteIds ?? [];
+    if (entered.length === 0 && left.length === 0 && deleteIds.length === 0) return;
+
+    const existingIds = new Set(before?.cards.map((c) => c.id));
+    const brandNew = new Set(entered.filter((id) => !existingIds.has(id)));
+
+    const { getAdminFirestore } = await import("./firebase-admin.server");
+    const db = getAdminFirestore();
+    const progressCol = db.collection("users").doc(userId).collection("cardProgress");
+
+    const rows = new Map(change.knownRows ?? []);
+    const toRead = [
+      ...new Set([...left, ...entered.filter((id) => !brandNew.has(id)), ...deleteIds]),
+    ].filter((id) => !rows.has(id));
+    for (let i = 0; i < toRead.length; i += 300) {
+      const docs = await db.getAll(...toRead.slice(i, i + 300).map((id) => progressCol.doc(id)));
+      for (const doc of docs) if (doc.exists) rows.set(doc.id, doc.data() as CardProgress);
+    }
+
+    const now = Date.now();
+    await applySummaryDelta(userId, {
+      added: sumCounts(
+        entered.map((id) => (brandNew.has(id) ? undefined : rows.get(id))),
+        now,
+      ),
+      removed: sumCounts(
+        left.map((id) => rows.get(id)),
+        now,
+      ),
+    });
+
+    const doomed = deleteIds.filter((id) => rows.has(id));
+    for (let i = 0; i < doomed.length; i += 400) {
+      const batch = db.batch();
+      for (const id of doomed.slice(i, i + 400)) batch.delete(progressCol.doc(id));
+      await batch.commit();
+    }
+  } catch (error) {
+    console.error("Failed to sync today summary:", error);
+  }
+}
+
+/** Apply a counter delta to the stored summary in a transaction (no-op if none is stored). */
+async function applySummaryDelta(
+  userId: string,
+  delta: { added: CardCounts; removed: CardCounts },
+): Promise<void> {
+  const { getAdminFirestore } = await import("./firebase-admin.server");
+  const db = getAdminFirestore();
+  const userRef = db.collection("users").doc(userId);
+  await db.runTransaction(async (tx) => {
+    const snap = await tx.get(userRef);
+    if (!snap.exists) return;
+    const next = applyCountDelta(readTodaySummary(snap.data()?.todaySummary), delta, Date.now());
+    if (next) tx.update(userRef, { todaySummary: next });
+  });
+}
+
 export const getMySets = createServerFn({ method: "GET" })
   .middleware([authMiddleware])
   .handler(async ({ context }) => {
@@ -259,6 +364,7 @@ export const createSet = createServerFn({ method: "POST" })
       ...(folder ? { folder } : {}),
     };
     await db.collection("study_sets").doc(id).set(next);
+    await syncSummaryForSetChange({ userId: context.userId, before: null, after: next });
     return next;
   });
 
@@ -319,6 +425,15 @@ export const updateSetMeta = createServerFn({ method: "POST" })
         ),
     );
     await ref.update({ ...cleanPatch, updatedAt: now });
+    // `isReference` decides whether a set counts toward Today at all.
+    if ("isReference" in cleanPatch) {
+      const before = doc.data() as StudySet;
+      await syncSummaryForSetChange({
+        userId: context.userId,
+        before,
+        after: { ...before, isReference: cleanPatch.isReference as boolean | undefined },
+      });
+    }
     return { ok: true };
   });
 
@@ -384,6 +499,13 @@ export const replaceCards = createServerFn({ method: "POST" })
       .filter((c): c is Card => c !== null);
     const now = Date.now();
     await ref.update({ cards: nextCards, updatedAt: now });
+    // No row deletion here: a removed card — or a term edit, which mints a new
+    // id — leaves its old progress row in place. Only `deleteSet` deletes rows.
+    await syncSummaryForSetChange({
+      userId: context.userId,
+      before: existing,
+      after: { ...existing, cards: nextCards },
+    });
     return nextCards;
   });
 
@@ -398,7 +520,24 @@ export const deleteSet = createServerFn({ method: "POST" })
     if (!doc.exists || doc.data()?.ownerId !== context.userId) {
       throw new Error("You don't have permission to delete this set.");
     }
+    const before = doc.data() as StudySet;
+    // Read the set's progress rows first: they classify what leaves the
+    // counters, and then they are deleted — a deleted set's rows are dead.
+    const rowsSnap = await db
+      .collection("users")
+      .doc(context.userId)
+      .collection("cardProgress")
+      .where("setId", "==", data.id)
+      .get();
+    const knownRows = new Map(rowsSnap.docs.map((d) => [d.id, d.data() as CardProgress]));
     await ref.delete();
+    await syncSummaryForSetChange({
+      userId: context.userId,
+      before,
+      after: null,
+      knownRows,
+      deleteIds: [...knownRows.keys()],
+    });
     return { ok: true };
   });
 
@@ -453,6 +592,7 @@ export const copyPublicSet = createServerFn({ method: "POST" })
       cards: source.cards.map((c) => freshCardCopy(c, uidServer())),
     };
     await db.collection("study_sets").doc(id).set(cloned);
+    await syncSummaryForSetChange({ userId: context.userId, before: null, after: cloned });
 
     // Best-effort: the copy already succeeded, so a failed counter bump must
     // not fail the call. `increment` keeps concurrent copies from racing.
@@ -508,11 +648,24 @@ async function transferCards(userId: string, data: TransferCardsInput, removeFro
   const now = Date.now();
   const targetCards = [...target.cards, ...addedCards];
   await targetRef.update({ cards: targetCards, updatedAt: now });
+  await syncSummaryForSetChange({
+    userId,
+    before: target,
+    after: { ...target, cards: targetCards },
+  });
 
   let sourceCards = source.cards;
   if (removeFromSource) {
     sourceCards = source.cards.filter((c) => !idSet.has(c.id));
     await sourceRef.update({ cards: sourceCards, updatedAt: now });
+    // No `deleteIds`: a move mints new card ids in the target and leaves the
+    // old progress row where it is. Whether a move should carry progress over
+    // is its own decision, not part of the due-count fix.
+    await syncSummaryForSetChange({
+      userId,
+      before: source,
+      after: { ...source, cards: sourceCards },
+    });
   }
 
   return { addedCount: addedCards.length, targetCards, sourceCards };
@@ -650,6 +803,22 @@ export const recordReview = createServerFn({ method: "POST" })
       // XP and the lifetime counters are written as resolved values rather
       // than increments: the transaction has just read them, and the total has
       // to be clamped at zero, which `FieldValue.increment` cannot do.
+      // Keep the Home summary in step inside the same transaction. Only for
+      // cards the summary actually counts (own, studiable set, active card);
+      // anything else — or a summary that is stale — is left for the next Home
+      // read to rebuild.
+      const countsForToday =
+        studySet.ownerId === context.userId &&
+        isStudiableSet(studySet) &&
+        activeIds.has(data.cardId);
+      const todaySummary = countsForToday
+        ? applyReviewToSummary(readTodaySummary(user?.todaySummary), {
+            previous: previous ?? null,
+            next: plan.progress as CardProgress,
+            now,
+          })
+        : null;
+
       const profile: Partial<UserDoc> = {
         id: context.userId,
         totalXP: applyXp(user?.totalXP ?? 0, xpDelta + completionBonus),
@@ -657,6 +826,7 @@ export const recordReview = createServerFn({ method: "POST" })
         perfectRun: nextPerfectRun(user?.perfectRun ?? 0, data.rating),
         updatedAt: now,
         ...(setJustCompleted ? { completedSets: [...completedSets, data.setId] } : {}),
+        ...(todaySummary ? { todaySummary } : {}),
         ...(user === undefined ? { createdAt: now } : {}),
       };
 
@@ -848,6 +1018,24 @@ export const resetSetProgress = createServerFn({ method: "POST" })
       for (const doc of snap.docs.slice(i, i + 400)) batch.delete(doc.ref);
       await batch.commit();
     }
+    // Cards of this set that count toward Today go back to "new"; their due/weak
+    // contributions leave with the rows. Best-effort, like every summary patch.
+    try {
+      const setDoc = await db.collection("study_sets").doc(data.setId).get();
+      if (setDoc.exists && setDoc.data()?.ownerId === context.userId) {
+        const counted = countedCardIds({ id: setDoc.id, ...setDoc.data() } as StudySet);
+        const rows = snap.docs
+          .filter((d) => counted.has(d.id))
+          .map((d) => d.data() as CardProgress);
+        const gone = sumCounts(rows, Date.now());
+        await applySummaryDelta(context.userId, {
+          added: { new: rows.length, due: 0, weak: 0 },
+          removed: { new: 0, due: gone.due, weak: gone.weak },
+        });
+      }
+    } catch (error) {
+      console.error("Failed to sync today summary:", error);
+    }
     return { ok: true as const, cleared: snap.size };
   });
 
@@ -880,6 +1068,11 @@ type UserDoc = {
   completedSets: string[];
   /** Sound preferences, mirrored to the device for instant playback. */
   soundSettings: SoundSettings;
+  /**
+   * Cached Home "Today" counts. Absent = "rebuild on next read", which is how
+   * every library edit invalidates it.
+   */
+  todaySummary: TodaySummary;
   /** Epoch ms from the server clock, matching every other timestamp we store. */
   createdAt: number;
   updatedAt: number;
@@ -985,6 +1178,104 @@ export const getProfile = createServerFn({ method: "GET" })
       profile: readProfile(userDoc.exists ? userDoc.data() : null, mastered),
       today: readDailyStats(data.date, todayDoc.exists ? todayDoc.data() : null),
     };
+  });
+
+/**
+ * Home's "Today" numbers: the cached summary when it can be trusted, otherwise
+ * a cheap clock refresh.
+ *
+ * The cache lies in exactly two ways with no write event to fix it — the UTC
+ * day rolled, or `nextDueAt` passed (cards go due overnight while nobody
+ * reviews) — and `isSummaryFresh` checks both. The trusted path is one
+ * document read.
+ *
+ * The refresh re-counts only the clock fields, with two indexed queries that
+ * cost about two reads at any account size: `count()` over `dueAt <= now`
+ * (billed per 1,000 index entries) and one `orderBy(dueAt).limit(1)` for the
+ * next due date. Both are single-field `dueAt` queries on the user's own
+ * `cardProgress` subcollection, so the automatic index serves them — no
+ * composite index exists or is needed. `new`, `weak` and `studiedToday` are NOT
+ * re-derived: the write paths keep them current.
+ *
+ * `due` is the raw count of due rows, so rows of excluded/archived cards and of
+ * reference sets (kept because those states are reversible) can overcount it
+ * slightly against what /review serves.
+ *
+ * A full recompute (sets + every progress row) runs only to bootstrap a user
+ * with no valid summary, and as a weekly safety net against counter drift
+ * (`needsFullRebuild`).
+ */
+export const getTodaySummary = createServerFn({ method: "GET" })
+  .middleware([authMiddleware])
+  .handler(async ({ context }): Promise<{ summary: TodaySummary; dailyGoal: number }> => {
+    const { getAdminFirestore } = await import("./firebase-admin.server");
+    const db = getAdminFirestore();
+    const userRef = db.collection("users").doc(context.userId);
+    const userDoc = await userRef.get();
+    const stored = userDoc.exists ? userDoc.data() : undefined;
+    const { dailyGoal } = readUserSettings(stored);
+    const now = Date.now();
+
+    const cached = readTodaySummary(stored?.todaySummary);
+    if (cached && isSummaryFresh(cached, now)) return { summary: cached, dailyGoal };
+
+    const progressCol = userRef.collection("cardProgress");
+    const [dueAgg, nextSnap] = await Promise.all([
+      progressCol.where("dueAt", "<=", now).count().get(),
+      progressCol.where("dueAt", ">", now).orderBy("dueAt").limit(1).get(),
+    ]);
+    const nextValue = nextSnap.docs[0]?.get("dueAt");
+    const clock = {
+      due: dueAgg.data().count,
+      nextDueAt: typeof nextValue === "number" ? nextValue : null,
+    };
+
+    try {
+      if (needsFullRebuild(cached, now)) {
+        const [setsSnap, progressSnap] = await Promise.all([
+          db.collection("study_sets").where("ownerId", "==", context.userId).get(),
+          progressCol.get(),
+        ]);
+        const sets = setsSnap.docs.map((d) => ({ id: d.id, ...d.data() })) as StudySet[];
+        const progress: Record<string, CardProgress> = {};
+        for (const doc of progressSnap.docs) progress[doc.id] = doc.data() as CardProgress;
+        // One definition of `due` everywhere: the raw count, same as a refresh.
+        const summary: TodaySummary = { ...buildTodaySummary(sets, progress, now), ...clock };
+        await userRef.set(
+          {
+            todaySummary: summary,
+            ...(userDoc.exists ? {} : { id: context.userId, createdAt: now, updatedAt: now }),
+          },
+          { merge: true },
+        );
+        return { summary, dailyGoal };
+      }
+
+      // Merge onto whatever is stored NOW, so a review that landed since the
+      // read above keeps its `new`/`weak`/`studiedToday` patch.
+      const summary = await db.runTransaction(async (tx) => {
+        const snap = await tx.get(userRef);
+        const current = readTodaySummary(snap.data()?.todaySummary) ?? cached!;
+        const next = refreshClockFields(current, clock, now);
+        if (snap.exists && readTodaySummary(snap.data()?.todaySummary)) {
+          tx.update(userRef, {
+            "todaySummary.due": next.due,
+            "todaySummary.nextDueAt": next.nextDueAt,
+            "todaySummary.dayKey": next.dayKey,
+            "todaySummary.studiedToday": next.studiedToday,
+          });
+        }
+        return next;
+      });
+      return { summary, dailyGoal };
+    } catch (error) {
+      console.error("Failed to store today summary:", error);
+      // With a stored summary, serving the refreshed numbers beats not caching
+      // them. Without one there is nothing true to serve: fail, and the client
+      // falls back to computing locally rather than showing an invented zero.
+      if (!cached) throw error;
+      return { summary: refreshClockFields(cached, clock, now), dailyGoal };
+    }
   });
 
 /**

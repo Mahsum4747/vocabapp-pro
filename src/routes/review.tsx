@@ -7,6 +7,7 @@ import { StudyDeck, type DeckEntry } from "@/components/study-deck";
 import { useStudyStore } from "@/lib/store";
 import { buildLibrarySession, type ReviewSession } from "@/lib/review-session";
 import type { QueueEntry } from "@/lib/srs";
+import { newLeftToday } from "@/lib/today-summary";
 
 type Search = { filter?: "weak"; set?: string };
 
@@ -53,6 +54,7 @@ function ReviewPage() {
   const sets = useStudyStore((s) => s.sets);
   const fetchSets = useStudyStore((s) => s.fetchSets);
   const fetchAllProgress = useStudyStore((s) => s.fetchAllProgress);
+  const fetchTodaySummary = useStudyStore((s) => s.fetchTodaySummary);
   const toggleStar = useStudyStore((s) => s.toggleStar);
 
   // Same pool the queue reads, just narrowed to one set before it's built —
@@ -69,13 +71,13 @@ function ReviewPage() {
   const [ready, setReady] = useState(false);
   useEffect(() => {
     let cancelled = false;
-    void Promise.all([fetchSets(), fetchAllProgress()]).then(() => {
+    void Promise.all([fetchSets(), fetchAllProgress(), fetchTodaySummary()]).then(() => {
       if (!cancelled) setReady(true);
     });
     return () => {
       cancelled = true;
     };
-  }, [fetchSets, fetchAllProgress]);
+  }, [fetchSets, fetchAllProgress, fetchTodaySummary]);
 
   /**
    * The round is a snapshot, taken once the data is in and never rebuilt while
@@ -87,10 +89,15 @@ function ReviewPage() {
     if (!ready || session) return;
     // Progress comes from the store rather than a subscribed value, so a
     // graded card landing cannot re-run this.
+    // New cards are capped by what today's goal still owes, the same number
+    // Home shows; the flat cap only applies if the summary couldn't be loaded.
+    const today = useStudyStore.getState().todaySummary;
     setSession(
       buildLibrarySession(scopedSets, useStudyStore.getState().progress, {
         now: Date.now(),
-        newCardLimit: NEW_CARDS_PER_SESSION,
+        newCardLimit: today
+          ? newLeftToday(today.summary, today.dailyGoal)
+          : NEW_CARDS_PER_SESSION,
         ...(filter === "weak" ? { filter } : {}),
       }),
     );
