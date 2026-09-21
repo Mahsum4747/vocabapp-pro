@@ -37,10 +37,13 @@
      surfaces, 3.70 on surface-2. Dark: see the dark block. */
   --color-focus: #43866a;
   /* der/die/das color-coding mnemonic — kept distinct from success/danger,
-     which already use green/orange-red for status, not grammar. */
+     which already use green/orange-red for status, not grammar. die/das were
+     previously red/green, which clashed with correct/incorrect feedback
+     (die read as "incorrect", das as "correct"); die is now violet and das
+     is amber/gold, off the success/danger hues in both modes. */
   --color-article-der: #1d5b96;
-  --color-article-die: #b7293f;
-  --color-article-das: #1f7a6b;
+  --color-article-die: #7a2f8f;
+  --color-article-das: #7d5108;
   /* A third, more saturated success step for the top mastery tier — blended
      from the two success tones above rather than a new raw color. Dark mode
      below uses a stronger mix ratio: contrast against --color-surface turned
@@ -74,6 +77,15 @@
   --color-rating-easy: var(--color-primary);
   /* Text on Again / Hard / Good. Easy takes --color-primary-fg. */
   --color-rating-fg: var(--color-bg);
+  /* Correct/incorrect answer feedback text, on top of --color-success-soft /
+     --color-danger-soft. Split out from --color-success / --color-danger
+     because those two didn't reach the same contrast against their own soft
+     background in every mode (light correct 4.13:1, dark incorrect 4.08:1 —
+     both under the 4.5:1 AA text minimum, so one tone visibly read paler
+     than the other). Only the two that fell short are overridden below;
+     the other two keep --color-success / --color-danger. */
+  --color-feedback-correct: #1a4030;
+  --color-feedback-incorrect: var(--color-danger);
   --font-sans: "Figtree", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Geist", ui-sans-serif, system-ui, sans-serif;
   --radius-xs: 4px;
@@ -173,8 +185,8 @@
     --color-ring: #6fae8c;
     --color-focus: #6fae8c;
     --color-article-der: #7ab3e8;
-    --color-article-die: #e8828f;
-    --color-article-das: #6fc9b8;
+    --color-article-die: #d19be6;
+    --color-article-das: #e8bc63;
     /* On dark a black ring vanishes into the surface, so the hairline is a
        faint white one instead. */
     --elevation-1: 0 0 0 1px rgb(255 255 255 / 0.08), 0 1px 2px 0 rgb(0 0 0 / 0.3);
@@ -226,6 +238,12 @@
     --color-rating-hard: #d19a4d;
     --color-rating-good: #7fae8f;
     --color-rating-easy: #2f7a5a;
+
+    /* Dark-mode incorrect feedback text was the pale one here (4.08:1 on
+       --color-danger-soft, under AA); correct already clears 4.5:1 with the
+       base --color-success, so only incorrect is overridden. */
+    --color-feedback-correct: var(--color-success);
+    --color-feedback-incorrect: #e0967a;
   }
 }
 
