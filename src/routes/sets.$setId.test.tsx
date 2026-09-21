@@ -1,12 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/app-shell";
+import { AnswerFeedbackSheet } from "@/components/answer-feedback-sheet";
 import { ArticleizedTerm } from "@/components/articleized-term";
 import { Definition2Line } from "@/components/definition2-line";
 import { EmptyState } from "@/components/empty-state";
 import { ExampleLine } from "@/components/example-line";
-import { Feedback, feedbackToneClasses } from "@/components/feedback";
-import { StudyChrome } from "@/components/study-chrome";
+import { feedbackToneClasses } from "@/components/feedback";
+import { StudySessionShell } from "@/components/study-session-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { buildTest, leitnerBoxOf, type TestQuestion } from "@/lib/quiz";
@@ -133,7 +134,7 @@ function TestPage() {
 
   if (questions.length === 0) {
     return (
-      <StudyChrome
+      <StudySessionShell
         setId={setId}
         title={studySet.title}
         mode="Test"
@@ -142,14 +143,14 @@ function TestPage() {
         filterLabel={filterLabel}
       >
         <EmptyState title="No cards" description="Add cards to take a test." />
-      </StudyChrome>
+      </StudySessionShell>
     );
   }
 
   if (done) {
     const pct = Math.round((score / questions.length) * 100);
     return (
-      <StudyChrome
+      <StudySessionShell
         setId={setId}
         title={studySet.title}
         mode="Test"
@@ -186,7 +187,7 @@ function TestPage() {
             </Button>
           </div>
         </div>
-      </StudyChrome>
+      </StudySessionShell>
     );
   }
 
@@ -208,14 +209,27 @@ function TestPage() {
       <ArticleizedTerm term={q.answer} enrichment={answerCard?.enrichment} profile={termProfile} />
     ) : null;
 
+  function submitWritten() {
+    if (!revealed && q.type === "written") finish(answersMatch(written, q.answer, matchOptions));
+    else if (!revealed) return;
+    else next();
+  }
+
   return (
-    <StudyChrome
+    <StudySessionShell
       setId={setId}
       title={studySet.title}
       mode="Test"
       index={index}
       total={questions.length}
       filterLabel={filterLabel}
+      primaryAction={
+        q.type === "written"
+          ? { label: revealed ? "Continue" : "Check", onClick: submitWritten }
+          : revealed
+            ? { label: "Continue", onClick: next }
+            : undefined
+      }
     >
       <p className="text-xs font-medium tracking-wide text-muted uppercase">
         {q.type === "mc" ? "Multiple choice" : q.type === "written" ? "Written" : "True / false"}
@@ -270,8 +284,7 @@ function TestPage() {
           className="mt-8 space-y-3"
           onSubmit={(e) => {
             e.preventDefault();
-            if (!revealed) finish(answersMatch(written, q.answer, matchOptions));
-            else next();
+            submitWritten();
           }}
         >
           <Input
@@ -282,17 +295,16 @@ function TestPage() {
             autoFocus
           />
           {revealed ? (
-            <Feedback tone={answersMatch(written, q.answer, matchOptions) ? "correct" : "incorrect"}>
+            <AnswerFeedbackSheet
+              tone={answersMatch(written, q.answer, matchOptions) ? "correct" : "incorrect"}
+            >
               {answersMatch(written, q.answer, matchOptions) ? (
                 "Correct"
               ) : (
                 <>Correct answer: {displayAnswer}</>
               )}
-            </Feedback>
+            </AnswerFeedbackSheet>
           ) : null}
-          <Button type="submit" className="w-full">
-            {revealed ? "Continue" : "Check"}
-          </Button>
         </form>
       ) : null}
 
@@ -334,11 +346,6 @@ function TestPage() {
         <ExampleLine example={q.example} termLanguage={setLanguages.term ?? studySet.termLanguage} className="mt-4" />
       ) : null}
 
-      {revealed && q.type !== "written" ? (
-        <Button className="mt-6 w-full" onClick={next}>
-          Continue
-        </Button>
-      ) : null}
-    </StudyChrome>
+    </StudySessionShell>
   );
 }
