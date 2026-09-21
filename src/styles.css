@@ -32,6 +32,10 @@
   --color-streak: #e07a3d;
   --color-slate: #3a5a6b;
   --color-ring: #1f4d3a;
+  /* Keyboard focus ring: the brand green at 40% (what `ring-ring/40` was). Dark
+     mode overrides it with an OPAQUE colour; at 40% no colour can reach 3:1 on
+     the dark surfaces, so alpha lives in the token, not in the class. */
+  --color-focus: color-mix(in oklab, var(--color-primary) 40%, transparent);
   /* der/die/das color-coding mnemonic — kept distinct from success/danger,
      which already use green/orange-red for status, not grammar. */
   --color-article-der: #1d5b96;
@@ -174,7 +178,10 @@
     --color-danger-soft: #3b2a22;
     --color-streak: #e07a3d;
     --color-slate: #5c8fa3;
-    --color-ring: #2a6b4f;
+    /* Selected/focus rings on dark surfaces. Was #2a6b4f at 40%, ~1.3:1 - invisible.
+       This is --color-primary-ink: 6.65:1 on the page, 6.07 on --color-surface. */
+    --color-ring: #6fae8c;
+    --color-focus: #6fae8c;
     --color-article-der: #7ab3e8;
     --color-article-die: #e8828f;
     --color-article-das: #6fc9b8;

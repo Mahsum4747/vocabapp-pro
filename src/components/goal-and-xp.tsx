@@ -90,7 +90,7 @@ export function WeakWordsCard({ count, className }: { count: number; className?:
       to="/review"
       search={{ filter: "weak" as const }}
       className={cn(
-        "flex items-center justify-between gap-4 rounded-card bg-surface p-card shadow-[var(--elevation-1)] transition-[box-shadow] duration-[var(--duration-fast)] ease-[var(--ease-out)] hover:shadow-[var(--elevation-2)] active:shadow-[var(--elevation-2)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40",
+        "flex items-center justify-between gap-4 rounded-card bg-surface p-card shadow-[var(--elevation-1)] transition-[box-shadow] duration-[var(--duration-fast)] ease-[var(--ease-out)] hover:shadow-[var(--elevation-2)] active:shadow-[var(--elevation-2)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus",
         className,
       )}
     >

@@ -199,7 +199,7 @@ export function UserButton() {
           <button
             type="button"
             aria-label="Account menu"
-            className="grid size-9 shrink-0 place-items-center overflow-hidden rounded-full bg-primary text-sm font-medium text-primary-fg outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+            className="grid size-9 shrink-0 place-items-center overflow-hidden rounded-full bg-primary text-sm font-medium text-primary-fg outline-none focus-visible:ring-2 focus-visible:ring-focus"
           >
             {user.profileImageUrl ? (
               <img src={user.profileImageUrl} alt="" className="size-9 object-cover" />

@@ -678,6 +678,11 @@ export function CardEditor({
                   }}
                   placeholder="e.g. mitochondria"
                   autoComplete="off"
+                  // A term is typed exactly as it should be stored: the phone's keyboard must
+                  // not capitalise, "correct" or underline it (German words especially).
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
                 />
                 {profile.hasTermAutocomplete &&
                 activeSuggestionId === card.id &&
@@ -771,6 +776,9 @@ export function CardEditor({
                   onChange={(e) => setEnrichmentField(card.id, "plural", e.target.value)}
                   placeholder="Plural, e.g. Tische"
                   aria-label="Plural"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
                 />
               </div>
             </div>
