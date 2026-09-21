@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { EmptyState } from "@/components/empty-state";
 import { feedbackToneClasses } from "@/components/feedback";
-import { StudyChrome } from "@/components/study-chrome";
+import { StudySessionShell } from "@/components/study-session-shell";
 import { Button } from "@/components/ui/button";
 import { getArticleDrillProgress, recordArticleDrillAttempt } from "@/lib/article-drill";
 import { profileFor } from "@/lib/lang/profiles";
@@ -180,12 +180,12 @@ function ArticleDrillPage() {
 
   if (order.length === 0) {
     return (
-      <StudyChrome setId={setId} title={studySet.title} mode="Articles" index={0} total={0}>
+      <StudySessionShell setId={setId} title={studySet.title} mode="Articles" index={0} total={0}>
         <EmptyState
           title="Nothing to drill yet"
           description="This set has no German nouns with a known gender yet."
         />
-      </StudyChrome>
+      </StudySessionShell>
     );
   }
 
@@ -193,7 +193,7 @@ function ArticleDrillPage() {
     const pct = Math.round((correctCount / order.length) * 100);
     const errorPattern = summarizeErrorPattern(roundErrorGenders, (g) => termProfile.articleFor?.(g));
     return (
-      <StudyChrome
+      <StudySessionShell
         setId={setId}
         title={studySet.title}
         mode="Articles"
@@ -218,17 +218,18 @@ function ArticleDrillPage() {
             </Button>
           </div>
         </div>
-      </StudyChrome>
+      </StudySessionShell>
     );
   }
 
   return (
-    <StudyChrome
+    <StudySessionShell
       setId={setId}
       title={studySet.title}
       mode="Articles"
       index={index}
       total={order.length}
+      primaryAction={revealed ? { label: "Continue", onClick: next } : undefined}
     >
       <p className="text-xs font-medium tracking-wide text-muted uppercase">Which article?</p>
       <h2 className="mt-3 font-display text-4xl font-semibold tracking-tight text-balance">
@@ -257,11 +258,6 @@ function ArticleDrillPage() {
           );
         })}
       </div>
-      {revealed ? (
-        <Button className="mt-6 w-full" onClick={next}>
-          Continue
-        </Button>
-      ) : null}
-    </StudyChrome>
+    </StudySessionShell>
   );
 }
