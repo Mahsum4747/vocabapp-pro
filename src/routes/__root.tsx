@@ -63,6 +63,11 @@ function Root() {
             <Toaster
               position="bottom-center"
               theme="system"
+              // Sonner defaults to 24px (16px on narrow screens) from the bottom, which
+              // lands on the fixed mobile nav. --toast-bottom (styles.css) clears the
+              // nav and the home indicator below md and is 24px above it.
+              offset={{ bottom: "var(--toast-bottom)" }}
+              mobileOffset={{ bottom: "var(--toast-bottom)" }}
               toastOptions={{
                 className: "font-sans",
               }}
