@@ -132,7 +132,14 @@ export class MockBackend {
       getAllProgress: () => [...this.progress.values()],
       getSetProgress: (data) =>
         [...this.progress.values()].filter((p) => p.setId === (data as { setId: string }).setId),
+      // Opening a study mode marks the set as studied; the response is not read.
+      updateSetMeta: () => null,
       getStreak: () => this.streak,
+      // Account page chart: one zeroed day per requested key, as the real function does.
+      getDailyStatsRange: (data) => {
+        const d = data as { dates?: string[] };
+        return (d.dates ?? []).map((date) => emptyDailyStats(date));
+      },
       getProfile: () => ({ profile: this.profile, today: this.today }),
       recordReview: (data) => this.recordReview(data as RecordedReview),
     };

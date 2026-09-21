@@ -31,7 +31,7 @@ export function DropdownMenuItem({
   return (
     <DropdownMenuPrimitive.Item
       className={cn(
-        "flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm outline-none select-none focus:bg-surface-2 data-disabled:pointer-events-none data-disabled:opacity-40",
+        "flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm outline-none select-none pointer-coarse:min-h-11 focus:bg-surface-2 data-disabled:pointer-events-none data-disabled:opacity-40",
         className,
       )}
       {...props}

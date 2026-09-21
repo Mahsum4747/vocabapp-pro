@@ -140,7 +140,7 @@ export function GenerateDialog({
             max={50}
             value={count}
             onChange={(e) => setCount(Number(e.target.value))}
-            className="w-full accent-primary-ink"
+            className="w-full accent-primary-ink pointer-coarse:h-11"
             disabled={loading}
           />
         </div>

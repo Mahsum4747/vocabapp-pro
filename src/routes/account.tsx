@@ -84,7 +84,7 @@ function AccountPage() {
 
       <LibraryProgressPanel className="mt-6" />
 
-      <div className="mt-6 flex gap-1 overflow-x-auto border-b border-border/80">
+      <div className="mt-6 flex gap-1 overflow-x-auto overscroll-x-contain border-b border-border/80">
         {TABS.map((entry) => (
           <button
             key={entry.id}
@@ -93,7 +93,7 @@ function AccountPage() {
             aria-selected={tab === entry.id}
             onClick={() => setTab(entry.id)}
             className={cn(
-              "-mb-px shrink-0 border-b-2 px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors",
+              "-mb-px shrink-0 border-b-2 px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors pointer-coarse:py-3",
               tab === entry.id
                 ? "border-primary text-fg"
                 : "border-transparent text-muted hover:text-fg",

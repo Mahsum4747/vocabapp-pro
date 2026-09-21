@@ -84,14 +84,14 @@ export function TransferCardsDialog({
             You don't have another set yet — create one first.
           </p>
         ) : (
-          <ul className="max-h-72 space-y-1.5 overflow-y-auto">
+          <ul className="max-h-72 space-y-1.5 overflow-y-auto overscroll-contain">
             {targets.map((target) => (
               <li key={target.id}>
                 <button
                   type="button"
                   disabled={busyTargetId !== null}
                   onClick={() => pick(target.id)}
-                  className="flex w-full items-center justify-between gap-3 rounded-lg bg-surface-2 px-3 py-2.5 text-left text-sm transition-colors hover:bg-border disabled:pointer-events-none disabled:opacity-50"
+                  className="flex w-full items-center justify-between gap-3 rounded-lg bg-surface-2 px-3 py-2.5 text-left text-sm pointer-coarse:min-h-11 transition-colors hover:bg-border disabled:pointer-events-none disabled:opacity-50"
                 >
                   <span className="min-w-0 truncate font-medium">{target.title}</span>
                   <span className="inline-flex shrink-0 items-center gap-1 text-xs text-muted tabular-nums">

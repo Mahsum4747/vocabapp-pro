@@ -254,6 +254,11 @@
     overscroll-behavior-y: none;
   }
 
+  /* Both html and body: which one scrolls the page differs between browsers. */
+  body {
+    overscroll-behavior-y: none;
+  }
+
   html,
   body,
   #app {
