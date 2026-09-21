@@ -6,6 +6,14 @@ import { authMiddleware, optionalAuthMiddleware } from "./auth/middleware";
 import { recordStudyActivityFor, type StreakInfo } from "./streak";
 import { defaultScheduler as scheduler } from "./srs";
 import { planReview } from "./review-plan";
+import { isStudiableSet } from "./srs";
+import {
+  applyReviewToSummary,
+  buildTodaySummary,
+  isSummaryFresh,
+  readTodaySummary,
+  type TodaySummary,
+} from "./today-summary";
 import {
   applyXp,
   MASTERED_SCORE,
@@ -157,6 +165,31 @@ function toCards(
     .filter((c) => c.term || c.definition);
 }
 
+/**
+ * Drop the cached Home summary so the next Home read rebuilds it. Used by every
+ * library edit that changes what "due / new / weak" count (sets created,
+ * deleted, copied into, cards added/removed/archived, progress reset).
+ *
+ * Best-effort, like the streak: the edit is already stored, and a missed
+ * invalidation only lasts until the day rolls or the next card comes due.
+ * `update()` (not a merge `set`) so a user with no document isn't given an
+ * empty one that would hide the "first write" branches elsewhere.
+ */
+async function invalidateTodaySummary(userId: string): Promise<void> {
+  try {
+    const { getAdminFirestore, FieldValue } = await import("./firebase-admin.server");
+    await getAdminFirestore()
+      .collection("users")
+      .doc(userId)
+      .update({ todaySummary: FieldValue.delete() });
+  } catch (error) {
+    // NOT_FOUND (code 5) just means the user has no document, hence no summary.
+    if ((error as { code?: number }).code !== 5) {
+      console.error("Failed to invalidate today summary:", error);
+    }
+  }
+}
+
 export const getMySets = createServerFn({ method: "GET" })
   .middleware([authMiddleware])
   .handler(async ({ context }) => {
@@ -259,6 +292,7 @@ export const createSet = createServerFn({ method: "POST" })
       ...(folder ? { folder } : {}),
     };
     await db.collection("study_sets").doc(id).set(next);
+    await invalidateTodaySummary(context.userId);
     return next;
   });
 
@@ -319,6 +353,8 @@ export const updateSetMeta = createServerFn({ method: "POST" })
         ),
     );
     await ref.update({ ...cleanPatch, updatedAt: now });
+    // `isReference` decides whether a set counts toward Today at all.
+    if ("isReference" in cleanPatch) await invalidateTodaySummary(context.userId);
     return { ok: true };
   });
 
@@ -384,6 +420,7 @@ export const replaceCards = createServerFn({ method: "POST" })
       .filter((c): c is Card => c !== null);
     const now = Date.now();
     await ref.update({ cards: nextCards, updatedAt: now });
+    await invalidateTodaySummary(context.userId);
     return nextCards;
   });
 
@@ -399,6 +436,7 @@ export const deleteSet = createServerFn({ method: "POST" })
       throw new Error("You don't have permission to delete this set.");
     }
     await ref.delete();
+    await invalidateTodaySummary(context.userId);
     return { ok: true };
   });
 
@@ -453,6 +491,7 @@ export const copyPublicSet = createServerFn({ method: "POST" })
       cards: source.cards.map((c) => freshCardCopy(c, uidServer())),
     };
     await db.collection("study_sets").doc(id).set(cloned);
+    await invalidateTodaySummary(context.userId);
 
     // Best-effort: the copy already succeeded, so a failed counter bump must
     // not fail the call. `increment` keeps concurrent copies from racing.
@@ -514,6 +553,7 @@ async function transferCards(userId: string, data: TransferCardsInput, removeFro
     sourceCards = source.cards.filter((c) => !idSet.has(c.id));
     await sourceRef.update({ cards: sourceCards, updatedAt: now });
   }
+  await invalidateTodaySummary(userId);
 
   return { addedCount: addedCards.length, targetCards, sourceCards };
 }
@@ -650,6 +690,22 @@ export const recordReview = createServerFn({ method: "POST" })
       // XP and the lifetime counters are written as resolved values rather
       // than increments: the transaction has just read them, and the total has
       // to be clamped at zero, which `FieldValue.increment` cannot do.
+      // Keep the Home summary in step inside the same transaction. Only for
+      // cards the summary actually counts (own, studiable set, active card);
+      // anything else — or a summary that is stale — is left for the next Home
+      // read to rebuild.
+      const countsForToday =
+        studySet.ownerId === context.userId &&
+        isStudiableSet(studySet) &&
+        activeIds.has(data.cardId);
+      const todaySummary = countsForToday
+        ? applyReviewToSummary(readTodaySummary(user?.todaySummary), {
+            previous: previous ?? null,
+            next: plan.progress as CardProgress,
+            now,
+          })
+        : null;
+
       const profile: Partial<UserDoc> = {
         id: context.userId,
         totalXP: applyXp(user?.totalXP ?? 0, xpDelta + completionBonus),
@@ -657,6 +713,7 @@ export const recordReview = createServerFn({ method: "POST" })
         perfectRun: nextPerfectRun(user?.perfectRun ?? 0, data.rating),
         updatedAt: now,
         ...(setJustCompleted ? { completedSets: [...completedSets, data.setId] } : {}),
+        ...(todaySummary ? { todaySummary } : {}),
         ...(user === undefined ? { createdAt: now } : {}),
       };
 
@@ -848,6 +905,7 @@ export const resetSetProgress = createServerFn({ method: "POST" })
       for (const doc of snap.docs.slice(i, i + 400)) batch.delete(doc.ref);
       await batch.commit();
     }
+    await invalidateTodaySummary(context.userId);
     return { ok: true as const, cleared: snap.size };
   });
 
@@ -880,6 +938,11 @@ type UserDoc = {
   completedSets: string[];
   /** Sound preferences, mirrored to the device for instant playback. */
   soundSettings: SoundSettings;
+  /**
+   * Cached Home "Today" counts. Absent = "rebuild on next read", which is how
+   * every library edit invalidates it.
+   */
+  todaySummary: TodaySummary;
   /** Epoch ms from the server clock, matching every other timestamp we store. */
   createdAt: number;
   updatedAt: number;
@@ -985,6 +1048,60 @@ export const getProfile = createServerFn({ method: "GET" })
       profile: readProfile(userDoc.exists ? userDoc.data() : null, mastered),
       today: readDailyStats(data.date, todayDoc.exists ? todayDoc.data() : null),
     };
+  });
+
+/**
+ * Home's "Today" numbers: the cached summary when it can be trusted, otherwise
+ * a rebuild that is written back before returning.
+ *
+ * The cache lies in exactly two ways with no write event to fix it — the UTC
+ * day rolled, or `nextDueAt` passed (cards go due overnight while nobody
+ * reviews) — and `isSummaryFresh` checks both. The trusted path is one
+ * document read.
+ *
+ * A rebuild reads the owner's sets and every progress row rather than only the
+ * `dueAt <= now` slice: `new` and `weak` can't be derived from a due query,
+ * and a raw due count would include rows for deleted sets and archived cards
+ * that the /review queue never serves. Reusing the queue's own functions is
+ * what keeps this number and the round it launches in agreement.
+ */
+export const getTodaySummary = createServerFn({ method: "GET" })
+  .middleware([authMiddleware])
+  .handler(async ({ context }): Promise<{ summary: TodaySummary; dailyGoal: number }> => {
+    const { getAdminFirestore } = await import("./firebase-admin.server");
+    const db = getAdminFirestore();
+    const userRef = db.collection("users").doc(context.userId);
+    const userDoc = await userRef.get();
+    const stored = userDoc.exists ? userDoc.data() : undefined;
+    const { dailyGoal } = readUserSettings(stored);
+    const now = Date.now();
+
+    const cached = readTodaySummary(stored?.todaySummary);
+    if (cached && isSummaryFresh(cached, now)) return { summary: cached, dailyGoal };
+
+    const [setsSnap, progressSnap] = await Promise.all([
+      db.collection("study_sets").where("ownerId", "==", context.userId).get(),
+      userRef.collection("cardProgress").get(),
+    ]);
+    const sets = setsSnap.docs.map((d) => ({ id: d.id, ...d.data() })) as StudySet[];
+    const progress: Record<string, CardProgress> = {};
+    for (const doc of progressSnap.docs) progress[doc.id] = doc.data() as CardProgress;
+
+    const summary = buildTodaySummary(sets, progress, now);
+    try {
+      // Same first-write convention as the other user-doc writers.
+      await userRef.set(
+        {
+          todaySummary: summary,
+          ...(userDoc.exists ? {} : { id: context.userId, createdAt: now, updatedAt: now }),
+        },
+        { merge: true },
+      );
+    } catch (error) {
+      // Serving the fresh numbers matters more than caching them.
+      console.error("Failed to store today summary:", error);
+    }
+    return { summary, dailyGoal };
   });
 
 /**

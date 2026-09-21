@@ -20,6 +20,7 @@ import {
   getSetProgress as getSetProgressFn,
   getAllProgress as getAllProgressFn,
   getProfile as getProfileFn,
+  getTodaySummary as getTodaySummaryFn,
   updateDailyGoal as updateDailyGoalFn,
   updateSoundSettings as updateSoundSettingsFn,
   resetSetProgress as resetSetProgressFn,
@@ -27,6 +28,7 @@ import {
 } from "./study-sets";
 import { getStreak as getStreakFn, type StreakInfo } from "./streak";
 import { localDateKey } from "./utils";
+import type { TodaySummary } from "./today-summary";
 import type { LanguageCode } from "./lang/languages";
 import { isStudiableSet, summarizeLibrary, weakCards, type LibraryReview } from "./srs";
 
@@ -68,6 +70,10 @@ type StudyState = {
   profile: UserProfile | null;
   /** Today's counters for the goal ring and the XP bar. */
   today: DailyStats | null;
+  /** Home's cached "Today" queue counts; null until first load or on failure. */
+  todaySummary: { summary: TodaySummary; dailyGoal: number } | null;
+  /** True once a fetch has settled, success or not, so Home can stop showing a skeleton. */
+  todaySummarySettled: boolean;
   fetchSets: () => Promise<void>;
   fetchSetById: (id: string) => Promise<StudySet | null>;
   fetchPublicSets: () => Promise<void>;
@@ -121,6 +127,7 @@ type StudyState = {
    */
   /** Load the profile and today's counters — one call, used by the home cards. */
   fetchProfile: () => Promise<void>;
+  fetchTodaySummary: () => Promise<void>;
   /** Change the daily goal, recording the viewer's timezone the first time. */
   setDailyGoal: (goal: number) => Promise<void>;
   /** Change the sound preferences, on the server and on this device. */
@@ -147,6 +154,8 @@ export const useStudyStore = create<StudyState>()((set, get) => ({
   progress: {},
   loadedProgressSetIds: [],
   profile: null,
+  todaySummary: null,
+  todaySummarySettled: false,
   today: null,
 
   fetchSets: async () => {
@@ -393,6 +402,16 @@ export const useStudyStore = create<StudyState>()((set, get) => ({
     }
   },
 
+  fetchTodaySummary: async () => {
+    try {
+      set({ todaySummary: await getTodaySummaryFn() });
+    } catch (error) {
+      console.error("Failed to load today summary:", error);
+    } finally {
+      set({ todaySummarySettled: true });
+    }
+  },
+
   setDailyGoal: async (goal) => {
     // The browser is the only thing that knows the viewer's timezone; send it
     // so the server can eventually decide which local day a review belongs to.
@@ -401,7 +420,13 @@ export const useStudyStore = create<StudyState>()((set, get) => ({
       data: { goal, ...(timeZone ? { timeZone } : {}) },
     });
     const current = get().profile;
-    set({ profile: current ? { ...current, ...settings } : current });
+    const today = get().todaySummary;
+    set({
+      profile: current ? { ...current, ...settings } : current,
+      // The summary itself doesn't depend on the goal (the cap is applied when
+      // it is read), so only the goal beside it moves.
+      ...(today ? { todaySummary: { ...today, dailyGoal: settings.dailyGoal } } : {}),
+    });
   },
 
   resetProgress: async (setId) => {
