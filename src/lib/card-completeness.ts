@@ -32,7 +32,8 @@ export function missingNounFields(card: CompletenessCard, isGermanTerm: boolean)
 
   const missing: MissingField[] = [];
   if (!e?.gender) missing.push("gender");
-  if (!e?.plural?.trim()) missing.push("plural");
+  // An explicit "no plural" is a complete answer; a blank plural is not.
+  if (!e?.plural?.trim() && !e?.noPlural) missing.push("plural");
   if (!card.example?.trim()) missing.push("example");
   return missing;
 }

@@ -52,7 +52,7 @@ describe("readAiActionsToday", () => {
 describe("ceilingFromEnv", () => {
   it("uses the env value, else the documented default", () => {
     assert.equal(ceilingFromEnv("250"), 250);
-    assert.equal(ceilingFromEnv(undefined), 20);
-    assert.equal(ceilingFromEnv("nope"), 20);
+    assert.equal(ceilingFromEnv(undefined), 1500);
+    assert.equal(ceilingFromEnv("nope"), 1500);
   });
 });

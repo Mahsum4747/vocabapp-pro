@@ -184,6 +184,9 @@ export default defineConfig(({ command, isPreview }) => ({
             // externalizes AND traces+copies the package into the deployed
             // function's node_modules.
             traceDeps: ["firebase-admin*"],
+            // Run functions next to the EU-hosted Firestore (eur3) and Neon
+            // (eu-central-1) data instead of Vercel's default US region.
+            vercel: { regions: ["fra1"], functions: { regions: ["fra1"] } },
           }),
         ]
       : []),

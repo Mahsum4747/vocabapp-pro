@@ -57,6 +57,13 @@ export type VerbGovernment = {
 export type CardEnrichment = {
   gender?: GrammaticalGender;
   plural?: string;
+  /**
+   * The learner explicitly marked this noun as having no plural (Milch,
+   * Wasser). Distinct from an absent `plural`, which means "not filled in":
+   * only this counts as a complete state. `source: "user"` only — the
+   * dictionary never sets it.
+   */
+  noPlural?: true;
   governs?: VerbGovernment[];
   directCase?: "dativ";
   source: CardEnrichmentSource;

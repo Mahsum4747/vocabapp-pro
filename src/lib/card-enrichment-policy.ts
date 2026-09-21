@@ -31,7 +31,15 @@ export function sanitizeUserEnrichment(value: unknown): CardEnrichment | null {
   const plural =
     typeof record.plural === "string" && record.plural.trim() ? record.plural.trim() : undefined;
 
-  return { source: "user", ...(gender ? { gender } : {}), ...(plural ? { plural } : {}) };
+  // "No plural" and a plural are mutually exclusive; an actual plural wins.
+  const noPlural = record.noPlural === true && !plural;
+
+  return {
+    source: "user",
+    ...(gender ? { gender } : {}),
+    ...(plural ? { plural } : {}),
+    ...(noPlural ? { noPlural: true as const } : {}),
+  };
 }
 
 interface EnrichmentContext {

@@ -7,6 +7,7 @@ import { recordStudyActivityFor, type StreakInfo } from "./streak";
 import { defaultScheduler as scheduler } from "./srs";
 import { planReview } from "./review-plan";
 import { missingNounFields } from "./card-completeness";
+import { findOrphanProgressIds, foreignSetIds } from "./progress-orphans";
 import { isStudiableSet } from "./srs";
 import {
   applyCountDelta,
@@ -1330,6 +1331,45 @@ export const getTodaySummary = createServerFn({ method: "GET" })
         const sets = setsSnap.docs.map((d) => ({ id: d.id, ...d.data() })) as StudySet[];
         const progress: Record<string, CardProgress> = {};
         for (const doc of progressSnap.docs) progress[doc.id] = doc.data() as CardProgress;
+
+        // The weekly pass sees every row and every card at once, so it is the
+        // one place that can safely drop rows whose card is provably gone (the
+        // raw `due` count would otherwise carry them forever). Not a reaction
+        // to any single edit — a comparison against the library as it is now.
+        // Skipped if the library came back empty while rows exist: that looks
+        // like a failed read, not a user who deleted everything.
+        if (sets.length > 0) {
+          const foreignIds = foreignSetIds(sets, progress);
+          const existingForeign = new Set<string>();
+          for (let i = 0; i < foreignIds.length; i += 300) {
+            const docs = await db.getAll(
+              ...foreignIds.slice(i, i + 300).map((id) => db.collection("study_sets").doc(id)),
+            );
+            for (const doc of docs) if (doc.exists) existingForeign.add(doc.id);
+          }
+          const orphanIds = findOrphanProgressIds({
+            ownerSets: sets,
+            rows: progress,
+            existingForeignSetIds: existingForeign,
+          });
+          for (let i = 0; i < orphanIds.length; i += 400) {
+            const batch = db.batch();
+            for (const id of orphanIds.slice(i, i + 400)) batch.delete(progressCol.doc(id));
+            await batch.commit();
+          }
+          for (const id of orphanIds) delete progress[id];
+          if (orphanIds.length > 0) {
+            // The counts taken above included them; take them again.
+            const [dueAgain, nextAgain] = await Promise.all([
+              progressCol.where("dueAt", "<=", now).count().get(),
+              progressCol.where("dueAt", ">", now).orderBy("dueAt").limit(1).get(),
+            ]);
+            const nextAgainValue = nextAgain.docs[0]?.get("dueAt");
+            clock.due = dueAgain.data().count;
+            clock.nextDueAt = typeof nextAgainValue === "number" ? nextAgainValue : null;
+          }
+        }
+
         // One definition of `due` everywhere: the raw count, same as a refresh.
         const summary: TodaySummary = { ...buildTodaySummary(sets, progress, now), ...clock };
         await userRef.set(
