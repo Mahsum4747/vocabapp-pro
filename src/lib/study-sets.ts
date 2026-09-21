@@ -184,9 +184,9 @@ function toCards(
  * Brand-new card ids can't have a progress row, so they cost no read; every
  * other id is read once with `getAll`.
  *
- * `deleteIds` are progress rows to delete because their card is gone for good
- * (never for archived/excluded/reference — those are reversible — and never for
- * a move, which is a separate decision). Best-effort like the streak: the edit
+ * `deleteIds` are progress rows to delete because their set is gone for good
+ * (only `deleteSet` passes them: never for archived/excluded/reference — those
+ * are reversible — nor for a card removal, term edit or move). Best-effort like the streak: the edit
  * is already stored, and a failure here only leaves a badge count slightly off
  * until the weekly full rebuild.
  */
@@ -499,14 +499,12 @@ export const replaceCards = createServerFn({ method: "POST" })
       .filter((c): c is Card => c !== null);
     const now = Date.now();
     await ref.update({ cards: nextCards, updatedAt: now });
-    // Cards that left the set entirely have no way back: their progress rows
-    // are dead, and left in place they would keep inflating the due count.
-    const keptIds = new Set(nextCards.map((c) => c.id));
+    // No row deletion here: a removed card — or a term edit, which mints a new
+    // id — leaves its old progress row in place. Only `deleteSet` deletes rows.
     await syncSummaryForSetChange({
       userId: context.userId,
       before: existing,
       after: { ...existing, cards: nextCards },
-      deleteIds: existing.cards.map((c) => c.id).filter((id) => !keptIds.has(id)),
     });
     return nextCards;
   });
