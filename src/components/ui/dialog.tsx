@@ -18,7 +18,7 @@ export function DialogContent({
       <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-fg/30 shadow-[var(--elevation-4)] ease-[var(--ease-out)] data-[state=open]:duration-200 data-[state=closed]:duration-120 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
       <DialogPrimitive.Content
         className={cn(
-          "fixed top-1/2 left-1/2 z-50 w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-surface p-6 shadow-[var(--elevation-3)] outline-none ease-[var(--ease-out)] data-[state=open]:duration-200 data-[state=closed]:duration-120 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
+          "fixed top-1/2 left-1/2 z-50 w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-card bg-surface p-6 shadow-[var(--elevation-3)] outline-none ease-[var(--ease-out)] data-[state=open]:duration-200 data-[state=closed]:duration-120 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
           className,
         )}
         {...props}
@@ -27,7 +27,7 @@ export function DialogContent({
           {title}
         </DialogPrimitive.Title>
         {children}
-        <DialogPrimitive.Close className="absolute top-4 right-4 rounded-md p-2 pointer-coarse:top-2.5 pointer-coarse:right-2.5 pointer-coarse:p-3.5 text-muted transition-colors hover:bg-surface-2 hover:text-fg">
+        <DialogPrimitive.Close className="absolute top-4 right-4 rounded-control p-2 pointer-coarse:top-2.5 pointer-coarse:right-2.5 pointer-coarse:p-3.5 text-muted transition-colors hover:bg-surface-2 hover:text-fg">
           <X className="size-4" />
           <span className="sr-only">Kapat</span>
         </DialogPrimitive.Close>

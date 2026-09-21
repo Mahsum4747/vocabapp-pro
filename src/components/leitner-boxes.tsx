@@ -51,7 +51,7 @@ export function LeitnerBoxes({
             aria-label={`Box ${box}, ${count} card${count === 1 ? "" : "s"}${clickable ? "" : ", empty"}`}
             onClick={() => onSelectBox(isSelected ? null : box)}
             className={cn(
-              "flex min-w-10 flex-col items-center gap-0.5 rounded-lg px-2 py-1.5 transition-colors pointer-coarse:min-w-11",
+              "flex min-w-10 flex-col items-center gap-0.5 rounded-control px-2 py-1.5 transition-colors pointer-coarse:min-w-11",
               isSelected
                 ? "bg-primary text-primary-fg"
                 : tier === "high"
@@ -90,7 +90,7 @@ export function LeitnerBoxes({
           params={{ setId }}
           search={{ filter: "weak" as const }}
           aria-label={`Study ${weak} weak word${weak === 1 ? "" : "s"}`}
-          className="flex min-w-10 flex-col items-center gap-0.5 rounded-lg bg-danger-soft px-2 py-1.5 transition-opacity hover:opacity-80 pointer-coarse:min-w-11"
+          className="flex min-w-10 flex-col items-center gap-0.5 rounded-control bg-danger-soft px-2 py-1.5 transition-opacity hover:opacity-80 pointer-coarse:min-w-11"
         >
           <p className="text-3xs font-medium tracking-wide text-danger uppercase">Weak</p>
           <p className="text-xs font-medium text-danger tabular-nums">
@@ -100,7 +100,7 @@ export function LeitnerBoxes({
       ) : null}
       {notStarted > 0 ? (
         <span
-          className="flex min-w-10 flex-col items-center gap-0.5 rounded-lg bg-streak/10 px-2 py-1.5 pointer-coarse:min-w-11"
+          className="flex min-w-10 flex-col items-center gap-0.5 rounded-control bg-streak/10 px-2 py-1.5 pointer-coarse:min-w-11"
           aria-label={`${notStarted} card${notStarted === 1 ? "" : "s"} not started`}
         >
           <p className="text-3xs font-medium tracking-wide text-streak uppercase">New</p>

@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { Progress } from "./ui/progress";
 
 const BACK_LINK =
-  "inline-flex size-11 items-center justify-center rounded-md text-muted transition-colors hover:bg-surface-2 hover:text-fg active:bg-surface-2";
+  "inline-flex size-11 items-center justify-center rounded-control text-muted transition-colors hover:bg-surface-2 hover:text-fg active:bg-surface-2";
 
 export function StudyChrome({
   setId,

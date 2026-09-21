@@ -144,6 +144,8 @@
   --duration-slow: 300ms;
   /* Entrance of page-level blocks (stagger-in). */
   --duration-enter: 240ms;
+  /* The per-answer tick and ring. Under 300ms: it fires on every correct answer. */
+  --duration-celebrate: 240ms;
 
   /* Mastery visualization — derived from the existing success/subtle tokens
      above, not new colors. --gradient-mastery picks up whichever
@@ -432,7 +434,7 @@ body[data-celebrate="correct"] .study-pulse {
 }
 
 .celebrate-mark {
-  animation: celebrate-mark 520ms var(--ease-out) forwards;
+  animation: celebrate-mark var(--duration-celebrate) var(--ease-out) forwards;
 }
 
 /* A single ring opening outward — the confirmation gesture, doing the work a
@@ -449,7 +451,7 @@ body[data-celebrate="correct"] .study-pulse {
 }
 
 .celebrate-ring {
-  animation: celebrate-ring 460ms var(--ease-out) forwards;
+  animation: celebrate-ring var(--duration-celebrate) var(--ease-out) forwards;
 }
 
 @keyframes celebrate-badge {

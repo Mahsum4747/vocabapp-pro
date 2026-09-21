@@ -50,7 +50,7 @@ export function FlashCard({
       type="button"
       onClick={onFlip}
       className={cn(
-        "flex min-h-80 w-full flex-col justify-between gap-4 rounded-2xl p-8 text-left shadow-[var(--elevation-2)] active:opacity-90 md:min-h-96",
+        "flex min-h-80 w-full flex-col justify-between gap-4 rounded-card p-8 text-left shadow-[var(--elevation-2)] active:opacity-90 md:min-h-96",
         // Colour/opacity transitions; a keyboard flip (instant) keeps only the press
         // feedback so nothing else animates. Opacity is listed so active:opacity-90
         // eases instead of snapping.
@@ -87,7 +87,7 @@ export function FlashCard({
         <img
           src={imageUrl}
           alt=""
-          className="mx-auto max-h-28 rounded-lg object-contain md:max-h-36"
+          className="mx-auto max-h-28 rounded-control object-contain md:max-h-36"
         />
       ) : null}
       <div className="flex flex-col gap-3">

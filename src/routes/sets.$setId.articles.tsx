@@ -149,7 +149,7 @@ function ArticleDrillPage() {
         index={order.length}
         total={order.length}
       >
-        <div className="mx-auto max-w-md rounded-xl bg-surface p-8 text-center shadow-[var(--elevation-1)]">
+        <div className="mx-auto max-w-md rounded-card bg-surface p-8 text-center shadow-[var(--elevation-1)]">
           <p className="text-sm text-muted">Round result</p>
           <p className="mt-2 font-display text-5xl font-medium tracking-tight tabular-nums">
             {pct}%
@@ -194,7 +194,7 @@ function ArticleDrillPage() {
               disabled={revealed}
               onClick={() => choose(option)}
               className={cn(
-                "rounded-lg bg-surface px-4 py-6 text-center text-lg font-semibold shadow-[var(--elevation-1)] transition-[background-color,box-shadow] duration-[var(--duration-fast)]",
+                "rounded-card bg-surface px-4 py-6 text-center text-lg font-semibold shadow-[var(--elevation-1)] transition-[background-color,box-shadow] duration-[var(--duration-fast)]",
                 !revealed && "hover:shadow-[var(--elevation-2)]",
                 show && isCorrectOption && feedbackToneClasses("correct"),
                 show && isChosen && !isCorrectOption && feedbackToneClasses("incorrect"),

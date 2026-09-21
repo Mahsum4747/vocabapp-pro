@@ -50,7 +50,7 @@ export function SpeakButton({
       }}
       aria-label={label}
       className={cn(
-        "tap-target inline-flex shrink-0 items-center justify-center rounded-md p-1.5 text-muted hover:bg-surface-2 hover:text-fg active:bg-surface-2",
+        "tap-target inline-flex shrink-0 items-center justify-center rounded-control p-1.5 text-muted hover:bg-surface-2 hover:text-fg active:bg-surface-2",
         className,
       )}
     >

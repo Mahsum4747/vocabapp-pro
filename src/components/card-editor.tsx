@@ -71,7 +71,7 @@ function DiacriticRow({ onInsert }: { onInsert: (char: string) => void }) {
           // (read in onClick) are still whatever the user left them at.
           onMouseDown={(e) => e.preventDefault()}
           onClick={() => onInsert(char)}
-          className="rounded-md bg-surface-2 px-2 py-0.5 text-xs font-medium text-fg hover:bg-border active:bg-border pointer-coarse:min-h-11 pointer-coarse:min-w-11"
+          className="rounded-control bg-surface-2 px-2 py-0.5 text-xs font-medium text-fg hover:bg-border active:bg-border pointer-coarse:min-h-11 pointer-coarse:min-w-11"
         >
           {char}
         </button>
@@ -642,7 +642,7 @@ export function CardEditor({
       {cards.map((card, index) => (
         <div
           key={card.id}
-          className="rounded-xl bg-surface p-4 shadow-[var(--elevation-1)] md:p-5"
+          className="rounded-card bg-surface p-4 shadow-[var(--elevation-1)] md:p-5"
         >
           <div className="mb-3 flex items-center justify-between">
             <span className="text-xs font-medium text-muted tabular-nums">{index + 1}</span>
@@ -687,13 +687,13 @@ export function CardEditor({
                 {profile.hasTermAutocomplete &&
                 activeSuggestionId === card.id &&
                 termSuggestionsFor(card).length > 0 ? (
-                  <div className="absolute z-10 mt-1 w-full space-y-0.5 rounded-lg bg-surface p-1 shadow-[var(--elevation-1)]">
+                  <div className="absolute z-10 mt-1 w-full space-y-0.5 rounded-card bg-surface p-1 shadow-[var(--elevation-1)]">
                     {termSuggestionsFor(card).map((word) => (
                       <button
                         key={word}
                         type="button"
                         onMouseDown={() => pickTermSuggestion(card.id, word)}
-                        className="block w-full rounded-md px-2.5 py-1.5 text-left text-sm text-fg hover:bg-surface-2"
+                        className="block w-full rounded-control px-2.5 py-1.5 text-left text-sm text-fg hover:bg-surface-2"
                       >
                         {word}
                       </button>
@@ -863,7 +863,7 @@ export function CardEditor({
                 above, never by typing or by the term changing. Selecting a
                 row is the only path that writes to `example`. */}
             {exampleSuggestions[card.id]?.open ? (
-              <div className="space-y-1.5 rounded-lg bg-surface-2 p-2.5">
+              <div className="space-y-1.5 rounded-card bg-surface-2 p-2.5">
                 {exampleSuggestions[card.id]?.status === "checking" ? (
                   <div className="flex items-center gap-2 py-1 text-sm text-muted">
                     <Loader2 className="size-3.5 animate-spin" />
@@ -907,7 +907,7 @@ export function CardEditor({
                         key={i}
                         type="button"
                         onClick={() => pickExampleSuggestion(card.id, sentence)}
-                        className="block w-full rounded-md bg-surface px-2.5 py-2 text-left text-sm text-fg shadow-[var(--elevation-1)] hover:bg-border"
+                        className="block w-full rounded-control bg-surface px-2.5 py-2 text-left text-sm text-fg shadow-[var(--elevation-1)] hover:bg-border"
                       >
                         {sentence}
                       </button>
@@ -1005,7 +1005,7 @@ export function CardEditor({
                   <img
                     src={card.imageUrl}
                     alt=""
-                    className="h-20 w-20 rounded-lg object-cover shadow-[var(--elevation-1)]"
+                    className="h-20 w-20 rounded-control object-cover shadow-[var(--elevation-1)]"
                   />
                   <button
                     type="button"
@@ -1019,7 +1019,7 @@ export function CardEditor({
               ) : (
                 <Label
                   htmlFor={`image-${card.id}`}
-                  className="inline-flex h-9 cursor-pointer items-center gap-2 rounded-md bg-surface-2 px-3 text-sm font-medium text-fg hover:bg-border"
+                  className="inline-flex h-9 cursor-pointer items-center gap-2 rounded-control bg-surface-2 px-3 text-sm font-medium text-fg hover:bg-border"
                 >
                   {uploadingId === card.id ? (
                     <Loader2 className="size-4 animate-spin" />

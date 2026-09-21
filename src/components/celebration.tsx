@@ -53,7 +53,9 @@ function prefersReducedMotion(): boolean {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
-const TICK_MS = 200;
+// A correct answer's pulse (220ms) and tick/ring (240ms) all finish inside this, so the
+// mark is removed after it has faded out rather than being cut off mid-animation.
+const TICK_MS = 260;
 
 export function CelebrationProvider({ children }: { children: ReactNode }) {
   const [tick, setTick] = useState<number | null>(null);

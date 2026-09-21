@@ -289,7 +289,7 @@ function SetPage() {
 
       {!studySet.isReference ? (
         <>
-          <div className="mt-6 flex flex-col gap-4 rounded-xl bg-surface p-4 shadow-[var(--elevation-1)] sm:flex-row sm:items-center sm:gap-6">
+          <div className="mt-6 flex flex-col gap-4 rounded-card bg-surface p-4 shadow-[var(--elevation-1)] sm:flex-row sm:items-center sm:gap-6">
             <div className="min-w-40 flex-1">
               <div className="flex justify-between text-xs text-muted">
                 <span>Mastery</span>
@@ -436,11 +436,11 @@ function SetPage() {
             ) : null}
 
             {visibleCards.length === 0 ? (
-              <div className="rounded-xl bg-surface px-4 py-8 text-center text-sm text-muted shadow-[var(--elevation-1)]">
+              <div className="rounded-card bg-surface px-4 py-8 text-center text-sm text-muted shadow-[var(--elevation-1)]">
                 {cardView === "archived" ? "No archived cards." : "No cards match your search."}
               </div>
             ) : (
-              <ul className="divide-y divide-border overflow-hidden rounded-xl bg-surface shadow-[var(--elevation-1)]">
+              <ul className="divide-y divide-border overflow-hidden rounded-card bg-surface shadow-[var(--elevation-1)]">
                 {visibleCards.map((card) => {
                   const isExcluded = card.status === "excluded";
                   return (
@@ -466,7 +466,7 @@ function SetPage() {
                       <button
                         type="button"
                         onClick={() => toggleStar(setId, card.id)}
-                        className="mt-0.5 grid size-11 shrink-0 place-items-center rounded-md text-muted hover:bg-surface-2 hover:text-fg"
+                        className="mt-0.5 grid size-11 shrink-0 place-items-center rounded-control text-muted hover:bg-surface-2 hover:text-fg"
                         aria-label={card.starred ? "Unstar" : "Star"}
                       >
                         <Star className={card.starred ? "size-4 fill-fg text-fg" : "size-4"} />

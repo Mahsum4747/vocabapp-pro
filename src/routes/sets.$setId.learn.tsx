@@ -165,7 +165,7 @@ function LearnPage() {
         total={items.length}
         filterLabel={filterLabel}
       >
-        <div className="mx-auto max-w-md rounded-xl bg-surface p-8 text-center shadow-[var(--elevation-1)]">
+        <div className="mx-auto max-w-md rounded-card bg-surface p-8 text-center shadow-[var(--elevation-1)]">
           <p className="text-sm text-muted">Round result</p>
           <p className="mt-2 font-display text-5xl font-medium tracking-tight tabular-nums">
             {pct}%
@@ -216,7 +216,7 @@ function LearnPage() {
         <img
           src={item.imageUrl}
           alt=""
-          className="mt-3 max-h-48 rounded-lg object-contain shadow-[var(--elevation-1)]"
+          className="mt-3 max-h-48 rounded-control object-contain shadow-[var(--elevation-1)]"
         />
       ) : null}
       <h2 className="mt-3 font-display text-3xl font-medium tracking-tight text-balance whitespace-pre-line">
@@ -243,7 +243,7 @@ function LearnPage() {
                   grade(option === item.answer);
                 }}
                 className={cn(
-                  "rounded-lg bg-surface px-4 py-3.5 text-left text-sm shadow-[var(--elevation-1)] transition-[background-color,box-shadow] duration-[var(--duration-fast)]",
+                  "rounded-card bg-surface px-4 py-3.5 text-left text-sm shadow-[var(--elevation-1)] transition-[background-color,box-shadow] duration-[var(--duration-fast)]",
                   !revealed && "hover:shadow-[var(--elevation-2)]",
                   show && option === item.answer && feedbackToneClasses("correct"),
                   show && chosen && option !== item.answer && feedbackToneClasses("incorrect"),

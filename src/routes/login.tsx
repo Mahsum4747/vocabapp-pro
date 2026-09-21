@@ -71,7 +71,7 @@ function LoginPage() {
         <div className="mb-6 flex justify-center">
           <Logo />
         </div>
-        <div className="rounded-2xl bg-surface p-8 shadow-[var(--elevation-raised)]">
+        <div className="rounded-card bg-surface p-8 shadow-[var(--elevation-raised)]">
           <h1 className="mb-1 font-display text-2xl font-medium tracking-tight">
             {mode === "signin" ? "Sign in" : "Create an account"}
           </h1>
@@ -122,7 +122,7 @@ function LoginPage() {
             </div>
 
             {error && (
-              <p className="rounded-lg bg-danger-soft px-3 py-2 text-sm text-danger">
+              <p className="rounded-card bg-danger-soft px-3 py-2 text-sm text-danger">
                 {error}
               </p>
             )}

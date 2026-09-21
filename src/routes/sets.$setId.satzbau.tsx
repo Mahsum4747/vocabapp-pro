@@ -182,7 +182,7 @@ function SatzbauPage() {
         total={questions.length}
         filterLabel={filterLabel}
       >
-        <div className="mx-auto max-w-md rounded-xl bg-surface p-8 text-center shadow-[var(--elevation-1)]">
+        <div className="mx-auto max-w-md rounded-card bg-surface p-8 text-center shadow-[var(--elevation-1)]">
           <p className="text-sm text-muted">Round result</p>
           <p className="mt-2 font-display text-5xl font-medium tracking-tight tabular-nums">
             {pct}%
@@ -221,7 +221,7 @@ function SatzbauPage() {
         Put the sentence in order
       </p>
 
-      <div className="mt-4 min-h-16 rounded-xl border-2 border-dashed border-border p-3">
+      <div className="mt-4 min-h-16 rounded-card border-2 border-dashed border-border p-3">
         {placed.length === 0 ? (
           <p className="text-sm text-muted">Tap words below to build the sentence</p>
         ) : (

@@ -91,7 +91,7 @@ export function TransferCardsDialog({
                   type="button"
                   disabled={busyTargetId !== null}
                   onClick={() => pick(target.id)}
-                  className="flex w-full items-center justify-between gap-3 rounded-lg bg-surface-2 px-3 py-2.5 text-left text-sm pointer-coarse:min-h-11 transition-colors hover:bg-border disabled:pointer-events-none disabled:opacity-50"
+                  className="flex w-full items-center justify-between gap-3 rounded-control bg-surface-2 px-3 py-2.5 text-left text-sm pointer-coarse:min-h-11 transition-colors hover:bg-border disabled:pointer-events-none disabled:opacity-50"
                 >
                   <span className="min-w-0 truncate font-medium">{target.title}</span>
                   <span className="inline-flex shrink-0 items-center gap-1 text-xs text-muted tabular-nums">

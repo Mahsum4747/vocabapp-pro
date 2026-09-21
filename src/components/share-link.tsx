@@ -31,7 +31,7 @@ export function ShareLink({ shareId }: { shareId: string }) {
   }
 
   return (
-    <div className="mt-4 rounded-xl bg-surface p-4 shadow-[var(--elevation-1)]">
+    <div className="mt-4 rounded-card bg-surface p-4 shadow-[var(--elevation-1)]">
       <p className="flex items-center gap-1.5 text-xs font-medium tracking-wide text-muted uppercase">
         <Link2 className="size-3.5" />
         Share link
@@ -42,7 +42,7 @@ export function ShareLink({ shareId }: { shareId: string }) {
           value={url}
           onFocus={(e) => e.currentTarget.select()}
           aria-label="Public link to this set"
-          className="min-w-0 flex-1 rounded-md bg-surface-2 px-3 py-2 font-mono text-xs text-fg"
+          className="min-w-0 flex-1 rounded-control bg-surface-2 px-3 py-2 font-mono text-xs text-fg"
         />
         <Button type="button" variant="outline" size="sm" onClick={copy} disabled={!origin}>
           {copied ? <Check className="size-4" /> : <Copy className="size-4" />}

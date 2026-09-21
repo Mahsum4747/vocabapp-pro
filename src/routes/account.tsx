@@ -147,7 +147,7 @@ function XpTab({ totalXP, totalReviews }: { totalXP: number; totalReviews: numbe
 
   return (
     <div className="space-y-8">
-      <section className="rounded-2xl bg-surface p-6 shadow-[var(--elevation-1)]">
+      <section className="rounded-card bg-surface p-6 shadow-[var(--elevation-1)]">
         <p className="flex items-center gap-1.5 text-xs font-medium tracking-wide text-muted uppercase">
           <Zap className="size-3.5" />
           Level {level}
@@ -203,7 +203,7 @@ function XpChart({ rows }: { rows: DailyStats[] }) {
           <div key={row.date} className="flex flex-1 flex-col items-center gap-1.5">
             <span className="text-xs text-muted tabular-nums">{row.xpEarned}</span>
             <div
-              className={cn("w-full rounded-md", row.xpEarned > 0 ? "bg-primary" : "bg-surface-2")}
+              className={cn("w-full rounded-control", row.xpEarned > 0 ? "bg-primary" : "bg-surface-2")}
               style={{ height: Math.max(4, height) }}
             />
             <span className="text-2xs text-subtle">{format(`${row.date}T00:00`, "EEE")}</span>
@@ -258,7 +258,7 @@ function AchievementCard({
   return (
     <div
       className={cn(
-        "flex gap-4 rounded-xl p-4 shadow-[var(--elevation-1)]",
+        "flex gap-4 rounded-card p-4 shadow-[var(--elevation-1)]",
         isUnlocked ? "bg-surface" : "bg-surface/50",
       )}
     >
@@ -304,7 +304,7 @@ function SoundTab() {
 
   return (
     <div className="max-w-md space-y-6">
-      <label className="flex items-center justify-between gap-4 rounded-xl bg-surface p-4 shadow-[var(--elevation-1)]">
+      <label className="flex items-center justify-between gap-4 rounded-card bg-surface p-4 shadow-[var(--elevation-1)]">
         <span>
           <span className="block font-medium">Sound effects</span>
           <span className="block text-sm text-muted">
@@ -319,7 +319,7 @@ function SoundTab() {
         />
       </label>
 
-      <div className="rounded-xl bg-surface p-4 shadow-[var(--elevation-1)]">
+      <div className="rounded-card bg-surface p-4 shadow-[var(--elevation-1)]">
         <div className="flex items-center justify-between">
           <label htmlFor="volume" className="font-medium">
             Volume
@@ -393,7 +393,7 @@ function AccountTab() {
 
   return (
     <div className="max-w-md space-y-4">
-      <div className="rounded-xl bg-danger-soft p-4 shadow-[var(--elevation-1)]">
+      <div className="rounded-card bg-danger-soft p-4 shadow-[var(--elevation-1)]">
         <h3 className="font-medium text-danger">Delete account</h3>
         <p className="mt-2 text-sm text-danger/80">
           This permanently deletes your account, all study sets, cards, and progress. This action

@@ -202,7 +202,7 @@ export function StudyDeck({
         total={order.length}
         filterLabel={filterLabel}
       >
-        <div className="mx-auto max-w-md rounded-xl bg-surface p-8 text-center shadow-[var(--elevation-1)]">
+        <div className="mx-auto max-w-md rounded-card bg-surface p-8 text-center shadow-[var(--elevation-1)]">
           <h2 className="font-display text-3xl font-medium tracking-tight">Round over</h2>
           <p className="mt-2 text-sm text-muted">You flipped {order.length} cards.</p>
           <div className="mt-6 flex flex-col gap-2">

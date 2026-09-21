@@ -15,7 +15,7 @@ export function DropdownMenuContent({
       <DropdownMenuPrimitive.Content
         sideOffset={sideOffset}
         className={cn(
-          "z-50 min-w-44 origin-(--radix-dropdown-menu-content-transform-origin) overflow-hidden rounded-lg bg-surface p-1 shadow-[var(--elevation-3)] ease-[var(--ease-out)] data-[state=open]:duration-150 data-[state=closed]:duration-100 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
+          "z-50 min-w-44 origin-(--radix-dropdown-menu-content-transform-origin) overflow-hidden rounded-card bg-surface p-1 shadow-[var(--elevation-3)] ease-[var(--ease-out)] data-[state=open]:duration-150 data-[state=closed]:duration-100 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
           className,
         )}
         {...props}
@@ -31,7 +31,7 @@ export function DropdownMenuItem({
   return (
     <DropdownMenuPrimitive.Item
       className={cn(
-        "flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm outline-none select-none pointer-coarse:min-h-11 focus:bg-surface-2 data-disabled:pointer-events-none data-disabled:opacity-40",
+        "flex cursor-pointer items-center gap-2 rounded-control px-3 py-2 text-sm outline-none select-none pointer-coarse:min-h-11 focus:bg-surface-2 data-disabled:pointer-events-none data-disabled:opacity-40",
         className,
       )}
       {...props}

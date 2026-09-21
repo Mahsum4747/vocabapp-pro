@@ -50,7 +50,7 @@ export function DailyGoalDialog({
                 disabled={saving !== null}
                 onClick={() => void choose(goal)}
                 className={cn(
-                  "flex items-center justify-between rounded-xl px-4 py-3 text-left transition-colors",
+                  "flex items-center justify-between rounded-card px-4 py-3 text-left transition-colors",
                   selected ? "bg-primary text-primary-fg" : "bg-surface-2 hover:bg-border",
                   saving !== null && "opacity-60",
                 )}
@@ -88,7 +88,7 @@ export function DailyGoalPicker() {
                 .finally(() => setSaving(null));
             }}
             className={cn(
-              "rounded-xl px-4 py-3 text-center transition-colors",
+              "rounded-card px-4 py-3 text-center transition-colors",
               selected ? "bg-primary text-primary-fg" : "bg-surface-2 hover:bg-border",
               saving !== null && "opacity-60",
             )}

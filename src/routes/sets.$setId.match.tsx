@@ -181,7 +181,7 @@ function MatchPage() {
       }
     >
       {done ? (
-        <div className="mx-auto max-w-md rounded-xl bg-surface p-8 text-center shadow-[var(--elevation-1)]">
+        <div className="mx-auto max-w-md rounded-card bg-surface p-8 text-center shadow-[var(--elevation-1)]">
           <h2 className="font-display text-3xl font-medium tracking-tight">Done</h2>
           <p className="mt-2 text-sm text-muted">
             {totalPairs} matches · {mm}:{ss}
@@ -208,7 +208,7 @@ function MatchPage() {
                 disabled={isMatch}
                 onClick={() => onTile(tile)}
                 className={cn(
-                  "min-h-24 rounded-lg px-3 py-3 text-left text-sm shadow-[var(--elevation-1)] transition-[background-color,opacity,transform] duration-[var(--duration-fast)]",
+                  "min-h-24 rounded-card px-3 py-3 text-left text-sm shadow-[var(--elevation-1)] transition-[background-color,opacity,transform] duration-[var(--duration-fast)]",
                   tile.kind === "term" ? "bg-primary text-primary-fg" : "bg-surface text-fg",
                   isOn && "ring-2 ring-ring ring-offset-2 ring-offset-bg",
                   isMatch && "opacity-35",
