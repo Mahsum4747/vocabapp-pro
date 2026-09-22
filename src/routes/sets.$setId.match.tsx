@@ -211,8 +211,7 @@ function MatchPage() {
                 disabled={isMatch}
                 onClick={() => onTile(tile)}
                 className={cn(
-                  "min-h-24 rounded-card px-3 py-3 text-left text-sm shadow-[var(--elevation-1)] transition-[background-color,opacity,transform] duration-[var(--duration-fast)]",
-                  tile.kind === "term" ? "bg-primary text-primary-fg" : "bg-surface text-fg",
+                  "min-h-24 rounded-card border border-border bg-surface px-3 py-3 text-left text-sm text-fg shadow-[var(--elevation-1)] transition-[background-color,opacity,transform] duration-[var(--duration-fast)]",
                   isOn && "ring-2 ring-ring ring-offset-2 ring-offset-bg",
                   isMatch && "opacity-35",
                   isWrong && feedbackToneClasses("incorrect"),
