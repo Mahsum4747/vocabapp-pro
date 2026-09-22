@@ -314,7 +314,7 @@ function TestPage() {
               tone={answersMatch(written, q.answer, matchOptions) ? "correct" : "incorrect"}
             >
               {answersMatch(written, q.answer, matchOptions) ? (
-                "Correct"
+                <>Correct · {displayAnswer}</>
               ) : (
                 <>Correct answer: {displayAnswer}</>
               )}
