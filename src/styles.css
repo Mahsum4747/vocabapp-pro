@@ -41,6 +41,10 @@
   --color-article-der: #1d5b96;
   --color-article-die: #b7293f;
   --color-article-das: #1f7a6b;
+  /* Headword (flashcard term) accent — its own token, deliberately not reused
+     from --color-article-das (teal, grammar-coded) or --color-streak
+     (orange, status-coded). Ochre, for the serif headword only. */
+  --color-headword: #7d5108;
   /* A third, more saturated success step for the top mastery tier — blended
      from the two success tones above rather than a new raw color. Dark mode
      below uses a stronger mix ratio: contrast against --color-surface turned
@@ -76,6 +80,8 @@
   --color-rating-fg: var(--color-bg);
   --font-sans: "Figtree", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Geist", ui-sans-serif, system-ui, sans-serif;
+  /* Flashcard headword only — the rest of the UI stays on --font-sans/--font-display. */
+  --font-serif: "Fraunces", ui-serif, Georgia, serif;
   --radius-xs: 4px;
   --radius-sm: 8px;
   /* Semantic radii: components say what they are, not how round. */
@@ -175,6 +181,7 @@
     --color-article-der: #7ab3e8;
     --color-article-die: #e8828f;
     --color-article-das: #6fc9b8;
+    --color-headword: #e8bc63;
     /* On dark a black ring vanishes into the surface, so the hairline is a
        faint white one instead. */
     --elevation-1: 0 0 0 1px rgb(255 255 255 / 0.08), 0 1px 2px 0 rgb(0 0 0 / 0.3);

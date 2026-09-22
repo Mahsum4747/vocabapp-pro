@@ -57,7 +57,7 @@ export function FlashCard({
         instant
           ? "transition-[opacity] duration-[var(--duration-press)] ease-[var(--ease-out)]"
           : "transition-[background-color,color,opacity] duration-[var(--duration-fast)] ease-[var(--ease-out)]",
-        flipped ? "bg-primary text-primary-fg" : "bg-surface text-fg",
+        "border border-border bg-surface text-fg",
       )}
       aria-label={flipped ? "Show term" : "Show definition"}
     >
@@ -67,21 +67,10 @@ export function FlashCard({
         className="card-face flex flex-1 flex-col justify-between gap-4"
       >
       <div className="flex items-center justify-between">
-        <span
-          className={cn(
-            "text-xs font-medium tracking-wide uppercase",
-            flipped ? "text-primary-fg/70" : "text-muted",
-          )}
-        >
+        <span className="text-xs font-medium tracking-wide text-muted uppercase">
           {flipped ? "Definition" : "Term"}
         </span>
-        <SpeakButton
-          text={flipped ? definition : term}
-          language={flipped ? undefined : termLanguage}
-          className={
-            flipped ? "text-primary-fg/70 hover:bg-primary-fg/10 hover:text-primary-fg" : undefined
-          }
-        />
+        <SpeakButton text={flipped ? definition : term} language={flipped ? undefined : termLanguage} />
       </div>
       {imageUrl ? (
         <img
@@ -96,7 +85,7 @@ export function FlashCard({
             "text-balance",
             flipped
               ? "text-xl leading-snug whitespace-pre-line md:text-2xl"
-              : "font-display text-3xl font-semibold tracking-tight md:text-4xl",
+              : "font-serif text-3xl font-semibold tracking-tight text-headword md:text-4xl",
           )}
         >
           {flipped ? (
@@ -109,38 +98,22 @@ export function FlashCard({
             same question, just a different language. Never leaks the term. */}
         {flipped && definition2 ? (
           <span className="flex items-start gap-1">
-            <span className="text-base whitespace-pre-line text-primary-fg/85">
-              {definition2}
-            </span>
-            <SpeakButton
-              text={definition2}
-              language={definitionLanguage2}
-              label="Listen to the second definition"
-              className="text-primary-fg/70 hover:bg-primary-fg/10 hover:text-primary-fg"
-            />
+            <span className="text-base whitespace-pre-line text-muted">{definition2}</span>
+            <SpeakButton text={definition2} language={definitionLanguage2} label="Listen to the second definition" />
           </span>
         ) : null}
         {/* The example is in the term language, so it belongs with the answer side. */}
         {flipped && example ? (
           <span className="flex items-start gap-1">
-            <span className="text-sm italic text-primary-fg/70 md:text-base">{example}</span>
-            <SpeakButton
-              text={example}
-              language={termLanguage}
-              label="Listen to the example"
-              className="text-primary-fg/70 hover:bg-primary-fg/10 hover:text-primary-fg"
-            />
+            <span className="text-sm italic text-muted md:text-base">{example}</span>
+            <SpeakButton text={example} language={termLanguage} label="Listen to the example" />
           </span>
         ) : null}
         {/* Personal, never spoken (no SpeakButton) — it's a reminder to the
             learner, not language content. */}
-        {flipped && note ? (
-          <span className="text-sm whitespace-pre-line text-primary-fg/70">{note}</span>
-        ) : null}
+        {flipped && note ? <span className="text-sm whitespace-pre-line text-muted">{note}</span> : null}
       </div>
-      <span className={cn("text-sm", flipped ? "text-primary-fg/70" : "text-subtle")}>
-        Tap to flip
-      </span>
+      <span className="text-sm text-subtle">Tap to flip</span>
       </div>
     </button>
   );
