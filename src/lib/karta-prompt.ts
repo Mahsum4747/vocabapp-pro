@@ -6,7 +6,7 @@
  * LANGUAGE / LEVEL are left for the learner to fill.
  */
 export const KARTA_RULE =
-  "Karta JSON. term/def isn't enough: gender + a sentence per case.";
+  "Karta JSON. term/def isn't enough: gender + a sentence per case. At least 8, at most 200 cards.";
 
 export const KARTA_PROMPT = `You write a Karta study set. Karta trains German PRODUCTION:
 article, case, then a sentence — not a word list.
@@ -35,7 +35,9 @@ Output ONLY valid JSON. No markdown. No commentary.
 }
 
 Rules:
-- Exactly 50 cards.
+- Card count = COUNT below. Not fixed at 50.
+  Minimum 8, maximum 200.
+  Topic smaller → fewer cards. Do not pad.
 - Real German orthography (ß, umlauts).
 - Nouns: gender required. Article not inside term.
 - If you cannot write a correct akk or dat sentence, use null.
@@ -46,4 +48,5 @@ Rules:
 TOPIC: 
 SOURCE LANGUAGE: German
 TARGET LANGUAGE: 
-LEVEL: `;
+LEVEL: 
+COUNT: `;
