@@ -20,7 +20,7 @@ export function ReviewCounts({
 }) {
   const parts: string[] = [];
   if (summary.due > 0) parts.push(`${summary.due} due`);
-  if (summary.fresh > 0) parts.push(`${summary.fresh} new`);
+  if (summary.newCount > 0) parts.push(`${summary.newCount} new`);
 
   if (parts.length === 0) return null;
 
@@ -42,9 +42,9 @@ export function ReviewCounts({
  * there is nothing waiting, so a tidy library stays tidy.
  */
 export function DueBadge({ summary }: { summary: ReviewSummary }) {
-  if (summary.due === 0 && summary.fresh === 0) return null;
+  if (summary.due === 0 && summary.newCount === 0) return null;
 
-  const label = summary.due > 0 ? `${summary.due} due` : `${summary.fresh} new`;
+  const label = summary.due > 0 ? `${summary.due} due` : `${summary.newCount} new`;
 
   return (
     <span
