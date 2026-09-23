@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AppShell } from "@/components/app-shell";
+import { articleAccentClass } from "@/components/articleized-term";
 import { EmptyState } from "@/components/empty-state";
 import { feedbackToneClasses } from "@/components/feedback";
 import { StudySessionShell } from "@/components/study-session-shell";
@@ -247,7 +248,8 @@ function ArticleDrillPage() {
               disabled={revealed}
               onClick={() => choose(option)}
               className={cn(
-                "rounded-card bg-surface px-4 py-6 text-center text-lg font-semibold shadow-[var(--elevation-1)] transition-[background-color,box-shadow] duration-[var(--duration-fast)]",
+                "rounded-card border px-4 py-6 text-center text-lg font-semibold shadow-[var(--elevation-1)] transition-[background-color,box-shadow] duration-[var(--duration-fast)]",
+                articleAccentClass(option),
                 !revealed && "hover:shadow-[var(--elevation-2)]",
                 show && isCorrectOption && feedbackToneClasses("correct"),
                 show && isChosen && !isCorrectOption && feedbackToneClasses("incorrect"),
