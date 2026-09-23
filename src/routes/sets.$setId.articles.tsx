@@ -11,7 +11,9 @@ import { a1NounTrEntry } from "@/content/a1-german-nouns-tr";
 import { getArticleDrillProgress, recordArticleDrillAttempt } from "@/lib/article-drill";
 import { profileFor } from "@/lib/lang/profiles";
 import { useReviewLogger } from "@/lib/review-log";
-import { useSet, useStudyStore } from "@/lib/store";
+import { useSet, useSetProgress, useStudyStore } from "@/lib/store";
+import { buildReviewQueue } from "@/lib/srs";
+import { useSessionPlan } from "@/lib/use-session";
 import {
   isCardActive,
   resolveSetLanguages,
@@ -80,6 +82,8 @@ function ArticleDrillPage() {
   const logReview = useReviewLogger();
   const explanationLanguage = useStudyStore((s) => s.profile?.explanationLanguage);
   const [round, setRound] = useState(0);
+  const progress = useSetProgress(setId);
+  const plan = useSessionPlan(studySet?.id ? setId : undefined);
 
   const drillCards = useMemo<Card[]>(() => {
     if (!studySet || !termProfile.hasNounEnrichment) return [];
@@ -109,11 +113,19 @@ function ArticleDrillPage() {
   }, [setId]);
 
   const order = useMemo<Card[]>(() => {
+    if (!plan.ready) return [];
     const prior = priorProgressRef.current;
+    // This session's cards: the queue's order (due → weak → new) cut to the
+    // session cap, then ordered by this drill's own weakest-first rule.
+    const sessionCards = plan.take(
+      buildReviewQueue(drillCards, progress, { now: Date.now(), includeNotDue: true }).map(
+        (entry) => entry.card,
+      ),
+    );
     // Weakest (or never-attempted) first — a plain sort over already-loaded
     // state, same spirit as `weakCards`, not a new scheduler: nothing here
     // computes a due date or writes anything.
-    return shuffle(drillCards).sort((a, b) => {
+    return shuffle(sessionCards).sort((a, b) => {
       const pa = prior[a.id];
       const pb = prior[b.id];
       const accA = pa && pa.attempts > 0 ? pa.correct / pa.attempts : -1;
@@ -121,7 +133,7 @@ function ArticleDrillPage() {
       return accA - accB;
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [drillCards, round]);
+  }, [drillCards, round, plan.session]);
 
   const [index, setIndex] = useState(0);
   const [selected, setSelected] = useState<string | null>(null);
@@ -184,6 +196,8 @@ function ArticleDrillPage() {
   }
 
   function next() {
+    // Continue = this card is finished (hit or miss), whichever way it went.
+    if (studySet && card) plan.finish(studySet.id, card.id);
     setSelected(null);
     if (index + 1 >= order.length) {
       setDone(true);

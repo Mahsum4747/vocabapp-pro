@@ -10,6 +10,7 @@ import { isCardActive, resolveSetLanguages } from "@/lib/types";
 import { leitnerBoxOf } from "@/lib/quiz";
 import { queuedCards, weakCards } from "@/lib/srs";
 import { parseIntSearchParam } from "@/lib/utils";
+import { useSessionPlan } from "@/lib/use-session";
 
 type Search = { box?: number; filter?: "weak" };
 
@@ -31,6 +32,10 @@ function FlashcardsPage() {
   const markStudied = useStudyStore((s) => s.markStudied);
 
   const [starredOnly, setStarredOnly] = useState(false);
+  const plan = useSessionPlan(studySet?.id ? setId : undefined);
+  // Session length applies to the whole-set round only: a Leitner-box or
+  // weak-words round is a targeted list, not a pass through the set.
+  const sessioned = box === undefined && filter !== "weak";
 
   const boxCards = useMemo(() => {
     if (!studySet) return [];
@@ -43,13 +48,14 @@ function FlashcardsPage() {
   }, [studySet, box, filter, progress]);
 
   const deck = useMemo<DeckEntry[]>(() => {
-    if (!studySet) return [];
+    if (!studySet || !plan.ready) return [];
     const pool = starredOnly ? boxCards.filter((c) => c.starred) : boxCards;
     const cards = pool.length > 0 ? pool : boxCards;
     // Overdue first, then due, then weak, then new — the queue orders, the
     // scheduler decided the due dates it reads. A weak-words round keeps the
     // order it arrived in: worst first, which is the point of asking for it.
-    const ordered = filter === "weak" ? cards : queuedCards(cards, progress, { now: Date.now() });
+    const queued = filter === "weak" ? cards : queuedCards(cards, progress, { now: Date.now() });
+    const ordered = sessioned && !starredOnly ? plan.take(queued) : queued;
     return ordered.map((card) => ({
       card,
       setId: studySet.id,
@@ -62,7 +68,7 @@ function FlashcardsPage() {
     // not rebuild the deck and snap back to card 0. The deck is a snapshot
     // taken when the round starts.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [studySet?.id, box, filter, starredOnly]);
+  }, [studySet?.id, box, filter, starredOnly, plan.session]);
 
   const cardCount = `${boxCards.length} card${boxCards.length === 1 ? "" : "s"}`;
   const filterLabel =
@@ -105,6 +111,7 @@ function FlashcardsPage() {
       filterLabel={filterLabel}
       backToSetId={setId}
       allowShuffle
+      onCardFinished={sessioned ? (entry) => plan.finish(entry.setId, entry.card.id) : undefined}
       onToggleStar={onToggleStar}
       headerRight={
         <Button

@@ -1,4 +1,5 @@
 import type { SoundSettings } from "./sound.ts";
+import type { SetSession } from "./session-pass.ts";
 import type { Direction, ExplanationLanguage } from "./learning-prefs.ts";
 import type { ReviewRating } from "./types.ts";
 
@@ -118,6 +119,8 @@ export type UserProfile = {
   /** Achievement id -> epoch ms it was unlocked. */
   achievements: Record<string, number>;
   soundSettings: SoundSettings;
+  /** Per-set session length + pass progress, keyed by set document id. */
+  setSessions: Record<string, SetSession>;
   explanationLanguage: ExplanationLanguage;
   direction: Direction;
   /** True once the learner has saved or dismissed the one-time prefs prompt. */

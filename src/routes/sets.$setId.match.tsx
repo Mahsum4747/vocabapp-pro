@@ -13,6 +13,7 @@ import { ArticleizedTerm } from "@/components/articleized-term";
 import { displayTerm } from "@/lib/term-display";
 import { cn, parseIntSearchParam, shuffle } from "@/lib/utils";
 import { queuedCards } from "@/lib/srs";
+import { useSessionPlan } from "@/lib/use-session";
 import { ratingForOutcome, useReviewLogger } from "@/lib/review-log";
 
 type Search = { box?: number };
@@ -45,6 +46,7 @@ function MatchPage() {
   const markStudied = useStudyStore((s) => s.markStudied);
   const logReview = useReviewLogger();
   const [round, setRound] = useState(0);
+  const plan = useSessionPlan(studySet?.id ? setId : undefined);
 
   const boxCards = useMemo(() => {
     if (!studySet) return [];
@@ -53,12 +55,15 @@ function MatchPage() {
   }, [studySet, box, progress]);
 
   const tiles = useMemo<Tile[]>(() => {
-    // Take the six highest-priority cards, then shuffle only their tiles.
-    const picked = queuedCards(
+    if (!plan.ready) return [];
+    // Take the six highest-priority cards of this session, then shuffle only
+    // their tiles.
+    const queued = queuedCards(
       boxCards.filter((c) => c.term && c.definition),
       progress,
       { now: Date.now() },
-    ).slice(0, 6);
+    );
+    const picked = (box === undefined ? plan.take(queued) : queued).slice(0, 6);
     const both: Tile[] = picked.flatMap((card) => [
       {
         id: `${card.id}-t`,
@@ -81,7 +86,7 @@ function MatchPage() {
     ]);
     return shuffle(both);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [studySet?.id, box, round]);
+  }, [studySet?.id, box, round, plan.session]);
 
   const filterLabel =
     box !== undefined

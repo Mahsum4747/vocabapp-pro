@@ -1,7 +1,8 @@
 import { useEffect, useMemo } from "react";
 import { create } from "zustand";
 import type { CardEnrichment, CardProgress, CaseExamples, CardStatus, DailyStats, ReviewRating, StudySet } from "./types";
-import { emptyDailyStats } from "./types";
+import { emptyDailyStats, isCardActive } from "./types";
+import { markServed, type SetSession } from "./session-pass";
 import type { AchievementId, UserProfile } from "./gamification";
 import { configureSound, type SoundSettings } from "./sound";
 import {
@@ -25,6 +26,7 @@ import {
   dismissLearningPrefsPrompt as dismissLearningPrefsPromptFn,
   updateDailyGoal as updateDailyGoalFn,
   updateSoundSettings as updateSoundSettingsFn,
+  updateSetSession as updateSetSessionFn,
   resetSetProgress as resetSetProgressFn,
   type SetMetaPatch,
 } from "./study-sets";
@@ -143,6 +145,10 @@ type StudyState = {
   setDailyGoal: (goal: number) => Promise<void>;
   /** Change the sound preferences, on the server and on this device. */
   setSoundSettings: (next: SoundSettings) => Promise<void>;
+  /** Change how many cards one session of this set serves. Leaves the pass alone. */
+  setSessionCap: (setId: string, cap: number) => Promise<void>;
+  /** A card was finished: add it to this pass (resetting the pass when complete). */
+  markCardServed: (setId: string, cardId: string) => void;
   fetchMySetsForTransfer: () => Promise<StudySet[] | null>;
   copyCardsToSet: (sourceSetId: string, targetSetId: string, cardIds: string[]) => Promise<number>;
   moveCardsToSet: (sourceSetId: string, targetSetId: string, cardIds: string[]) => Promise<number>;
@@ -573,6 +579,30 @@ export const useStudyStore = create<StudyState>()((set, get) => ({
     const current = get().profile;
     if (current) set({ profile: { ...current, soundSettings: next } });
     await updateSoundSettingsFn({ data: next });
+  },
+
+  setSessionCap: async (setId, cap) => {
+    const resolvedId = findSet(get().sets, setId)?.id ?? setId;
+    const current = get().profile;
+    if (!current) return;
+    const prior = current.setSessions?.[resolvedId] ?? { served: [] };
+    const next: SetSession = { cap, served: prior.served };
+    set({ profile: { ...current, setSessions: { ...current.setSessions, [resolvedId]: next } } });
+    await updateSetSessionFn({ data: { setId: resolvedId, cap, served: next.served } });
+  },
+
+  markCardServed: (setId, cardId) => {
+    const target = findSet(get().sets, setId);
+    const current = get().profile;
+    if (!target || !current) return;
+    const activeIds = target.cards.filter(isCardActive).map((c) => c.id);
+    const prior = current.setSessions?.[target.id] ?? { served: [] };
+    const next = markServed(prior, cardId, activeIds);
+    set({ profile: { ...current, setSessions: { ...current.setSessions, [target.id]: next } } });
+    // Bookkeeping only: a failed write must never interrupt a study round.
+    void updateSetSessionFn({
+      data: { setId: target.id, cap: next.cap ?? null, served: next.served },
+    }).catch((error) => console.error("Failed to save session progress:", error));
   },
 
   fetchMySetsForTransfer: async () => {

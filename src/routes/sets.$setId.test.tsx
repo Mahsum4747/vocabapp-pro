@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { buildTest, leitnerBoxOf, type TestQuestion } from "@/lib/quiz";
 import { queuedCards } from "@/lib/srs";
+import { useSessionPlan } from "@/lib/use-session";
 import { useSet, useSetProgress, useStudyStore } from "@/lib/store";
 import { isCardActive, resolveSetLanguages } from "@/lib/types";
 import { answersMatch, parseIntSearchParam, cn } from "@/lib/utils";
@@ -40,6 +41,7 @@ function TestPage() {
   const markStudied = useStudyStore((s) => s.markStudied);
   const logReview = useReviewLogger();
   const [round, setRound] = useState(0);
+  const plan = useSessionPlan(studySet?.id ? setId : undefined);
 
   const boxCards = useMemo(() => {
     if (!studySet) return [];
@@ -48,12 +50,15 @@ function TestPage() {
   }, [studySet, box, progress]);
 
   const questions = useMemo<TestQuestion[]>(() => {
-    // Queue first so a test covers what is actually due, then build.
-    const queued = queuedCards(boxCards, progress, { now: Date.now() });
+    if (!plan.ready) return [];
+    // Queue first so a test covers what is actually due, then build — cut to
+    // this session unless it is a targeted Leitner-box round.
+    const all = queuedCards(boxCards, progress, { now: Date.now() });
+    const queued = box === undefined ? plan.take(all) : all;
     return buildTest(queued, Math.min(12, queued.length));
     // snapshot per round so grading doesn't reshuffle
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [studySet?.id, box, round]);
+  }, [studySet?.id, box, round, plan.session]);
 
   const filterLabel =
     box !== undefined
@@ -104,6 +109,7 @@ function TestPage() {
       rating: ratingForOutcome(ok),
       responseTimeMs: Date.now() - shownAt,
     });
+    if (box === undefined) plan.finish(studySet.id, q.cardId);
   }
 
   function next() {
