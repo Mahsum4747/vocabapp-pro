@@ -367,6 +367,7 @@ function SetPage() {
               showArticleDrill={hasArticleDrillCards}
               showCloze={hasClozeCards}
               showSatzbau={hasSatzbauCards}
+              showCaseDrill={hasArticleDrillCards}
             />
             {studySet.cards.length < 2 ? (
               <p className="mt-3 text-sm text-muted">You need at least two cards to study.</p>

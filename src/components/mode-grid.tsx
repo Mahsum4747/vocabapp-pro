@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import {
   GraduationCap,
+  Grid3x3,
   Layers,
   LayoutGrid,
   ListChecks,
@@ -53,6 +54,16 @@ const ARTICLE_DRILL_MODE = {
   iconColor: "text-primary-ink",
 };
 
+// Same eligibility pool as the article drill (known gender) — the case grid
+// (Akkusativ/Dativ inflected forms) is Phase 2's Adım 2, a separate skill
+// from the nominative der/die/das drill, so its own tile.
+const CASE_DRILL_MODE = {
+  to: "/sets/$setId/cases" as const,
+  title: "Cases",
+  icon: Grid3x3,
+  iconColor: "text-primary-ink",
+};
+
 // SquareDashed (an empty blank) reads more clearly as "fill this in" than the
 // previous TextCursorInput, which looked identical in spirit to Learn's/
 // Test's own text-entry moments.
@@ -91,6 +102,10 @@ export function ModeGrid({
    *  mode is scoped to. Same real-FSRS treatment as Cloze, for the same
    *  reason: it exercises the card's own content, not an isolated skill. */
   showSatzbau = false,
+  /** Show the case grid tile (Akkusativ/Dativ inflected forms) — same
+   *  eligibility as the article drill (known gender). Its own separate card
+   *  pool, same as the article drill. */
+  showCaseDrill = false,
 }: {
   setId: string;
   /** Restrict the study session to just this Leitner box (0..MASTERY_MAX). */
@@ -99,12 +114,14 @@ export function ModeGrid({
   showArticleDrill?: boolean;
   showCloze?: boolean;
   showSatzbau?: boolean;
+  showCaseDrill?: boolean;
 }) {
   const modes = [
     ...MODES,
     ...(showCloze ? [CLOZE_MODE] : []),
     ...(showSatzbau ? [SATZBAU_MODE] : []),
     ...(showArticleDrill ? [ARTICLE_DRILL_MODE] : []),
+    ...(showCaseDrill ? [CASE_DRILL_MODE] : []),
   ];
   return (
     <div className="flex flex-wrap gap-2">
@@ -129,10 +146,10 @@ export function ModeGrid({
             </div>
           );
         }
-        // The article drill has its own separate card pool (gendered German
-        // nouns only) — a Leitner box filter from the other four modes
-        // doesn't apply to it.
-        if (mode.to === "/sets/$setId/articles") {
+        // The article drill and the case grid each have their own separate
+        // card pool (gendered German nouns only) — a Leitner box filter
+        // from the other four modes doesn't apply to either.
+        if (mode.to === "/sets/$setId/articles" || mode.to === "/sets/$setId/cases") {
           return (
             <Link key={mode.title} to={mode.to} params={{ setId }} className={className}>
               {inner}
