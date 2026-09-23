@@ -362,6 +362,21 @@ export const useStudyStore = create<StudyState>()((set, get) => ({
       wordsBefore < goal &&
       wordsBefore + delta.uniqueWordsReviewed >= goal;
 
+    // The server already computed this review's due/weak/new delta
+    // (applyReviewToSummary, same bandOf definition set-card badges use) and
+    // hands it straight back — Home's "N due" otherwise only moved on the
+    // next explicit fetchTodaySummary() call, which returning to Home in the
+    // same session never triggers, so it read stale until end of day.
+    const previousTodaySummary = get().todaySummary;
+    const todaySummaryPatch = result.todaySummary
+      ? {
+          todaySummary: {
+            summary: result.todaySummary,
+            dailyGoal: previousTodaySummary?.dailyGoal ?? profileBefore?.dailyGoal ?? 0,
+          },
+        }
+      : {};
+
     set({
       progress: { ...get().progress, [cardId]: result.progress },
       ...(result.streak ? { streak: result.streak } : {}),
@@ -390,6 +405,7 @@ export const useStudyStore = create<StudyState>()((set, get) => ({
             },
           }
         : {}),
+      ...todaySummaryPatch,
     });
 
     return {
