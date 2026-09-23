@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { format, formatDistanceToNow } from "date-fns";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/app-shell";
@@ -6,8 +6,10 @@ import { AuthGate } from "@/components/auth-gate";
 import { StudyDeck, type DeckEntry } from "@/components/study-deck";
 import { useStudyStore } from "@/lib/store";
 import { buildLibrarySession, type ReviewSession } from "@/lib/review-session";
+import { profileFor } from "@/lib/lang/profiles";
 import type { QueueEntry } from "@/lib/srs";
 import { newLeftToday } from "@/lib/today-summary";
+import { isCardActive, resolveSetLanguages } from "@/lib/types";
 
 type Search = { filter?: "weak"; set?: string };
 
@@ -104,6 +106,51 @@ function ReviewPage() {
   }, [ready, session, scopedSets, filter]);
 
   /**
+   * Weak Practice routing: which raw miss type (Adım 5's articleMissCount/
+   * caseMissCount on CardProgress — written but never read until now) the
+   * hardest card in this weak round is actually failing on. Neither count
+   * touches scheduling/mastery, and this reads them for routing only, so
+   * card identity/schedule stay untouched.
+   *
+   * Looks only at the single hardest card (`weakCards`' own worst-first
+   * order — session.cards[0] under `filter: "weak"`), not the whole round:
+   * the round can mix cards from different sets/skills, and there is no
+   * single drill that covers all of them at once.
+   */
+  const navigate = useNavigate();
+  const weakPracticeTarget = useMemo(() => {
+    if (filter !== "weak" || !session || session.cards.length === 0) return null;
+    const top = session.cards[0];
+    const progress = useStudyStore.getState().progress[top.card.id];
+    const articleMissCount = progress?.articleMissCount ?? 0;
+    const caseMissCount = progress?.caseMissCount ?? 0;
+    if (articleMissCount === caseMissCount) return null;
+    const mode = caseMissCount > articleMissCount ? "cases" : "articles";
+
+    const targetSet = sets.find((s) => s.id === top.setId);
+    if (!targetSet) return null;
+    // A verb set (or any set with no gendered nouns) has no Articles/Cases
+    // drill to send anyone into — same gate ModeGrid uses to show/hide
+    // those tiles at all.
+    const termProfile = profileFor(resolveSetLanguages(targetSet).term);
+    const hasGenderedCards =
+      termProfile.hasNounEnrichment &&
+      targetSet.cards.some((c) => isCardActive(c) && c.enrichment?.gender);
+    if (!hasGenderedCards) return null;
+
+    return { mode, setId: top.setId } as const;
+  }, [filter, session, sets]);
+
+  useEffect(() => {
+    if (!weakPracticeTarget) return;
+    void navigate({
+      to: weakPracticeTarget.mode === "cases" ? "/sets/$setId/cases" : "/sets/$setId/articles",
+      params: { setId: weakPracticeTarget.setId },
+      replace: true,
+    });
+  }, [weakPracticeTarget, navigate]);
+
+  /**
    * Memoised: StudyDeck treats a new deck identity as a new round, so building
    * this inline would restart the session on every render.
    */
@@ -128,7 +175,7 @@ function ReviewPage() {
     [toggleStar],
   );
 
-  if (!session) {
+  if (!session || weakPracticeTarget) {
     return (
       <AppShell>
         <p className="text-sm text-muted">Loading your review queue…</p>
