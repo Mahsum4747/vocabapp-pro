@@ -241,6 +241,10 @@ function ArticleDrillPage() {
           const isCorrectOption = option === correctArticle;
           const isChosen = selected === option;
           const show = revealed && (isCorrectOption || isChosen);
+          // The two options that are neither the pick nor the answer fade
+          // out, so the pick (and, if it was wrong, the answer) reads as the
+          // only thing that changed. A correct pick is both, so it never dims.
+          const dim = revealed && !isChosen && !isCorrectOption;
           return (
             <button
               key={option}
@@ -248,11 +252,13 @@ function ArticleDrillPage() {
               disabled={revealed}
               onClick={() => choose(option)}
               className={cn(
-                "rounded-card border px-4 py-6 text-center text-lg font-semibold shadow-[var(--elevation-1)] transition-[background-color,box-shadow] duration-[var(--duration-fast)]",
+                "rounded-card border px-4 py-6 text-center text-lg font-semibold shadow-[var(--elevation-1)] transition-[background-color,box-shadow,opacity,transform,border-width] duration-[var(--duration-fast)] ease-[var(--ease-out)]",
                 articleAccentClass(option),
                 !revealed && "hover:shadow-[var(--elevation-2)]",
+                isChosen && "border-2 scale-[1.03]",
                 show && isCorrectOption && feedbackToneClasses("correct"),
                 show && isChosen && !isCorrectOption && feedbackToneClasses("incorrect"),
+                dim && "opacity-45",
               )}
             >
               {option}
