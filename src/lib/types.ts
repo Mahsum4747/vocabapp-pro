@@ -300,6 +300,16 @@ export type CardProgress = SchedulerState & {
   masteryScore: number;
   /** Which scheduler produced the state above, so stored rows stay traceable. */
   scheduler: string;
+  /**
+   * Phase 2, Adım 5: raw miss-type counters, written only by the article and
+   * case drills on an actual miss (never on a hit, never by any other mode).
+   * Absent on any row until its first miss — treat a missing value as 0, the
+   * same convention `totalReviews`'s own zeroed-backfill rows use. HAM VERİ:
+   * no timestamp, no nested shape, not read by scheduling/mastery/Today/weak
+   * — a foundation for a future "you keep missing this" signal, not one yet.
+   */
+  articleMissCount?: number;
+  caseMissCount?: number;
 };
 
 /** Progress for a card that has never been reviewed. */
@@ -340,6 +350,13 @@ export type ArticleDrillProgress = {
   attempts: number;
   correct: number;
   lastAttemptAt: number;
+  /**
+   * Phase 2, Adım 5 — which drill this row belongs to. Absent on every row
+   * written before this field existed (and on every article-drill row
+   * going forward too, by design — see article-drill.ts); treat a missing
+   * value as "article", its default.
+   */
+  kind?: "article" | "case";
 };
 
 /**

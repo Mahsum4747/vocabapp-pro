@@ -88,6 +88,13 @@ const recordReviewSchema = z.object({
     .min(0)
     .max(60 * 60 * 1000)
     .optional(),
+  /**
+   * Phase 2, Adım 5: which raw miss counter (if any) this review's "again"
+   * came from — set only by the article/case drills, which are the only
+   * callers that route a MISS through this path (see Decision A). Never
+   * read by scheduling/mastery; see the handler for where it's written.
+   */
+  missKind: z.enum(["article", "case"]).optional(),
 });
 
 const cardProgressQuerySchema = z.object({ cardId: idSchema });
@@ -815,6 +822,14 @@ export const recordReview = createServerFn({ method: "POST" })
         ...plan.progress,
         totalReviews: FieldValue.increment(1),
         correctReviews: FieldValue.increment(correct ? 1 : 0),
+        // Raw miss-type counters (Adım 5) — written only on an actual miss
+        // from the matching drill, never read back by scheduling/mastery/
+        // Today/weak. `plan.progress` above is what those all read; these
+        // two fields are deliberately outside it.
+        ...(data.missKind === "article" && !correct
+          ? { articleMissCount: FieldValue.increment(1) }
+          : {}),
+        ...(data.missKind === "case" && !correct ? { caseMissCount: FieldValue.increment(1) } : {}),
       };
       const daily: PartialWithFieldValue<DailyStats> = {
         date: plan.daily.date,

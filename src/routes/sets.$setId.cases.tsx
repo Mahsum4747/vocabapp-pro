@@ -69,7 +69,7 @@ function CaseDrillPage() {
   const priorProgressRef = useRef<Record<string, ArticleDrillProgress>>({});
   useEffect(() => {
     let cancelled = false;
-    void getArticleDrillProgress({ data: { setId } })
+    void getArticleDrillProgress({ data: { setId, kind: "case" } })
       .then((rows) => {
         if (cancelled) return;
         priorProgressRef.current = Object.fromEntries(rows.map((r) => [r.cardId, r]));
@@ -138,7 +138,7 @@ function CaseDrillPage() {
       // Same reporting path as the article drill's miss: a real signal the
       // card isn't known yet, surfaced through the one mechanism every mode
       // uses for a wrong answer — never a bespoke one for this drill.
-      logReview({ setId: studySet.id, cardId: question.card.id, rating: "again" });
+      logReview({ setId: studySet.id, cardId: question.card.id, rating: "again", missKind: "case" });
     }
     void recordArticleDrillAttempt({
       data: {
@@ -147,6 +147,7 @@ function CaseDrillPage() {
         correct: ok,
         selectedArticle: option,
         correctArticle: correctForm ?? "",
+        kind: "case",
       },
     });
   }

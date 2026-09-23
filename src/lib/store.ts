@@ -113,6 +113,8 @@ type StudyState = {
     cardId: string;
     rating: ReviewRating;
     responseTimeMs?: number;
+    /** Phase 2, Adım 5 — set only by the article/case drills, on a miss. */
+    missKind?: "article" | "case";
   }) => Promise<ReviewOutcome>;
   /** Forget this set's learning progress (content is untouched). */
   resetProgress: (setId: string) => Promise<void>;
@@ -331,7 +333,7 @@ export const useStudyStore = create<StudyState>()((set, get) => ({
     }
   },
 
-  recordReview: async ({ setId, cardId, rating, responseTimeMs }) => {
+  recordReview: async ({ setId, cardId, rating, responseTimeMs, missKind }) => {
     const resolvedId = findSet(get().sets, setId)?.id ?? setId;
     const result = await recordReviewFn({
       data: {
@@ -340,6 +342,7 @@ export const useStudyStore = create<StudyState>()((set, get) => ({
         rating,
         date: localDateKey(),
         ...(responseTimeMs !== undefined ? { responseTimeMs } : {}),
+        ...(missKind !== undefined ? { missKind } : {}),
       },
     });
     // The server returns the scheduled state it just stored, so the mastery
