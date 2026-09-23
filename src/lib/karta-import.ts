@@ -39,7 +39,8 @@ const EXAMPLE_KEYS = ["nom", "akk", "dat"];
 const POS = ["noun", "verb", "adj", "other"];
 const GENDER_TO_CODE: Record<string, GrammaticalGender> = { der: "m", die: "f", das: "n" };
 const MAX_ERRORS = 20;
-const MAX_CARDS = 200;
+export const MIN_CARDS = 8;
+export const MAX_CARDS = 200;
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -85,7 +86,15 @@ export function parseKartaJson(raw: string): KartaParseResult {
     fail('"cards" must be a non-empty array.');
     return { ok: false, errors };
   }
-  if (rawCards.length > MAX_CARDS) fail(`At most ${MAX_CARDS} cards per import.`);
+  if (rawCards.length < MIN_CARDS || rawCards.length > MAX_CARDS) {
+    return {
+      ok: false,
+      errors: [
+        `${rawCards.length} cards: an import needs at least ${MIN_CARDS} and at most ${MAX_CARDS}.`,
+        ...errors,
+      ],
+    };
+  }
 
   const cards: KartaCard[] = [];
   let nounsWithoutGender = 0;
