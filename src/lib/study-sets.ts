@@ -1325,6 +1325,13 @@ export const getProfile = createServerFn({ method: "GET" })
  * correctly in (an orphan row is either due or not, same as any other row,
  * until the sweep removes it for good).
  */
+// One-time recount marker for the raw-count() `due` fix above (see
+// `getTodaySummary`'s `dueGhostSuspect` check): any summary built before this
+// ships is treated as stale exactly once, so its `due` gets recomputed via
+// `buildTodaySummary` instead of being served as cached. Never bump this
+// again for the same reason — a real cache-format change gets its own guard.
+const DUE_RECOUNT_EPOCH = 1790184588700; // this fix's deploy time
+
 export const getTodaySummary = createServerFn({ method: "GET" })
   .middleware([authMiddleware])
   .handler(async ({ context }): Promise<{ summary: TodaySummary; dailyGoal: number }> => {
@@ -1337,7 +1344,18 @@ export const getTodaySummary = createServerFn({ method: "GET" })
     const now = Date.now();
 
     const cached = readTodaySummary(stored?.todaySummary);
-    if (cached && isSummaryFresh(cached, now)) return { summary: cached, dailyGoal };
+    // One-time: a summary built before DUE_RECOUNT_EPOCH may still carry the
+    // over-counted `due` the old raw-count() path wrote (ghost, e.g. 17 vs
+    // 12) — `isSummaryFresh` alone can't see that, since dayKey/nextDueAt are
+    // still genuinely fresh. Treating anything built before the epoch as not
+    // fresh forces exactly one real recount through the existing paths below
+    // (which already only ever set `due` from `buildTodaySummary`); every
+    // summary built after this deploys has `builtAt >= DUE_RECOUNT_EPOCH` and
+    // skips this check as before.
+    const dueGhostSuspect = cached !== null && cached.builtAt < DUE_RECOUNT_EPOCH;
+    if (cached && !dueGhostSuspect && isSummaryFresh(cached, now)) {
+      return { summary: cached, dailyGoal };
+    }
 
     const progressCol = userRef.collection("cardProgress");
 
