@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { Check } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { articleAccentClass, articleBorderClass } from "@/components/articleized-term";
@@ -267,7 +268,16 @@ function ArticleDrillPage() {
                 dim && "opacity-30",
               )}
             >
-              {option}
+              <span className="inline-flex items-center justify-center gap-1.5">
+                {option}
+                {/* das (teal) and the correct-answer tone can land close to
+                    each other in dark mode — a shape, not just a color,
+                    marks "this is the right answer" so the two can't be
+                    confused. Scoped to this grid only. */}
+                {show && isCorrectOption ? (
+                  <Check className="size-5" aria-hidden="true" />
+                ) : null}
+              </span>
             </button>
           );
         })}
