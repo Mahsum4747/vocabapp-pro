@@ -1289,28 +1289,30 @@ export const getProfile = createServerFn({ method: "GET" })
 
 /**
  * Home's "Today" numbers: the cached summary when it can be trusted, otherwise
- * a cheap clock refresh.
+ * a recompute.
  *
  * The cache lies in exactly two ways with no write event to fix it — the UTC
  * day rolled, or `nextDueAt` passed (cards go due overnight while nobody
  * reviews) — and `isSummaryFresh` checks both. The trusted path is one
  * document read.
  *
- * The refresh re-counts only the clock fields, with two indexed queries that
- * cost about two reads at any account size: `count()` over `dueAt <= now`
- * (billed per 1,000 index entries) and one `orderBy(dueAt).limit(1)` for the
- * next due date. Both are single-field `dueAt` queries on the user's own
- * `cardProgress` subcollection, so the automatic index serves them — no
- * composite index exists or is needed. `new`, `weak` and `studiedToday` are NOT
- * re-derived: the write paths keep them current.
+ * `due`/`nextDueAt` are ONLY ever set from `buildTodaySummary` (bandOf-based,
+ * same definition `reviewSummary`/the set-card badges use: reviewed, active,
+ * studiable-set cards only) — never from a raw Firestore `count()` over
+ * `dueAt <= now`. That raw count used to serve as a "cheap ~2-read" refresh
+ * for exactly this path, but it isn't filtered by `isCardActive`/
+ * `isStudiableSet`/`state !== "new"` the way `bandOf` is, so it could show
+ * Home a higher "N due" than every set card's own badge summed to. There is
+ * no cheap approximation of the real definition, so a stale `due`/
+ * `nextDueAt` now costs the same sets+progress read regardless of whether
+ * `needsFullRebuild`'s weekly threshold has also been crossed — see this
+ * function's own comment below on what that changes.
  *
- * `due` is the raw count of due rows, so rows of excluded/archived cards and of
- * reference sets (kept because those states are reversible) can overcount it
- * slightly against what /review serves.
- *
- * A full recompute (sets + every progress row) runs only to bootstrap a user
- * with no valid summary, and as a weekly safety net against counter drift
- * (`needsFullRebuild`).
+ * The weekly orphan sweep (rows whose card is provably gone) still runs only
+ * inside `needsFullRebuild`, not on every due-refresh — dropping a `cardId`
+ * mid-scan does not change the `due` number that scan already includes it
+ * correctly in (an orphan row is either due or not, same as any other row,
+ * until the sweep removes it for good).
  */
 export const getTodaySummary = createServerFn({ method: "GET" })
   .middleware([authMiddleware])
@@ -1327,29 +1329,27 @@ export const getTodaySummary = createServerFn({ method: "GET" })
     if (cached && isSummaryFresh(cached, now)) return { summary: cached, dailyGoal };
 
     const progressCol = userRef.collection("cardProgress");
-    const [dueAgg, nextSnap] = await Promise.all([
-      progressCol.where("dueAt", "<=", now).count().get(),
-      progressCol.where("dueAt", ">", now).orderBy("dueAt").limit(1).get(),
-    ]);
-    const nextValue = nextSnap.docs[0]?.get("dueAt");
-    const clock = {
-      due: dueAgg.data().count,
-      nextDueAt: typeof nextValue === "number" ? nextValue : null,
-    };
 
     try {
-      if (needsFullRebuild(cached, now)) {
-        const [setsSnap, progressSnap] = await Promise.all([
-          db.collection("study_sets").where("ownerId", "==", context.userId).get(),
-          progressCol.get(),
-        ]);
-        const sets = setsSnap.docs.map((d) => ({ id: d.id, ...d.data() })) as StudySet[];
-        const progress: Record<string, CardProgress> = {};
-        for (const doc of progressSnap.docs) progress[doc.id] = doc.data() as CardProgress;
+      // Both branches below need the real due/nextDueAt, and both need it
+      // from the same bandOf-based definition — so both read the whole
+      // library + progress now. This is the read-cost change from before:
+      // a due-refresh that ISN'T also a weekly rebuild used to cost ~2
+      // indexed reads (the raw count + the limit-1 query); it now costs the
+      // same sets+progress scan a full rebuild does, just without the
+      // orphan sweep.
+      const [setsSnap, progressSnap] = await Promise.all([
+        db.collection("study_sets").where("ownerId", "==", context.userId).get(),
+        progressCol.get(),
+      ]);
+      const sets = setsSnap.docs.map((d) => ({ id: d.id, ...d.data() })) as StudySet[];
+      const progress: Record<string, CardProgress> = {};
+      for (const doc of progressSnap.docs) progress[doc.id] = doc.data() as CardProgress;
 
+      if (needsFullRebuild(cached, now)) {
         // The weekly pass sees every row and every card at once, so it is the
-        // one place that can safely drop rows whose card is provably gone (the
-        // raw `due` count would otherwise carry them forever). Not a reaction
+        // one place that can safely drop rows whose card is provably gone (a
+        // due count would otherwise carry them forever). Not a reaction
         // to any single edit — a comparison against the library as it is now.
         // Skipped if the library came back empty while rows exist: that looks
         // like a failed read, not a user who deleted everything.
@@ -1373,20 +1373,9 @@ export const getTodaySummary = createServerFn({ method: "GET" })
             await batch.commit();
           }
           for (const id of orphanIds) delete progress[id];
-          if (orphanIds.length > 0) {
-            // The counts taken above included them; take them again.
-            const [dueAgain, nextAgain] = await Promise.all([
-              progressCol.where("dueAt", "<=", now).count().get(),
-              progressCol.where("dueAt", ">", now).orderBy("dueAt").limit(1).get(),
-            ]);
-            const nextAgainValue = nextAgain.docs[0]?.get("dueAt");
-            clock.due = dueAgain.data().count;
-            clock.nextDueAt = typeof nextAgainValue === "number" ? nextAgainValue : null;
-          }
         }
 
-        // One definition of `due` everywhere: the raw count, same as a refresh.
-        const summary: TodaySummary = { ...buildTodaySummary(sets, progress, now), ...clock };
+        const summary: TodaySummary = buildTodaySummary(sets, progress, now);
         await userRef.set(
           {
             todaySummary: summary,
@@ -1397,12 +1386,20 @@ export const getTodaySummary = createServerFn({ method: "GET" })
         return { summary, dailyGoal };
       }
 
+      // Not old enough for the weekly rebuild+orphan-sweep, but due/nextDueAt
+      // still needs the same real recount — same bandOf-based numbers, no
+      // orphan sweep this time.
+      const recomputed = buildTodaySummary(sets, progress, now);
       // Merge onto whatever is stored NOW, so a review that landed since the
       // read above keeps its `new`/`weak`/`studiedToday` patch.
       const summary = await db.runTransaction(async (tx) => {
         const snap = await tx.get(userRef);
         const current = readTodaySummary(snap.data()?.todaySummary) ?? cached!;
-        const next = refreshClockFields(current, clock, now);
+        const next = refreshClockFields(
+          current,
+          { due: recomputed.due, nextDueAt: recomputed.nextDueAt },
+          now,
+        );
         if (snap.exists && readTodaySummary(snap.data()?.todaySummary)) {
           tx.update(userRef, {
             "todaySummary.due": next.due,
@@ -1416,11 +1413,13 @@ export const getTodaySummary = createServerFn({ method: "GET" })
       return { summary, dailyGoal };
     } catch (error) {
       console.error("Failed to store today summary:", error);
-      // With a stored summary, serving the refreshed numbers beats not caching
-      // them. Without one there is nothing true to serve: fail, and the client
-      // falls back to computing locally rather than showing an invented zero.
+      // No raw-count fallback anymore (that was the over-counted number this
+      // change removes). With a stored summary, serving it stale beats
+      // showing an over-counted "N due"; without one there is nothing true
+      // to serve, so this fails and the client falls back to computing
+      // locally.
       if (!cached) throw error;
-      return { summary: refreshClockFields(cached, clock, now), dailyGoal };
+      return { summary: cached, dailyGoal };
     }
   });
 
