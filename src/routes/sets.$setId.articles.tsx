@@ -2,8 +2,9 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Check } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AppShell } from "@/components/app-shell";
-import { articleTextClass } from "@/components/articleized-term";
+import { ArticleizedTerm, articleTextClass } from "@/components/articleized-term";
 import { EmptyState } from "@/components/empty-state";
+import { ExampleLine } from "@/components/example-line";
 import { StudySessionShell } from "@/components/study-session-shell";
 import { Button } from "@/components/ui/button";
 import { getArticleDrillProgress, recordArticleDrillAttempt } from "@/lib/article-drill";
@@ -308,6 +309,22 @@ function ArticleDrillPage() {
           );
         })}
       </div>
+      {/* Adım 1b — same line whether the pick was right or wrong: the real
+          answer with its gloss, no "wrong because X" explanation. Entirely
+          from CardEnrichment/Card fields already on hand, no AI call. */}
+      {revealed ? (
+        <div className="mt-6">
+          <p className="text-sm text-fg">
+            <ArticleizedTerm term={card.term} enrichment={card.enrichment} profile={termProfile} /> —{" "}
+            {card.definition}
+          </p>
+          <ExampleLine
+            example={card.example}
+            termLanguage={setLanguages.term ?? studySet.termLanguage}
+            className="mt-1"
+          />
+        </div>
+      ) : null}
     </StudySessionShell>
   );
 }
