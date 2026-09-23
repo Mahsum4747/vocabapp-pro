@@ -83,6 +83,21 @@ function CaseDrillPage() {
     };
   }, [setId]);
 
+  // Bug fix: `drillCards` is a `.filter()` result, so it gets a brand new
+  // array (and a new `studySet` reference upstream, e.g. from
+  // `markStudied`'s `set()` call on mount) even when its actual CONTENT
+  // hasn't changed. Keying the `order` memo below on that array directly
+  // meant any such unrelated store update re-ran `Math.random()` for every
+  // card's `nounCase` mid-round — including for the card currently on
+  // screen, after it had already been graded against its old case. The
+  // reveal line (and the grid's own correct/incorrect coloring) would then
+  // show whatever case the card was RESHUFFLED into, not the one actually
+  // asked — for a feminine noun, Nominativ and Akkusativ share the same
+  // form ("die"), so a Dativ→Akkusativ reshuffle read as "it fell back to
+  // Nominativ." This key is content-stable (same card ids ⇒ same string)
+  // even though the array/object references churn.
+  const drillCardIds = useMemo(() => drillCards.map((c) => c.id).join(","), [drillCards]);
+
   const order = useMemo<Question[]>(() => {
     const prior = priorProgressRef.current;
     const cards = shuffle(drillCards).sort((a, b) => {
@@ -99,7 +114,7 @@ function CaseDrillPage() {
       nounCase: NOUN_CASES[Math.floor(Math.random() * NOUN_CASES.length)],
     }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [drillCards, round]);
+  }, [drillCardIds, round]);
 
   const [index, setIndex] = useState(0);
   const [selected, setSelected] = useState<string | null>(null);
