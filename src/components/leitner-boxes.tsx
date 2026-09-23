@@ -42,6 +42,11 @@ export function LeitnerBoxes({
         // plus a small glow — all from the existing success tokens, nothing
         // new. Selection always wins, same as before.
         const tier = box <= 1 ? "low" : box <= 3 ? "mid" : "high";
+        // An empty box (count 0) is its own visual state, not a dimmed tier
+        // color — dimming a tier fill with opacity was what made B2/B4/B5
+        // read as near-invisible once they hit 0. Empty always gets the same
+        // neutral surface+border regardless of which tier its box would
+        // otherwise carry, same as the row's other "nothing here" chips.
         return (
           <button
             key={box}
@@ -51,22 +56,30 @@ export function LeitnerBoxes({
             aria-label={`Box ${box}, ${count} card${count === 1 ? "" : "s"}${clickable ? "" : ", empty"}`}
             onClick={() => onSelectBox(isSelected ? null : box)}
             className={cn(
-              "flex min-w-10 flex-col items-center gap-0.5 rounded-control px-2 py-1.5 transition-colors pointer-coarse:min-w-11",
+              "flex min-w-10 flex-col items-center gap-0.5 rounded-control border px-2 py-1.5 transition-colors pointer-coarse:min-w-11",
               isSelected
-                ? "bg-primary text-primary-fg"
-                : tier === "high"
-                  ? "bg-success-strong shadow-[var(--glow-success)]"
-                  : tier === "mid"
-                    ? "bg-tier-mid"
-                    : "bg-tier-neutral",
+                ? "border-transparent bg-primary text-primary-fg"
+                : !clickable
+                  ? "border-border bg-surface-2"
+                  : tier === "high"
+                    ? "border-transparent bg-success-strong shadow-[var(--glow-success)]"
+                    : tier === "mid"
+                      ? "border-transparent bg-tier-mid"
+                      : "border-transparent bg-tier-neutral",
               clickable && !isSelected && tier === "low" && "hover:bg-border",
-              !clickable && "cursor-not-allowed opacity-50",
+              !clickable && "cursor-not-allowed",
             )}
           >
             <p
               className={cn(
                 "text-3xs font-medium tracking-wide uppercase",
-                isSelected ? "text-primary-fg/70" : tier === "high" ? "text-success" : "text-muted",
+                isSelected
+                  ? "text-primary-fg/70"
+                  : !clickable
+                    ? "text-subtle"
+                    : tier === "high"
+                      ? "text-success"
+                      : "text-muted",
               )}
             >
               B{box}
@@ -74,7 +87,13 @@ export function LeitnerBoxes({
             <p
               className={cn(
                 "text-xs font-medium tabular-nums",
-                !isSelected && tier === "high" && "text-success",
+                isSelected
+                  ? undefined
+                  : !clickable
+                    ? "text-subtle"
+                    : tier === "high"
+                      ? "text-success"
+                      : undefined,
               )}
             >
               <AnimatedNumber value={count} />
