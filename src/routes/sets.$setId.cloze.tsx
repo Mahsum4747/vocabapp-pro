@@ -7,6 +7,7 @@ import { StudySessionShell } from "@/components/study-session-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { caseBlankMatches, clozeBlankForCard, type ClozeBlank } from "@/lib/cloze";
+import { CASE_LABEL } from "@/lib/case-forms";
 import { leitnerBoxOf } from "@/lib/quiz";
 import { queuedCards } from "@/lib/srs";
 import { useSessionPlan } from "@/lib/use-session";
@@ -219,6 +220,14 @@ function ClozePage() {
       primaryAction={{ label: revealed ? "Continue" : "Check", onClick: submitWritten }}
     >
       <p className="text-xs font-medium tracking-wide text-muted uppercase">Fill in the blank</p>
+      {/* Case-aware blank only: name the lemma and the case asked, so the
+          learner knows to produce the inflected article + noun. The classic
+          noun-only blank shows no such hint. */}
+      {q.blank.caseBlank ? (
+        <p className="mt-2 text-sm text-muted">
+          {q.card.term} ({CASE_LABEL[q.blank.caseBlank]})
+        </p>
+      ) : null}
       <h2 className="mt-3 font-display text-3xl font-medium tracking-tight text-balance whitespace-pre-line">
         {q.blank.before}
         <span className="mx-1 inline-block min-w-16 border-b-2 border-primary align-baseline">
@@ -228,6 +237,11 @@ function ClozePage() {
             " "
           )}
         </span>
+        {q.blank.caseBlank ? (
+          <span className="mr-1 text-sm text-muted">
+            ({q.blank.caseBlank === "akkusativ" ? "Akk." : "Dat."})
+          </span>
+        ) : null}
         {q.blank.after}
       </h2>
 
