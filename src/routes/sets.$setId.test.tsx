@@ -311,6 +311,10 @@ function TestPage() {
             onChange={(e) => setWritten(e.target.value)}
             placeholder="Your answer"
             disabled={revealed}
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="off"
+            spellCheck={false}
             autoFocus
           />
           {revealed ? (
