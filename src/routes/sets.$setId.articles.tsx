@@ -8,6 +8,7 @@ import { StudySessionShell } from "@/components/study-session-shell";
 import { Button } from "@/components/ui/button";
 import { getArticleDrillProgress, recordArticleDrillAttempt } from "@/lib/article-drill";
 import { profileFor } from "@/lib/lang/profiles";
+import { useReviewLogger } from "@/lib/review-log";
 import { useSet, useStudyStore } from "@/lib/store";
 import {
   isCardActive,
@@ -54,10 +55,19 @@ function summarizeErrorPattern(
  * Phase 3C Part B: tests ONLY the article (der/die/das) for a German noun —
  * never the meaning, never the plural, and never the card's own term.
  *
- * Deliberately outside the main study loop: grading here goes through
- * `recordArticleDrillAttempt` (its own tiny counter, see article-drill.ts),
- * never `logReview`/`recordReview` — getting an article wrong must not touch
- * the card's FSRS schedule, mastery score, XP, or streak.
+ * Grading is asymmetric on purpose (Phase 2, Decision A — "vocabulary is raw
+ * material, don't graduate a card from article taps alone"):
+ *   - A correct tap ONLY writes to `recordArticleDrillAttempt`'s own counter
+ *     (article-drill.ts). It never calls `logReview`/`recordReview` — so it
+ *     never touches `dueAt`, `stability`, or any rating (including "easy"),
+ *     and repeated correct taps alone can never advance or complete a card's
+ *     real schedule.
+ *   - A WRONG tap still writes that same counter, but ALSO calls
+ *     `logReview({ rating: "again" })` — the same path every other study mode
+ *     uses to report a miss. That's what makes an article miss show up as
+ *     due/weak in Home and Today, instead of living only in a second,
+ *     invisible ledger nothing else reads. It does not rename or otherwise
+ *     touch the card's `term`.
  */
 function ArticleDrillPage() {
   const { setId } = Route.useParams();
@@ -65,6 +75,7 @@ function ArticleDrillPage() {
   const setLanguages = resolveSetLanguages(studySet ?? {});
   const termProfile = profileFor(setLanguages.term);
   const markStudied = useStudyStore((s) => s.markStudied);
+  const logReview = useReviewLogger();
   const [round, setRound] = useState(0);
 
   const drillCards = useMemo<Card[]>(() => {
@@ -140,8 +151,17 @@ function ArticleDrillPage() {
     setSelected(option);
     if (ok) {
       setCorrectCount((n) => n + 1);
-    } else if (card.enrichment?.gender) {
-      setRoundErrorGenders((gs) => [...gs, card.enrichment!.gender!]);
+    } else {
+      if (card.enrichment?.gender) {
+        setRoundErrorGenders((gs) => [...gs, card.enrichment!.gender!]);
+      }
+      // A miss is a real signal the card isn't known yet — report it through
+      // the same path every other mode uses, so it surfaces as due/weak in
+      // Home and Today instead of only living in this drill's own counter.
+      // "again" only ever moves the card's schedule earlier/marks it
+      // struggling; it can never complete or master a card by itself, which
+      // is what a hit is kept from doing (see the file-level comment above).
+      logReview({ setId: studySet.id, cardId: card.id, rating: "again" });
     }
     void recordArticleDrillAttempt({
       data: {
