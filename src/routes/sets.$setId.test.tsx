@@ -312,15 +312,32 @@ function TestPage() {
             onChange={(e) => setWritten(e.target.value)}
             placeholder="Your answer"
             disabled={revealed}
-            // "off" is a known no-op on iOS Safari, which still offers
-            // password/card/address autofill for a plain text field — a
-            // nonsense token isn't a recognized autofill hint, so it falls
-            // back to no suggestion instead. No `name` either, since an
-            // omitted name gives Safari's heuristics nothing to match on.
-            autoComplete="quiz-term-answer-x7q"
+            // None of this fully suppresses WebKit's own autofill heuristics
+            // — that's a browser-level behavior some iOS Safari/Chrome
+            // versions apply to any text field, not something a page can
+            // opt out of outright. This is the reduction available: a name
+            // with no user/email/password/address/name-shaped substring for
+            // heuristics to match, "off" everywhere it's honored, and the
+            // 1Password/LastPass/generic-manager opt-out attributes.
+            id="karta-written-answer"
+            name="karta-written-answer"
+            autoComplete="off"
             autoCorrect="off"
-            autoCapitalize="off"
+            autoCapitalize="words"
             spellCheck={false}
+            inputMode="text"
+            enterKeyHint="done"
+            data-1p-ignore
+            data-lpignore="true"
+            data-form-type="other"
+            onFocus={(e) => {
+              // iOS Chrome in particular still shows the autofill strip
+              // despite the above — a readonly flash on focus interrupts
+              // WebKit's autofill prediction without dismissing the
+              // keyboard (readonly is cleared on the next frame).
+              e.currentTarget.setAttribute("readonly", "readonly");
+              requestAnimationFrame(() => e.currentTarget.removeAttribute("readonly"));
+            }}
             autoFocus
           />
           {revealed ? (
