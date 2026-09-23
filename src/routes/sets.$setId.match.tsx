@@ -7,8 +7,9 @@ import { StudySessionShell } from "@/components/study-session-shell";
 import { Button } from "@/components/ui/button";
 import { leitnerBoxOf } from "@/lib/quiz";
 import { useSet, useSetProgress, useStudyStore } from "@/lib/store";
-import { isCardActive, resolveSetLanguages } from "@/lib/types";
+import { isCardActive, resolveSetLanguages, type CardEnrichment } from "@/lib/types";
 import { profileFor } from "@/lib/lang/profiles";
+import { ArticleizedTerm } from "@/components/articleized-term";
 import { displayTerm } from "@/lib/term-display";
 import { cn, parseIntSearchParam, shuffle } from "@/lib/utils";
 import { queuedCards } from "@/lib/srs";
@@ -28,6 +29,11 @@ type Tile = {
   cardId: string;
   text: string;
   kind: "term" | "definition";
+  // Only set for "term" tiles — carries what ArticleizedTerm needs to color
+  // the article the same way Flashcards does, instead of the flattened
+  // `text` string used for definition tiles and matching (see below).
+  term?: string;
+  enrichment?: CardEnrichment | null;
 };
 
 function MatchPage() {
@@ -54,7 +60,14 @@ function MatchPage() {
       { now: Date.now() },
     ).slice(0, 6);
     const both: Tile[] = picked.flatMap((card) => [
-      { id: `${card.id}-t`, cardId: card.id, text: displayTerm(card, termProfile), kind: "term" as const },
+      {
+        id: `${card.id}-t`,
+        cardId: card.id,
+        text: displayTerm(card, termProfile),
+        kind: "term" as const,
+        term: card.term,
+        enrichment: card.enrichment,
+      },
       {
         id: `${card.id}-d`,
         cardId: card.id,
@@ -226,7 +239,11 @@ function MatchPage() {
                     tile.kind === "term" && "font-serif font-medium text-headword",
                   )}
                 >
-                  {tile.text}
+                  {tile.kind === "term" ? (
+                    <ArticleizedTerm term={tile.term!} enrichment={tile.enrichment} profile={termProfile} />
+                  ) : (
+                    tile.text
+                  )}
                 </span>
               </button>
             );
