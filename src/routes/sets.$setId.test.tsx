@@ -301,6 +301,7 @@ function TestPage() {
       {q.type === "written" ? (
         <form
           className="mt-8 space-y-3"
+          autoComplete="off"
           onSubmit={(e) => {
             e.preventDefault();
             submitWritten();
@@ -311,7 +312,12 @@ function TestPage() {
             onChange={(e) => setWritten(e.target.value)}
             placeholder="Your answer"
             disabled={revealed}
-            autoComplete="off"
+            // "off" is a known no-op on iOS Safari, which still offers
+            // password/card/address autofill for a plain text field — a
+            // nonsense token isn't a recognized autofill hint, so it falls
+            // back to no suggestion instead. No `name` either, since an
+            // omitted name gives Safari's heuristics nothing to match on.
+            autoComplete="quiz-term-answer-x7q"
             autoCorrect="off"
             autoCapitalize="off"
             spellCheck={false}

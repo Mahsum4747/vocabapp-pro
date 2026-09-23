@@ -255,10 +255,10 @@ function ArticleDrillPage() {
                 "rounded-card border px-4 py-6 text-center text-lg font-semibold shadow-[var(--elevation-1)] transition-[background-color,box-shadow,opacity,transform,border-width] duration-[var(--duration-fast)] ease-[var(--ease-out)]",
                 articleAccentClass(option),
                 !revealed && "hover:shadow-[var(--elevation-2)]",
-                isChosen && "border-2 scale-[1.03]",
+                isChosen && "border-4 scale-[1.05]",
                 show && isCorrectOption && feedbackToneClasses("correct"),
                 show && isChosen && !isCorrectOption && feedbackToneClasses("incorrect"),
-                dim && "opacity-45",
+                dim && "opacity-30",
               )}
             >
               {option}

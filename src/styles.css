@@ -178,9 +178,16 @@
        This is --color-primary-ink: 6.65:1 on the page, 6.07 on --color-surface. */
     --color-ring: #6fae8c;
     --color-focus: #6fae8c;
-    --color-article-der: #7ab3e8;
+    /* der/das were both mid-lightness, similarly-saturated blue/teal (only
+       40deg apart in hue) — easy to mix up at a glance. der now sits at a
+       clearly bluer, slightly darker point; das moves further toward green
+       and darker still, widening both the hue gap (~53deg) and the
+       lightness gap between them. Contrast verified against both
+       --color-bg and --color-surface, still comfortably >= 4.5:1 (AA).
+       die is unchanged. */
+    --color-article-der: #5b9bd9;
     --color-article-die: #e8828f;
-    --color-article-das: #6fc9b8;
+    --color-article-das: #3ab787;
     --color-headword: #e8bc63;
     /* On dark a black ring vanishes into the surface, so the hairline is a
        faint white one instead. */
