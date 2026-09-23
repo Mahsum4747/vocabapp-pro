@@ -30,6 +30,21 @@ export function articleAccentClass(article: string): string {
 }
 
 /**
+ * Just the border half of `ARTICLE_ACCENT_CLASS` — for a control that still
+ * needs to show its fixed article color once revealed, but whose fill/text
+ * must switch to a correct/incorrect feedback tone instead of the tint.
+ */
+const ARTICLE_BORDER_CLASS: Record<string, string> = {
+  der: "border-article-der/60",
+  die: "border-article-die/60",
+  das: "border-article-das/60",
+};
+
+export function articleBorderClass(article: string): string {
+  return ARTICLE_BORDER_CLASS[article] ?? "";
+}
+
+/**
  * "der Tisch" with the article colored, or the bare term when there's
  * nothing to color — same conditions as `articleizedTerm`, split into JSX so
  * the article can carry its own className. A RENDERING-only component, same

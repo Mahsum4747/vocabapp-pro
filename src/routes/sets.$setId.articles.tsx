@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AppShell } from "@/components/app-shell";
-import { articleAccentClass } from "@/components/articleized-term";
+import { articleAccentClass, articleBorderClass } from "@/components/articleized-term";
 import { EmptyState } from "@/components/empty-state";
 import { feedbackToneClasses } from "@/components/feedback";
 import { StudySessionShell } from "@/components/study-session-shell";
@@ -253,7 +253,13 @@ function ArticleDrillPage() {
               onClick={() => choose(option)}
               className={cn(
                 "rounded-card border px-4 py-6 text-center text-lg font-semibold shadow-[var(--elevation-1)] transition-[background-color,box-shadow,opacity,transform,border-width] duration-[var(--duration-fast)] ease-[var(--ease-out)]",
-                articleAccentClass(option),
+                // Resting/dim: the full fixed-article tint (border+bg+text).
+                // Once revealed, only the border keeps the fixed article
+                // color — the fill and text switch to the correct/incorrect
+                // feedback tone, so a wrong pick still shows which button
+                // was the right answer instead of just marking the miss.
+                !show && articleAccentClass(option),
+                show && articleBorderClass(option),
                 !revealed && "hover:shadow-[var(--elevation-2)]",
                 isChosen && "border-4 scale-[1.05]",
                 show && isCorrectOption && feedbackToneClasses("correct"),
