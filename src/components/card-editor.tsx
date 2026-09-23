@@ -11,7 +11,7 @@ import { profileFor } from "@/lib/lang/profiles";
 import { isIncompleteNoun } from "@/lib/term-display";
 import type { LanguageCode } from "@/lib/lang/languages";
 import { insertAtCursor } from "@/lib/insert-at-cursor";
-import type { CardEnrichment, GrammaticalGender } from "@/lib/types";
+import type { CardEnrichment, CaseExamples, GrammaticalGender } from "@/lib/types";
 import type { BundledEntry } from "@/lib/german/types";
 import { Button } from "./ui/button";
 import { Input, Select, Textarea } from "./ui/input";
@@ -30,6 +30,9 @@ export type EditorCard = {
   definition: string;
   imageUrl?: string | null;
   example?: string | null;
+  /** Per-case example sentences from the Karta JSON import; carried through
+   *  untouched (the editor has no field for them). See CaseExamples. */
+  examples?: CaseExamples | null;
   definition2?: string | null;
   /** Gender/plural for a noun in a language that has them (German today).
    *  See CardEnrichment in lib/types.ts. */

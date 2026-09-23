@@ -78,6 +78,20 @@ export type CardEnrichment = {
  * (`starred` is the one remaining per-user flag; it is a bookmark on the set
  * you own rather than learning state, and copies reset it.)
  */
+/**
+ * One example sentence per case, for a German noun card imported from the
+ * Karta JSON contract (karta-import.ts). Each is the learner's own supplied
+ * sentence — never generated here. `akk` must use the Akkusativ article form
+ * of the noun, `dat` the Dativ one; null/absent means "none", and the Cases
+ * trainer then shows no sentence rather than a wrong-case one. `nom` also
+ * seeds the card's ordinary `example`, which Cloze/Satzbau read.
+ */
+export type CaseExamples = {
+  nom?: string | null;
+  akk?: string | null;
+  dat?: string | null;
+};
+
 export type Card = {
   id: string;
   term: string;
@@ -91,6 +105,8 @@ export type Card = {
    * definition language) so each can be shown, searched, and spoken on its own.
    */
   example?: string | null;
+  /** Per-case example sentences (Karta JSON import). See `CaseExamples`. */
+  examples?: CaseExamples | null;
   /**
    * Optional definition in the set's second definition language
    * (`StudySet.definitionLanguage2`). Absent when the set has no second
@@ -139,6 +155,7 @@ export function freshCardCopy(card: Card, id: string): Card {
     definition: card.definition,
     imageUrl: card.imageUrl,
     example: card.example ?? null,
+    examples: card.examples ?? null,
     definition2: card.definition2 ?? null,
     // Enrichment is a fact about the word, not the original owner's
     // curation, so it carries over like content rather than resetting like

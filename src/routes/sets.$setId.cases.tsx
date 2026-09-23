@@ -13,7 +13,7 @@ import {
   GENDER_LABEL_DE,
   caseFormFor,
   caseFormOptions,
-  exampleForCase,
+  caseExampleFor,
   type NounCase,
 } from "@/lib/case-forms";
 import { profileFor } from "@/lib/lang/profiles";
@@ -153,13 +153,7 @@ function CaseDrillPage() {
   // case, so it is hidden instead. Nothing is generated.
   const caseExample =
     question && correctForm
-      ? exampleForCase(
-          question.card.example,
-          question.card.term,
-          correctForm,
-          nominativeArticle,
-          question.nounCase,
-        )
+      ? caseExampleFor(question.card, correctForm, nominativeArticle, question.nounCase)
       : null;
   // Adım 4: same static TR pilot as the article drill. Missing entry falls
   // through to the card's own English `definition`, never a blank gloss.

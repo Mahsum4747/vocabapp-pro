@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from "react";
 import { create } from "zustand";
-import type { CardEnrichment, CardProgress, CardStatus, DailyStats, ReviewRating, StudySet } from "./types";
+import type { CardEnrichment, CardProgress, CaseExamples, CardStatus, DailyStats, ReviewRating, StudySet } from "./types";
 import { emptyDailyStats } from "./types";
 import type { AchievementId, UserProfile } from "./gamification";
 import { configureSound, type SoundSettings } from "./sound";
@@ -40,6 +40,7 @@ type DraftCard = {
   definition: string;
   imageUrl?: string | null;
   example?: string | null;
+  examples?: CaseExamples | null;
   definition2?: string | null;
   enrichment?: CardEnrichment | null;
 };

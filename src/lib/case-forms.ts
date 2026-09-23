@@ -51,6 +51,29 @@ function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+/** True when `sentence` contains `form` as a whole word (case-insensitive). */
+export function sentenceHasForm(sentence: string, form: string): boolean {
+  return new RegExp(`(?<![\\p{L}])${escapeRegExp(form)}(?![\\p{L}])`, "iu").test(sentence);
+}
+
+/**
+ * The sentence Cases may show for one asked case, or null. Prefers the
+ * imported per-case sentence (`examples.akk`/`examples.dat`, already
+ * validated on import; re-checked here for the form) and falls back to the
+ * card's plain `example` under the strict `exampleForCase` rule. Never
+ * invents a sentence: no match → null → nothing shown.
+ */
+export function caseExampleFor(
+  card: { term: string; example?: string | null; examples?: { akk?: string | null; dat?: string | null } | null },
+  correctForm: string,
+  nominativeArticle: string | undefined,
+  nounCase: NounCase,
+): string | null {
+  const dedicated = card.examples?.[nounCase === "akkusativ" ? "akk" : "dat"]?.trim();
+  if (dedicated && sentenceHasForm(dedicated, correctForm)) return dedicated;
+  return exampleForCase(card.example, card.term, correctForm, nominativeArticle, nounCase);
+}
+
 /**
  * The card's own example sentence, but only when it visibly uses the ASKED
  * case: `correctForm` must stand right before the headword (with at most two
