@@ -49,15 +49,22 @@ function ClozePage() {
     return box !== undefined ? active.filter((c) => leitnerBoxOf(c, progress) === box) : active;
   }, [studySet, box, progress]);
 
-  const questions = useMemo<ClozeQuestion[]>(() => {
+  // Decision B (Phase 2): a card that fails clozeBlankForCard used to just
+  // vanish from the round with no signal anywhere. `skipped` counts only the
+  // cards actually scanned while filling this round (not the whole pool —
+  // cards never reached once QUESTION_LIMIT is hit were never rejected, they
+  // just weren't needed).
+  const { questions, skipped } = useMemo<{ questions: ClozeQuestion[]; skipped: number }>(() => {
     const queued = queuedCards(boxCards, progress, { now: Date.now() });
     const eligible: ClozeQuestion[] = [];
+    let skippedCount = 0;
     for (const card of queued) {
       const blank = clozeBlankForCard(card);
       if (blank) eligible.push({ card, blank });
+      else skippedCount += 1;
       if (eligible.length >= QUESTION_LIMIT) break;
     }
-    return eligible;
+    return { questions: eligible, skipped: skippedCount };
     // snapshot per round so grading doesn't reshuffle
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [studySet?.id, box, round]);
@@ -165,6 +172,11 @@ function ClozePage() {
           <p className="mt-2 text-sm text-muted">
             {score} / {questions.length} correct
           </p>
+          {skipped > 0 ? (
+            <p className="mt-1 text-xs text-subtle">
+              {skipped} card{skipped === 1 ? "" : "s"} skipped — no suitable example.
+            </p>
+          ) : null}
           <div className="mt-6 flex flex-col gap-2">
             <Button onClick={restart}>Practice again</Button>
             <Button asChild variant="outline">
