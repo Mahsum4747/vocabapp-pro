@@ -10,7 +10,7 @@ import { feedbackToneClasses } from "@/components/feedback";
 import { StudySessionShell } from "@/components/study-session-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { buildTermDisplay } from "@/lib/term-display";
+import { buildTermNode } from "@/lib/term-display";
 import {
   leitnerBoxOf,
   multipleChoice,
@@ -43,7 +43,7 @@ function LearnPage() {
   const setLanguages = resolveSetLanguages(studySet ?? {});
   const termProfile = profileFor(setLanguages.term);
   // A plain call, not a hook: it sits above early returns.
-  const termDisplay = buildTermDisplay(studySet?.cards ?? [], termProfile);
+  const termNode = buildTermNode(studySet?.cards ?? [], termProfile);
   const progress = useSetProgress(setId);
   const markStudied = useStudyStore((s) => s.markStudied);
   const logReview = useReviewLogger();
@@ -203,9 +203,10 @@ function LearnPage() {
     ignorableLeadingWords: articleWordsForAnswer(answerCard?.enrichment, termProfile),
   };
   const isCorrect = isMc ? selected === item.answer : answersMatch(written, item.answer, matchOptions);
-  // MC options carry bare terms; show the article where the card's gender is
-  // known (display only — grading above compares the bare strings).
-  const showTerm = item.type === "mc" && item.promptSide === "definition" ? termDisplay : (t: string) => t;
+  // MC options carry bare terms; show the article, colored, where the card's
+  // gender is known (display only — grading above compares the bare strings).
+  const showTerm =
+    item.type === "mc" && item.promptSide === "definition" ? termNode : (t: string) => t;
 
   function submitWritten() {
     if (!revealed) grade(answersMatch(written, item.answer, matchOptions));
