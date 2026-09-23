@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { clozeBlankForCard, findBlankSpan } from "./cloze.ts";
+import { caseBlankMatches, clozeBlankForCard, findBlankSpan } from "./cloze.ts";
 import type { Card } from "./types.ts";
 
 describe("findBlankSpan", () => {
@@ -79,5 +79,63 @@ describe("clozeBlankForCard", () => {
       answer: "Tee",
       after: ".",
     });
+  });
+});
+
+// ── Case-aware blank (examples.akk / examples.dat) ─────────────────────────
+
+
+const vater = (examples: Card["examples"], example: string | null = null): Card => ({
+  id: "vater",
+  term: "Vater",
+  definition: "father",
+  starred: false,
+  imageUrl: null,
+  example,
+  examples,
+  enrichment: { gender: "m", source: "user" },
+});
+
+describe("case-aware blank", () => {
+  it("akk example: the blank covers article + noun; wrong article fails", () => {
+    const blank = clozeBlankForCard(vater({ akk: "Ich besuche den Vater." }));
+    assert.equal(blank?.answer, "den Vater");
+    assert.equal(blank?.caseBlank, "akkusativ");
+    assert.equal(blank?.before, "Ich besuche ");
+    assert.ok(caseBlankMatches("den Vater", "den Vater"));
+    assert.ok(caseBlankMatches("  Den   vater ", "den Vater"));
+    assert.ok(!caseBlankMatches("der Vater", "den Vater"));
+    assert.ok(!caseBlankMatches("Vater", "den Vater"));
+  });
+
+  it("case-aware grading keeps umlauts exact", () => {
+    assert.ok(!caseBlankMatches("dem Baum", "dem Bäum"));
+    assert.ok(caseBlankMatches("den Bäume", "Den bäume"));
+  });
+
+  it("both akk and dat usable: picks either, never sticks to akk", () => {
+    const card = vater({ akk: "Ich sehe den Vater.", dat: "Ich helfe dem Vater." });
+    assert.equal(clozeBlankForCard(card, () => 0)?.caseBlank, "akkusativ");
+    assert.equal(clozeBlankForCard(card, () => 0.99)?.caseBlank, "dativ");
+  });
+
+  it("nom example is never a case blank; missing examples fall back unchanged", () => {
+    const nomOnly = vater({ nom: "Der Vater ist alt." }, "Der Vater ist alt.");
+    const blank = clozeBlankForCard(nomOnly);
+    assert.equal(blank?.answer, "Vater");
+    assert.equal(blank?.caseBlank, undefined);
+    assert.equal(clozeBlankForCard(vater(null, "Mein Vater kocht."))?.answer, "Vater");
+  });
+
+  it("no gender (verbs etc.) never takes the case path", () => {
+    const verb: Card = { ...vater({ akk: "Ich sehe den Vater." }), enrichment: null };
+    assert.equal(clozeBlankForCard(verb)?.caseBlank, undefined);
+  });
+
+  it("case sentence without exact article+noun adjacency falls back", () => {
+    const card = vater({ akk: "Ich besuche den alten Vater." }, "Mein Vater kocht.");
+    const blank = clozeBlankForCard(card);
+    assert.equal(blank?.answer, "Vater");
+    assert.equal(blank?.caseBlank, undefined);
   });
 });
