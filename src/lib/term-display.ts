@@ -1,3 +1,5 @@
+import { createElement, type ReactNode } from "react";
+import { ArticleizedTerm } from "@/components/articleized-term";
 import { articleizedTerm, type LanguageProfile } from "./lang/profiles.ts";
 import type { Card } from "./types.ts";
 
@@ -31,6 +33,33 @@ export function buildTermDisplay(
     byTerm.set(card.term, seen === undefined || seen === shown ? shown : null);
   }
   return (term) => byTerm.get(term) ?? term;
+}
+
+/**
+ * Same lookup as `buildTermDisplay`, but returns the colored-article node
+ * (`ArticleizedTerm`) instead of a plain string — for surfaces that render
+ * a bare term as JSX rather than text (MC options, true/false statements).
+ * Same disambiguation rule: a term two cards would display differently for
+ * falls back to the bare term, uncolored, for both.
+ */
+export function buildTermNode(
+  cards: Pick<Card, "term" | "enrichment">[],
+  profile: LanguageProfile,
+): (term: string) => ReactNode {
+  const byTerm = new Map<string, Pick<Card, "term" | "enrichment"> | null>();
+  for (const card of cards) {
+    const existing = byTerm.get(card.term);
+    if (existing === undefined) {
+      byTerm.set(card.term, card);
+    } else if (existing && displayTerm(existing, profile) !== displayTerm(card, profile)) {
+      byTerm.set(card.term, null);
+    }
+  }
+  return (term) => {
+    const card = byTerm.get(term);
+    if (!card) return term;
+    return createElement(ArticleizedTerm, { term, enrichment: card.enrichment, profile });
+  };
 }
 
 /**

@@ -1,9 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { AppShell } from "@/components/app-shell";
 import { AnswerFeedbackSheet } from "@/components/answer-feedback-sheet";
 import { ArticleizedTerm } from "@/components/articleized-term";
-import { buildTermDisplay, displayTerm } from "@/lib/term-display";
+import { buildTermDisplay, buildTermNode } from "@/lib/term-display";
 import { Definition2Line } from "@/components/definition2-line";
 import { EmptyState } from "@/components/empty-state";
 import { ExampleLine } from "@/components/example-line";
@@ -212,17 +212,21 @@ function TestPage() {
       <ArticleizedTerm term={q.answer} enrichment={answerCard?.enrichment} profile={termProfile} />
     ) : null;
 
-  // MC options and the true/false statement carry bare terms; show the article
-  // where the card's gender is known (display only — grading compares the bare
-  // strings above).
-  const showTerm = q.type === "mc" && q.promptSide === "definition" ? termDisplay : (t: string) => t;
+  // MC options and the true/false statement carry bare terms; show the article,
+  // colored like everywhere else, where the card's gender is known (display
+  // only — grading compares the bare strings above).
+  const termNode =
+    q.type === "mc" && q.promptSide === "definition" ? buildTermNode(studySet.cards, termProfile) : null;
   const tfCard = q.type === "tf" ? studySet.cards.find((c) => c.id === q.cardId) : undefined;
-  const tfStatement =
-    q.type === "tf" && tfCard && q.statement.startsWith(tfCard.term)
-      ? displayTerm(tfCard, termProfile) + q.statement.slice(tfCard.term.length)
-      : q.type === "tf"
-        ? q.statement
-        : "";
+  const tfNode: ReactNode =
+    q.type === "tf" && tfCard && q.statement.startsWith(tfCard.term) ? (
+      <>
+        <ArticleizedTerm term={tfCard.term} enrichment={tfCard.enrichment} profile={termProfile} />
+        {q.statement.slice(tfCard.term.length)}
+      </>
+    ) : q.type === "tf" ? (
+      q.statement
+    ) : null;
 
   function submitWritten() {
     if (!revealed && q.type === "written") finish(answersMatch(written, q.answer, matchOptions));
@@ -287,7 +291,7 @@ function TestPage() {
                   show && chosen && option !== q.answer && feedbackToneClasses("incorrect"),
                 )}
               >
-                {showTerm(option)}
+                {termNode ? termNode(option) : option}
               </button>
             );
           })}
@@ -326,7 +330,7 @@ function TestPage() {
       {q.type === "tf" ? (
         <div className="mt-8 space-y-4">
           <p className="rounded-card bg-surface px-4 py-4 text-lg whitespace-pre-line shadow-[var(--elevation-1)]">
-            {tfStatement}
+            {tfNode}
           </p>
           <div className="grid grid-cols-2 gap-2">
             {[true, false].map((value) => {
