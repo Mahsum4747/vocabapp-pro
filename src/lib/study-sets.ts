@@ -893,6 +893,15 @@ export const recordReview = createServerFn({ method: "POST" })
         totalReviews: profile.totalReviews ?? 0,
         perfectRun: profile.perfectRun ?? 0,
         achievements: user?.achievements,
+        // Already computed (applyReviewToSummary, bandOf-based delta) and
+        // already written above — handing it back is free. Without this the
+        // client's own todaySummary/`due` only updates on the next explicit
+        // fetchTodaySummary() call, which a same-session return to Home does
+        // not trigger, so "N due" stayed stale until then. `null` when this
+        // review isn't the owner's own studiable/active card (countsForToday
+        // false) or there was no prior summary to patch — the client leaves
+        // its state alone in that case, same as today.
+        todaySummary,
       };
     });
     const progress = outcome.progress;
@@ -948,6 +957,8 @@ export const recordReview = createServerFn({ method: "POST" })
       setCompleted: outcome.setJustCompleted
         ? { setId: data.setId, title: studySet.title, xp: SET_COMPLETION_XP }
         : null,
+      // See the comment on `todaySummary` inside the transaction above.
+      todaySummary: outcome.todaySummary,
     };
   });
 
