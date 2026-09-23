@@ -16,6 +16,7 @@ export {
   queuedCards,
   reviewSummary,
   hasReviewWork,
+  isNew,
   isStudiableSet,
   isWeakWord,
   summarizeLibrary,

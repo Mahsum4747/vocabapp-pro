@@ -66,6 +66,24 @@ function bandOf(progress: CardProgress | undefined, now: number): Band {
 }
 
 /**
+ * Canonical "new" — the one definition every student-facing "N new" count in
+ * the app reads, instead of each spot rolling its own. A card is new only
+ * when it has never actually been reviewed (no progress row, or
+ * `totalReviews <= 0`).
+ *
+ * Deliberately NOT `bandOf`'s "fresh" band: fresh also covers a reviewed card
+ * whose `dueAt` is `null` (suspended, leech-reset, any progress-repair path
+ * that clears the due date without resetting `totalReviews`) — the queue
+ * still needs to resurface that card promptly, so ordering keeps treating it
+ * as fresh-priority, but it has been studied and must never be labeled "new"
+ * again. Using the band for both jobs is what made the same set show two
+ * different "N new" numbers on the Account page and the library card.
+ */
+export function isNew(progress: CardProgress | undefined): boolean {
+  return !progress || !Number.isFinite(progress.totalReviews) || progress.totalReviews <= 0;
+}
+
+/**
  * Is this card a "weak word" — one the learner keeps getting wrong, rather
  * than one they simply haven't reached yet?
  *
@@ -263,7 +281,11 @@ export type ReviewSummary = {
   due: number;
   /** More than a day past due. */
   overdue: number;
-  /** Never studied — no progress row yet. */
+  /**
+   * Queue-band "fresh" count — no progress row, `state === "new"`, or
+   * `dueAt === null`. Drives session ordering/routing only (see `bandOf`).
+   * NOT the student-facing "new" label — use `newCount` for that.
+   */
   fresh: number;
   /** Not due, but the last answer was wrong or the card keeps being forgotten. */
   weak: number;
@@ -271,6 +293,8 @@ export type ReviewSummary = {
   notDue: number;
   /** Active cards considered (excluded/archived are not counted). */
   total: number;
+  /** Canonical "new" (`isNew`) — never reviewed. The one count to show as "N new". */
+  newCount: number;
 };
 
 /**
@@ -297,6 +321,7 @@ export function reviewSummary(
     weak: count("weak"),
     notDue: count("early"),
     total: entries.length,
+    newCount: entries.filter((e) => isNew(e.progress)).length,
   };
 }
 
@@ -350,8 +375,9 @@ export function summarizeLibrary(
       weak: acc.weak + summary.weak,
       notDue: acc.notDue + summary.notDue,
       total: acc.total + summary.total,
+      newCount: acc.newCount + summary.newCount,
     }),
-    { due: 0, overdue: 0, fresh: 0, weak: 0, notDue: 0, total: 0 },
+    { due: 0, overdue: 0, fresh: 0, weak: 0, notDue: 0, total: 0, newCount: 0 },
   );
 
   const best = [...perSet].sort(

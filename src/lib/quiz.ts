@@ -1,5 +1,6 @@
 import type { Card, CardProgress } from "./types.ts";
 import { isCardActive, MASTERY_MAX } from "./types.ts";
+import { isNew } from "./srs/queue.ts";
 import { leitnerBoxOfScore } from "./srs/mastery.ts";
 import { shuffle } from "./utils.ts";
 
@@ -124,16 +125,12 @@ export function buildTest(cards: Card[], limit = 12): TestQuestion[] {
 }
 
 /**
- * Has this user actually reviewed this card?
- *
- * A card with no progress row has never been seen; so has one whose row was
- * created empty (the deferred backfill seeds zeroed rows). Both are
- * "not started", which is a different thing from "reviewed and doing badly" —
- * merging them makes a brand new set look like a set of failures.
+ * Has this user actually reviewed this card? The inverse of the canonical
+ * `isNew` (srs/queue.ts) — one definition of "new"/"not started" for the
+ * whole app, rather than this file keeping its own copy.
  */
 export function hasBeenReviewed(progress: ProgressMap, cardId: string): boolean {
-  const row = progress[cardId];
-  return row !== undefined && Number.isFinite(row.totalReviews) && row.totalReviews > 0;
+  return !isNew(progress[cardId]);
 }
 
 export type MasteryStats = {
