@@ -7,6 +7,7 @@ import { EmptyState } from "@/components/empty-state";
 import { ExampleLine } from "@/components/example-line";
 import { StudySessionShell } from "@/components/study-session-shell";
 import { Button } from "@/components/ui/button";
+import { a1NounTrEntry } from "@/content/a1-german-nouns-tr";
 import { getArticleDrillProgress, recordArticleDrillAttempt } from "@/lib/article-drill";
 import { profileFor } from "@/lib/lang/profiles";
 import { useReviewLogger } from "@/lib/review-log";
@@ -77,6 +78,7 @@ function ArticleDrillPage() {
   const termProfile = profileFor(setLanguages.term);
   const markStudied = useStudyStore((s) => s.markStudied);
   const logReview = useReviewLogger();
+  const explanationLanguage = useStudyStore((s) => s.profile?.explanationLanguage);
   const [round, setRound] = useState(0);
 
   const drillCards = useMemo<Card[]>(() => {
@@ -145,6 +147,11 @@ function ArticleDrillPage() {
   const card = order[index];
   const revealed = selected !== null;
   const correctArticle = card?.enrichment?.gender ? termProfile.articleFor?.(card.enrichment.gender) : undefined;
+  // Adım 4: static TR pilot. Missing entry (or any language other than
+  // Turkish) falls straight through to the card's own English `definition`
+  // below — never a blank gloss.
+  const trEntry =
+    card && explanationLanguage === "tr" ? a1NounTrEntry(card.term, termProfile) : undefined;
 
   function choose(option: string) {
     if (!card || !studySet || revealed) return;
@@ -316,13 +323,14 @@ function ArticleDrillPage() {
         <div className="mt-6">
           <p className="text-sm text-fg">
             <ArticleizedTerm term={card.term} enrichment={card.enrichment} profile={termProfile} /> —{" "}
-            {card.definition}
+            {trEntry?.gloss ?? card.definition}
           </p>
           <ExampleLine
             example={card.example}
             termLanguage={setLanguages.term ?? studySet.termLanguage}
             className="mt-1"
           />
+          {trEntry?.feedback ? <p className="mt-1 text-xs text-subtle">{trEntry.feedback}</p> : null}
         </div>
       ) : null}
     </StudySessionShell>
