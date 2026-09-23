@@ -57,7 +57,14 @@ import {
   type ExplanationLanguage,
 } from "./learning-prefs";
 import { resolveEnrichment, resolveEnrichmentOnOmit } from "./card-enrichment-policy";
-import type { Card, CardEnrichment, CardProgress, DailyStats, StudySet } from "./types";
+import type {
+  Card,
+  CardEnrichment,
+  CardProgress,
+  CaseExamples,
+  DailyStats,
+  StudySet,
+} from "./types";
 
 /** Firestore ids and the date key are path segments — keep them tight. */
 const idSchema = z.string().trim().min(1).max(200);
@@ -105,6 +112,7 @@ type DraftCard = {
   definition: string;
   imageUrl?: string | null;
   example?: string | null;
+  examples?: CaseExamples | null;
   definition2?: string | null;
   note?: string | null;
   /**
@@ -122,6 +130,17 @@ type DraftCardWithProgress = DraftCard & {
   starred?: boolean;
   status?: Card["status"];
 };
+
+/** Trim each case sentence; null when there is nothing left at all. */
+function sanitizeExamples(value: CaseExamples | null | undefined): CaseExamples | null {
+  if (!value) return null;
+  const clean = {
+    nom: value.nom?.trim() || null,
+    akk: value.akk?.trim() || null,
+    dat: value.dat?.trim() || null,
+  };
+  return clean.nom || clean.akk || clean.dat ? clean : null;
+}
 
 function uidServer(): string {
   return Math.random().toString(36).slice(2) + Date.now().toString(36);
@@ -179,6 +198,7 @@ function toCards(
         starred: false,
         imageUrl: d.imageUrl || null,
         example: d.example?.trim() || null,
+        examples: sanitizeExamples(d.examples),
         definition2: d.definition2?.trim() || null,
         note: d.note?.trim() || null,
         enrichment: resolveEnrichment(term, d.enrichment, context),
@@ -509,6 +529,9 @@ export const replaceCards = createServerFn({ method: "POST" })
         // string = cleared); one that doesn't omits it, so keep what's there.
         const example =
           d.example !== undefined ? d.example?.trim() || null : (prior?.example ?? null);
+        // Same rule for the per-case examples: absent = keep, never dropped.
+        const examples =
+          d.examples !== undefined ? sanitizeExamples(d.examples) : (prior?.examples ?? null);
         const definition2 =
           d.definition2 !== undefined
             ? d.definition2?.trim() || null
@@ -526,6 +549,7 @@ export const replaceCards = createServerFn({ method: "POST" })
           starred: d.starred ?? prior?.starred ?? false,
           imageUrl: d.imageUrl || null,
           example,
+          examples,
           definition2,
           note,
           enrichment,

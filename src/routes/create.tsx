@@ -174,9 +174,15 @@ function CreatePage() {
               }}
             />
             <ImportDialog
-              onImport={(incoming) =>
-                setCards((prev) => [...prev.filter((c) => c.term || c.definition), ...incoming])
-              }
+              onImport={(incoming, meta) => {
+                setCards((prev) => [...prev.filter((c) => c.term || c.definition), ...incoming]);
+                // Karta JSON also names the set and its language pair.
+                if (meta) {
+                  if (!title.trim()) setTitle(meta.title);
+                  setTermLang(languageChoice("de"));
+                  setDefLang(languageChoice(meta.pair === "de-tr" ? "tr" : "en"));
+                }
+              }}
             />
           </div>
 
