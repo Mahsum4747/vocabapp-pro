@@ -107,38 +107,44 @@ function ReviewPage() {
 
   /**
    * Weak Practice routing: which raw miss type (Adım 5's articleMissCount/
-   * caseMissCount on CardProgress — written but never read until now) the
-   * hardest card in this weak round is actually failing on. Neither count
-   * touches scheduling/mastery, and this reads them for routing only, so
-   * card identity/schedule stay untouched.
+   * caseMissCount on CardProgress — written but never read until now) is
+   * actually behind this weak round. Neither count touches scheduling/
+   * mastery, and this reads them for routing only, so card identity/
+   * schedule stay untouched.
    *
-   * Looks only at the single hardest card (`weakCards`' own worst-first
-   * order — session.cards[0] under `filter: "weak"`), not the whole round:
-   * the round can mix cards from different sets/skills, and there is no
-   * single drill that covers all of them at once.
+   * `session.cards[0]` alone was wrong in practice: the single hardest card
+   * frequently has 0/0 on both counts (it's weak for some other reason —
+   * low mastery, a recent lapse — not specifically an article/case miss),
+   * which fell through to "equal" and never routed anywhere but Flashcards.
+   * Walks the whole weak list in order instead, and routes on the FIRST
+   * card that actually shows one miss type ahead of the other; a card with
+   * neither count set is skipped, not treated as a tie that stops the walk.
    */
   const navigate = useNavigate();
   const weakPracticeTarget = useMemo(() => {
-    if (filter !== "weak" || !session || session.cards.length === 0) return null;
-    const top = session.cards[0];
-    const progress = useStudyStore.getState().progress[top.card.id];
-    const articleMissCount = progress?.articleMissCount ?? 0;
-    const caseMissCount = progress?.caseMissCount ?? 0;
-    if (articleMissCount === caseMissCount) return null;
-    const mode = caseMissCount > articleMissCount ? "cases" : "articles";
+    if (filter !== "weak" || !session) return null;
+    const progressMap = useStudyStore.getState().progress;
+    for (const entry of session.cards) {
+      const progress = progressMap[entry.card.id];
+      const articleMissCount = progress?.articleMissCount ?? 0;
+      const caseMissCount = progress?.caseMissCount ?? 0;
+      if (articleMissCount === caseMissCount) continue;
+      const mode = caseMissCount > articleMissCount ? "cases" : "articles";
 
-    const targetSet = sets.find((s) => s.id === top.setId);
-    if (!targetSet) return null;
-    // A verb set (or any set with no gendered nouns) has no Articles/Cases
-    // drill to send anyone into — same gate ModeGrid uses to show/hide
-    // those tiles at all.
-    const termProfile = profileFor(resolveSetLanguages(targetSet).term);
-    const hasGenderedCards =
-      termProfile.hasNounEnrichment &&
-      targetSet.cards.some((c) => isCardActive(c) && c.enrichment?.gender);
-    if (!hasGenderedCards) return null;
+      const targetSet = sets.find((s) => s.id === entry.setId);
+      if (!targetSet) continue;
+      // A verb set (or any set with no gendered nouns) has no Articles/Cases
+      // drill to send anyone into — same gate ModeGrid uses to show/hide
+      // those tiles at all. Keep walking rather than falling back early.
+      const termProfile = profileFor(resolveSetLanguages(targetSet).term);
+      const hasGenderedCards =
+        termProfile.hasNounEnrichment &&
+        targetSet.cards.some((c) => isCardActive(c) && c.enrichment?.gender);
+      if (!hasGenderedCards) continue;
 
-    return { mode, setId: top.setId } as const;
+      return { mode, setId: entry.setId } as const;
+    }
+    return null;
   }, [filter, session, sets]);
 
   useEffect(() => {
