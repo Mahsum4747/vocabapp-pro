@@ -13,12 +13,13 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AccountRouteImport } from './routes/account'
 import { Route as CreateRouteImport } from './routes/create'
 import { Route as LoginRouteImport } from './routes/login'
-import { Route as SignupRouteImport } from './routes/signup'
 import { Route as ReviewRouteImport } from './routes/review'
+import { Route as SignupRouteImport } from './routes/signup'
 import { Route as SetsSetIdRouteImport } from './routes/sets.$setId'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as SetsSetIdIndexRouteImport } from './routes/sets.$setId.index'
 import { Route as SetsSetIdArticlesRouteImport } from './routes/sets.$setId.articles'
+import { Route as SetsSetIdCasesRouteImport } from './routes/sets.$setId.cases'
 import { Route as SetsSetIdClozeRouteImport } from './routes/sets.$setId.cloze'
 import { Route as SetsSetIdEditRouteImport } from './routes/sets.$setId.edit'
 import { Route as SetsSetIdFlashcardsRouteImport } from './routes/sets.$setId.flashcards'
@@ -47,14 +48,14 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SignupRoute = SignupRouteImport.update({
-  id: '/signup',
-  path: '/signup',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ReviewRoute = ReviewRouteImport.update({
   id: '/review',
   path: '/review',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SignupRoute = SignupRouteImport.update({
+  id: '/signup',
+  path: '/signup',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SetsSetIdRoute = SetsSetIdRouteImport.update({
@@ -75,6 +76,11 @@ const SetsSetIdIndexRoute = SetsSetIdIndexRouteImport.update({
 const SetsSetIdArticlesRoute = SetsSetIdArticlesRouteImport.update({
   id: '/articles',
   path: '/articles',
+  getParentRoute: () => SetsSetIdRoute,
+} as any)
+const SetsSetIdCasesRoute = SetsSetIdCasesRouteImport.update({
+  id: '/cases',
+  path: '/cases',
   getParentRoute: () => SetsSetIdRoute,
 } as any)
 const SetsSetIdClozeRoute = SetsSetIdClozeRouteImport.update({
@@ -118,11 +124,12 @@ export interface FileRoutesByFullPath {
   '/account': typeof AccountRoute
   '/create': typeof CreateRoute
   '/login': typeof LoginRoute
-  '/signup': typeof SignupRoute
   '/review': typeof ReviewRoute
+  '/signup': typeof SignupRoute
   '/sets/$setId': typeof SetsSetIdRouteWithChildren
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/sets/$setId/articles': typeof SetsSetIdArticlesRoute
+  '/sets/$setId/cases': typeof SetsSetIdCasesRoute
   '/sets/$setId/cloze': typeof SetsSetIdClozeRoute
   '/sets/$setId/edit': typeof SetsSetIdEditRoute
   '/sets/$setId/flashcards': typeof SetsSetIdFlashcardsRoute
@@ -137,10 +144,11 @@ export interface FileRoutesByTo {
   '/account': typeof AccountRoute
   '/create': typeof CreateRoute
   '/login': typeof LoginRoute
-  '/signup': typeof SignupRoute
   '/review': typeof ReviewRoute
+  '/signup': typeof SignupRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/sets/$setId/articles': typeof SetsSetIdArticlesRoute
+  '/sets/$setId/cases': typeof SetsSetIdCasesRoute
   '/sets/$setId/cloze': typeof SetsSetIdClozeRoute
   '/sets/$setId/edit': typeof SetsSetIdEditRoute
   '/sets/$setId/flashcards': typeof SetsSetIdFlashcardsRoute
@@ -156,11 +164,12 @@ export interface FileRoutesById {
   '/account': typeof AccountRoute
   '/create': typeof CreateRoute
   '/login': typeof LoginRoute
-  '/signup': typeof SignupRoute
   '/review': typeof ReviewRoute
+  '/signup': typeof SignupRoute
   '/sets/$setId': typeof SetsSetIdRouteWithChildren
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/sets/$setId/articles': typeof SetsSetIdArticlesRoute
+  '/sets/$setId/cases': typeof SetsSetIdCasesRoute
   '/sets/$setId/cloze': typeof SetsSetIdClozeRoute
   '/sets/$setId/edit': typeof SetsSetIdEditRoute
   '/sets/$setId/flashcards': typeof SetsSetIdFlashcardsRoute
@@ -177,11 +186,12 @@ export interface FileRouteTypes {
     | '/account'
     | '/create'
     | '/login'
-    | '/signup'
     | '/review'
+    | '/signup'
     | '/sets/$setId'
     | '/api/auth/$'
     | '/sets/$setId/articles'
+    | '/sets/$setId/cases'
     | '/sets/$setId/cloze'
     | '/sets/$setId/edit'
     | '/sets/$setId/flashcards'
@@ -196,10 +206,11 @@ export interface FileRouteTypes {
     | '/account'
     | '/create'
     | '/login'
-    | '/signup'
     | '/review'
+    | '/signup'
     | '/api/auth/$'
     | '/sets/$setId/articles'
+    | '/sets/$setId/cases'
     | '/sets/$setId/cloze'
     | '/sets/$setId/edit'
     | '/sets/$setId/flashcards'
@@ -214,11 +225,12 @@ export interface FileRouteTypes {
     | '/account'
     | '/create'
     | '/login'
-    | '/signup'
     | '/review'
+    | '/signup'
     | '/sets/$setId'
     | '/api/auth/$'
     | '/sets/$setId/articles'
+    | '/sets/$setId/cases'
     | '/sets/$setId/cloze'
     | '/sets/$setId/edit'
     | '/sets/$setId/flashcards'
@@ -234,8 +246,8 @@ export interface RootRouteChildren {
   AccountRoute: typeof AccountRoute
   CreateRoute: typeof CreateRoute
   LoginRoute: typeof LoginRoute
-  SignupRoute: typeof SignupRoute
   ReviewRoute: typeof ReviewRoute
+  SignupRoute: typeof SignupRoute
   SetsSetIdRoute: typeof SetsSetIdRouteWithChildren
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
 }
@@ -270,18 +282,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/signup': {
-      id: '/signup'
-      path: '/signup'
-      fullPath: '/signup'
-      preLoaderRoute: typeof SignupRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/review': {
       id: '/review'
       path: '/review'
       fullPath: '/review'
       preLoaderRoute: typeof ReviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/signup': {
+      id: '/signup'
+      path: '/signup'
+      fullPath: '/signup'
+      preLoaderRoute: typeof SignupRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sets/$setId': {
@@ -310,6 +322,13 @@ declare module '@tanstack/react-router' {
       path: '/articles'
       fullPath: '/sets/$setId/articles'
       preLoaderRoute: typeof SetsSetIdArticlesRouteImport
+      parentRoute: typeof SetsSetIdRoute
+    }
+    '/sets/$setId/cases': {
+      id: '/sets/$setId/cases'
+      path: '/cases'
+      fullPath: '/sets/$setId/cases'
+      preLoaderRoute: typeof SetsSetIdCasesRouteImport
       parentRoute: typeof SetsSetIdRoute
     }
     '/sets/$setId/cloze': {
@@ -366,6 +385,7 @@ declare module '@tanstack/react-router' {
 
 interface SetsSetIdRouteChildren {
   SetsSetIdArticlesRoute: typeof SetsSetIdArticlesRoute
+  SetsSetIdCasesRoute: typeof SetsSetIdCasesRoute
   SetsSetIdClozeRoute: typeof SetsSetIdClozeRoute
   SetsSetIdEditRoute: typeof SetsSetIdEditRoute
   SetsSetIdFlashcardsRoute: typeof SetsSetIdFlashcardsRoute
@@ -378,6 +398,7 @@ interface SetsSetIdRouteChildren {
 
 const SetsSetIdRouteChildren: SetsSetIdRouteChildren = {
   SetsSetIdArticlesRoute: SetsSetIdArticlesRoute,
+  SetsSetIdCasesRoute: SetsSetIdCasesRoute,
   SetsSetIdClozeRoute: SetsSetIdClozeRoute,
   SetsSetIdEditRoute: SetsSetIdEditRoute,
   SetsSetIdFlashcardsRoute: SetsSetIdFlashcardsRoute,
@@ -397,8 +418,8 @@ const rootRouteChildren: RootRouteChildren = {
   AccountRoute: AccountRoute,
   CreateRoute: CreateRoute,
   LoginRoute: LoginRoute,
-  SignupRoute: SignupRoute,
   ReviewRoute: ReviewRoute,
+  SignupRoute: SignupRoute,
   SetsSetIdRoute: SetsSetIdRouteWithChildren,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
 }
