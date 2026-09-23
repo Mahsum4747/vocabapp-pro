@@ -232,7 +232,7 @@ function ArticleDrillPage() {
       primaryAction={revealed ? { label: "Continue", onClick: next } : undefined}
     >
       <p className="text-xs font-medium tracking-wide text-muted uppercase">Which article?</p>
-      <h2 className="mt-3 font-display text-4xl font-semibold tracking-tight text-balance">
+      <h2 className="mt-3 font-serif text-4xl font-semibold tracking-tight text-headword text-balance">
         {card.term}
       </h2>
       <div className="mt-8 grid grid-cols-3 gap-2">

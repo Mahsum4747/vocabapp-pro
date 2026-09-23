@@ -220,7 +220,14 @@ function MatchPage() {
                 <span className="mb-1 block text-xs font-medium tracking-wide uppercase opacity-70">
                   {tile.kind === "term" ? "Term" : "Definition"}
                 </span>
-                <span className="whitespace-pre-line">{tile.text}</span>
+                <span
+                  className={cn(
+                    "whitespace-pre-line",
+                    tile.kind === "term" && "font-serif font-medium text-headword",
+                  )}
+                >
+                  {tile.text}
+                </span>
               </button>
             );
           })}
