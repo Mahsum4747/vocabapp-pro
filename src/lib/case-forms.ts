@@ -29,14 +29,57 @@ export function caseFormFor(gender: GrammaticalGender, nounCase: NounCase): stri
   return CASE_FORM_TABLE[gender][nounCase];
 }
 
-// Fixed grid order, not alphabetical or shuffled: dem appears twice in the
-// table (masculine and neuter dative) but only once here — a tap grid shows
-// each distinct form once. Nominative-familiar die/der/das lead, so a
-// learner already anchored on those meets the case forms (den/dem) right
-// after, not scattered.
-const CASE_FORM_OPTIONS = ["die", "der", "das", "den", "dem"] as const;
+/**
+ * The tap grid for one asked case: only that case's articles, never the
+ * nominative and case forms mixed (der next to den is a test of telling two
+ * cases apart, not a drill of the one being asked). Each distinct form shows
+ * once — Dativ's masculine and neuter both take "dem", so it is "dem / der",
+ * not a doubled button. Ordered by gender (m, f, n) so the layout is stable.
+ */
+export function caseFormOptions(nounCase: NounCase): readonly string[] {
+  const forms = (["m", "f", "n"] as const).map((g) => CASE_FORM_TABLE[g][nounCase]);
+  return [...new Set(forms)];
+}
 
-/** Every distinct inflected form the grid can show, in a fixed display order. */
-export function caseFormOptions(): readonly string[] {
-  return CASE_FORM_OPTIONS;
+export const GENDER_LABEL_DE: Record<GrammaticalGender, string> = {
+  m: "maskülen",
+  f: "feminin",
+  n: "neutral",
+};
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/**
+ * The card's own example sentence, but only when it visibly uses the ASKED
+ * case: `correctForm` must stand right before the headword (with at most two
+ * words between, e.g. "den guten Kaffee"). A sentence that doesn't (the
+ * usual case: a Nominativ "Meine Freundin studiert in Hamburg.") returns
+ * null so the reveal shows nothing rather than the wrong case. Never
+ * invents or rewrites a sentence.
+ *
+ * die/das are identical in Nominativ and Akkusativ, so for those a match at
+ * the very start of the sentence is treated as the subject (Nominativ) and
+ * rejected.
+ */
+export function exampleForCase(
+  sentence: string | null | undefined,
+  term: string,
+  correctForm: string,
+  nominativeArticle: string | undefined,
+  nounCase: NounCase,
+): string | null {
+  const text = sentence?.trim();
+  if (!text || !term.trim()) return null;
+  const re = new RegExp(
+    `(?<![\\p{L}])${escapeRegExp(correctForm)}(?:\\s+[\\p{L}-]+){0,2}?\\s+${escapeRegExp(term.trim())}(?![\\p{L}])`,
+    "iu",
+  );
+  const match = re.exec(text);
+  if (!match) return null;
+  if (nounCase === "akkusativ" && correctForm === nominativeArticle && match.index === 0) {
+    return null;
+  }
+  return text;
 }

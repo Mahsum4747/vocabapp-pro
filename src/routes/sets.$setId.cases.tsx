@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { Check } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { EmptyState } from "@/components/empty-state";
@@ -7,7 +8,14 @@ import { StudySessionShell } from "@/components/study-session-shell";
 import { Button } from "@/components/ui/button";
 import { a1NounTrEntry } from "@/content/a1-german-nouns-tr";
 import { getArticleDrillProgress, recordArticleDrillAttempt } from "@/lib/article-drill";
-import { CASE_LABEL, caseFormFor, caseFormOptions, type NounCase } from "@/lib/case-forms";
+import {
+  CASE_LABEL,
+  GENDER_LABEL_DE,
+  caseFormFor,
+  caseFormOptions,
+  exampleForCase,
+  type NounCase,
+} from "@/lib/case-forms";
 import { profileFor } from "@/lib/lang/profiles";
 import { useReviewLogger } from "@/lib/review-log";
 import { useSet, useStudyStore } from "@/lib/store";
@@ -138,6 +146,21 @@ function CaseDrillPage() {
   const correctForm = question?.card.enrichment?.gender
     ? caseFormFor(question.card.enrichment.gender, question.nounCase)
     : undefined;
+  const gender = question?.card.enrichment?.gender;
+  const nominativeArticle = gender ? termProfile.articleFor?.(gender) : undefined;
+  // Shown only when the sentence itself uses the asked case's form — a
+  // Nominativ sentence under an Akkusativ/Dativ answer would teach the wrong
+  // case, so it is hidden instead. Nothing is generated.
+  const caseExample =
+    question && correctForm
+      ? exampleForCase(
+          question.card.example,
+          question.card.term,
+          correctForm,
+          nominativeArticle,
+          question.nounCase,
+        )
+      : null;
   // Adım 4: same static TR pilot as the article drill. Missing entry falls
   // through to the card's own English `definition`, never a blank gloss.
   const trEntry =
@@ -250,58 +273,60 @@ function CaseDrillPage() {
         {question.card.term}
       </h2>
       <div className="mt-8 grid grid-cols-3 gap-2">
-        {caseFormOptions().map((option) => {
+        {caseFormOptions(question.nounCase).map((option) => {
           const isCorrectOption = option === correctForm;
           const isChosen = selected === option;
-          const show = revealed && (isCorrectOption || isChosen);
+          const isWrongPick = revealed && isChosen && !isCorrectOption;
+          const isAnswer = revealed && isCorrectOption;
           const dim = revealed && !isChosen && !isCorrectOption;
-          const toneBorder =
-            show && isCorrectOption
-              ? "border-success"
-              : show && isChosen && !isCorrectOption
-                ? "border-danger"
-                : "border-border";
+          // Same note model as the article drill: the label text stays
+          // neutral (no gender color — die/der/das here are case forms, not
+          // a gender), and the graded outline is the only frame. Wrong pick
+          // = danger outline + "Your answer"; the answer = success outline +
+          // Check; everything else fades. Never two loud frames at once.
           return (
-            <button
-              key={option}
-              type="button"
-              disabled={revealed}
-              onClick={() => choose(option)}
-              className={cn(
-                "rounded-card border-2 bg-surface px-4 py-6 text-center text-lg font-semibold text-fg shadow-[var(--elevation-1)] transition-[background-color,box-shadow,opacity,transform,border-width,border-color] duration-[var(--duration-fast)] ease-[var(--ease-out)]",
-                toneBorder,
-                !revealed && "hover:shadow-[var(--elevation-2)]",
-                isChosen && "border-4 scale-[1.05]",
-                dim && "opacity-30",
-              )}
-            >
-              {option}
-            </button>
+            <div key={option} className="flex flex-col items-center gap-1">
+              <button
+                type="button"
+                disabled={revealed}
+                onClick={() => choose(option)}
+                className={cn(
+                  "w-full rounded-card border-2 bg-surface px-4 py-6 text-center text-lg font-semibold text-fg shadow-[var(--elevation-1)] transition-[box-shadow,opacity,border-color] duration-[var(--duration-fast)] ease-[var(--ease-out)]",
+                  isAnswer ? "border-success" : isWrongPick ? "border-danger" : "border-border",
+                  !revealed && "hover:shadow-[var(--elevation-2)]",
+                  dim && "opacity-30",
+                )}
+              >
+                <span className="inline-flex items-center justify-center gap-1.5">
+                  {option}
+                  {isAnswer ? <Check className="size-5 text-success" aria-hidden="true" /> : null}
+                </span>
+              </button>
+              <span className="h-4 text-xs text-muted">{isWrongPick ? "Your answer" : ""}</span>
+            </div>
           );
         })}
       </div>
-      {/* Same reveal line as the article drill's Adım 1b, reusing
-          ExampleLine as-is. The prefix itself can't reuse ArticleizedTerm
-          the way the article drill does — that component always derives
-          the NOMINATIVE article from gender (articleParts →
-          profile.articleFor), so it would show "der Stuhl" here even for
-          an Akkusativ question. `correctForm` is already the right
-          case-inflected word (e.g. "den"), so it's placed directly. */}
-      {revealed ? (
-        <div className="mt-6">
-          <p className="text-sm text-fg">
+      {revealed && correctForm ? (
+        <div className="mt-4">
+          {/* One teaching block from fixed templates, no AI:
+              nominative → case form · case · gender, then the case-inflected
+              headword + gloss. `correctForm` is already the right inflected
+              word, so it is placed directly (ArticleizedTerm would derive the
+              NOMINATIVE article instead). */}
+          <p className="text-sm font-medium text-fg">
+            {nominativeArticle ? `${nominativeArticle} → ` : ""}
+            {correctForm} · {CASE_LABEL[question.nounCase]}
+            {gender ? ` · ${GENDER_LABEL_DE[gender]}` : ""}
+          </p>
+          <p className="mt-1 text-sm text-fg">
             {correctForm} {question.card.term} — {trEntry?.gloss ?? question.card.definition}
           </p>
           <ExampleLine
-            example={question.card.example}
+            example={caseExample}
             termLanguage={setLanguages.term ?? studySet.termLanguage}
             className="mt-1"
           />
-          {/* No trEntry.feedback here, unlike Articles: that string is
-              always written in the Nominativ ("die Freundin."), which is
-              correct for the article drill but wrong under a Dativ/
-              Akkusativ question here — showing it would contradict the
-              case-inflected form just displayed above. */}
         </div>
       ) : null}
     </StudySessionShell>
