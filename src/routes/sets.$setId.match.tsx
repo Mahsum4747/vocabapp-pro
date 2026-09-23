@@ -140,6 +140,8 @@ function MatchPage() {
       setSelected(null);
       if (studySet) {
         logReview({ setId: studySet.id, cardId: tile.cardId, rating: ratingForOutcome(true) });
+        // A completed pair = this card is finished for the pass.
+        if (box === undefined) plan.finish(studySet.id, tile.cardId);
       }
     } else {
       setWrong([selected.id, tile.id]);
