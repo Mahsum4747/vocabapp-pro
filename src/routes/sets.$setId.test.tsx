@@ -330,14 +330,6 @@ function TestPage() {
             data-1p-ignore
             data-lpignore="true"
             data-form-type="other"
-            onFocus={(e) => {
-              // iOS Chrome in particular still shows the autofill strip
-              // despite the above — a readonly flash on focus interrupts
-              // WebKit's autofill prediction without dismissing the
-              // keyboard (readonly is cleared on the next frame).
-              e.currentTarget.setAttribute("readonly", "readonly");
-              requestAnimationFrame(() => e.currentTarget.removeAttribute("readonly"));
-            }}
             autoFocus
           />
           {revealed ? (
