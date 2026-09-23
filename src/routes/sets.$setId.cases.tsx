@@ -297,7 +297,11 @@ function CaseDrillPage() {
             termLanguage={setLanguages.term ?? studySet.termLanguage}
             className="mt-1"
           />
-          {trEntry?.feedback ? <p className="mt-1 text-xs text-subtle">{trEntry.feedback}</p> : null}
+          {/* No trEntry.feedback here, unlike Articles: that string is
+              always written in the Nominativ ("die Freundin."), which is
+              correct for the article drill but wrong under a Dativ/
+              Akkusativ question here — showing it would contradict the
+              case-inflected form just displayed above. */}
         </div>
       ) : null}
     </StudySessionShell>
