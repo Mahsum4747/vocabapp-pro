@@ -138,6 +138,7 @@ function SatzbauPage() {
       rating: ratingForOutcome(correct),
       responseTimeMs: Date.now() - shownAt,
     });
+    if (box === undefined) plan.finish(studySet.id, q.card.id);
   }
 
   function next() {
