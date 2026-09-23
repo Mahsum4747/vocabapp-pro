@@ -20,6 +20,7 @@ import { AppShell } from "@/components/app-shell";
 import { ArticleizedTerm } from "@/components/articleized-term";
 import { OwnerGate, OwnershipStatus } from "@/components/owner-gate";
 import { ModeGrid } from "@/components/mode-grid";
+import { SessionLength } from "@/components/session-length";
 import { LeitnerBoxes } from "@/components/leitner-boxes";
 import { LibraryProgressPanel } from "@/components/library-progress-panel";
 import { EmptyState } from "@/components/empty-state";
@@ -360,6 +361,7 @@ function SetPage() {
                 </button>
               </p>
             ) : null}
+            <SessionLength studySet={studySet} className="mb-4" />
             <ModeGrid
               setId={setId}
               box={selectedBox ?? undefined}

@@ -18,7 +18,9 @@ import {
 } from "@/lib/case-forms";
 import { profileFor } from "@/lib/lang/profiles";
 import { useReviewLogger } from "@/lib/review-log";
-import { useSet, useStudyStore } from "@/lib/store";
+import { useSet, useSetProgress, useStudyStore } from "@/lib/store";
+import { buildReviewQueue } from "@/lib/srs";
+import { useSessionPlan } from "@/lib/use-session";
 import {
   isCardActive,
   resolveSetLanguages,
@@ -66,6 +68,8 @@ function CaseDrillPage() {
   const logReview = useReviewLogger();
   const explanationLanguage = useStudyStore((s) => s.profile?.explanationLanguage);
   const [round, setRound] = useState(0);
+  const progress = useSetProgress(setId);
+  const plan = useSessionPlan(studySet?.id ? setId : undefined);
 
   // Same pool as the article drill: known gender required, or there is
   // nothing to decline. A card with no gender never enters this mode.
@@ -107,8 +111,16 @@ function CaseDrillPage() {
   const drillCardIds = useMemo(() => drillCards.map((c) => c.id).join(","), [drillCards]);
 
   const order = useMemo<Question[]>(() => {
+    if (!plan.ready) return [];
     const prior = priorProgressRef.current;
-    const cards = shuffle(drillCards).sort((a, b) => {
+    // This session's cards: queue order cut to the session cap, then this
+    // drill's own weakest-first ordering.
+    const sessionCards = plan.take(
+      buildReviewQueue(drillCards, progress, { now: Date.now(), includeNotDue: true }).map(
+        (entry) => entry.card,
+      ),
+    );
+    const cards = shuffle(sessionCards).sort((a, b) => {
       const pa = prior[a.id];
       const pb = prior[b.id];
       const accA = pa && pa.attempts > 0 ? pa.correct / pa.attempts : -1;
@@ -122,7 +134,7 @@ function CaseDrillPage() {
       nounCase: NOUN_CASES[Math.floor(Math.random() * NOUN_CASES.length)],
     }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [drillCardIds, round]);
+  }, [drillCardIds, round, plan.session]);
 
   const [index, setIndex] = useState(0);
   const [selected, setSelected] = useState<string | null>(null);
@@ -185,6 +197,8 @@ function CaseDrillPage() {
   }
 
   function next() {
+    // Continue = this card is finished (hit or miss).
+    if (studySet && question) plan.finish(studySet.id, question.card.id);
     setSelected(null);
     if (index + 1 >= order.length) {
       setDone(true);

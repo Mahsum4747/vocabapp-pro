@@ -22,6 +22,7 @@ import { useSet, useSetProgress, useStudyStore } from "@/lib/store";
 import { isCardActive, resolveSetLanguages } from "@/lib/types";
 import { answersMatch, parseIntSearchParam, cn } from "@/lib/utils";
 import { queuedCards } from "@/lib/srs";
+import { useSessionPlan } from "@/lib/use-session";
 import { ratingForOutcome, useReviewLogger } from "@/lib/review-log";
 import { articleWordsForAnswer, profileFor } from "@/lib/lang/profiles";
 
@@ -48,6 +49,7 @@ function LearnPage() {
   const markStudied = useStudyStore((s) => s.markStudied);
   const logReview = useReviewLogger();
   const [round, setRound] = useState(0);
+  const plan = useSessionPlan(studySet?.id ? setId : undefined);
 
   const boxCards = useMemo(() => {
     if (!studySet) return [];
@@ -56,12 +58,15 @@ function LearnPage() {
   }, [studySet, box, progress]);
 
   const items = useMemo<Item[]>(() => {
-    // Queue order (overdue → due → weak → new) rather than a plain shuffle.
-    const cards = queuedCards(
+    if (!plan.ready) return [];
+    // Queue order (overdue → due → weak → new) rather than a plain shuffle,
+    // cut to this session (a Leitner-box round is a targeted list, not a pass).
+    const queued = queuedCards(
       boxCards.filter((c) => c.term && c.definition),
       progress,
       { now: Date.now() },
     );
+    const cards = box === undefined ? plan.take(queued) : queued;
     return cards.map((card) => {
       // A card the scheduler considers established is asked by recall
       // (type the term); anything still being learned gets multiple choice.
@@ -71,7 +76,7 @@ function LearnPage() {
     });
     // round forces a fresh shuffle
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [studySet?.id, box, round]);
+  }, [studySet?.id, box, round, plan.session]);
 
   const filterLabel =
     box !== undefined
@@ -113,6 +118,7 @@ function LearnPage() {
       rating: ratingForOutcome(ok),
       responseTimeMs: Date.now() - shownAt,
     });
+    if (box === undefined) plan.finish(studySet.id, item.cardId);
   }
 
   function next() {

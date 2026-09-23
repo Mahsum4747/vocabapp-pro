@@ -7,6 +7,7 @@ import { StudySessionShell } from "@/components/study-session-shell";
 import { Button } from "@/components/ui/button";
 import { leitnerBoxOf } from "@/lib/quiz";
 import { queuedCards } from "@/lib/srs";
+import { useSessionPlan } from "@/lib/use-session";
 import { ratingForOutcome, useReviewLogger } from "@/lib/review-log";
 import { satzbauChipsForCard, shuffleChips } from "@/lib/satzbau";
 import { useSet, useSetProgress, useStudyStore } from "@/lib/store";
@@ -44,6 +45,7 @@ function SatzbauPage() {
   const markStudied = useStudyStore((s) => s.markStudied);
   const logReview = useReviewLogger();
   const [round, setRound] = useState(0);
+  const plan = useSessionPlan(studySet?.id ? setId : undefined);
 
   const boxCards = useMemo(() => {
     if (!studySet) return [];
@@ -57,7 +59,9 @@ function SatzbauPage() {
   // cards never reached once QUESTION_LIMIT is hit were never rejected, they
   // just weren't needed).
   const { questions, skipped } = useMemo<{ questions: SatzbauQuestion[]; skipped: number }>(() => {
-    const queued = queuedCards(boxCards, progress, { now: Date.now() });
+    if (!plan.ready) return { questions: [], skipped: 0 };
+    const all = queuedCards(boxCards, progress, { now: Date.now() });
+    const queued = box === undefined ? plan.take(all) : all;
     const eligible: SatzbauQuestion[] = [];
     let skippedCount = 0;
     for (const card of queued) {
@@ -69,7 +73,7 @@ function SatzbauPage() {
     return { questions: eligible, skipped: skippedCount };
     // snapshot per round so grading doesn't reshuffle
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [studySet?.id, box, round]);
+  }, [studySet?.id, box, round, plan.session]);
 
   const filterLabel =
     box !== undefined

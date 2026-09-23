@@ -55,6 +55,7 @@ export function StudyDeck({
   headerRight,
   allowShuffle = false,
   onToggleStar,
+  onCardFinished,
   doneAction,
   emptyState,
 }: {
@@ -68,6 +69,8 @@ export function StudyDeck({
   headerRight?: ReactNode;
   allowShuffle?: boolean;
   onToggleStar?: (entry: DeckEntry) => void;
+  /** A card was rated — the caller records it into the set's session pass. */
+  onCardFinished?: (entry: DeckEntry) => void;
   /** Extra button on the round-over card, next to "Start over". */
   doneAction?: ReactNode;
   emptyState?: ReactNode;
@@ -151,6 +154,7 @@ export function StudyDeck({
       rating,
       responseTimeMs: Date.now() - shownAt,
     });
+    onCardFinished?.(entry);
     setShownAt(Date.now());
     go(1);
   }

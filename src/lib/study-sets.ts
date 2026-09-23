@@ -49,6 +49,7 @@ import {
 } from "./types";
 import { asLanguageCode, type LanguageCode } from "./lang/languages";
 import { readSoundSettings, type SoundSettings } from "./sound";
+import { MAX_SERVED_IDS, readSetSession, type SetSession } from "./session-pass";
 import {
   isDirection,
   isExplanationLanguage,
@@ -1148,6 +1149,12 @@ type UserDoc = {
   /** Sound preferences, mirrored to the device for instant playback. */
   soundSettings: SoundSettings;
   /**
+   * Session length per set (see session-pass.ts): the cap and this pass's
+   * served card ids, keyed by set document id. Lives on the user document —
+   * no new collection — and works for a set the user doesn't own.
+   */
+  setSessions?: Record<string, { cap: number | null; served: string[] }>;
+  /**
    * Cached Home "Today" counts, kept current by the write paths. Absent =
    * "build from scratch on the next Home read".
    */
@@ -1181,6 +1188,12 @@ const soundSettingsSchema = z.object({
   volume: z.number().int().min(0).max(100),
 });
 
+const setSessionSchema = z.object({
+  setId: idSchema,
+  cap: z.number().int().min(1).max(10000).nullable(),
+  served: z.array(idSchema).max(MAX_SERVED_IDS),
+});
+
 const learningPrefsSchema = z.object({
   explanationLanguage: z.string().refine(isExplanationLanguage, "unknown explanation language"),
   direction: z.string().refine(isDirection, "unknown direction"),
@@ -1188,6 +1201,13 @@ const learningPrefsSchema = z.object({
 
 const profileQuerySchema = z.object({ date: dateKeySchema });
 const dailyStatsRangeSchema = z.object({ dates: z.array(dateKeySchema).min(1).max(31) });
+
+function readSetSessions(stored: unknown): Record<string, SetSession> {
+  if (!stored || typeof stored !== "object") return {};
+  return Object.fromEntries(
+    Object.entries(stored as Record<string, unknown>).map(([id, value]) => [id, readSetSession(value)]),
+  );
+}
 
 /** Turn a stored `users/{uid}` document into the profile the UI reads. */
 function readProfile(stored: unknown, masteredCards: number): UserProfile {
@@ -1209,6 +1229,7 @@ function readProfile(stored: unknown, masteredCards: number): UserProfile {
     masteredCards,
     achievements,
     soundSettings: readSoundSettings(doc.soundSettings),
+    setSessions: readSetSessions(doc.setSessions),
     ...readLearningPrefs(doc),
     prefsPrompted: doc.prefsPrompted === true,
   };
@@ -1238,6 +1259,32 @@ export const updateSoundSettings = createServerFn({ method: "POST" })
     };
     await ref.set(patch, { merge: true });
     return data;
+  });
+
+/**
+ * Store one set's session length state (cap + this pass's served ids) on the
+ * user document. Preference/bookkeeping only: never touches scheduling, due
+ * dates or the Home summary.
+ */
+export const updateSetSession = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
+  .validator((input: unknown) => setSessionSchema.parse(input))
+  .handler(async ({ context, data }) => {
+    const { getAdminFirestore } = await import("./firebase-admin.server");
+    const db = getAdminFirestore();
+    const ref = db.collection("users").doc(context.userId);
+    const now = Date.now();
+    const existing = await ref.get();
+    await ref.set(
+      {
+        id: context.userId,
+        setSessions: { [data.setId]: { cap: data.cap, served: data.served } },
+        updatedAt: now,
+        ...(existing.exists ? {} : { createdAt: now }),
+      },
+      { merge: true },
+    );
+    return { ok: true };
   });
 
 /**
