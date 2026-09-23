@@ -2,9 +2,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Check } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AppShell } from "@/components/app-shell";
-import { articleAccentClass, articleBorderClass } from "@/components/articleized-term";
+import { articleTextClass } from "@/components/articleized-term";
 import { EmptyState } from "@/components/empty-state";
-import { feedbackToneClasses } from "@/components/feedback";
 import { StudySessionShell } from "@/components/study-session-shell";
 import { Button } from "@/components/ui/button";
 import { getArticleDrillProgress, recordArticleDrillAttempt } from "@/lib/article-drill";
@@ -246,6 +245,18 @@ function ArticleDrillPage() {
           // out, so the pick (and, if it was wrong, the answer) reads as the
           // only thing that changed. A correct pick is both, so it never dims.
           const dim = revealed && !isChosen && !isCorrectOption;
+          // Grammar color (der/die/das) lives ONLY in the label text, always
+          // — never in fill or border. Graded-answer color (success/danger)
+          // lives ONLY in the outline (+ a Check icon for correct) once
+          // revealed. Two separate color systems that can never land on the
+          // same swatch: a das (teal) button marked wrong still reads "teal
+          // text, danger outline", not a wash of near-identical greens.
+          const toneBorder =
+            show && isCorrectOption
+              ? "border-success"
+              : show && isChosen && !isCorrectOption
+                ? "border-danger"
+                : "border-border";
           return (
             <button
               key={option}
@@ -253,29 +264,24 @@ function ArticleDrillPage() {
               disabled={revealed}
               onClick={() => choose(option)}
               className={cn(
-                "rounded-card border px-4 py-6 text-center text-lg font-semibold shadow-[var(--elevation-1)] transition-[background-color,box-shadow,opacity,transform,border-width] duration-[var(--duration-fast)] ease-[var(--ease-out)]",
-                // Resting/dim: the full fixed-article tint (border+bg+text).
-                // Once revealed, only the border keeps the fixed article
-                // color — the fill and text switch to the correct/incorrect
-                // feedback tone, so a wrong pick still shows which button
-                // was the right answer instead of just marking the miss.
-                !show && articleAccentClass(option),
-                show && articleBorderClass(option),
+                "rounded-card border-2 bg-surface px-4 py-6 text-center text-lg font-semibold shadow-[var(--elevation-1)] transition-[background-color,box-shadow,opacity,transform,border-width,border-color] duration-[var(--duration-fast)] ease-[var(--ease-out)]",
+                toneBorder,
+                articleTextClass(option),
                 !revealed && "hover:shadow-[var(--elevation-2)]",
                 isChosen && "border-4 scale-[1.05]",
-                show && isCorrectOption && feedbackToneClasses("correct"),
-                show && isChosen && !isCorrectOption && feedbackToneClasses("incorrect"),
                 dim && "opacity-30",
               )}
             >
               <span className="inline-flex items-center justify-center gap-1.5">
                 {option}
-                {/* das (teal) and the correct-answer tone can land close to
-                    each other in dark mode — a shape, not just a color,
-                    marks "this is the right answer" so the two can't be
-                    confused. Scoped to this grid only. */}
+                {/* The button's own fill/border never goes success-green —
+                    Continue already owns that color as a real action button,
+                    and das (teal) sitting near a green fill is exactly the
+                    confusion this must avoid. The check is success-colored
+                    on its own, independent of the (still article-colored)
+                    label next to it. */}
                 {show && isCorrectOption ? (
-                  <Check className="size-5" aria-hidden="true" />
+                  <Check className="size-5 text-success" aria-hidden="true" />
                 ) : null}
               </span>
             </button>

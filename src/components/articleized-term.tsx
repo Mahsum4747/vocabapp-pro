@@ -13,35 +13,14 @@ const ARTICLE_COLOR_CLASS: Record<string, string> = {
 };
 
 /**
- * The same mnemonic as `ARTICLE_COLOR_CLASS`, as a border+tint+text triple
- * for a whole control (the /articles drill's option buttons) rather than
- * just a word — kept as a soft tint, not a solid fill, so the button reads
- * against both --color-surface and the correct/incorrect feedback tones
- * that can be layered on top after an answer.
+ * The same mnemonic as `ARTICLE_COLOR_CLASS`, exported for a control (the
+ * /articles drill's option buttons) that needs just the text color — never
+ * fill or border, which there carry the correct/incorrect feedback tone
+ * instead, so the two color systems (grammar vs. graded-answer) can never
+ * be confused for one another.
  */
-const ARTICLE_ACCENT_CLASS: Record<string, string> = {
-  der: "border-article-der/40 bg-article-der/10 text-article-der",
-  die: "border-article-die/40 bg-article-die/10 text-article-die",
-  das: "border-article-das/40 bg-article-das/10 text-article-das",
-};
-
-export function articleAccentClass(article: string): string {
-  return ARTICLE_ACCENT_CLASS[article] ?? "";
-}
-
-/**
- * Just the border half of `ARTICLE_ACCENT_CLASS` — for a control that still
- * needs to show its fixed article color once revealed, but whose fill/text
- * must switch to a correct/incorrect feedback tone instead of the tint.
- */
-const ARTICLE_BORDER_CLASS: Record<string, string> = {
-  der: "border-article-der/60",
-  die: "border-article-die/60",
-  das: "border-article-das/60",
-};
-
-export function articleBorderClass(article: string): string {
-  return ARTICLE_BORDER_CLASS[article] ?? "";
+export function articleTextClass(article: string): string {
+  return ARTICLE_COLOR_CLASS[article] ?? "";
 }
 
 /**
