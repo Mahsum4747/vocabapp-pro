@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { EmptyState } from "@/components/empty-state";
+import { ExampleLine } from "@/components/example-line";
 import { StudySessionShell } from "@/components/study-session-shell";
 import { Button } from "@/components/ui/button";
 import { getArticleDrillProgress, recordArticleDrillAttempt } from "@/lib/article-drill";
@@ -257,6 +258,25 @@ function CaseDrillPage() {
           );
         })}
       </div>
+      {/* Same reveal line as the article drill's Adım 1b, reusing
+          ExampleLine as-is. The prefix itself can't reuse ArticleizedTerm
+          the way the article drill does — that component always derives
+          the NOMINATIVE article from gender (articleParts →
+          profile.articleFor), so it would show "der Stuhl" here even for
+          an Akkusativ question. `correctForm` is already the right
+          case-inflected word (e.g. "den"), so it's placed directly. */}
+      {revealed ? (
+        <div className="mt-6">
+          <p className="text-sm text-fg">
+            {correctForm} {question.card.term} — {question.card.definition}
+          </p>
+          <ExampleLine
+            example={question.card.example}
+            termLanguage={setLanguages.term ?? studySet.termLanguage}
+            className="mt-1"
+          />
+        </div>
+      ) : null}
     </StudySessionShell>
   );
 }
