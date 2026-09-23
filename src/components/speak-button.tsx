@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { Volume2 } from "lucide-react";
 import { canSpeak, speak } from "@/lib/speech";
+import { DEFAULT_SOUND_SETTINGS } from "@/lib/sound";
+import { useStudyStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
 /**
@@ -26,6 +28,8 @@ export function SpeakButton({
 }) {
   const [available, setAvailable] = useState(false);
   const hasText = text.trim().length > 0;
+  // Session mute (study header): the button stays put but is silent and dim.
+  const muted = !(useStudyStore((s) => s.profile?.soundSettings.enabled) ?? DEFAULT_SOUND_SETTINGS.enabled);
 
   useEffect(() => {
     if (!hasText) return;
@@ -46,11 +50,12 @@ export function SpeakButton({
       onClick={(e) => {
         e.preventDefault();
         e.stopPropagation();
-        void speak(text, language);
+        if (!muted) void speak(text, language);
       }}
       aria-label={label}
       className={cn(
         "tap-target inline-flex shrink-0 items-center justify-center rounded-control p-1.5 text-muted hover:bg-surface-2 hover:text-fg active:bg-surface-2",
+        muted && "opacity-40",
         className,
       )}
     >

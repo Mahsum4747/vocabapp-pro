@@ -1,3 +1,5 @@
+import { setSpeechMuted } from "./speech.ts";
+
 /**
  * The app's sound language, synthesised at runtime.
  *
@@ -488,6 +490,8 @@ function currentSettings(): SoundSettings {
 export function configureSound(next: SoundSettings): void {
   settings = readSoundSettings(next);
   loadedFromStorage = true;
+  // One switch for the whole session: card read-aloud follows the cues.
+  setSpeechMuted(!settings.enabled);
 
   // Take effect on anything already sounding, so muting is immediate.
   if (bus) {
