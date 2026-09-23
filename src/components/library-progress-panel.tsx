@@ -35,14 +35,23 @@ export function LibraryProgressPanel({
   // "nothing due" shape sets/progress being empty would otherwise produce.
   // Callers render the rest of the page around this without waiting on it.
   if (!isLoaded) {
+    // A label, not just a pulsing rectangle — if this load stalls (slow
+    // network, a store fetch that never settles) the slab still reads as
+    // "loading", not as an empty surface left behind by an unfinished page.
+    const skeleton = (
+      <div
+        role="status"
+        className="flex h-skeleton-stat animate-pulse items-center justify-center rounded-card bg-surface text-xs text-subtle shadow-[var(--elevation-1)]"
+      >
+        Loading…
+      </div>
+    );
     return (
       <div className={className}>
-        {showReview ? (
-          <div className="h-skeleton-stat animate-pulse rounded-card bg-surface shadow-[var(--elevation-1)]" />
-        ) : null}
+        {showReview ? skeleton : null}
         <div className={cn("grid gap-gutter md:grid-cols-2", showReview && "mt-6")}>
-          <div className="h-skeleton-stat animate-pulse rounded-card bg-surface shadow-[var(--elevation-1)]" />
-          <div className="h-skeleton-stat animate-pulse rounded-card bg-surface shadow-[var(--elevation-1)]" />
+          {skeleton}
+          {skeleton}
         </div>
       </div>
     );

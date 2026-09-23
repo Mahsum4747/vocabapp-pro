@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ArrowLeft,
   ArrowRightLeft,
@@ -115,6 +115,27 @@ function SetPage() {
   const resetProgress = useStudyStore((s) => s.resetProgress);
   const togglePublic = useStudyStore((s) => s.togglePublic);
   const setCardStatus = useStudyStore((s) => s.setCardStatus);
+  // LibraryProgressPanel (goal/XP/weak-words row above the mastery row) reads
+  // sets/progress/profile from the store but doesn't fetch them itself — by
+  // contract, whichever page renders it is responsible for that (see
+  // useLibraryReview's doc comment). Home always fetches these on mount, but
+  // a set page reached directly (deep link, refresh, bookmark) without ever
+  // visiting Home left the panel stuck showing its loading skeleton forever.
+  const libraryIsLoaded = useStudyStore((s) => s.isLoaded);
+  const profile = useStudyStore((s) => s.profile);
+  const fetchSets = useStudyStore((s) => s.fetchSets);
+  const fetchAllProgress = useStudyStore((s) => s.fetchAllProgress);
+  const fetchProfile = useStudyStore((s) => s.fetchProfile);
+  useEffect(() => {
+    if (!libraryIsLoaded) {
+      fetchSets();
+      fetchAllProgress();
+    }
+    if (!profile) fetchProfile();
+    // Only fires the fetches this page's first render found missing —
+    // deliberately not re-running on every libraryIsLoaded/profile change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [togglingPublic, setTogglingPublic] = useState(false);
   const [query, setQuery] = useState("");
