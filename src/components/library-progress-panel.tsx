@@ -90,7 +90,14 @@ export function LibraryProgressPanel({
       ) : showReview && library.target ? (
         <ReviewCallout
           setId={library.target.set.id}
-          summary={library.totals}
+          // The target set's OWN summary, not the library-wide totals — this
+          // callout's title names one specific set, so its numbers have to
+          // be that set's, not everything added up across the library. This
+          // is what made the callout show "51 new" under a set whose own
+          // card read "31 new": totals summed every studiable set while the
+          // title stayed pinned to just the one with the most overdue/due
+          // cards (summarizeLibrary's own tie-break).
+          summary={library.target.summary}
           title={library.target.set.title}
         />
       ) : null}
