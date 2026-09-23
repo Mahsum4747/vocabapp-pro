@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 import type { ReactNode } from "react";
 import { Progress } from "./ui/progress";
+import { SessionMuteToggle } from "./session-mute-toggle";
 
 const BACK_LINK =
   "inline-flex size-11 items-center justify-center rounded-control text-muted transition-colors hover:bg-surface-2 hover:text-fg active:bg-surface-2";
@@ -61,6 +62,7 @@ export function StudyChrome({
             </p>
           </div>
           {headerRight}
+          <SessionMuteToggle />
         </div>
         <Progress value={pct} className="h-1 rounded-none" />
       </header>

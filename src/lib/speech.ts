@@ -119,6 +119,21 @@ export function toBcp47(language?: string): string | undefined {
   return LANGUAGE_TAGS[trimmed.toLowerCase()];
 }
 
+// Session mute (the study header's speaker toggle). Mirrors the user's
+// `soundSettings.enabled` — `configureSound` in sound.ts pushes it here — so
+// one switch silences the cues AND every "read this card" button, and cuts
+// off anything already being read.
+let muted = false;
+
+export function setSpeechMuted(next: boolean): void {
+  muted = next;
+  if (next && speechSupported()) window.speechSynthesis.cancel();
+}
+
+export function speechMuted(): boolean {
+  return muted;
+}
+
 export function speechSupported(): boolean {
   return typeof window !== "undefined" && "speechSynthesis" in window;
 }
@@ -289,10 +304,11 @@ export async function canSpeak(language?: string): Promise<boolean> {
  *  callers that show a speaker button should gate it on `canSpeak` first so
  *  it never appears for a language this would silently no-op or mispronounce. */
 export async function speak(text: string, language?: string): Promise<void> {
-  if (!speechSupported() || !text.trim()) return;
+  if (muted || !speechSupported() || !text.trim()) return;
   const tag = toBcp47(language);
   const resolved = tag ? await findVoice(language) : undefined;
   if (tag && !resolved) return; // Recognized language, nothing can speak it — stay silent.
+  if (muted) return; // Muted while the voice lookup was in flight.
 
   window.speechSynthesis.cancel();
   const utterance = new SpeechSynthesisUtterance(text);
