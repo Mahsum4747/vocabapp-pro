@@ -1,3 +1,4 @@
+import { caseFormFor, type NounCase } from "./case-forms.ts";
 import type { Card } from "./types";
 
 /**
@@ -17,7 +18,25 @@ export type ClozeBlank = {
   /** The exact substring matched in the sentence, original casing/accents. */
   answer: string;
   after: string;
+  /**
+   * Set only for a case-aware blank: the blank covers the inflected article
+   * AND the noun ("den Vater") for this case, and is graded with
+   * `caseBlankMatches` (exact form; case-fold and trim only). Absent = the
+   * classic noun-only blank, graded as before.
+   */
+  caseBlank?: NounCase;
 };
+
+/**
+ * Trim, collapse runs of spaces, case-fold. Deliberately NOT accent-folding
+ * (unlike `answersMatch`): for an article+noun blank the umlaut/ß is part of
+ * the answer, so "Bäume" must not pass as "Baume".
+ */
+export function caseBlankMatches(typed: string, answer: string): boolean {
+  const norm = (s: string) => s.normalize("NFC").trim().replace(/\s+/g, " ").toLowerCase();
+  const a = norm(typed);
+  return a.length > 0 && a === norm(answer);
+}
 
 /** Lowercase + strip accents, one source character at a time — case- and
  *  accent-insensitive matching without disturbing anything else (no
@@ -71,8 +90,41 @@ export function findBlankSpan(example: string, term: string): ClozeBlank | null 
   }
 }
 
-/** Whether — and how — a card's own example can be blanked for Cloze mode. */
-export function clozeBlankForCard(card: Card): ClozeBlank | null {
+const CASE_EXAMPLE_KEYS: ReadonlyArray<readonly [NounCase, "akk" | "dat"]> = [
+  ["akkusativ", "akk"],
+  ["dativ", "dat"],
+];
+
+/**
+ * Case-aware blank: from the card's own `examples.akk` / `examples.dat`,
+ * blank the inflected article + noun together ("den Vater"), so a wrong
+ * article form is caught, not just a forgotten noun. Only for a noun with a
+ * known gender (verbs never have one, so they never enter this path); never
+ * from `examples.nom`. When both cases are usable one is picked at random.
+ * Returns null when no case sentence has the exact `form + term` adjacency.
+ */
+function caseAwareBlank(card: Card, pick: () => number): ClozeBlank | null {
+  const gender = card.enrichment?.gender;
+  if (!gender || !card.examples) return null;
+  const usable: ClozeBlank[] = [];
+  for (const [nounCase, key] of CASE_EXAMPLE_KEYS) {
+    const sentence = card.examples[key]?.trim();
+    if (!sentence) continue;
+    const span = findBlankSpan(sentence, `${caseFormFor(gender, nounCase)} ${card.term}`);
+    if (span) usable.push({ ...span, caseBlank: nounCase });
+  }
+  if (usable.length === 0) return null;
+  return usable[Math.min(usable.length - 1, Math.floor(pick() * usable.length))] ?? null;
+}
+
+/**
+ * Whether — and how — a card's own example can be blanked for Cloze mode.
+ * Case-aware blank first (see `caseAwareBlank`); otherwise the classic
+ * noun-only blank from `Card.example`, unchanged.
+ */
+export function clozeBlankForCard(card: Card, pick: () => number = Math.random): ClozeBlank | null {
+  const caseBlank = caseAwareBlank(card, pick);
+  if (caseBlank) return caseBlank;
   if (!card.example) return null;
   return findBlankSpan(card.example, card.term);
 }

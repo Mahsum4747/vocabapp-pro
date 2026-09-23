@@ -6,7 +6,7 @@ import { EmptyState } from "@/components/empty-state";
 import { StudySessionShell } from "@/components/study-session-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { clozeBlankForCard, type ClozeBlank } from "@/lib/cloze";
+import { caseBlankMatches, clozeBlankForCard, type ClozeBlank } from "@/lib/cloze";
 import { leitnerBoxOf } from "@/lib/quiz";
 import { queuedCards } from "@/lib/srs";
 import { useSessionPlan } from "@/lib/use-session";
@@ -197,7 +197,11 @@ function ClozePage() {
 
   if (!q) return null;
 
-  const correct = answersMatch(written, q.blank.answer);
+  // A case-aware blank ("den Vater") is graded on the exact inflected form;
+  // the classic noun-only blank keeps its accent-insensitive match.
+  const correct = q.blank.caseBlank
+    ? caseBlankMatches(written, q.blank.answer)
+    : answersMatch(written, q.blank.answer);
 
   function submitWritten() {
     if (!revealed) finish(correct);
