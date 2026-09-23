@@ -23,6 +23,8 @@ export type LogReview = (input: {
   cardId: string;
   rating: ReviewRating;
   responseTimeMs?: number;
+  /** Phase 2, Adım 5 — set only by the article/case drills, on a miss. */
+  missKind?: "article" | "case";
 }) => void;
 
 /**

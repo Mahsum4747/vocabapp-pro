@@ -93,7 +93,7 @@ function ArticleDrillPage() {
   const priorProgressRef = useRef<Record<string, ArticleDrillProgress>>({});
   useEffect(() => {
     let cancelled = false;
-    void getArticleDrillProgress({ data: { setId } })
+    void getArticleDrillProgress({ data: { setId, kind: "article" } })
       .then((rows) => {
         if (cancelled) return;
         priorProgressRef.current = Object.fromEntries(rows.map((r) => [r.cardId, r]));
@@ -169,7 +169,7 @@ function ArticleDrillPage() {
       // "again" only ever moves the card's schedule earlier/marks it
       // struggling; it can never complete or master a card by itself, which
       // is what a hit is kept from doing (see the file-level comment above).
-      logReview({ setId: studySet.id, cardId: card.id, rating: "again" });
+      logReview({ setId: studySet.id, cardId: card.id, rating: "again", missKind: "article" });
     }
     void recordArticleDrillAttempt({
       data: {
@@ -178,6 +178,7 @@ function ArticleDrillPage() {
         correct: ok,
         selectedArticle: option,
         correctArticle: correctArticle ?? "",
+        kind: "article",
       },
     });
   }
