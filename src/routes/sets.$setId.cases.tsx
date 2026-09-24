@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { a1NounTrEntry } from "@/content/a1-german-nouns-tr";
 import { getArticleDrillProgress, recordArticleDrillAttempt } from "@/lib/article-drill";
 import {
+  CASE_ABBR,
   CASE_LABEL,
   GENDER_LABEL_DE,
   caseFormFor,
@@ -16,6 +17,7 @@ import {
   caseExampleFor,
   type NounCase,
 } from "@/lib/case-forms";
+import { verbConfirmsCase } from "@/lib/german/verb-case-hint";
 import { profileFor } from "@/lib/lang/profiles";
 import { useReviewLogger } from "@/lib/review-log";
 import { useSet, useSetProgress, useStudyStore } from "@/lib/store";
@@ -167,6 +169,15 @@ function CaseDrillPage() {
     question && correctForm
       ? caseExampleFor(question.card, correctForm, nominativeArticle, question.nounCase)
       : null;
+  // Phase 3, Adım 3: a second, independent confirmation that a curated
+  // verb-government/dative verb actually governs this case in THIS
+  // sentence — see verb-case-hint.ts. `caseExample` above (case-forms.ts's
+  // article-adjacency match) is Source B; this is Source A. Only shown
+  // when both agree, so the (Akk.)/(Dat.) badge is never a guess.
+  const verbConfirmed =
+    question && correctForm && caseExample
+      ? verbConfirmsCase(caseExample, correctForm, question.card.term, question.nounCase)
+      : false;
   // Adım 4: same static TR pilot as the article drill. Missing entry falls
   // through to the card's own English `definition`, never a blank gloss.
   const trEntry =
@@ -335,6 +346,9 @@ function CaseDrillPage() {
             termLanguage={setLanguages.term ?? studySet.termLanguage}
             className="mt-1"
           />
+          {verbConfirmed ? (
+            <span className="mx-1 text-sm text-muted">({CASE_ABBR[question.nounCase]})</span>
+          ) : null}
         </div>
       ) : null}
     </StudySessionShell>

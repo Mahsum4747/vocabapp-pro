@@ -18,6 +18,12 @@ export const CASE_LABEL: Record<NounCase, string> = {
   dativ: "Dativ",
 };
 
+/** Short form, for an inline hint next to a sentence rather than a label. */
+export const CASE_ABBR: Record<NounCase, string> = {
+  akkusativ: "Akk.",
+  dativ: "Dat.",
+};
+
 const CASE_FORM_TABLE: Record<GrammaticalGender, Record<NounCase, string>> = {
   m: { akkusativ: "den", dativ: "dem" },
   f: { akkusativ: "die", dativ: "der" },
