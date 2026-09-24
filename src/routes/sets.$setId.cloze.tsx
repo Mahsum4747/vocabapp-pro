@@ -238,7 +238,7 @@ function ClozePage() {
           )}
         </span>
         {q.blank.caseBlank ? (
-          <span className="mr-1 text-sm text-muted">
+          <span className="mx-1 text-sm text-muted">
             ({q.blank.caseBlank === "akkusativ" ? "Akk." : "Dat."})
           </span>
         ) : null}
