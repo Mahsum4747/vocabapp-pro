@@ -7,7 +7,8 @@ import { StudySessionShell } from "@/components/study-session-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { caseBlankMatches, clozeBlankForCard, type ClozeBlank } from "@/lib/cloze";
-import { CASE_LABEL } from "@/lib/case-forms";
+import { CASE_ABBR, CASE_LABEL, caseFormFor } from "@/lib/case-forms";
+import { verbConfirmsCase } from "@/lib/german/verb-case-hint";
 import { leitnerBoxOf } from "@/lib/quiz";
 import { queuedCards } from "@/lib/srs";
 import { useSessionPlan } from "@/lib/use-session";
@@ -204,6 +205,24 @@ function ClozePage() {
     ? caseBlankMatches(written, q.blank.answer)
     : answersMatch(written, q.blank.answer);
 
+  // Phase 3, Adım 3: the (Akk.)/(Dat.) span below is only shown when a
+  // curated verb-government/dative verb (Source A, verb-case-hint.ts)
+  // confirms the same case the blank itself already grades on (Source B).
+  // Doesn't repeat the lemma+case hint above the sentence — that one is
+  // already unconditionally correct (it names the graded case itself, not
+  // a bonus confirmation), so it stays as-is.
+  const gender = q.card.enrichment?.gender;
+  const correctForm = q.blank.caseBlank && gender ? caseFormFor(gender, q.blank.caseBlank) : undefined;
+  const verbConfirmed =
+    q.blank.caseBlank && correctForm
+      ? verbConfirmsCase(
+          `${q.blank.before}${q.blank.answer}${q.blank.after}`,
+          correctForm,
+          q.card.term,
+          q.blank.caseBlank,
+        )
+      : false;
+
   function submitWritten() {
     if (!revealed) finish(correct);
     else next();
@@ -237,10 +256,8 @@ function ClozePage() {
             " "
           )}
         </span>
-        {q.blank.caseBlank ? (
-          <span className="mx-1 text-sm text-muted">
-            ({q.blank.caseBlank === "akkusativ" ? "Akk." : "Dat."})
-          </span>
+        {q.blank.caseBlank && verbConfirmed ? (
+          <span className="mx-1 text-sm text-muted">({CASE_ABBR[q.blank.caseBlank]})</span>
         ) : null}
         {q.blank.after}
       </h2>
