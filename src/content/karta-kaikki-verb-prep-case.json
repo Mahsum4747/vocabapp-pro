@@ -1,0 +1,5017 @@
+{
+"source": "kaikki.org English Wiktionary extraction, German verbs JSONL",
+"url": "https://kaikki.org/dictionary/German/pos-verb/kaikki.org-dictionary-German-by-pos-verb.jsonl",
+"license": "CC BY-SA",
+"retrieved": "2026-09-24",
+"method": "regex on sense glosses: PREP (+ case) and bare 'with dative/accusative'",
+"note": "Not a valency gold standard. Hand-curated government-data wins on conflict. Wechsel not disambiguated.",
+"count": 1001,
+"lemmas": 781,
+"frames": [
+{
+"lemma": "sehen",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "sehen",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "sehen",
+"prep": "nach",
+"case": "dat"
+},
+{
+"lemma": "bitten",
+"prep": "bei",
+"case": "dat"
+},
+{
+"lemma": "bitten",
+"prep": "um",
+"case": "akk"
+},
+{
+"lemma": "bitten",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "bitten",
+"prep": "zu",
+"case": "dat"
+},
+{
+"lemma": "bitten",
+"prep": "in",
+"case": "akk"
+},
+{
+"lemma": "fallen",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "fallen",
+"prep": "in",
+"case": "akk"
+},
+{
+"lemma": "geben",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "geben",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "nerven",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "glauben",
+"prep": "an",
+"case": "akk"
+},
+{
+"lemma": "glauben",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "übersetzen",
+"prep": "in",
+"case": "akk"
+},
+{
+"lemma": "übersetzen",
+"prep": "aus",
+"case": "dat"
+},
+{
+"lemma": "übersetzen",
+"prep": "mit",
+"case": "dat"
+},
+{
+"lemma": "übersetzen",
+"prep": "über",
+"case": "akk"
+},
+{
+"lemma": "sein",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "sein",
+"prep": "nach",
+"case": "dat"
+},
+{
+"lemma": "zahlen",
+"prep": "an",
+"case": "akk"
+},
+{
+"lemma": "zahlen",
+"prep": "für",
+"case": "akk"
+},
+{
+"lemma": "zählen",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "arbeiten",
+"prep": "an",
+"case": "dat"
+},
+{
+"lemma": "bringen",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "würdigen",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "kleben",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "kleben",
+"prep": "an",
+"case": "dat"
+},
+{
+"lemma": "tun",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "gehen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "gehen",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "gehen",
+"prep": null,
+"case": "gen"
+},
+{
+"lemma": "gehen",
+"prep": "in",
+"case": "akk"
+},
+{
+"lemma": "zeigen",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "vertiefen",
+"prep": "in",
+"case": "akk"
+},
+{
+"lemma": "spielen",
+"prep": "mit",
+"case": "dat"
+},
+{
+"lemma": "helfen",
+"prep": "bei",
+"case": "dat"
+},
+{
+"lemma": "gehören",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "verstehen",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "verstehen",
+"prep": "mit",
+"case": "dat"
+},
+{
+"lemma": "verstehen",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "lachen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "reden",
+"prep": "mit",
+"case": "dat"
+},
+{
+"lemma": "reden",
+"prep": "zu",
+"case": "dat"
+},
+{
+"lemma": "reden",
+"prep": "über",
+"case": "akk"
+},
+{
+"lemma": "reden",
+"prep": "von",
+"case": "dat"
+},
+{
+"lemma": "sprechen",
+"prep": "über",
+"case": "akk"
+},
+{
+"lemma": "kommen",
+"prep": "zu",
+"case": "dat"
+},
+{
+"lemma": "kommen",
+"prep": "von",
+"case": "dat"
+},
+{
+"lemma": "kommen",
+"prep": "durch",
+"case": "akk"
+},
+{
+"lemma": "kommen",
+"prep": "aus",
+"case": "dat"
+},
+{
+"lemma": "kommen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "kommen",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "kommen",
+"prep": "um",
+"case": "akk"
+},
+{
+"lemma": "kommen",
+"prep": "an",
+"case": "akk"
+},
+{
+"lemma": "kommen",
+"prep": "gegen",
+"case": "akk"
+},
+{
+"lemma": "kommen",
+"prep": "mit",
+"case": "dat"
+},
+{
+"lemma": "vorgehen",
+"prep": "gegen",
+"case": "akk"
+},
+{
+"lemma": "steuern",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "steuern",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "leiden",
+"prep": "an",
+"case": "dat"
+},
+{
+"lemma": "haben",
+"prep": "mit",
+"case": "dat"
+},
+{
+"lemma": "haben",
+"prep": "von",
+"case": "dat"
+},
+{
+"lemma": "haben",
+"prep": "über",
+"case": "akk"
+},
+{
+"lemma": "scheren",
+"prep": "um",
+"case": "akk"
+},
+{
+"lemma": "scheren",
+"prep": "um",
+"case": "akk"
+},
+{
+"lemma": "entfliehen",
+"prep": "aus",
+"case": "dat"
+},
+{
+"lemma": "sparen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "stoßen",
+"prep": "an",
+"case": "dat"
+},
+{
+"lemma": "stoßen",
+"prep": "gegen",
+"case": "akk"
+},
+{
+"lemma": "stoßen",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "verstoßen",
+"prep": "gegen",
+"case": "akk"
+},
+{
+"lemma": "abstoßen",
+"prep": "von",
+"case": "dat"
+},
+{
+"lemma": "schreiben",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "verschreiben",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "verschreiben",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "ärgern",
+"prep": "über",
+"case": "akk"
+},
+{
+"lemma": "bauen",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "scheißen",
+"prep": "in",
+"case": "akk"
+},
+{
+"lemma": "scheißen",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "pfeifen",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "beißen",
+"prep": "mit",
+"case": "dat"
+},
+{
+"lemma": "wehren",
+"prep": "gegen",
+"case": "akk"
+},
+{
+"lemma": "wehren",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "ablassen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "handeln",
+"prep": "mit",
+"case": "dat"
+},
+{
+"lemma": "handeln",
+"prep": "um",
+"case": "akk"
+},
+{
+"lemma": "handeln",
+"prep": "bei",
+"case": "dat"
+},
+{
+"lemma": "stellen",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "stellen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "verlassen",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "einlassen",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "einlassen",
+"prep": "in",
+"case": "akk"
+},
+{
+"lemma": "auslassen",
+"prep": "an",
+"case": "dat"
+},
+{
+"lemma": "auslassen",
+"prep": "über",
+"case": "akk"
+},
+{
+"lemma": "werden",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "nennen",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "nennen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "bekommen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "finden",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "basteln",
+"prep": "an",
+"case": "dat"
+},
+{
+"lemma": "machen",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "machen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "machen",
+"prep": "aus",
+"case": "dat"
+},
+{
+"lemma": "machen",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "machen",
+"prep": "an",
+"case": "akk"
+},
+{
+"lemma": "beginnen",
+"prep": "mit",
+"case": "dat"
+},
+{
+"lemma": "anfangen",
+"prep": "mit",
+"case": "dat"
+},
+{
+"lemma": "anfangen",
+"prep": "von",
+"case": "dat"
+},
+{
+"lemma": "schmecken",
+"prep": "nach",
+"case": "dat"
+},
+{
+"lemma": "schmecken",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "fragen",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "antworten",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "stehen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "stehen",
+"prep": "für",
+"case": "akk"
+},
+{
+"lemma": "stehen",
+"prep": "zu",
+"case": "dat"
+},
+{
+"lemma": "stehen",
+"prep": "hinter",
+"case": "dat"
+},
+{
+"lemma": "stehen",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "gratulieren",
+"prep": "zu",
+"case": "dat"
+},
+{
+"lemma": "denken",
+"prep": "an",
+"case": "akk"
+},
+{
+"lemma": "schaden",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "gefallen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "tauschen",
+"prep": "gegen",
+"case": "akk"
+},
+{
+"lemma": "leben",
+"prep": "von",
+"case": "dat"
+},
+{
+"lemma": "leben",
+"prep": "mit",
+"case": "dat"
+},
+{
+"lemma": "richten",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "richten",
+"prep": "an",
+"case": "akk"
+},
+{
+"lemma": "richten",
+"prep": "gegen",
+"case": "akk"
+},
+{
+"lemma": "richten",
+"prep": "nach",
+"case": "dat"
+},
+{
+"lemma": "erzählen",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "erzählen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "erzählen",
+"prep": "von",
+"case": "dat"
+},
+{
+"lemma": "sterben",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "folgen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "folgen",
+"prep": "aus",
+"case": "dat"
+},
+{
+"lemma": "stehlen",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "entsagen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "entbehren",
+"prep": null,
+"case": "gen"
+},
+{
+"lemma": "würgen",
+"prep": "an",
+"case": "dat"
+},
+{
+"lemma": "beschränken",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "bleiben",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "bleiben",
+"prep": "bei",
+"case": "dat"
+},
+{
+"lemma": "dienen",
+"prep": "bei",
+"case": "dat"
+},
+{
+"lemma": "dienen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "kloppen",
+"prep": "in",
+"case": "akk"
+},
+{
+"lemma": "kloppen",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "jagen",
+"prep": "durch",
+"case": "akk"
+},
+{
+"lemma": "jagen",
+"prep": "in",
+"case": "akk"
+},
+{
+"lemma": "verdienen",
+"prep": "an",
+"case": "dat"
+},
+{
+"lemma": "verdienen",
+"prep": "für",
+"case": "akk"
+},
+{
+"lemma": "liegen",
+"prep": "an",
+"case": "dat"
+},
+{
+"lemma": "kosten",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "warten",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "hören",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "hören",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "achten",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "halten",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "halten",
+"prep": "an",
+"case": "akk"
+},
+{
+"lemma": "setzen",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "setzen",
+"prep": "über",
+"case": "akk"
+},
+{
+"lemma": "hoffen",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "suchen",
+"prep": "nach",
+"case": "dat"
+},
+{
+"lemma": "grüßen",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "rufen",
+"prep": "nach",
+"case": "dat"
+},
+{
+"lemma": "rufen",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "rufen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "schwitzen",
+"prep": "über",
+"case": "dat"
+},
+{
+"lemma": "riechen",
+"prep": "nach",
+"case": "dat"
+},
+{
+"lemma": "retten",
+"prep": "vor",
+"case": "dat"
+},
+{
+"lemma": "fürchten",
+"prep": "vor",
+"case": "dat"
+},
+{
+"lemma": "dürfen",
+"prep": null,
+"case": "gen"
+},
+{
+"lemma": "verfolgen",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "erweisen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "verweisen",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "erklären",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "danken",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "drehen",
+"prep": "um",
+"case": "akk"
+},
+{
+"lemma": "treten",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "schlafen",
+"prep": "über",
+"case": "akk"
+},
+{
+"lemma": "fehlen",
+"prep": "an",
+"case": "dat"
+},
+{
+"lemma": "fehlen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "anziehen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "wenden",
+"prep": "an",
+"case": "akk"
+},
+{
+"lemma": "rechnen",
+"prep": "mit",
+"case": "dat"
+},
+{
+"lemma": "dauern",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "hetzen",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "impfen",
+"prep": "gegen",
+"case": "akk"
+},
+{
+"lemma": "kauen",
+"prep": "an",
+"case": "dat"
+},
+{
+"lemma": "kratzen",
+"prep": "an",
+"case": "dat"
+},
+{
+"lemma": "lecken",
+"prep": "an",
+"case": "dat"
+},
+{
+"lemma": "lehren",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "lernen",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "mangeln",
+"prep": "an",
+"case": "dat"
+},
+{
+"lemma": "mangeln",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "pflegen",
+"prep": null,
+"case": "gen"
+},
+{
+"lemma": "schenken",
+"prep": "in",
+"case": "akk"
+},
+{
+"lemma": "schauen",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "schauen",
+"prep": "nach",
+"case": "dat"
+},
+{
+"lemma": "erlauben",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "weichen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "beugen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "deuten",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "fesseln",
+"prep": "an",
+"case": "akk"
+},
+{
+"lemma": "fesseln",
+"prep": "an",
+"case": "dat"
+},
+{
+"lemma": "drücken",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "drücken",
+"prep": "vor",
+"case": "dat"
+},
+{
+"lemma": "drohen",
+"prep": "mit",
+"case": "dat"
+},
+{
+"lemma": "drohen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "freuen",
+"prep": "über",
+"case": "akk"
+},
+{
+"lemma": "freuen",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "freuen",
+"prep": "für",
+"case": "akk"
+},
+{
+"lemma": "freuen",
+"prep": null,
+"case": "gen"
+},
+{
+"lemma": "gelten",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "gelten",
+"prep": "für",
+"case": "akk"
+},
+{
+"lemma": "geschehen",
+"prep": "mit",
+"case": "dat"
+},
+{
+"lemma": "geschehen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "hängen",
+"prep": "an",
+"case": "dat"
+},
+{
+"lemma": "hängen",
+"prep": "an",
+"case": "akk"
+},
+{
+"lemma": "hängen",
+"prep": "an",
+"case": "akk"
+},
+{
+"lemma": "anbieten",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "melden",
+"prep": "zu",
+"case": "dat"
+},
+{
+"lemma": "melden",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "melden",
+"prep": "bei",
+"case": "dat"
+},
+{
+"lemma": "schimpfen",
+"prep": "mit",
+"case": "dat"
+},
+{
+"lemma": "schimpfen",
+"prep": "über",
+"case": "akk"
+},
+{
+"lemma": "schimpfen",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "schimpfen",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "schmeicheln",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "schmeißen",
+"prep": "mit",
+"case": "dat"
+},
+{
+"lemma": "schmeißen",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "schmeißen",
+"prep": "in",
+"case": "akk"
+},
+{
+"lemma": "schwören",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "schwören",
+"prep": "bei",
+"case": "dat"
+},
+{
+"lemma": "schonen",
+"prep": null,
+"case": "gen"
+},
+{
+"lemma": "sehnen",
+"prep": "nach",
+"case": "dat"
+},
+{
+"lemma": "quetschen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "stinken",
+"prep": "nach",
+"case": "dat"
+},
+{
+"lemma": "staunen",
+"prep": "über",
+"case": "akk"
+},
+{
+"lemma": "trauen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "trennen",
+"prep": "von",
+"case": "dat"
+},
+{
+"lemma": "pitschen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "brauchen",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "relaten",
+"prep": "zu",
+"case": "dat"
+},
+{
+"lemma": "relaten",
+"prep": "mit",
+"case": "dat"
+},
+{
+"lemma": "passen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "passen",
+"prep": "für",
+"case": "akk"
+},
+{
+"lemma": "passen",
+"prep": "zu",
+"case": "dat"
+},
+{
+"lemma": "passen",
+"prep": "auf",
+"case": "dat"
+},
+{
+"lemma": "trimmen",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "trimmen",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "erscheinen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "gedenken",
+"prep": null,
+"case": "gen"
+},
+{
+"lemma": "grauen",
+"prep": "vor",
+"case": "dat"
+},
+{
+"lemma": "warnen",
+"prep": "vor",
+"case": "dat"
+},
+{
+"lemma": "ergötzen",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "beharren",
+"prep": "auf",
+"case": "dat"
+},
+{
+"lemma": "beharren",
+"prep": "bei",
+"case": "dat"
+},
+{
+"lemma": "beharren",
+"prep": "in",
+"case": "dat"
+},
+{
+"lemma": "bedienen",
+"prep": null,
+"case": "gen"
+},
+{
+"lemma": "aussehen",
+"prep": "nach",
+"case": "dat"
+},
+{
+"lemma": "aussehen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "begrenzen",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "vermögen",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "berichten",
+"prep": "über",
+"case": "akk"
+},
+{
+"lemma": "berichten",
+"prep": "von",
+"case": "dat"
+},
+{
+"lemma": "rechtfertigen",
+"prep": "für",
+"case": "akk"
+},
+{
+"lemma": "wundern",
+"prep": "über",
+"case": "akk"
+},
+{
+"lemma": "begrüßen",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "versprechen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "fluchen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "erinnern",
+"prep": "an",
+"case": "akk"
+},
+{
+"lemma": "erinnern",
+"prep": "gegen",
+"case": "akk"
+},
+{
+"lemma": "ankommen",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "annehmen",
+"prep": null,
+"case": "gen"
+},
+{
+"lemma": "interessieren",
+"prep": "für",
+"case": "akk"
+},
+{
+"lemma": "bescheiden",
+"prep": null,
+"case": "gen"
+},
+{
+"lemma": "entsprechen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "verstecken",
+"prep": "vor",
+"case": "dat"
+},
+{
+"lemma": "verbergen",
+"prep": "vor",
+"case": "dat"
+},
+{
+"lemma": "schwindeln",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "konzentrieren",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "üben",
+"prep": "in",
+"case": "dat"
+},
+{
+"lemma": "spitzen",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "spotten",
+"prep": "über",
+"case": "akk"
+},
+{
+"lemma": "schäumen",
+"prep": "vor",
+"case": "dat"
+},
+{
+"lemma": "benennen",
+"prep": "nach",
+"case": "dat"
+},
+{
+"lemma": "benennen",
+"prep": "mit",
+"case": "dat"
+},
+{
+"lemma": "teilnehmen",
+"prep": "an",
+"case": "dat"
+},
+{
+"lemma": "streiten",
+"prep": "mit",
+"case": "dat"
+},
+{
+"lemma": "streiten",
+"prep": "um",
+"case": "akk"
+},
+{
+"lemma": "streiten",
+"prep": "über",
+"case": "akk"
+},
+{
+"lemma": "diskutieren",
+"prep": "über",
+"case": "akk"
+},
+{
+"lemma": "ersetzen",
+"prep": "durch",
+"case": "akk"
+},
+{
+"lemma": "aufhängen",
+"prep": "an",
+"case": "dat"
+},
+{
+"lemma": "bezahlen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "bezahlen",
+"prep": "für",
+"case": "akk"
+},
+{
+"lemma": "unterwerfen",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "unterwerfen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "verschwören",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "bezichtigen",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "entschuldigen",
+"prep": "bei",
+"case": "dat"
+},
+{
+"lemma": "raufen",
+"prep": "mit",
+"case": "dat"
+},
+{
+"lemma": "abheben",
+"prep": "von",
+"case": "dat"
+},
+{
+"lemma": "beschuldigen",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "begeistern",
+"prep": "für",
+"case": "akk"
+},
+{
+"lemma": "verlegen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "bedeuten",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "erpressen",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "bezeichnen",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "unterhalten",
+"prep": "mit",
+"case": "dat"
+},
+{
+"lemma": "unterhalten",
+"prep": "über",
+"case": "akk"
+},
+{
+"lemma": "entspringen",
+"prep": "aus",
+"case": "dat"
+},
+{
+"lemma": "kündigen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "zwingen",
+"prep": "zu",
+"case": "dat"
+},
+{
+"lemma": "zusichern",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "einstellen",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "vergeben",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "vergeben",
+"prep": "an",
+"case": "akk"
+},
+{
+"lemma": "untergehen",
+"prep": "in",
+"case": "dat"
+},
+{
+"lemma": "verleiden",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "anrufen",
+"prep": "bei",
+"case": "dat"
+},
+{
+"lemma": "anrufen",
+"prep": "in",
+"case": "dat"
+},
+{
+"lemma": "abgeben",
+"prep": "bei",
+"case": "dat"
+},
+{
+"lemma": "abgeben",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "wirken",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "wirken",
+"prep": "für",
+"case": "akk"
+},
+{
+"lemma": "zuhören",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "lauschen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "aufhören",
+"prep": "mit",
+"case": "dat"
+},
+{
+"lemma": "überzeugen",
+"prep": "von",
+"case": "dat"
+},
+{
+"lemma": "aussprechen",
+"prep": "für",
+"case": "akk"
+},
+{
+"lemma": "aussprechen",
+"prep": "bei",
+"case": "dat"
+},
+{
+"lemma": "aussprechen",
+"prep": "mit",
+"case": "dat"
+},
+{
+"lemma": "anschließen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "verschieben",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "erzeugen",
+"prep": "aus",
+"case": "dat"
+},
+{
+"lemma": "avancieren",
+"prep": "zu",
+"case": "dat"
+},
+{
+"lemma": "Avancen machen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "tendieren",
+"prep": "zu",
+"case": "dat"
+},
+{
+"lemma": "erbarmen",
+"prep": "über",
+"case": "akk"
+},
+{
+"lemma": "stimmen",
+"prep": "für",
+"case": "akk"
+},
+{
+"lemma": "vorbereiten",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "bestehen",
+"prep": "aus",
+"case": "dat"
+},
+{
+"lemma": "bestehen",
+"prep": "auf",
+"case": "dat"
+},
+{
+"lemma": "verzweifeln",
+"prep": "an",
+"case": "dat"
+},
+{
+"lemma": "notlanden",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "eingreifen",
+"prep": "in",
+"case": "akk"
+},
+{
+"lemma": "austreten",
+"prep": "aus",
+"case": "dat"
+},
+{
+"lemma": "bedrohen",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "feilschen",
+"prep": "um",
+"case": "akk"
+},
+{
+"lemma": "bedanken",
+"prep": "bei",
+"case": "dat"
+},
+{
+"lemma": "bedanken",
+"prep": "für",
+"case": "akk"
+},
+{
+"lemma": "tüfteln",
+"prep": "an",
+"case": "dat"
+},
+{
+"lemma": "übertreiben",
+"prep": "mit",
+"case": "dat"
+},
+{
+"lemma": "auskommen",
+"prep": "mit",
+"case": "dat"
+},
+{
+"lemma": "auskommen",
+"prep": "ohne",
+"case": "akk"
+},
+{
+"lemma": "auskommen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "nachkommen",
+"prep": "mit",
+"case": "dat"
+},
+{
+"lemma": "nachkommen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "versorgen",
+"prep": "mit",
+"case": "dat"
+},
+{
+"lemma": "entscheiden",
+"prep": "für",
+"case": "akk"
+},
+{
+"lemma": "verdächtigen",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "verdächtigen",
+"prep": null,
+"case": "gen"
+},
+{
+"lemma": "entkommen",
+"prep": "aus",
+"case": "dat"
+},
+{
+"lemma": "plädieren",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "plädieren",
+"prep": "für",
+"case": "akk"
+},
+{
+"lemma": "wünschen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "liefern",
+"prep": "an",
+"case": "akk"
+},
+{
+"lemma": "kommentieren",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "protestieren",
+"prep": "gegen",
+"case": "akk"
+},
+{
+"lemma": "fortfahren",
+"prep": "mit",
+"case": "dat"
+},
+{
+"lemma": "nachdenken",
+"prep": "über",
+"case": "akk"
+},
+{
+"lemma": "behalten",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "klauen",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "horchen",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "horchen",
+"prep": "an",
+"case": "akk"
+},
+{
+"lemma": "horchen",
+"prep": "nach",
+"case": "dat"
+},
+{
+"lemma": "horchen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "unterziehen",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "unterziehen",
+"prep": null,
+"case": "gen"
+},
+{
+"lemma": "grenzen",
+"prep": "an",
+"case": "akk"
+},
+{
+"lemma": "einsetzen",
+"prep": "für",
+"case": "akk"
+},
+{
+"lemma": "feilen",
+"prep": "an",
+"case": "dat"
+},
+{
+"lemma": "beitreten",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "abnehmen",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "beklagen",
+"prep": "über",
+"case": "akk"
+},
+{
+"lemma": "erfreuen",
+"prep": "an",
+"case": "dat"
+},
+{
+"lemma": "empfehlen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "empfehlen",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "besprengen",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "eintreten",
+"prep": "in",
+"case": "akk"
+},
+{
+"lemma": "eintreten",
+"prep": "für",
+"case": "akk"
+},
+{
+"lemma": "eintreten",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "eintreten",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "zumuten",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "abfinden",
+"prep": "mit",
+"case": "dat"
+},
+{
+"lemma": "anreisen",
+"prep": "aus",
+"case": "dat"
+},
+{
+"lemma": "zürnen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "sträuben",
+"prep": "gegen",
+"case": "akk"
+},
+{
+"lemma": "einweihen",
+"prep": "in",
+"case": "akk"
+},
+{
+"lemma": "flüchten",
+"prep": "vor",
+"case": "dat"
+},
+{
+"lemma": "flüchten",
+"prep": "in",
+"case": "akk"
+},
+{
+"lemma": "basieren",
+"prep": "auf",
+"case": "dat"
+},
+{
+"lemma": "behagen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "geraten",
+"prep": "nach",
+"case": "dat"
+},
+{
+"lemma": "geraten",
+"prep": "an",
+"case": "akk"
+},
+{
+"lemma": "geraten",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "geraten",
+"prep": "in",
+"case": "akk"
+},
+{
+"lemma": "geraten",
+"prep": "unter",
+"case": "akk"
+},
+{
+"lemma": "vorziehen",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "abreisen",
+"prep": "nach",
+"case": "dat"
+},
+{
+"lemma": "verzeihen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "einreichen",
+"prep": "bei",
+"case": "dat"
+},
+{
+"lemma": "gleichen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "schaben",
+"prep": "an",
+"case": "dat"
+},
+{
+"lemma": "scheuern",
+"prep": "an",
+"case": "dat"
+},
+{
+"lemma": "schulden",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "anstecken",
+"prep": "mit",
+"case": "dat"
+},
+{
+"lemma": "auffallen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "bekennen",
+"prep": "zu",
+"case": "dat"
+},
+{
+"lemma": "widmen",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "widmen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "grausen",
+"prep": "vor",
+"case": "dat"
+},
+{
+"lemma": "einladen",
+"prep": "zu",
+"case": "dat"
+},
+{
+"lemma": "zusammenziehen",
+"prep": "mit",
+"case": "dat"
+},
+{
+"lemma": "reagieren",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "einziehen",
+"prep": "in",
+"case": "dat"
+},
+{
+"lemma": "einziehen",
+"prep": "in",
+"case": "akk"
+},
+{
+"lemma": "anlaufen",
+"prep": "gegen",
+"case": "akk"
+},
+{
+"lemma": "nähern",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "verrechnen",
+"prep": "mit",
+"case": "dat"
+},
+{
+"lemma": "verrechnen",
+"prep": "bei",
+"case": "dat"
+},
+{
+"lemma": "verrechnen",
+"prep": "in",
+"case": "dat"
+},
+{
+"lemma": "verrechnen",
+"prep": "um",
+"case": "akk"
+},
+{
+"lemma": "beschweren",
+"prep": "über",
+"case": "akk"
+},
+{
+"lemma": "vergehen",
+"prep": "an",
+"case": "dat"
+},
+{
+"lemma": "erwähnen",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "pressieren",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "begegnen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "sorgen",
+"prep": "für",
+"case": "akk"
+},
+{
+"lemma": "sorgen",
+"prep": "um",
+"case": "akk"
+},
+{
+"lemma": "vertrauen",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "starren",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "starren",
+"prep": "nach",
+"case": "dat"
+},
+{
+"lemma": "starren",
+"prep": "in",
+"case": "akk"
+},
+{
+"lemma": "starren",
+"prep": "vor",
+"case": "dat"
+},
+{
+"lemma": "starren",
+"prep": "von",
+"case": "dat"
+},
+{
+"lemma": "unterliegen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "verbreiten",
+"prep": "über",
+"case": "akk"
+},
+{
+"lemma": "arten",
+"prep": "nach",
+"case": "dat"
+},
+{
+"lemma": "Daumen drücken",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "versichern",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "versichern",
+"prep": null,
+"case": "gen"
+},
+{
+"lemma": "versichern",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "belegen",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "beziehen",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "betrachten",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "nutzen",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "kümmern",
+"prep": "um",
+"case": "akk"
+},
+{
+"lemma": "eingehen",
+"prep": "in",
+"case": "akk"
+},
+{
+"lemma": "eingehen",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "löffeln",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "ansprechen",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "enthalten",
+"prep": null,
+"case": "gen"
+},
+{
+"lemma": "ausgeben",
+"prep": "für",
+"case": "akk"
+},
+{
+"lemma": "einprägen",
+"prep": "bei",
+"case": "dat"
+},
+{
+"lemma": "verfügen",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "verfügen",
+"prep": "über",
+"case": "akk"
+},
+{
+"lemma": "verpassen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "ausweichen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "ausweichen",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "zusehen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "erstatten",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "trotzen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "kommunizieren",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "kommunizieren",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "aufrufen",
+"prep": "zu",
+"case": "dat"
+},
+{
+"lemma": "genügen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "aufkommen",
+"prep": "für",
+"case": "akk"
+},
+{
+"lemma": "hinweisen",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "erkundigen",
+"prep": "bei",
+"case": "dat"
+},
+{
+"lemma": "erkundigen",
+"prep": "nach",
+"case": "dat"
+},
+{
+"lemma": "erkundigen",
+"prep": "über",
+"case": "akk"
+},
+{
+"lemma": "einsteigen",
+"prep": "in",
+"case": "akk"
+},
+{
+"lemma": "aufpassen",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "festnageln",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "die kalte Schulter zeigen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "anvertrauen",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "anvertrauen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "gründen",
+"prep": "auf",
+"case": "dat"
+},
+{
+"lemma": "begründen",
+"prep": "mit",
+"case": "dat"
+},
+{
+"lemma": "telefonieren",
+"prep": "mit",
+"case": "dat"
+},
+{
+"lemma": "schämen",
+"prep": "für",
+"case": "akk"
+},
+{
+"lemma": "schämen",
+"prep": "wegen",
+"case": "gen"
+},
+{
+"lemma": "herrschen",
+"prep": "über",
+"case": "akk"
+},
+{
+"lemma": "glücken",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "harren",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "bangen",
+"prep": "um",
+"case": "akk"
+},
+{
+"lemma": "picken",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "picken",
+"prep": "auf",
+"case": "dat"
+},
+{
+"lemma": "einen runterholen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "huldigen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "überweisen",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "hungern",
+"prep": "nach",
+"case": "dat"
+},
+{
+"lemma": "weitergeben",
+"prep": "an",
+"case": "akk"
+},
+{
+"lemma": "nachschlagen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "bemühen",
+"prep": "mit",
+"case": "dat"
+},
+{
+"lemma": "ausgehen",
+"prep": "von",
+"case": "dat"
+},
+{
+"lemma": "kehren",
+"prep": "an",
+"case": "akk"
+},
+{
+"lemma": "ähneln",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "bewerben",
+"prep": "bei",
+"case": "dat"
+},
+{
+"lemma": "bewerben",
+"prep": "um",
+"case": "akk"
+},
+{
+"lemma": "bewerben",
+"prep": "für",
+"case": "akk"
+},
+{
+"lemma": "bewerben",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "anklagen",
+"prep": "wegen",
+"case": "gen"
+},
+{
+"lemma": "aufgehen",
+"prep": "in",
+"case": "dat"
+},
+{
+"lemma": "zugehen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "zugehen",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "münden",
+"prep": "in",
+"case": "akk"
+},
+{
+"lemma": "abhängen",
+"prep": "von",
+"case": "dat"
+},
+{
+"lemma": "vorkommen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "abstimmen",
+"prep": "über",
+"case": "akk"
+},
+{
+"lemma": "abstimmen",
+"prep": "mit",
+"case": "dat"
+},
+{
+"lemma": "zuordnen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "verzichten",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "haften",
+"prep": "an",
+"case": "dat"
+},
+{
+"lemma": "haften",
+"prep": "für",
+"case": "akk"
+},
+{
+"lemma": "begeben",
+"prep": null,
+"case": "gen"
+},
+{
+"lemma": "Herr werden",
+"prep": null,
+"case": "gen"
+},
+{
+"lemma": "schmerzen",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "nachgehen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "ekeln",
+"prep": "vor",
+"case": "dat"
+},
+{
+"lemma": "verwandeln",
+"prep": "in",
+"case": "akk"
+},
+{
+"lemma": "verwandeln",
+"prep": "zu",
+"case": "dat"
+},
+{
+"lemma": "eignen",
+"prep": "für",
+"case": "akk"
+},
+{
+"lemma": "eignen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "missfallen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "verweigern",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "verweigern",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "grämen",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "zustimmen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "aufregen",
+"prep": "über",
+"case": "akk"
+},
+{
+"lemma": "einfallen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "einfallen",
+"prep": "in",
+"case": "akk"
+},
+{
+"lemma": "erholen",
+"prep": "von",
+"case": "dat"
+},
+{
+"lemma": "entgehen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "pochen",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "vorliegen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "ermahnen",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "anspielen",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "verlieben",
+"prep": "in",
+"case": "akk"
+},
+{
+"lemma": "ausdenken",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "limitieren",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "einreden",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "verloben",
+"prep": "mit",
+"case": "dat"
+},
+{
+"lemma": "entgegenschlagen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "ansetzen",
+"prep": "für",
+"case": "akk"
+},
+{
+"lemma": "ansetzen",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "ansetzen",
+"prep": "zu",
+"case": "dat"
+},
+{
+"lemma": "beschäftigen",
+"prep": "mit",
+"case": "dat"
+},
+{
+"lemma": "beistehen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "verkabeln",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "über den Löffel barbieren",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "langen",
+"prep": "nach",
+"case": "dat"
+},
+{
+"lemma": "langen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "überführen",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "auf die Nerven gehen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "ghosten",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "stürzen",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "aufbauen",
+"prep": "auf",
+"case": "dat"
+},
+{
+"lemma": "absehen",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "absehen",
+"prep": "von",
+"case": "dat"
+},
+{
+"lemma": "absehen",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "belaufen",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "einigen",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "ermitteln",
+"prep": "gegen",
+"case": "akk"
+},
+{
+"lemma": "ermitteln",
+"prep": "wegen",
+"case": "gen"
+},
+{
+"lemma": "hüllen",
+"prep": "in",
+"case": "akk"
+},
+{
+"lemma": "zurückführen",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "vorbeischauen",
+"prep": "an",
+"case": "dat"
+},
+{
+"lemma": "bedürfen",
+"prep": null,
+"case": "gen"
+},
+{
+"lemma": "vorbeugen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "beruhen",
+"prep": "auf",
+"case": "dat"
+},
+{
+"lemma": "herausschauen",
+"prep": "bei",
+"case": "dat"
+},
+{
+"lemma": "gewöhnen",
+"prep": "an",
+"case": "akk"
+},
+{
+"lemma": "einhergehen",
+"prep": "mit",
+"case": "dat"
+},
+{
+"lemma": "entgegenwirken",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "überziehen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "vorbehalten",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "einwilligen",
+"prep": "in",
+"case": "akk"
+},
+{
+"lemma": "zuführen",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "ätzen",
+"prep": "gegen",
+"case": "akk"
+},
+{
+"lemma": "festhalten",
+"prep": "an",
+"case": "dat"
+},
+{
+"lemma": "vorbeikommen",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "vorbeikommen",
+"prep": "an",
+"case": "dat"
+},
+{
+"lemma": "vorbeifahren",
+"prep": "an",
+"case": "dat"
+},
+{
+"lemma": "zusagen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "büßen",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "sich den Kopf zerbrechen",
+"prep": "über",
+"case": "akk"
+},
+{
+"lemma": "aufwarten",
+"prep": "mit",
+"case": "dat"
+},
+{
+"lemma": "folgern",
+"prep": "aus",
+"case": "dat"
+},
+{
+"lemma": "weglaufen",
+"prep": "vor",
+"case": "dat"
+},
+{
+"lemma": "abstellen",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "ermächtigen",
+"prep": null,
+"case": "gen"
+},
+{
+"lemma": "angehören",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "einhalten",
+"prep": "mit",
+"case": "dat"
+},
+{
+"lemma": "erliegen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "zusammensetzen",
+"prep": "aus",
+"case": "dat"
+},
+{
+"lemma": "kranken",
+"prep": "an",
+"case": "dat"
+},
+{
+"lemma": "ersparen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "hehlen",
+"prep": "mit",
+"case": "dat"
+},
+{
+"lemma": "müßigen",
+"prep": null,
+"case": "gen"
+},
+{
+"lemma": "vormachen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "zeihen",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "verabschieden",
+"prep": "von",
+"case": "dat"
+},
+{
+"lemma": "verabschieden",
+"prep": "aus",
+"case": "dat"
+},
+{
+"lemma": "weismachen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "abrechnen",
+"prep": "mit",
+"case": "dat"
+},
+{
+"lemma": "appellieren",
+"prep": "an",
+"case": "akk"
+},
+{
+"lemma": "auswirken",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "begnügen",
+"prep": "mit",
+"case": "dat"
+},
+{
+"lemma": "bescheren",
+"prep": "mit",
+"case": "dat"
+},
+{
+"lemma": "bescheren",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "bevorstehen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "einbringen",
+"prep": "in",
+"case": "akk"
+},
+{
+"lemma": "zukommen",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "gegenüberstehen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "ersuchen",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "ersuchen",
+"prep": "um",
+"case": "akk"
+},
+{
+"lemma": "befestigen",
+"prep": "an",
+"case": "dat"
+},
+{
+"lemma": "besinnen",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "entsinnen",
+"prep": "an",
+"case": "akk"
+},
+{
+"lemma": "schnuppern",
+"prep": "an",
+"case": "dat"
+},
+{
+"lemma": "gnaden",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "wappnen",
+"prep": "für",
+"case": "akk"
+},
+{
+"lemma": "wehtun",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "verbeißen",
+"prep": "in",
+"case": "akk"
+},
+{
+"lemma": "verbeißen",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "einreisen",
+"prep": "in",
+"case": "akk"
+},
+{
+"lemma": "einreisen",
+"prep": "nach",
+"case": "dat"
+},
+{
+"lemma": "schuld sein",
+"prep": "an",
+"case": "dat"
+},
+{
+"lemma": "unterstehen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "abschwören",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "einen Strich durch die Rechnung machen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "auskennen",
+"prep": "in",
+"case": "dat"
+},
+{
+"lemma": "auskennen",
+"prep": "auf",
+"case": "dat"
+},
+{
+"lemma": "auskennen",
+"prep": "mit",
+"case": "dat"
+},
+{
+"lemma": "umfallen",
+"prep": "um",
+"case": "akk"
+},
+{
+"lemma": "zehren",
+"prep": "von",
+"case": "dat"
+},
+{
+"lemma": "zehren",
+"prep": "an",
+"case": "dat"
+},
+{
+"lemma": "verknallen",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "klarkommen",
+"prep": "mit",
+"case": "dat"
+},
+{
+"lemma": "klarkommen",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "hüten",
+"prep": "vor",
+"case": "dat"
+},
+{
+"lemma": "ergehen",
+"prep": "über",
+"case": "akk"
+},
+{
+"lemma": "ergehen",
+"prep": "in",
+"case": "dat"
+},
+{
+"lemma": "gebieten",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "gebieten",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "gebieten",
+"prep": "über",
+"case": "akk"
+},
+{
+"lemma": "umschauen",
+"prep": "nach",
+"case": "dat"
+},
+{
+"lemma": "reinfallen",
+"prep": "in",
+"case": "akk"
+},
+{
+"lemma": "reinfallen",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "zurückzahlen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "hineinspielen",
+"prep": "in",
+"case": "akk"
+},
+{
+"lemma": "liebäugeln",
+"prep": "mit",
+"case": "dat"
+},
+{
+"lemma": "wimmeln",
+"prep": "vor",
+"case": "dat"
+},
+{
+"lemma": "assistieren",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "drankommen",
+"prep": "an",
+"case": "akk"
+},
+{
+"lemma": "die Brust geben",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "mäkeln",
+"prep": "an",
+"case": "dat"
+},
+{
+"lemma": "bemächtigen",
+"prep": null,
+"case": "gen"
+},
+{
+"lemma": "scheuen",
+"prep": "vor",
+"case": "dat"
+},
+{
+"lemma": "zuwenden",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "zuwenden",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "Augen machen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "wegziehen",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "wegziehen",
+"prep": "aus",
+"case": "dat"
+},
+{
+"lemma": "wegziehen",
+"prep": "von",
+"case": "dat"
+},
+{
+"lemma": "imponieren",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "festmachen",
+"prep": "an",
+"case": "dat"
+},
+{
+"lemma": "die Leviten lesen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "verschlucken",
+"prep": "an",
+"case": "dat"
+},
+{
+"lemma": "wuchern",
+"prep": "mit",
+"case": "dat"
+},
+{
+"lemma": "ein Hühnchen rupfen",
+"prep": "mit",
+"case": "dat"
+},
+{
+"lemma": "entbinden",
+"prep": "von",
+"case": "dat"
+},
+{
+"lemma": "einmarschieren",
+"prep": "in",
+"case": "akk"
+},
+{
+"lemma": "durchfallen",
+"prep": "bei",
+"case": "dat"
+},
+{
+"lemma": "durchfallen",
+"prep": "in",
+"case": "dat"
+},
+{
+"lemma": "beiwohnen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "berauben",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "rütteln",
+"prep": "an",
+"case": "dat"
+},
+{
+"lemma": "nesteln",
+"prep": "an",
+"case": "dat"
+},
+{
+"lemma": "befreunden",
+"prep": "mit",
+"case": "dat"
+},
+{
+"lemma": "verfeinden",
+"prep": "mit",
+"case": "dat"
+},
+{
+"lemma": "hintergehen",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "einheizen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "anordnen",
+"prep": "nach",
+"case": "dat"
+},
+{
+"lemma": "vorbeigehen",
+"prep": "an",
+"case": "dat"
+},
+{
+"lemma": "herausziehen",
+"prep": "aus",
+"case": "dat"
+},
+{
+"lemma": "entbieten",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "entbieten",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "losreißen",
+"prep": "von",
+"case": "dat"
+},
+{
+"lemma": "aufmerksam machen",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "beliefern",
+"prep": "mit",
+"case": "dat"
+},
+{
+"lemma": "nachfahren",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "nachstellen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "anmuten",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "zustürmen",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "ausmalen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "verschlagen",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "unterstellen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "unterstellen",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "anheimstellen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "entgegenstreben",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "übertreten",
+"prep": "von",
+"case": "dat"
+},
+{
+"lemma": "übertreten",
+"prep": "in",
+"case": "akk"
+},
+{
+"lemma": "zutrauen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "zutrauen",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "verlohnen",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "verlohnen",
+"prep": null,
+"case": "gen"
+},
+{
+"lemma": "lästern",
+"prep": "über",
+"case": "akk"
+},
+{
+"lemma": "entheben",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "abraten",
+"prep": "von",
+"case": "dat"
+},
+{
+"lemma": "hofieren",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "vorsetzen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "entledigen",
+"prep": null,
+"case": "gen"
+},
+{
+"lemma": "zutreffen",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "abdriften",
+"prep": "in",
+"case": "akk"
+},
+{
+"lemma": "einleuchten",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "einleuchten",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "Bescheid sagen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "achtgeben",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "Bescheid wissen",
+"prep": "über",
+"case": "akk"
+},
+{
+"lemma": "Bescheid geben",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "einspringen",
+"prep": "für",
+"case": "akk"
+},
+{
+"lemma": "zusetzen",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "zusetzen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "zutreiben",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "verübeln",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "gebühren",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "leid sein",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "guttun",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "schönreden",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "befleißen",
+"prep": null,
+"case": "gen"
+},
+{
+"lemma": "das Fell über die Ohren ziehen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "das Fell gerben",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "zuschneiden",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "aufsitzen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "naheliegen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "fernliegen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "den Schwarzen Peter zuschieben",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "die Stange halten",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "zurechtkommen",
+"prep": "mit",
+"case": "dat"
+},
+{
+"lemma": "näherkommen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "ähnlichsehen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "widerfahren",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "brüsten",
+"prep": "mit",
+"case": "dat"
+},
+{
+"lemma": "hinfahren",
+"prep": "über",
+"case": "akk"
+},
+{
+"lemma": "zuvorkommen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "entrücken",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "entrücken",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "dämmern",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "entlieben",
+"prep": "von",
+"case": "dat"
+},
+{
+"lemma": "zimmern",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "einschwören",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "einen guten Draht haben",
+"prep": "zu",
+"case": "dat"
+},
+{
+"lemma": "abstatten",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "die Suppe versalzen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "auf den Leim gehen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "erbieten",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "gleichsehen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "gleichkommen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "rühmen",
+"prep": null,
+"case": "gen"
+},
+{
+"lemma": "zunicken",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "lustig machen",
+"prep": "über",
+"case": "akk"
+},
+{
+"lemma": "walten",
+"prep": "über",
+"case": "akk"
+},
+{
+"lemma": "beipflichten",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "beistimmen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "herfallen",
+"prep": "über",
+"case": "akk"
+},
+{
+"lemma": "anheimfallen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "den Hof machen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "durchessen",
+"prep": "bei",
+"case": "dat"
+},
+{
+"lemma": "vorsprechen",
+"prep": "bei",
+"case": "dat"
+},
+{
+"lemma": "abfärben",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "befehligen",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "anliegen",
+"prep": "an",
+"case": "dat"
+},
+{
+"lemma": "rammeln",
+"prep": "an",
+"case": "dat"
+},
+{
+"lemma": "obliegen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "die Haare vom Kopf fressen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "herantreten",
+"prep": "an",
+"case": "akk"
+},
+{
+"lemma": "auskotzen",
+"prep": "über",
+"case": "akk"
+},
+{
+"lemma": "auskotzen",
+"prep": "bei",
+"case": "dat"
+},
+{
+"lemma": "nachempfinden",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "nachempfinden",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "rumsen",
+"prep": "gegen",
+"case": "akk"
+},
+{
+"lemma": "nachfühlen",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "nacharten",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "zuvortun",
+"prep": "an",
+"case": "dat"
+},
+{
+"lemma": "stattgeben",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "entwinden",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "laben",
+"prep": "mit",
+"case": "dat"
+},
+{
+"lemma": "laben",
+"prep": "an",
+"case": "dat"
+},
+{
+"lemma": "verwahren",
+"prep": "gegen",
+"case": "akk"
+},
+{
+"lemma": "unterlaufen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "unterlaufen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "zuteilwerden",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "zufriedengeben",
+"prep": "mit",
+"case": "dat"
+},
+{
+"lemma": "schwanen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "nachspringen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "frönen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "Paroli bieten",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "durch die Lappen gehen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "hermachen",
+"prep": "über",
+"case": "akk"
+},
+{
+"lemma": "bewerfen",
+"prep": "mit",
+"case": "dat"
+},
+{
+"lemma": "anecken",
+"prep": "an",
+"case": "dat"
+},
+{
+"lemma": "anecken",
+"prep": "bei",
+"case": "dat"
+},
+{
+"lemma": "auflauern",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "vergreifen",
+"prep": "an",
+"case": "dat"
+},
+{
+"lemma": "kleckern",
+"prep": "mit",
+"case": "dat"
+},
+{
+"lemma": "aussöhnen",
+"prep": "mit",
+"case": "dat"
+},
+{
+"lemma": "die Hölle heißmachen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "vergewissern",
+"prep": "über",
+"case": "akk"
+},
+{
+"lemma": "Anteil nehmen",
+"prep": "an",
+"case": "dat"
+},
+{
+"lemma": "abhelfen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "gebrechen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "gebrechen",
+"prep": "an",
+"case": "dat"
+},
+{
+"lemma": "hinterhertelefonieren",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "hinterherspionieren",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "entrinnen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "beordern",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "den Wind aus den Segeln nehmen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "nahestehen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "erwehren",
+"prep": null,
+"case": "gen"
+},
+{
+"lemma": "verschauen",
+"prep": "in",
+"case": "dat"
+},
+{
+"lemma": "ermangeln",
+"prep": null,
+"case": "gen"
+},
+{
+"lemma": "fertigwerden",
+"prep": "mit",
+"case": "dat"
+},
+{
+"lemma": "schöntun",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "ersehen",
+"prep": "aus",
+"case": "dat"
+},
+{
+"lemma": "achthaben",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "Rede und Antwort stehen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "die Stiefel lecken",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "nachwandeln",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "ereifern",
+"prep": "über",
+"case": "akk"
+},
+{
+"lemma": "zurückfallen",
+"prep": "in",
+"case": "akk"
+},
+{
+"lemma": "zurückfallen",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "austreiben",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "hohnlachen",
+"prep": null,
+"case": "gen"
+},
+{
+"lemma": "aufzwingen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "aufzwingen",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "widerstreben",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "verwachsen",
+"prep": "mit",
+"case": "dat"
+},
+{
+"lemma": "aufhalsen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "nacheilen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "bedünken",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "prellen",
+"prep": "um",
+"case": "akk"
+},
+{
+"lemma": "abzielen",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "vorliebnehmen",
+"prep": "mit",
+"case": "dat"
+},
+{
+"lemma": "einhämmern",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "einhämmern",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "zugehören",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "wegsterben",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "entströmen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "letzen",
+"prep": "an",
+"case": "dat"
+},
+{
+"lemma": "einen Besuch abstatten",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "begatten",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "entfließen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "zufallen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "zugutekommen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "einfühlen",
+"prep": "in",
+"case": "akk"
+},
+{
+"lemma": "Rechnung tragen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "entäußern",
+"prep": null,
+"case": "gen"
+},
+{
+"lemma": "entraten",
+"prep": null,
+"case": "gen"
+},
+{
+"lemma": "die Kante geben",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "am Arsch vorbeigehen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "spanisch vorkommen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "zutrinken",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "anfahren",
+"prep": "gegen",
+"case": "akk"
+},
+{
+"lemma": "befleißigen",
+"prep": null,
+"case": "gen"
+},
+{
+"lemma": "anrechnen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "mit den Wimpern klimpern",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "übereignen",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "übereignen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "begaben",
+"prep": "mit",
+"case": "dat"
+},
+{
+"lemma": "zuarbeiten",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "Honig ums Maul schmieren",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "Honig um den Mund schmieren",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "Honig um den Bart schmieren",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "bespritzen",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "schlampen",
+"prep": "in",
+"case": "dat"
+},
+{
+"lemma": "einschießen",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "wegsehen",
+"prep": "bei",
+"case": "dat"
+},
+{
+"lemma": "wegsehen",
+"prep": "über",
+"case": "akk"
+},
+{
+"lemma": "abhärten",
+"prep": "gegen",
+"case": "akk"
+},
+{
+"lemma": "anspringen",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "vorschweben",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "berühmen",
+"prep": null,
+"case": "gen"
+},
+{
+"lemma": "abschauen",
+"prep": "bei",
+"case": "dat"
+},
+{
+"lemma": "verspritzen",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "aufblicken",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "vorstehen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "zuwachsen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "zubilligen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "leichtfallen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "abknöpfen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "followen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "herumhacken",
+"prep": "auf",
+"case": "dat"
+},
+{
+"lemma": "gewarten",
+"prep": null,
+"case": "gen"
+},
+{
+"lemma": "einrechnen",
+"prep": "mit",
+"case": "dat"
+},
+{
+"lemma": "aufrechnen",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "aufrechnen",
+"prep": "gegen",
+"case": "akk"
+},
+{
+"lemma": "festbeißen",
+"prep": "an",
+"case": "dat"
+},
+{
+"lemma": "hineinbewegen",
+"prep": "in",
+"case": "akk"
+},
+{
+"lemma": "zubewegen",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "hochschauen",
+"prep": "an",
+"case": "dat"
+},
+{
+"lemma": "hochschauen",
+"prep": "von",
+"case": "dat"
+},
+{
+"lemma": "hochschauen",
+"prep": "zu",
+"case": "dat"
+},
+{
+"lemma": "runterschauen",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "überschäumen",
+"prep": "vor",
+"case": "dat"
+},
+{
+"lemma": "rumkommen",
+"prep": "bei",
+"case": "dat"
+},
+{
+"lemma": "entschlagen",
+"prep": null,
+"case": "gen"
+},
+{
+"lemma": "entgegenstellen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "volllabern",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "überwerfen",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "Gewalt antun",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "betrauen",
+"prep": "mit",
+"case": "dat"
+},
+{
+"lemma": "behängen",
+"prep": "mit",
+"case": "dat"
+},
+{
+"lemma": "bebildern",
+"prep": "mit",
+"case": "dat"
+},
+{
+"lemma": "klick machen",
+"prep": "mit",
+"case": "dat"
+},
+{
+"lemma": "klick machen",
+"prep": "bei",
+"case": "dat"
+},
+{
+"lemma": "klick machen",
+"prep": "zwischen",
+"case": "dat"
+},
+{
+"lemma": "herumkriegen",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "rücküberweisen",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "auf die Beine stellen",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "herumspuken",
+"prep": "in",
+"case": "dat"
+},
+{
+"lemma": "aufstacheln",
+"prep": "zu",
+"case": "dat"
+},
+{
+"lemma": "aufstacheln",
+"prep": "gegen",
+"case": "akk"
+},
+{
+"lemma": "zuhalten",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "zuschanzen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "zulabern",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "zurasen",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "zureden",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "zupflastern",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "anhupen",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "reinzwiebeln",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "aufsehen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "vorhängen",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "zusammengeben",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "reinscheißen",
+"prep": "in",
+"case": "akk"
+},
+{
+"lemma": "beforschen",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "befüllen",
+"prep": "mit",
+"case": "akk"
+},
+{
+"lemma": "überheben",
+"prep": null,
+"case": "gen"
+},
+{
+"lemma": "auftreffen",
+"prep": "auf",
+"case": "dat"
+},
+{
+"lemma": "zugutehalten",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "zurückwirken",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "den Rest geben",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "entgegenstehen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "entgegengehen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "entgegenrufen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "entgegenfiebern",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "entgegenschleudern",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "abessen",
+"prep": "von",
+"case": "dat"
+},
+{
+"lemma": "ähnlichschauen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "hinweggehen",
+"prep": "über",
+"case": "akk"
+},
+{
+"lemma": "ein Liedchen singen können",
+"prep": "von",
+"case": "dat"
+},
+{
+"lemma": "gegenwirken",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "dagegenwirken",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "anrennen",
+"prep": "gegen",
+"case": "akk"
+},
+{
+"lemma": "abgleiten",
+"prep": "von",
+"case": "dat"
+},
+{
+"lemma": "abrutschen",
+"prep": "von",
+"case": "dat"
+},
+{
+"lemma": "ablästern",
+"prep": "über",
+"case": "akk"
+},
+{
+"lemma": "beimessen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "abängstigen",
+"prep": "um",
+"case": "akk"
+},
+{
+"lemma": "zu tun haben",
+"prep": "mit",
+"case": "dat"
+},
+{
+"lemma": "sich zu Schulden kommen lassen",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "goonen",
+"prep": "auf",
+"case": "akk"
+},
+{
+"lemma": "goonen",
+"prep": "zu",
+"case": "dat"
+},
+{
+"lemma": "nachsteigen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "sein Auslangen finden",
+"prep": "mit",
+"case": "dat"
+},
+{
+"lemma": "beeinspruchen",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "vergucken",
+"prep": "in",
+"case": "dat"
+},
+{
+"lemma": "heranmachen",
+"prep": "an",
+"case": "akk"
+},
+{
+"lemma": "aufpudeln",
+"prep": "über",
+"case": "akk"
+},
+{
+"lemma": "die Weichen stellen",
+"prep": "für",
+"case": "akk"
+},
+{
+"lemma": "hereinfinden",
+"prep": "in",
+"case": "akk"
+},
+{
+"lemma": "zurückerinnern",
+"prep": "an",
+"case": "akk"
+},
+{
+"lemma": "vorbauen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "nachtreten",
+"prep": "gegen",
+"case": "akk"
+},
+{
+"lemma": "nachtreten",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "anrauchen",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "anrauchen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "ausrauchen",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "aufrauchen",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "wegrauchen",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "leerrauchen",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "in die Wiege gelegt sein",
+"prep": null,
+"case": "dat"
+},
+{
+"lemma": "herschieben",
+"prep": "vor",
+"case": "akk"
+},
+{
+"lemma": "zu Rande kommen",
+"prep": "mit",
+"case": "dat"
+},
+{
+"lemma": "zu Rande bringen",
+"prep": null,
+"case": "akk"
+},
+{
+"lemma": "herumopern",
+"prep": "mit",
+"case": "dat"
+},
+{
+"lemma": "herumtragen",
+"prep": null,
+"case": "akk"
+}
+]
+}

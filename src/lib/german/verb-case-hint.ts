@@ -1,6 +1,7 @@
 import { VERB_GOVERNMENT_DATA } from "./verb-government-data.ts";
 import { DATIVE_VERB_DATA } from "./dative-verbs-data.ts";
 import { VERB_CONJUGATION_DATA } from "./verb-conjugation-data.ts";
+import { VERB_PREP_CASE_FRAMES } from "./verb-prep-case-frames-data.ts";
 import type { NounCase } from "../case-forms.ts";
 
 /**
@@ -172,6 +173,32 @@ function reallyMatches(entry: SurfaceFormEntry, sentence: string): boolean {
 }
 
 /**
+ * Kaynak A's third, lowest-trust priority: kaikki's gloss-regex extraction
+ * (verb-prep-case-frames-data.ts / KAIKKI-VERB-PREP-CASE-ATTRIBUTION.md),
+ * consulted only for a `(lemma, preposition)` pair that neither
+ * dative-verbs-data.ts nor verb-government-data.ts (checked first, above)
+ * already resolved. A pair also present in `verb-government-data.ts` is
+ * skipped even if this set still holds it (belt-and-suspenders on top of
+ * the generation-time filter — hand-curated always wins, never merged,
+ * never overridden). Otherwise: same `sentenceHasVerb` + `prepositionAdjacent`
+ * strict-adjacency check `verbConfirmsCase`'s own government loop uses.
+ */
+const handCuratedPrepPairs = new Set(
+  VERB_GOVERNMENT_DATA.map(
+    (e) => `${e.verb.trim().split(/\s+/).pop()?.toLowerCase()}|${e.preposition.toLowerCase()}`,
+  ),
+);
+function kaikkiFrameConfirms(sentence: string, correctForm: string, term: string, nounCase: NounCase): boolean {
+  for (const frame of VERB_PREP_CASE_FRAMES) {
+    if (frame.case !== nounCase) continue;
+    if (handCuratedPrepPairs.has(`${frame.lemma.toLowerCase()}|${frame.preposition.toLowerCase()}`)) continue;
+    if (!sentenceHasVerb(sentence, frame.lemma)) continue;
+    if (prepositionAdjacent(sentence, frame.preposition, correctForm, term)) return true;
+  }
+  return false;
+}
+
+/**
  * The word immediately before `correctForm term` (itself allowing up to two
  * in-between words, same as case-forms.ts's own adjacency rule) — or `null`
  * if `correctForm` opens the sentence, e.g. a fronted/topicalized object
@@ -265,6 +292,8 @@ export function verbConfirmsCase(
     if (!sentenceHasVerb(text, entry.verb)) continue;
     if (prepositionAdjacent(text, entry.preposition, correctForm, term)) return true;
   }
+
+  if (kaikkiFrameConfirms(text, correctForm, term, nounCase)) return true;
 
   if (nounCase === "akkusativ" && defaultAkkusativApplies(text, correctForm, term)) return true;
 
