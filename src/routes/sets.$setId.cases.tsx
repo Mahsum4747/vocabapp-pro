@@ -341,14 +341,16 @@ function CaseDrillPage() {
           <p className="mt-1 text-sm text-fg">
             {correctForm} {question.card.term} — {trEntry?.gloss ?? question.card.definition}
           </p>
-          <ExampleLine
-            example={caseExample}
-            termLanguage={setLanguages.term ?? studySet.termLanguage}
-            className="mt-1"
-          />
-          {verbConfirmed ? (
-            <span className="mx-1 text-sm text-muted">({CASE_ABBR[question.nounCase]})</span>
-          ) : null}
+          {/* verbConfirmed's hint must sit beside the sentence, not below it
+              as its own line — ExampleLine renders a block-level <p>, so
+              without this flex wrapper the span would land on a new row
+              even though it's a sibling. */}
+          <div className="mt-1 flex flex-wrap items-baseline">
+            <ExampleLine example={caseExample} termLanguage={setLanguages.term ?? studySet.termLanguage} />
+            {verbConfirmed ? (
+              <span className="mx-1 text-sm text-muted">({CASE_ABBR[question.nounCase]})</span>
+            ) : null}
+          </div>
         </div>
       ) : null}
     </StudySessionShell>
