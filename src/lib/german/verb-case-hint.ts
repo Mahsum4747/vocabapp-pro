@@ -118,35 +118,57 @@ function prepositionAdjacent(
  * One curated entry's verb (its infinitive) plus every surface form it can
  * take, lower-cased — used only by the default-Akkusativ negative-control
  * check below, never by the positive checks above (which each match a
- * specific entry, not "any entry at all").
+ * specific entry, not "any entry at all"). `preposition` is set only for a
+ * verb-government-data.ts entry — a dative-verbs-data.ts one never governs
+ * through a preposition, by construction.
  */
-type SurfaceFormEntry = { infinitive: string; forms: Set<string> };
-function surfaceFormEntries(verbs: readonly string[]): SurfaceFormEntry[] {
-  return verbs.map((verb) => {
+type SurfaceFormEntry = { infinitive: string; forms: Set<string>; preposition?: string };
+function surfaceFormEntries(
+  entries: readonly { verb: string; preposition?: string }[],
+): SurfaceFormEntry[] {
+  return entries.map(({ verb, preposition }) => {
     const infinitive = verb.trim().split(/\s+/).pop() ?? verb;
-    return { infinitive, forms: new Set(mechanicalForms(verb).map((f) => f.toLowerCase())) };
+    return { infinitive, forms: new Set(mechanicalForms(verb).map((f) => f.toLowerCase())), preposition };
   });
 }
 const curatedVerbEntries: SurfaceFormEntry[] = [
-  ...surfaceFormEntries(DATIVE_VERB_DATA.map((e) => e.verb)),
-  ...surfaceFormEntries(VERB_GOVERNMENT_DATA.map((e) => e.verb)),
+  ...surfaceFormEntries(DATIVE_VERB_DATA),
+  ...surfaceFormEntries(VERB_GOVERNMENT_DATA),
 ];
 
+const DATIV_ARTICLE_RE = /(?<![\p{L}])(dem|der)(?![\p{L}])/u;
+
 /**
- * A separable-prefix verb's conjugation-table forms are already
- * prefix-stripped ("trage" for "beitragen" — see verb-conjugation-data.ts's
- * own header comment on why), which makes a bare form ambiguous with an
- * unrelated plain verb that conjugates the same way ("trage" is ALSO
- * "tragen"'s own ich-form). So a match against a separable-prefix curated
- * verb only disqualifies the default-Akkusativ rule when that verb's own
- * prefix is ALSO somewhere in the sentence — otherwise the match is most
- * likely the unrelated plain verb, not this curated one, and disqualifying
- * on it would silently block the exact common-verb case this rule exists
- * for ("Ich trage die Tasche." must not be blocked by "beitragen").
+ * Many curated verbs are genuinely ambiguous outside their curated
+ * construction: "rufen" is curated only for "rufen nach" + Dativ, but
+ * "Ich rufe die Freundin." uses it as an ordinary Akkusativ-object verb;
+ * "holen" is curated as a ditransitive dat+akk verb, but "Ich hole das
+ * Kind." has no dativ recipient in sight. A verb entry only disqualifies
+ * the default-Akkusativ rule when THIS sentence actually shows evidence of
+ * the curated construction, not merely because the verb is curated at all
+ * for some OTHER construction:
+ *
+ * - A separable-prefix verb's conjugation-table forms are already
+ *   prefix-stripped ("trage" for "beitragen" — see verb-conjugation-data.
+ *   ts's own header comment on why), which makes a bare form ambiguous
+ *   with an unrelated plain verb that conjugates the same way ("trage" is
+ *   ALSO "tragen"'s own ich-form) — only disqualifies when that verb's own
+ *   prefix is ALSO somewhere in the sentence.
+ * - A verb-government-data.ts entry (has a `preposition`) only disqualifies
+ *   when that preposition also appears somewhere in the sentence — no
+ *   "nach" anywhere means this isn't "rufen nach", so it can't be the
+ *   curated dativ construction.
+ * - A dative-verbs-data.ts entry (no preposition) only disqualifies when
+ *   the sentence shows some OTHER evidence of a dativ recipient (a bare
+ *   "dem"/"der" article) — with none, there is nothing this verb could be
+ *   assigning a dativ role to here, so its curated dat/dat+akk sense isn't
+ *   the one in play.
  */
 function reallyMatches(entry: SurfaceFormEntry, sentence: string): boolean {
   const prefix = entry.infinitive.match(SEPARABLE_PREFIX_RE)?.[1];
-  return prefix ? sentenceHasWord(sentence, prefix) : true;
+  if (prefix && !sentenceHasWord(sentence, prefix)) return false;
+  if (entry.preposition) return sentenceHasWord(sentence, entry.preposition);
+  return DATIV_ARTICLE_RE.test(sentence);
 }
 
 /**

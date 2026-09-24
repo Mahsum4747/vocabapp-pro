@@ -32,24 +32,31 @@ tarihi bir ATTRIBUTION.md dosyasında belirt").
 One offline step, not part of `npm run build`:
 
 1. Downloaded `unimorph/deu`'s `deu` file (18.9 MB, 519,143 rows).
-2. Filtered to exactly the verb lemmas already present in
-   `verb-government-data.ts` / `dative-verbs-data.ts` (reduced to their
-   last word for a multi-word entry, e.g. "ergeben" from "sich ergeben") —
-   405 distinct lemmas needed, **383 found** in the dataset (see "Not
-   covered" below).
-3. Extracted each found lemma's present-tense indicative forms
-   (`V;IND;SG;1;PRS` / `;2;` / `;3;`) and past participle (`V.PTCP;PST`).
-   Several lemmas (mostly `-eln`/`-ern` verbs, e.g. "handeln") had more than
-   one listed spelling variant for the `ich`-form ("handle" / "handele" /
-   "handel"); the longest non-apostrophed variant was kept in every case —
-   a choice among the source's own listed forms, never an invented one.
-   For a separable-prefix verb (e.g. "abgeben"), the source's present-tense
-   forms already separate the prefix ("gebe ab"); only the conjugated verb
-   itself was kept ("gebe") — the prefix's position in a real sentence
-   isn't fixed relative to the verb, so keeping it would make the stored
-   form useless for a literal-word sentence match. The participle is fused
-   with its prefix as it actually appears in a sentence ("abgegeben") and
-   was kept as-is.
+2. Filtered to every row whose UniMorph tag starts with `V` (verb), grouped
+   by lemma — **6659 distinct lemmas** ended up with usable present-tense
+   data. Unlike the first version of this file, this is **not** limited to
+   the verbs already in `verb-government-data.ts`/`dative-verbs-data.ts`
+   — see "Scope" in `verb-conjugation-data.ts`'s own header comment for why
+   that limit was wrong: this file only ever answers "what verb is this
+   token, conjugated how" (recognition), never "which case does it govern"
+   (valenz, which stays exclusively `verb-government-data.ts`/
+   `dative-verbs-data.ts`'s job — UniMorph carries no such information at
+   all, so widening this file's coverage cannot add or imply any new
+   valenz claim).
+3. Extracted each lemma's present-tense indicative forms (`V;IND;SG;1;PRS`
+   / `;2;` / `;3;`) and past participle (`V.PTCP;PST`). Several lemmas
+   (mostly `-eln`/`-ern` verbs, e.g. "handeln") had more than one listed
+   spelling variant for the `ich`-form ("handle" / "handele" / "handel");
+   the longest non-apostrophed variant was kept in every case — a choice
+   among the source's own listed forms, never an invented one. For a
+   separable-prefix verb (e.g. "abgeben"), the source's present-tense forms
+   already separate the prefix ("gebe ab"); only the conjugated verb itself
+   was kept ("gebe") — the prefix's position in a real sentence isn't fixed
+   relative to the verb, so keeping it would make the stored form useless
+   for a literal-word sentence match. The participle is fused with its
+   prefix as it actually appears in a sentence ("abgegeben") and was kept
+   as-is. Only 2 of the 6661 V-tagged lemmas had no present-tense form at
+   all in the source and were dropped.
 4. Re-encoded as the `VerbConjugationEntry[]` array literal
    `verb-conjugation-data.ts` holds — selection and reshaping only, no
    values edited, corrected, or invented at this stage.
@@ -59,23 +66,16 @@ once against the downloaded `deu` file, same "offline, not in the build"
 status `measure.mjs` has for `examples-data.ts` per `EXAMPLES-ATTRIBUTION.
 md`).
 
-## Not covered (22 of 405 lemmas)
+## Not covered
 
-`abfinden, anknüpfen, ankommen, anvertrauen, arbeiten, entgegenfahren,
-entgegengehen, freuen, geradestehen, guttun, hinterherlaufen,
-hinterherrennen, imponieren, leidtun, loskommen, missfallen, resultieren,
-sein, verlassen, wehtun, zugucken, zählen`
-
-These lemmas simply have no verb entry under that exact spelling in
-UniMorph's German data (verified directly — not a parsing bug on this
-project's side). Notably `sein` ("to be") is among them: UniMorph's `deu`
-file has no `sein`/`bin`/`bist`/`ist` verb entries at all, a real gap in
-that source, not a filtering choice here. `verb-case-hint.ts` falls back to
-its existing mechanical (regular weak-verb) rule for all 22 — which is
-already correct for genuinely regular ones among them (`arbeiten`,
-`freuen`, `zählen`) and simply continues to under-match the harder,
-truly irregular ones (`sein` chief among them) exactly as before this
-dataset was added.
+A verb whose exact spelling has no entry in UniMorph's German data at all
+(verified directly, not a parsing bug on this project's side) — e.g.
+`sein` ("to be"): UniMorph's `deu` file has no `sein`/`bin`/`bist`/`ist`
+verb entries whatsoever, a real gap in that source. `verb-case-hint.ts`
+falls back to its existing mechanical (regular weak-verb) rule for any
+such verb, same as before this file existed — correct for a genuinely
+regular verb, and a documented, accepted under-match for a harder,
+irregular one like `sein`.
 
 ## What CC BY-SA 3.0 requires of us
 
