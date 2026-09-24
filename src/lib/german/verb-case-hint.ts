@@ -1,5 +1,6 @@
 import { VERB_GOVERNMENT_DATA } from "./verb-government-data.ts";
 import { DATIVE_VERB_DATA } from "./dative-verbs-data.ts";
+import { VERB_CONJUGATION_DATA } from "./verb-conjugation-data.ts";
 import type { NounCase } from "../case-forms.ts";
 
 /**
@@ -12,17 +13,23 @@ import type { NounCase } from "../case-forms.ts";
  *
  * No inflected-form -> lemma resolver exists anywhere in this codebase
  * (checked enrich.server.ts and german/lookup.ts), and building one is out
- * of scope for this slice ("no new NLP"). Verb matching is therefore
- * mechanical only: the bare infinitive, plus regular weak-verb A1 present
- * tense (ich/du/er) and a best-effort participle, all derived from the
- * infinitive by suffix rule — see `mechanicalForms`. Irregular (strong)
- * verbs with a stem-vowel change (geben -> gibt, helfen -> hilft, sehen ->
- * sieht) are NOT specially handled: hardcoding their stem changes would be
- * a new curated verb list, forbidden here. Their real conjugated forms
- * simply never match what this generates, so a sentence using them falls
- * through to "unresolved" rather than a wrong or invented confirmation —
- * the intended, documented limitation, not a bug.
+ * of scope for this slice ("no new NLP"). Verb forms are looked up first in
+ * VERB_CONJUGATION_DATA — a real, sourced table of the exact ich/du/er/
+ * participle forms for the verbs already in these two curated datasets
+ * (see verb-conjugation-data.ts / UNIMORPH-ATTRIBUTION.md) — and only when
+ * a verb isn't in that table does `mechanicalForms` fall back to its
+ * original suffix rule (regular weak-verb present tense, derived from the
+ * infinitive). That fallback still under-matches irregular verbs the table
+ * doesn't cover (22 lemmas — see UNIMORPH-ATTRIBUTION.md, notably "sein"),
+ * which is the same documented, accepted limitation this file always had:
+ * their real conjugated forms simply don't match what the suffix rule
+ * generates, so a sentence using them stays "unresolved" rather than a
+ * wrong or invented confirmation.
  */
+
+const conjugationIndex: Map<string, (typeof VERB_CONJUGATION_DATA)[number]> = new Map(
+  VERB_CONJUGATION_DATA.map((entry) => [entry.infinitive, entry]),
+);
 
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -45,6 +52,14 @@ function stem(infinitive: string): string {
  */
 function mechanicalForms(verbEntry: string): string[] {
   const infinitive = verbEntry.trim().split(/\s+/).pop() ?? verbEntry;
+
+  const sourced = conjugationIndex.get(infinitive);
+  if (sourced) {
+    const forms = [sourced.infinitive, sourced.ich, sourced.du, sourced.er];
+    if (sourced.partizipII) forms.push(sourced.partizipII);
+    return forms;
+  }
+
   const s = stem(infinitive);
   if (!s) return [infinitive];
 
