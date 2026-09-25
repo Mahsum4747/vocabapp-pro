@@ -38,6 +38,11 @@ export const Route = createFileRoute("/sets/$setId/cases")({
 
 const NOUN_CASES: NounCase[] = ["akkusativ", "dativ"];
 
+// Same per-mode hard cap Test uses on top of the session cap (Math.min(12,
+// queued.length) in sets.$setId.test.tsx) — Cases had none at all, so a
+// 50-card set ran the whole session cap (up to "All") in one sitting.
+const QUESTION_LIMIT = 12;
+
 type Question = { card: Card; nounCase: NounCase };
 
 /**
@@ -116,13 +121,17 @@ function CaseDrillPage() {
   const order = useMemo<Question[]>(() => {
     if (!plan.ready) return [];
     const prior = priorProgressRef.current;
-    // This session's cards: queue order cut to the session cap, then this
-    // drill's own weakest-first ordering.
-    const sessionCards = plan.take(
-      buildReviewQueue(drillCards, progress, { now: Date.now(), includeNotDue: true }).map(
-        (entry) => entry.card,
-      ),
-    );
+    // This session's cards: queue order cut to the session cap, then to
+    // this mode's own QUESTION_LIMIT (same pattern as Test's
+    // Math.min(12, queued.length)), then this drill's own weakest-first
+    // ordering.
+    const sessionCards = plan
+      .take(
+        buildReviewQueue(drillCards, progress, { now: Date.now(), includeNotDue: true }).map(
+          (entry) => entry.card,
+        ),
+      )
+      .slice(0, QUESTION_LIMIT);
     const cards = shuffle(sessionCards).sort((a, b) => {
       const pa = prior[a.id];
       const pb = prior[b.id];
