@@ -175,7 +175,11 @@ function CreatePage() {
             />
             <ImportDialog
               onImport={(incoming, meta) => {
-                setCards((prev) => [...prev.filter((c) => c.term || c.definition), ...incoming]);
+                // Only a real, term-filled row survives an import merge — a
+                // still-blank template row (empty term, whatever its
+                // definition) is never a card, so it must never combine
+                // with the incoming ones into a bigger saved count.
+                setCards((prev) => [...prev.filter((c) => c.term.trim()), ...incoming]);
                 // Karta JSON also names the set and its language pair.
                 if (meta) {
                   if (!title.trim()) setTitle(meta.title);
