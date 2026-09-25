@@ -23,6 +23,7 @@ import { useReviewLogger } from "@/lib/review-log";
 import { useSet, useSetProgress, useStudyStore } from "@/lib/store";
 import { buildReviewQueue } from "@/lib/srs";
 import { useSessionPlan } from "@/lib/use-session";
+import { WriteItStep } from "@/components/write-it-step";
 import {
   isCardActive,
   resolveSetLanguages,
@@ -351,6 +352,7 @@ function CaseDrillPage() {
               <span className="mx-1 text-sm text-muted">({CASE_ABBR[question.nounCase]})</span>
             ) : null}
           </div>
+          <WriteItStep key={question.card.id} correctForm={correctForm} term={question.card.term} />
         </div>
       ) : null}
     </StudySessionShell>
