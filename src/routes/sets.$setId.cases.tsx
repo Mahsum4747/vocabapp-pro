@@ -357,6 +357,7 @@ function CaseDrillPage() {
             correctForm={correctForm}
             term={question.card.term}
             caseHint={question.nounCase}
+            explanationLanguage={explanationLanguage}
           />
         </div>
       ) : null}

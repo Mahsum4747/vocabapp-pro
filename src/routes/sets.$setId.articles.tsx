@@ -348,7 +348,13 @@ function ArticleDrillPage() {
           />
           {trEntry?.feedback ? <p className="mt-1 text-xs text-subtle">{trEntry.feedback}</p> : null}
           {correctArticle ? (
-            <WriteItStep key={card.id} correctForm={correctArticle} term={card.term} caseHint="nominativ" />
+            <WriteItStep
+              key={card.id}
+              correctForm={correctArticle}
+              term={card.term}
+              caseHint="nominativ"
+              explanationLanguage={explanationLanguage}
+            />
           ) : null}
         </div>
       ) : null}

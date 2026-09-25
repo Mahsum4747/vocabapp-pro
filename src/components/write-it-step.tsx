@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
+import { writeItStrings } from "./write-it-tr";
 
 /** Which case `correctForm` is inflected for — decides the example
  *  sentence's own verb, so the placeholder never models a wrong sentence
@@ -14,6 +15,10 @@ export type WriteItStepProps = {
   /** The headword that follows it, e.g. "Vater". */
   term: string;
   caseHint: WriteItCase;
+  /** `profile.explanationLanguage`, forwarded as-is — "tr" switches this
+   *  step's own static copy to Turkish, same as the reveal line's gloss/
+   *  feedback already do; anything else falls back to English. */
+  explanationLanguage?: string;
 };
 
 /** One fixed, hand-picked verb per case, chosen because it actually takes
@@ -52,19 +57,23 @@ function normalize(value: string): string {
  * design, not an oversight — see this component's own call sites for the
  * `key` that resets it per card.
  */
-export function WriteItStep({ correctForm, term, caseHint }: WriteItStepProps) {
+export function WriteItStep({ correctForm, term, caseHint, explanationLanguage }: WriteItStepProps) {
   const [value, setValue] = useState("");
   const [checked, setChecked] = useState(false);
 
   const phrase = `${correctForm} ${term}`;
   const usesForm = normalize(value).includes(normalize(phrase));
   const example = EXAMPLE_TEMPLATE[caseHint](phrase);
+  const t = writeItStrings(explanationLanguage);
+  const instruction = t.instruction(phrase);
 
   return (
     <div className="mt-4 rounded-card bg-surface-2 p-4">
-      <p className="text-xs font-medium tracking-wide text-muted uppercase">Write it — optional</p>
+      <p className="text-xs font-medium tracking-wide text-muted uppercase">{t.label}</p>
       <p className="mt-1 text-sm text-fg">
-        Write a short sentence using <span className="font-semibold">{phrase}</span>.
+        {instruction.before}
+        <span className="font-semibold">{phrase}</span>
+        {instruction.after}
       </p>
       <div className="mt-2 flex gap-2">
         <Input
@@ -79,16 +88,16 @@ export function WriteItStep({ correctForm, term, caseHint }: WriteItStepProps) {
               setChecked(true);
             }
           }}
-          placeholder={`e.g. "${example}"`}
+          placeholder={t.placeholder(example)}
           className="flex-1"
         />
         <Button type="button" variant="outline" onClick={() => setChecked(true)} disabled={!value.trim()}>
-          Check
+          {t.check}
         </Button>
       </div>
       {checked ? (
         <p className={`mt-2 text-sm ${usesForm ? "text-success" : "text-muted"}`}>
-          {usesForm ? "Nice — that's the right form." : `Almost — the form here is "${phrase}".`}
+          {usesForm ? t.correct : t.incorrect(phrase)}
         </p>
       ) : null}
     </div>
