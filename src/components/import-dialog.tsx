@@ -10,7 +10,7 @@ import { Textarea } from "./ui/input";
 import type { EditorCard } from "./card-editor";
 
 /** Set-level fields a Karta JSON import carries alongside its cards. */
-export type ImportMeta = { title: string; pair: "de-en" | "de-tr" };
+export type ImportMeta = { title: string; description: string; pair: "de-en" | "de-tr" };
 
 export function ImportDialog({
   onImport,
@@ -31,10 +31,10 @@ export function ImportDialog({
         setErrors(result.errors);
         return;
       }
-      const { cards, warnings, title, pair } = result.value;
+      const { cards, warnings, title, description, pair } = result.value;
       onImport(
         cards.map((card) => ({ id: crypto.randomUUID(), ...card })),
-        { title, pair },
+        { title, description, pair },
       );
       setOpen(false);
       toast.success(`${cards.length} cards added.`);

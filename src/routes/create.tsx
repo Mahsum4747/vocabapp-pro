@@ -181,8 +181,12 @@ function CreatePage() {
                 // with the incoming ones into a bigger saved count.
                 setCards((prev) => [...prev.filter((c) => c.term.trim()), ...incoming]);
                 // Karta JSON also names the set and its language pair.
+                // `meta.description` is the JSON's own typed "description"
+                // field (or "" when it left that out) — never the raw JSON
+                // text itself, and never a card's own gloss/definition.
                 if (meta) {
                   if (!title.trim()) setTitle(meta.title);
+                  if (!description.trim() && meta.description) setDescription(meta.description);
                   setTermLang(languageChoice("de"));
                   setDefLang(languageChoice(meta.pair === "de-tr" ? "tr" : "en"));
                 }
