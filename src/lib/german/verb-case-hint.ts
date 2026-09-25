@@ -39,8 +39,15 @@ function escapeRegExp(value: string): string {
 }
 
 const INSEPARABLE_PREFIXES = ["be", "emp", "ent", "er", "ge", "miss", "ver", "zer"];
+// Bug found via "gehen"/"fremdgehen" (same "geht" stripped form, so
+// checking dative-verbs-data.ts's real "fremdgehen" entry against a plain
+// "Er geht in die Schule." wrongly matched, since "fremd" wasn't in this
+// list at all — the prefix guard below never even triggered for it).
+// Widened past the original directional/prepositional set to the other
+// common separable prefixes this codebase's verb lists actually use, not
+// just the one that happened to get reported.
 const SEPARABLE_PREFIX_RE =
-  /^(ab|an|auf|aus|bei|ein|mit|nach|vor|zu|zurück|zusammen|weg|her|hin)[a-zäöüß]/;
+  /^(ab|an|auf|aus|bei|ein|mit|nach|vor|zu|zurück|zusammen|weg|her|hin|fremd|fest|fort|frei|los|weiter|wieder|entgegen|entlang|gegenüber|heim|statt|voran|zurecht)[a-zäöüß]/;
 
 function stem(infinitive: string): string {
   return infinitive.endsWith("en") ? infinitive.slice(0, -2) : infinitive.replace(/n$/, "");
@@ -102,9 +109,37 @@ const EXTRA_FORMS: Record<string, readonly string[]> = {
   sein: ["bin", "bist", "ist", "sind", "seid"],
 };
 
+/**
+ * General rule, not a one-off for any single verb: a separable-prefix
+ * lemma's present-tense ich/du/er forms are prefix-stripped (see
+ * verb-conjugation-data.ts's own header comment on why — "gehe"/"gehst"/
+ * "geht" for "fremdgehen", not "fremdgehe"/etc.), so they collide with
+ * whatever OTHER lemma — separable-prefixed or plain — happens to
+ * conjugate the exact same way. "geht" is simultaneously plain gehen's own
+ * er-form AND fremdgehen's stripped one; checking for "fremdgehen" against
+ * a sentence that never says "fremd" anywhere would otherwise wrongly
+ * match on gehen's ordinary use ("Er geht in die Schule.").
+ *
+ * A form only counts as confirming `verbEntry` when either the form
+ * itself already contains the prefix (the infinitive and the fused
+ * participle both do: "fremdgehen", "fremdgegangen") or, for a
+ * prefix-stripped form, the prefix is ALSO found somewhere else in the
+ * sentence. Same principle the beitragen/tragen fix already established
+ * for `defaultAkkusativApplies`'s own disqualification check — applied
+ * here once, centrally, for every `sentenceHasVerb` call site (the
+ * dative-verbs-data.ts loop, the verb-government-data.ts loop, the kaikki
+ * frames, and `wechselApplies`), not repeated per caller.
+ */
 function sentenceHasVerb(sentence: string, verbEntry: string): boolean {
+  const infinitive = verbEntry.trim().split(/\s+/).pop() ?? verbEntry;
+  const prefix = infinitive.match(SEPARABLE_PREFIX_RE)?.[1];
   const extra = EXTRA_FORMS[verbEntry] ?? [];
-  return [...mechanicalForms(verbEntry), ...extra].some((form) => sentenceHasWord(sentence, form));
+  const forms = [...mechanicalForms(verbEntry), ...extra];
+  return forms.some((form) => {
+    if (!sentenceHasWord(sentence, form)) return false;
+    if (!prefix || form.toLowerCase().includes(prefix)) return true;
+    return sentenceHasWord(sentence, prefix);
+  });
 }
 
 /**
