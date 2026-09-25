@@ -257,7 +257,10 @@ function ClozePage() {
           )}
         </span>
         {q.blank.caseBlank && verbConfirmed ? (
-          <span className="mx-1 text-sm text-muted">({CASE_ABBR[q.blank.caseBlank]})</span>
+          <>
+            {" "}
+            <span className="mx-1 text-sm text-muted">({CASE_ABBR[q.blank.caseBlank]})</span>
+          </>
         ) : null}
         {q.blank.after}
       </h2>
