@@ -116,6 +116,36 @@ function prepositionAdjacent(
 }
 
 /**
+ * Fixed-case (non-Wechsel) German prepositions — grammar facts, not a
+ * curated verb list: these ALWAYS govern the same case, for every verb,
+ * because the case belongs to the preposition, not to whatever verb
+ * happens to be in the sentence. Genitiv prepositions ("wegen", "trotz",
+ * ...) are out of scope (A1/A2, same as case-forms.ts's own NounCase).
+ * Wechselpräpositionen (an, auf, hinter, in, neben, über, unter, vor,
+ * zwischen) are deliberately absent — their case depends on motion vs.
+ * location, which this file does not attempt to disambiguate anywhere.
+ */
+const FIXED_CASE_PREPOSITIONS: Record<NounCase, readonly string[]> = {
+  akkusativ: ["durch", "für", "gegen", "ohne", "um"],
+  dativ: ["aus", "außer", "bei", "mit", "nach", "seit", "von", "zu"],
+};
+
+/**
+ * Kaynak A's Layer 0, checked before every verb-based layer (dative-verbs,
+ * hand-curated government, kaikki frames, default-Akkusativ) and
+ * independent of all of them: a fixed-case preposition immediately before
+ * `correctForm term` settles the case on its own — the noun phrase is the
+ * PREPOSITION's object here, not any verb's, so which verb (if any) is in
+ * the sentence is irrelevant and never consulted. Same strict adjacency as
+ * `prepositionAdjacent` (no adjective in the way).
+ */
+function fixedPrepositionApplies(sentence: string, correctForm: string, term: string, nounCase: NounCase): boolean {
+  return FIXED_CASE_PREPOSITIONS[nounCase].some((preposition) =>
+    prepositionAdjacent(sentence, preposition, correctForm, term),
+  );
+}
+
+/**
  * One curated entry's verb (its infinitive) plus every surface form it can
  * take, lower-cased — used only by the default-Akkusativ negative-control
  * check below, never by the positive checks above (which each match a
@@ -280,6 +310,8 @@ export function verbConfirmsCase(
 ): boolean {
   const text = sentence.trim();
   if (!text || !correctForm.trim() || !term.trim()) return false;
+
+  if (fixedPrepositionApplies(text, correctForm, term, nounCase)) return true;
 
   if (nounCase === "dativ") {
     for (const entry of DATIVE_VERB_DATA) {
