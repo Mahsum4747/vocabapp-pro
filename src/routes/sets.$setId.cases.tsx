@@ -352,7 +352,12 @@ function CaseDrillPage() {
               <span className="mx-1 text-sm text-muted">({CASE_ABBR[question.nounCase]})</span>
             ) : null}
           </div>
-          <WriteItStep key={question.card.id} correctForm={correctForm} term={question.card.term} />
+          <WriteItStep
+            key={question.card.id}
+            correctForm={correctForm}
+            term={question.card.term}
+            caseHint={question.nounCase}
+          />
         </div>
       ) : null}
     </StudySessionShell>

@@ -2,12 +2,28 @@ import { useState } from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 
+/** Which case `correctForm` is inflected for — decides the example
+ *  sentence's own verb, so the placeholder never models a wrong sentence
+ *  (a Dativ noun phrase can't be "sehen"'s object; "sehen" wants Akkusativ). */
+export type WriteItCase = "akkusativ" | "dativ" | "nominativ";
+
 export type WriteItStepProps = {
   /** The inflected form the sentence must use — e.g. "den" (Cases) or
    *  "der" (Articles, always the nominative there). */
   correctForm: string;
   /** The headword that follows it, e.g. "Vater". */
   term: string;
+  caseHint: WriteItCase;
+};
+
+/** One fixed, hand-picked verb per case, chosen because it actually takes
+ *  that case as a plain object — never a template that happens to fit the
+ *  form but not the grammar (sehen is Akkusativ-only; "dem Film" is never
+ *  its object, whatever the form looks like on its own). */
+const EXAMPLE_TEMPLATE: Record<WriteItCase, (phrase: string) => string> = {
+  akkusativ: (phrase) => `Ich sehe ${phrase}.`,
+  dativ: (phrase) => `Das gehört ${phrase}.`,
+  nominativ: (phrase) => `Hier ist ${phrase}.`,
 };
 
 function normalize(value: string): string {
@@ -36,12 +52,13 @@ function normalize(value: string): string {
  * design, not an oversight — see this component's own call sites for the
  * `key` that resets it per card.
  */
-export function WriteItStep({ correctForm, term }: WriteItStepProps) {
+export function WriteItStep({ correctForm, term, caseHint }: WriteItStepProps) {
   const [value, setValue] = useState("");
   const [checked, setChecked] = useState(false);
 
   const phrase = `${correctForm} ${term}`;
   const usesForm = normalize(value).includes(normalize(phrase));
+  const example = EXAMPLE_TEMPLATE[caseHint](phrase);
 
   return (
     <div className="mt-4 rounded-card bg-surface-2 p-4">
@@ -62,7 +79,7 @@ export function WriteItStep({ correctForm, term }: WriteItStepProps) {
               setChecked(true);
             }
           }}
-          placeholder={`e.g. "Ich sehe ${phrase}."`}
+          placeholder={`e.g. "${example}"`}
           className="flex-1"
         />
         <Button type="button" variant="outline" onClick={() => setChecked(true)} disabled={!value.trim()}>

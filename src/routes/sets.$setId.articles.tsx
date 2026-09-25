@@ -347,7 +347,9 @@ function ArticleDrillPage() {
             className="mt-1"
           />
           {trEntry?.feedback ? <p className="mt-1 text-xs text-subtle">{trEntry.feedback}</p> : null}
-          {correctArticle ? <WriteItStep key={card.id} correctForm={correctArticle} term={card.term} /> : null}
+          {correctArticle ? (
+            <WriteItStep key={card.id} correctForm={correctArticle} term={card.term} caseHint="nominativ" />
+          ) : null}
         </div>
       ) : null}
     </StudySessionShell>
