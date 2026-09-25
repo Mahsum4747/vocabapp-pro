@@ -14,6 +14,7 @@ import { useReviewLogger } from "@/lib/review-log";
 import { useSet, useSetProgress, useStudyStore } from "@/lib/store";
 import { buildReviewQueue } from "@/lib/srs";
 import { useSessionPlan } from "@/lib/use-session";
+import { WriteItStep } from "@/components/write-it-step";
 import {
   isCardActive,
   resolveSetLanguages,
@@ -346,6 +347,7 @@ function ArticleDrillPage() {
             className="mt-1"
           />
           {trEntry?.feedback ? <p className="mt-1 text-xs text-subtle">{trEntry.feedback}</p> : null}
+          {correctArticle ? <WriteItStep key={card.id} correctForm={correctArticle} term={card.term} /> : null}
         </div>
       ) : null}
     </StudySessionShell>

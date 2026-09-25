@@ -1,0 +1,79 @@
+import { useState } from "react";
+import { Button } from "./ui/button";
+import { Input } from "./ui/input";
+
+export type WriteItStepProps = {
+  /** The inflected form the sentence must use — e.g. "den" (Cases) or
+   *  "der" (Articles, always the nominative there). */
+  correctForm: string;
+  /** The headword that follows it, e.g. "Vater". */
+  term: string;
+};
+
+function normalize(value: string): string {
+  return value.normalize("NFC").trim().replace(/\s+/g, " ").toLowerCase();
+}
+
+/**
+ * Phase 3, first production step after Cases/Articles — recognition to
+ * production, but a small, checkable one, not free writing (that stays a
+ * later, separate phase). Optional: it sits below the existing reveal,
+ * never blocks or replaces the page's own Continue action, and asks
+ * nothing of a learner who skips straight past it.
+ *
+ * Checking is rule-based only, no Gemini, no AI call of any kind: does the
+ * typed sentence contain the exact inflected phrase ("den Vater") as a
+ * substring, case/whitespace-insensitive? That is the full check. It does
+ * NOT evaluate grammar, sentence structure, or quality — a bare "den
+ * Vater" with no real sentence around it still passes, on purpose (that
+ * judgment needs a model in the loop, which this slice deliberately
+ * doesn't add).
+ *
+ * Nothing here is persisted: no server call, no Firestore write, no
+ * write-history of any kind. What's typed lives only in this component's
+ * own state and disappears the moment the learner moves on. A future
+ * slice may save/aggregate what learners write; out of scope here by
+ * design, not an oversight — see this component's own call sites for the
+ * `key` that resets it per card.
+ */
+export function WriteItStep({ correctForm, term }: WriteItStepProps) {
+  const [value, setValue] = useState("");
+  const [checked, setChecked] = useState(false);
+
+  const phrase = `${correctForm} ${term}`;
+  const usesForm = normalize(value).includes(normalize(phrase));
+
+  return (
+    <div className="mt-4 rounded-card bg-surface-2 p-4">
+      <p className="text-xs font-medium tracking-wide text-muted uppercase">Write it — optional</p>
+      <p className="mt-1 text-sm text-fg">
+        Write a short sentence using <span className="font-semibold">{phrase}</span>.
+      </p>
+      <div className="mt-2 flex gap-2">
+        <Input
+          value={value}
+          onChange={(e) => {
+            setValue(e.target.value);
+            setChecked(false);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && value.trim()) {
+              e.preventDefault();
+              setChecked(true);
+            }
+          }}
+          placeholder={`e.g. "Ich sehe ${phrase}."`}
+          className="flex-1"
+        />
+        <Button type="button" variant="outline" onClick={() => setChecked(true)} disabled={!value.trim()}>
+          Check
+        </Button>
+      </div>
+      {checked ? (
+        <p className={`mt-2 text-sm ${usesForm ? "text-success" : "text-muted"}`}>
+          {usesForm ? "Nice — that's the right form." : `Almost — the form here is "${phrase}".`}
+        </p>
+      ) : null}
+    </div>
+  );
+}
