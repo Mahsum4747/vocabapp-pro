@@ -5,7 +5,7 @@ import { AppShell } from "@/components/app-shell";
 import { CardEditor, type EditorCard } from "@/components/card-editor";
 import { EmptyState } from "@/components/empty-state";
 import { GenerateDialog } from "@/components/generate-dialog";
-import { ImportDialog } from "@/components/import-dialog";
+import { ImportDialog, looksLikeKartaJson } from "@/components/import-dialog";
 import { OwnerGate } from "@/components/owner-gate";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
@@ -229,6 +229,17 @@ function EditPage() {
                 id="desc"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
+                onPaste={(e) => {
+                  // Same guard as the Create form: Karta JSON belongs in
+                  // the "Paste" dialog, never as raw text in this field.
+                  const pasted = e.clipboardData.getData("text");
+                  if (looksLikeKartaJson(pasted)) {
+                    e.preventDefault();
+                    toast.error(
+                      "That looks like Karta JSON — use the Paste button above to import it, not this field.",
+                    );
+                  }
+                }}
               />
             </div>
             <div className="space-y-1.5">
