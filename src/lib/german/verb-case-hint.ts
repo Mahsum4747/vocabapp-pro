@@ -88,8 +88,23 @@ function sentenceHasWord(sentence: string, word: string): boolean {
   return new RegExp(`(?<![\\p{L}])${escapeRegExp(word)}(?![\\p{L}])`, "iu").test(sentence);
 }
 
+/**
+ * "sein" is one of the 22 lemmas UNIMORPH-ATTRIBUTION.md documents as
+ * genuinely absent from UniMorph's German data — the mechanical fallback
+ * can't produce its real, wildly irregular forms ("ist"/"bin"/"bist") from
+ * the infinitive by suffix rule. `wechselApplies`'s STATE_VERBS list needs
+ * "sein" specifically ("Er ist in der Schule." is the textbook location
+ * example), so this is a small, closed, hand-written exception for this
+ * one verb — not a new conjugation source, not valenz data, just the
+ * handful of forms every A1 learner already knows.
+ */
+const EXTRA_FORMS: Record<string, readonly string[]> = {
+  sein: ["bin", "bist", "ist", "sind", "seid"],
+};
+
 function sentenceHasVerb(sentence: string, verbEntry: string): boolean {
-  return mechanicalForms(verbEntry).some((form) => sentenceHasWord(sentence, form));
+  const extra = EXTRA_FORMS[verbEntry] ?? [];
+  return [...mechanicalForms(verbEntry), ...extra].some((form) => sentenceHasWord(sentence, form));
 }
 
 /**
@@ -143,6 +158,52 @@ function fixedPrepositionApplies(sentence: string, correctForm: string, term: st
   return FIXED_CASE_PREPOSITIONS[nounCase].some((preposition) =>
     prepositionAdjacent(sentence, preposition, correctForm, term),
   );
+}
+
+/**
+ * Wechselpräpositionen — case depends on motion (Akkusativ, "wohin?") vs.
+ * location (Dativ, "wo?"), not on the preposition alone the way
+ * FIXED_CASE_PREPOSITIONS is. Disambiguated below by a small, hand-picked,
+ * A1-scope verb list — never a parser, never NLP: does a KNOWN motion verb
+ * or a KNOWN location/state verb appear anywhere in the sentence? An
+ * unlisted verb (the common case — this is a short, deliberately
+ * incomplete list) leaves the question open, so nothing is asserted.
+ */
+const WECHSEL_PREPOSITIONS = ["an", "auf", "hinter", "in", "neben", "über", "unter", "vor", "zwischen"];
+
+const MOTION_VERBS = [
+  "gehen",
+  "fahren",
+  "laufen",
+  "kommen",
+  "fliegen",
+  "bringen",
+  "rennen",
+  "reisen",
+  "ziehen",
+  "steigen",
+  "springen",
+  "fliehen",
+];
+
+const STATE_VERBS = ["sein", "liegen", "stehen", "sitzen", "wohnen", "bleiben", "hängen", "wachsen"];
+
+/**
+ * Kaynak A's Wechsel layer: a Wechselpräposition immediately before
+ * `correctForm term` (same strict adjacency as `prepositionAdjacent`)
+ * confirms `nounCase` only when a verb from the matching list (motion for
+ * Akkusativ, location/state for Dativ) also appears in the sentence.
+ * Neither list appearing → `false`, same as any other unresolved case —
+ * no default, no guess, unlike plain Akkusativ's negative-control rule.
+ */
+function wechselApplies(sentence: string, correctForm: string, term: string, nounCase: NounCase): boolean {
+  if (nounCase !== "akkusativ" && nounCase !== "dativ") return false;
+  const verbs = nounCase === "akkusativ" ? MOTION_VERBS : STATE_VERBS;
+  for (const preposition of WECHSEL_PREPOSITIONS) {
+    if (!prepositionAdjacent(sentence, preposition, correctForm, term)) continue;
+    if (verbs.some((verb) => sentenceHasVerb(sentence, verb))) return true;
+  }
+  return false;
 }
 
 /**
@@ -272,11 +333,22 @@ function precedingWord(sentence: string, correctForm: string, term: string): str
  * stricter check above; reaching here means that check did NOT confirm, so
  * defaulting to Akkusativ anyway would silently override a verb this
  * codebase already knows governs something else).
+ *
+ * Also excludes a Wechselpräposition sitting where `precedingWord` expects
+ * a verb: for "Er wirft den Ball in den Garten.", the word immediately
+ * before "den Garten" is "in", not a verb at all — this NP is that
+ * preposition's object, not werfen's, so this rule has nothing to say
+ * about it. Without this check it would wrongly default to Akkusativ for
+ * ANY Wechsel-preposition Akkusativ phrase regardless of verb, including
+ * one the dedicated `wechselApplies` above correctly leaves unresolved
+ * (an unlisted verb) — that gap is exactly what `wechselApplies` exists to
+ * fill on purpose, not silently paper over here.
  */
 function defaultAkkusativApplies(sentence: string, correctForm: string, term: string): boolean {
   const verb = precedingWord(sentence, correctForm, term);
   if (!verb) return false;
   const key = verb.toLowerCase();
+  if (WECHSEL_PREPOSITIONS.includes(key)) return false;
   for (const entry of curatedVerbEntries) {
     if (entry.forms.has(key) && reallyMatches(entry, sentence)) return false;
   }
@@ -296,10 +368,10 @@ function defaultAkkusativApplies(sentence: string, correctForm: string, term: st
  *   sentence AND its preposition must sit immediately before
  *   `correctForm term` with nothing between (see `prepositionAdjacent`).
  *
- * No match in either dataset, a case mismatch, or the strict adjacency
- * failing (an adjective in the way, a different verb's preposition, a
- * wechsel verb whose direction/location this doesn't attempt to resolve)
- * all return `false`. A caller showing a hint only on `true` therefore
+ * No match in either dataset, a case mismatch, the strict adjacency
+ * failing (an adjective in the way, a different verb's preposition), or a
+ * Wechselpräposition whose motion/location verb isn't on `wechselApplies`'s
+ * own short list all return `false`. A caller showing a hint only on `true` therefore
  * never asserts a case the sentence doesn't actually demonstrate.
  */
 export function verbConfirmsCase(
@@ -326,6 +398,8 @@ export function verbConfirmsCase(
   }
 
   if (kaikkiFrameConfirms(text, correctForm, term, nounCase)) return true;
+
+  if (wechselApplies(text, correctForm, term, nounCase)) return true;
 
   if (nounCase === "akkusativ" && defaultAkkusativApplies(text, correctForm, term)) return true;
 
