@@ -26,7 +26,7 @@ const EN: WriteItStrings = {
   instruction: () => ({ before: "Write a short sentence using ", after: "." }),
   placeholder: (example) => `e.g. "${example}"`,
   check: "Check",
-  correct: "Nice — that's the right form.",
+  correct: "Correct — that's the right form.",
   incorrect: (phrase) => `Almost — the form here is "${phrase}".`,
 };
 
@@ -35,7 +35,7 @@ const TR: WriteItStrings = {
   instruction: () => ({ before: "", after: " kullanarak kısa bir cümle yaz." }),
   placeholder: (example) => `örn. "${example}"`,
   check: "Kontrol et",
-  correct: "Harika — doğru hâl bu.",
+  correct: "Doğru — doğru hâl bu.",
   incorrect: (phrase) => `Neredeyse — doğru hâl: "${phrase}".`,
 };
 

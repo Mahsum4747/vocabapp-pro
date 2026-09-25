@@ -63,6 +63,11 @@ export function WriteItStep({ correctForm, term, caseHint, explanationLanguage }
 
   const phrase = `${correctForm} ${term}`;
   const usesForm = normalize(value).includes(normalize(phrase));
+  // A correct check finalizes this step — nothing left to retry, so the
+  // box locks. A wrong check does NOT lock: "Almost" stays up, the input
+  // (already never disabled here) stays fully editable, so the learner can
+  // fix the sentence and check again.
+  const locked = checked && usesForm;
   const example = EXAMPLE_TEMPLATE[caseHint](phrase);
   const t = writeItStrings(explanationLanguage);
   const instruction = t.instruction(phrase);
@@ -78,6 +83,7 @@ export function WriteItStep({ correctForm, term, caseHint, explanationLanguage }
       <div className="mt-2 flex gap-2">
         <Input
           value={value}
+          disabled={locked}
           onChange={(e) => {
             setValue(e.target.value);
             setChecked(false);
@@ -91,7 +97,7 @@ export function WriteItStep({ correctForm, term, caseHint, explanationLanguage }
           placeholder={t.placeholder(example)}
           className="flex-1"
         />
-        <Button type="button" variant="outline" onClick={() => setChecked(true)} disabled={!value.trim()}>
+        <Button type="button" variant="outline" onClick={() => setChecked(true)} disabled={!value.trim() || locked}>
           {t.check}
         </Button>
       </div>
