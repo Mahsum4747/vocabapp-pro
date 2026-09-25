@@ -6,7 +6,7 @@ import { CardEditor, type EditorCard } from "@/components/card-editor";
 import { GenerateDialog } from "@/components/generate-dialog";
 import { LanguageSelect } from "@/components/language-select";
 import { NO_LANGUAGE, languageChoice, type LanguageChoice } from "@/lib/lang/choice";
-import { ImportDialog } from "@/components/import-dialog";
+import { ImportDialog, looksLikeKartaJson } from "@/components/import-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -245,6 +245,20 @@ function CreatePage() {
                 id="desc"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
+                onPaste={(e) => {
+                  // A learner pasting Karta JSON belongs in the "Paste"
+                  // dialog above (which reads only its own typed
+                  // "description" field), never straight into this box as
+                  // raw text — refuse it here rather than silently
+                  // accepting a JSON dump as the set's description.
+                  const pasted = e.clipboardData.getData("text");
+                  if (looksLikeKartaJson(pasted)) {
+                    e.preventDefault();
+                    toast.error(
+                      "That looks like Karta JSON — use the Paste button above to import it, not this field.",
+                    );
+                  }
+                }}
                 placeholder="What is this set for?"
               />
             </div>

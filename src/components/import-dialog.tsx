@@ -12,6 +12,19 @@ import type { EditorCard } from "./card-editor";
 /** Set-level fields a Karta JSON import carries alongside its cards. */
 export type ImportMeta = { title: string; description: string; pair: "de-en" | "de-tr" };
 
+/**
+ * Same shape check `apply()` below uses to route pasted text to
+ * `parseKartaJson` instead of the plain card-line parser. Exported so a
+ * plain text field elsewhere (the set's own Description box, which a
+ * learner might paste Karta JSON into by mistake instead of using this
+ * dialog's own Paste button) can refuse that paste outright — description
+ * only ever gets JSON's own typed "description" field via `onImport`
+ * above, never the raw pasted text.
+ */
+export function looksLikeKartaJson(text: string): boolean {
+  return /^\s*(\{|```)/.test(text);
+}
+
 export function ImportDialog({
   onImport,
 }: {
@@ -23,7 +36,7 @@ export function ImportDialog({
 
   function apply() {
     setErrors([]);
-    if (/^\s*(\{|```)/.test(text)) {
+    if (looksLikeKartaJson(text)) {
       // Karta JSON: all-or-nothing. Any problem lists every error and adds
       // no cards at all.
       const result = parseKartaJson(text);
