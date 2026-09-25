@@ -2,10 +2,24 @@ import { useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Copy, Layers, Plus } from "lucide-react";
 import { toast } from "sonner";
-import type { StudySet } from "@/lib/types";
+import { resolveSetLanguages, type StudySet } from "@/lib/types";
 import { useStudyStore } from "@/lib/store";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
+
+/**
+ * "DE → EN" from the set's own resolved term/definition language codes —
+ * replaces the generic `set.subject` badge ("Language" for nearly every
+ * set here, since this app is itself a German vocab learner: true but
+ * says nothing about which pair). Falls back to the subject when either
+ * language is unresolved (an older set with no code on file) rather than
+ * showing a broken "? → ?".
+ */
+function languagePairLabel(set: StudySet): string | null {
+  const { term, definition } = resolveSetLanguages(set);
+  if (!term || !definition) return null;
+  return `${term.toUpperCase()} → ${definition.toUpperCase()}`;
+}
 
 export function PublicSetCard({ set }: { set: StudySet }) {
   const copyPublicSet = useStudyStore((s) => s.copyPublicSet);
@@ -43,7 +57,7 @@ export function PublicSetCard({ set }: { set: StudySet }) {
       className="group flex flex-col rounded-card bg-surface p-5 shadow-[var(--elevation-1)] transition-[box-shadow] duration-[var(--duration-fast)] ease-[var(--ease-out)] hover:shadow-[var(--elevation-2)] active:shadow-[var(--elevation-2)]"
     >
       <div className="flex items-center justify-between gap-3">
-        <Badge tone="accent">{set.subject}</Badge>
+        <Badge tone="accent">{languagePairLabel(set) ?? set.subject}</Badge>
         <div className="flex items-center gap-3">
           {set.copyCount ? (
             <span className="inline-flex items-center gap-1 text-xs text-muted tabular-nums">
@@ -61,7 +75,8 @@ export function PublicSetCard({ set }: { set: StudySet }) {
         {set.title}
       </h3>
       <p className="mt-2 line-clamp-2 min-h-10 text-sm text-muted">
-        {set.description || "No description"}
+        {set.description ||
+          `${set.cards.length} card${set.cards.length === 1 ? "" : "s"}${set.folder ? ` · ${set.folder}` : ""}`}
       </p>
       <Button className="mt-5 w-full" variant="outline" onClick={addToLibrary} disabled={copying}>
         <Plus />
