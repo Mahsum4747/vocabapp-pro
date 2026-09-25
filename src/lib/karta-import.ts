@@ -22,6 +22,10 @@ export type KartaCard = {
 
 export type KartaImport = {
   title: string;
+  /** The set's own description, from the JSON's optional "description"
+   *  field. Never a raw dump of the JSON itself, and never card content —
+   *  only this one, explicitly-typed string field ever reaches it. */
+  description: string;
   pair: "de-en" | "de-tr";
   level: "A1" | "A2";
   cards: KartaCard[];
@@ -33,7 +37,7 @@ export type KartaParseResult =
   | { ok: true; value: KartaImport }
   | { ok: false; errors: string[] };
 
-const ROOT_KEYS = ["title", "pair", "level", "cards"];
+const ROOT_KEYS = ["title", "description", "pair", "level", "cards"];
 const CARD_KEYS = ["term", "pos", "gender", "plural", "noPlural", "gloss", "examples"];
 const EXAMPLE_KEYS = ["nom", "akk", "dat"];
 const POS = ["noun", "verb", "adj", "other"];
@@ -77,6 +81,10 @@ export function parseKartaJson(raw: string): KartaParseResult {
 
   const title = data.title;
   if (typeof title !== "string" || !title.trim()) fail('"title" must be a non-empty string.');
+  const rawDescription = data.description ?? null;
+  if (rawDescription !== null && typeof rawDescription !== "string") {
+    fail('"description" must be a string or null.');
+  }
   const pair = data.pair;
   if (pair !== "de-en" && pair !== "de-tr") fail('"pair" must be "de-en" or "de-tr".');
   const level = data.level;
@@ -202,6 +210,7 @@ export function parseKartaJson(raw: string): KartaParseResult {
     ok: true,
     value: {
       title: (title as string).trim(),
+      description: typeof rawDescription === "string" ? rawDescription.trim() : "",
       pair: pair as "de-en" | "de-tr",
       level: level as "A1" | "A2",
       cards,

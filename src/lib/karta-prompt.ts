@@ -15,6 +15,7 @@ Output ONLY valid JSON. No markdown. No commentary.
 
 {
   "title": "string",
+  "description": "one short sentence, or null",
   "pair": "de-en" | "de-tr",
   "level": "A1" | "A2",
   "cards": [
