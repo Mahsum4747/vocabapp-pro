@@ -1,51 +1,31 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import {
-  AI_DAILY_CAP_PER_USER,
-  USER_CAP_MESSAGE,
-  ceilingFromEnv,
-  decideSpend,
-  readAiActionsToday,
-} from "./ai-budget.ts";
-
-const NOW = Date.UTC(2026, 8, 21, 12);
+import { GLOBAL_TRIPWIRE_MESSAGE, ceilingFromEnv, decideSpend } from "./ai-budget.ts";
 
 describe("decideSpend", () => {
-  it("allows until the per-user cap, then hard-fails with the friendly message", () => {
-    for (let used = 0; used < AI_DAILY_CAP_PER_USER; used++) {
-      const d = decideSpend({ kind: "assist", userCount: used, globalCount: 0, ceiling: 1000 });
-      assert.equal(d.ok, true);
-    }
-    const capped = decideSpend({
-      kind: "generate",
-      userCount: AI_DAILY_CAP_PER_USER,
-      globalCount: 0,
-      ceiling: 1000,
-    });
-    assert.deepEqual(capped, { ok: false, reason: "user_cap", error: USER_CAP_MESSAGE });
-    assert.match(USER_CAP_MESSAGE, /midnight UTC/);
-  });
   it("global tripwire stops generate at 70% of the ceiling, for everyone", () => {
-    assert.equal(decideSpend({ kind: "generate", userCount: 0, globalCount: 13, ceiling: 20 }).ok, true);
-    const tripped = decideSpend({ kind: "generate", userCount: 0, globalCount: 14, ceiling: 20 });
-    assert.equal(tripped.ok, false);
-    if (!tripped.ok) assert.equal(tripped.reason, "global_tripwire");
+    assert.equal(decideSpend({ kind: "generate", globalCount: 13, ceiling: 20 }).ok, true);
+    const tripped = decideSpend({ kind: "generate", globalCount: 14, ceiling: 20 });
+    assert.deepEqual(tripped, {
+      ok: false,
+      reason: "global_tripwire",
+      error: GLOBAL_TRIPWIRE_MESSAGE,
+    });
+    assert.match(GLOBAL_TRIPWIRE_MESSAGE, /midnight UTC/);
   });
   it("per-card assists keep working past the tripwire, until the ceiling itself", () => {
-    assert.equal(decideSpend({ kind: "assist", userCount: 0, globalCount: 14, ceiling: 20 }).ok, true);
-    assert.equal(decideSpend({ kind: "assist", userCount: 0, globalCount: 20, ceiling: 20 }).ok, false);
+    assert.equal(decideSpend({ kind: "assist", globalCount: 14, ceiling: 20 }).ok, true);
+    assert.equal(decideSpend({ kind: "assist", globalCount: 20, ceiling: 20 }).ok, false);
   });
-  it("reports what's left", () => {
-    const d = decideSpend({ kind: "assist", userCount: 1, globalCount: 0, ceiling: 100 });
-    assert.equal(d.ok && d.remaining, AI_DAILY_CAP_PER_USER - 2);
+  it("has no per-user limit — the same caller can spend repeatedly while the pool has room", () => {
+    for (let used = 0; used < 20; used++) {
+      const d = decideSpend({ kind: "assist", globalCount: used, ceiling: 1000 });
+      assert.equal(d.ok, true);
+    }
   });
-});
-
-describe("readAiActionsToday", () => {
-  it("reads today's count and resets a previous day's to zero", () => {
-    assert.equal(readAiActionsToday({ dayKey: "2026-09-21", count: 3 }, NOW).count, 3);
-    assert.equal(readAiActionsToday({ dayKey: "2026-09-20", count: 5 }, NOW).count, 0);
-    assert.equal(readAiActionsToday(undefined, NOW).count, 0);
+  it("reports what's left in the shared pool", () => {
+    const d = decideSpend({ kind: "assist", globalCount: 1, ceiling: 100 });
+    assert.equal(d.ok && d.remaining, 98);
   });
 });
 
