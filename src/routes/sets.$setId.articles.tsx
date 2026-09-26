@@ -354,6 +354,9 @@ function ArticleDrillPage() {
               term={card.term}
               caseHint="nominativ"
               explanationLanguage={explanationLanguage}
+              cardId={card.id}
+              setId={studySet.id}
+              setTitle={studySet.title}
             />
           ) : null}
         </div>

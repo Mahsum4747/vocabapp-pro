@@ -30,6 +30,7 @@ import { deleteAuthAccount } from "@/lib/delete-auth-account";
 import { useStudyStore } from "@/lib/store";
 import type { DailyStats } from "@/lib/types";
 import { cn, recentDateKeys } from "@/lib/utils";
+import { getWriteItFeedbackLog, type WriteItFeedbackLogEntry } from "@/lib/write-it-feedback";
 
 export const Route = createFileRoute("/account")({ component: AccountRoute });
 
@@ -45,6 +46,7 @@ const TABS = [
   { id: "xp", label: "XP" },
   { id: "achievements", label: "Achievements" },
   { id: "goal", label: "Daily goal" },
+  { id: "feedback", label: "AI Feedback" },
   { id: "sound", label: "Sound" },
   { id: "account", label: "Account" },
 ] as const;
@@ -113,6 +115,7 @@ function AccountPage() {
           <AchievementsTab unlocked={profile.achievements} stats={stats} />
         ) : null}
         {tab === "goal" ? <GoalTab timeZone={profile.timeZone} /> : null}
+        {tab === "feedback" ? <AiFeedbackTab /> : null}
         {tab === "sound" ? <SoundTab /> : null}
         {tab === "account" ? <AccountTab /> : null}
       </div>
@@ -364,6 +367,76 @@ function GoalTab({ timeZone }: { timeZone: string }) {
       <p className="text-xs text-subtle">
         Days roll over in your own timezone{timeZone ? ` (${timeZone})` : ""}.
       </p>
+    </div>
+  );
+}
+
+/**
+ * Read-only log of every WriteIt AI feedback the learner has ever requested
+ * — grouped by set, newest set-group order determined by that group's own
+ * most recent entry, newest first within each group. Purely a lookup list:
+ * no analysis, no "most common mistake" summary, out of scope by design.
+ */
+function AiFeedbackTab() {
+  const [entries, setEntries] = useState<WriteItFeedbackLogEntry[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    getWriteItFeedbackLog({})
+      .then((rows) => {
+        if (!cancelled) setEntries(rows);
+      })
+      .catch((err) => {
+        console.error("Failed to load AI feedback log:", err);
+        if (!cancelled) setError("Couldn't load your AI feedback history.");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (error) return <p className="text-sm text-danger">{error}</p>;
+  if (entries === null) return <p className="text-sm text-muted">Loading…</p>;
+  if (entries.length === 0) {
+    return (
+      <p className="text-sm text-muted">
+        No AI feedback yet — tap &quot;Get AI feedback&quot; after a Write It step to see it here.
+      </p>
+    );
+  }
+
+  const groups = new Map<string, { setTitle: string; entries: WriteItFeedbackLogEntry[] }>();
+  for (const entry of entries) {
+    const group = groups.get(entry.setId);
+    if (group) group.entries.push(entry);
+    else groups.set(entry.setId, { setTitle: entry.setTitle, entries: [entry] });
+  }
+  // `entries` is already newest-first (server orderBy), so each group's
+  // first pushed entry is its own newest — sort the groups the same way.
+  const orderedGroups = [...groups.values()].sort(
+    (a, b) => b.entries[0].createdAt - a.entries[0].createdAt,
+  );
+
+  return (
+    <div className="space-y-6">
+      {orderedGroups.map((group) => (
+        <section key={group.entries[0].setId}>
+          <h2 className="text-sm font-medium">{group.setTitle}</h2>
+          <div className="mt-2 space-y-2">
+            {group.entries.map((entry) => (
+              <div key={entry.id} className="rounded-card bg-surface p-4 shadow-[var(--elevation-1)]">
+                <p className="font-medium">{entry.term}</p>
+                <p className="mt-1 text-sm text-muted">&ldquo;{entry.learnerSentence}&rdquo;</p>
+                <p className="mt-2 text-xs font-medium tracking-wide text-muted uppercase">
+                  AI feedback
+                </p>
+                <p className="mt-1 text-sm text-fg">{entry.feedback}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+      ))}
     </div>
   );
 }
