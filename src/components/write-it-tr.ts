@@ -19,6 +19,10 @@ type WriteItStrings = {
   check: string;
   correct: string;
   incorrect: (phrase: string) => string;
+  /** Shown instead of `incorrect` when the sentence doesn't use the
+   *  headword at all — a different failure than using it in the wrong
+   *  form, so it gets its own message rather than reusing "Almost". */
+  missingHeadword: (headword: string) => string;
   /** The optional review-time Gemini step, separate from the rule-based
    *  Correct/Almost result above — same "opsiyonel" convention as `label`. */
   aiFeedbackLabel: string;
@@ -34,6 +38,7 @@ const EN: WriteItStrings = {
   check: "Check",
   correct: "Correct — that's the right form.",
   incorrect: (phrase) => `Almost — the form here is "${phrase}".`,
+  missingHeadword: (headword) => `That sentence doesn't use "${headword}" — try writing one with it.`,
   aiFeedbackLabel: "AI feedback",
   aiFeedbackButton: "Get AI feedback",
   aiFeedbackLoading: "Getting feedback…",
@@ -47,6 +52,7 @@ const TR: WriteItStrings = {
   check: "Kontrol et",
   correct: "Doğru — doğru hâl bu.",
   incorrect: (phrase) => `Neredeyse — doğru hâl: "${phrase}".`,
+  missingHeadword: (headword) => `"${headword}" kelimesi cümlede hiç geçmiyor — onu kullanan bir cümle yaz.`,
   aiFeedbackLabel: "AI geri bildirimi",
   aiFeedbackButton: "AI geri bildirimi al",
   aiFeedbackLoading: "Geri bildirim alınıyor…",

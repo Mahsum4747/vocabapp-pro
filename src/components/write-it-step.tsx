@@ -56,6 +56,14 @@ function normalize(value: string): string {
  * judgment needs a model in the loop, which this slice deliberately
  * doesn't add).
  *
+ * A wrong answer isn't a single failure mode, though: a sentence that
+ * never mentions the headword at all ("Ich sehe ne hund" for "Stuhl") is
+ * told apart from one that uses the headword in the wrong inflected form
+ * ("Ich sehe der Stuhl") — same substring-search technique, just checked
+ * against the bare headword instead of the full inflected phrase. Only
+ * the second case shows "Almost — the form here is X"; the first gets its
+ * own "doesn't use X" message instead, since it never got close.
+ *
  * The rule-based result itself is never persisted: no server call, no
  * Firestore write for it. What's typed lives only in this component's own
  * state and disappears the moment the learner moves on (see this
@@ -86,6 +94,14 @@ export function WriteItStep({
 
   const phrase = `${correctForm} ${term}`;
   const usesForm = normalize(value).includes(normalize(phrase));
+  // Simple substring check on the bare headword only — no NLP, no
+  // stemming beyond what normalize() already does (case/whitespace). This
+  // decides which wrong-answer message to show: a sentence that never
+  // mentions the word at all ("Ich sehe ne hund" for "Stuhl") is a
+  // different failure than one that uses the word but the wrong inflected
+  // form ("Ich sehe der Stuhl") — the first never got close, the second
+  // did, and "Almost" should only ever describe the second.
+  const usesHeadword = normalize(value).includes(normalize(term));
   // A correct check finalizes this step — nothing left to retry, so the
   // box locks. A wrong check does NOT lock: "Almost" stays up, the input
   // (already never disabled here) stays fully editable, so the learner can
@@ -152,7 +168,7 @@ export function WriteItStep({
       </div>
       {checked ? (
         <p className={`mt-2 text-sm ${usesForm ? "text-success" : "text-muted"}`}>
-          {usesForm ? t.correct : t.incorrect(phrase)}
+          {usesForm ? t.correct : usesHeadword ? t.incorrect(phrase) : t.missingHeadword(term)}
         </p>
       ) : null}
       {/* Always available once something's been checked — right or wrong,
