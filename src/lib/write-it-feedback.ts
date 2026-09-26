@@ -44,9 +44,11 @@ const RESPONSE_SCHEMA = {
     feedback: {
       type: "STRING",
       description:
-        "One short sentence explaining exactly what's wrong with the learner's sentence, if " +
-        "anything — which word or case they got wrong, and why. If already correct, a brief " +
-        "confirmation. No general grammar lesson, stay focused on this specific mistake.",
+        "A brief, warm acknowledgment (e.g. 'Almost there!' or 'Close!'), followed by one short " +
+        "sentence explaining exactly what's wrong with the learner's sentence, if anything — " +
+        "which word or case they got wrong, and why. If already correct, a brief warm " +
+        "confirmation. Encouraging tone throughout, not clinical. No general grammar lesson, " +
+        "stay focused on this specific mistake.",
     },
   },
   required: ["feedback"],
@@ -62,6 +64,8 @@ export function buildPrompt(data: z.infer<typeof inputSchema>): string {
     `A German learner is trying to use "${data.term}" in the ${caseLabel(data.caseHint)} form.`,
     `The correct form is: "${data.correctForm}".`,
     `The learner wrote this sentence: '${data.learnerSentence}'.`,
+    "Start with a brief, warm acknowledgment (e.g. 'Almost there!' or 'Close!') before the " +
+      "correction. Keep the overall tone encouraging, not clinical.",
     "In one short sentence, explain exactly what's wrong with the learner's sentence (if " +
       "anything) — which word or case they got wrong, and why. If the sentence is already " +
       "correct, just confirm it briefly. Do not give a general grammar lesson, stay focused on " +
