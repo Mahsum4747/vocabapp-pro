@@ -29,11 +29,35 @@ const inputSchema = z.object({
   /** `profile.explanationLanguage`, forwarded as-is — same "tr" switches
    *  English/Turkish convention as write-it-tr.ts's static copy. */
   explanationLanguage: z.string().trim().max(20).optional(),
+  /** Which card/set this request belongs to — used only for the log entry
+   *  below, never sent to Gemini. `setTitle` is denormalized onto the log
+   *  row (not looked up from `setId` at read time) so the Account list can
+   *  group by set without a second query per row, and still shows a title
+   *  if the set is later renamed or deleted. */
+  cardId: z.string().trim().min(1).max(200),
+  setId: z.string().trim().min(1).max(200),
+  setTitle: z.string().trim().min(1).max(200),
 });
 
 const feedbackSchema = z.object({
   feedback: z.string().trim().min(1).max(600),
 });
+
+/** One row of `users/{uid}/aiFeedbackLog` — every AI feedback a learner has
+ *  ever requested, oldest fields first. Append-only, never edited; nothing
+ *  here is deleted except by the whole-account delete path. */
+export type WriteItFeedbackLogEntry = {
+  id: string;
+  cardId: string;
+  setId: string;
+  setTitle: string;
+  term: string;
+  caseHint: z.infer<typeof inputSchema>["caseHint"];
+  learnerSentence: string;
+  correctForm: string;
+  feedback: string;
+  createdAt: number;
+};
 
 // Same model as suggest-card.ts / generate-set.ts / example-suggestions.ts.
 const GEMINI_MODEL = "gemini-3.6-flash";
@@ -148,5 +172,46 @@ export const getWriteItFeedback = createServerFn({ method: "POST" })
       return { ok: false as const, error: "Couldn't get feedback right now — try again." };
     }
 
+    // Best-effort: a logging failure shouldn't take away feedback the
+    // learner already spent a budget action to get.
+    try {
+      const { getAdminFirestore } = await import("./firebase-admin.server");
+      const db = getAdminFirestore();
+      await db.collection("users").doc(context.userId).collection("aiFeedbackLog").add({
+        cardId: data.cardId,
+        setId: data.setId,
+        setTitle: data.setTitle,
+        term: data.term,
+        caseHint: data.caseHint,
+        learnerSentence: data.learnerSentence,
+        correctForm: data.correctForm,
+        feedback: parsed.feedback,
+        createdAt: Date.now(),
+      });
+    } catch (error) {
+      console.error("Failed to log WriteIt AI feedback:", error);
+    }
+
     return { ok: true as const, feedback: parsed.feedback };
+  });
+
+/**
+ * Every AI feedback row the signed-in user has ever requested, newest
+ * first — the read path for Account's "AI Feedback" section. One query,
+ * client groups by `setId` (see account.tsx); this deliberately doesn't
+ * group server-side, same "return the rows, let the view decide" pattern
+ * as `getAllProgress`.
+ */
+export const getWriteItFeedbackLog = createServerFn({ method: "GET" })
+  .middleware([authMiddleware])
+  .handler(async ({ context }): Promise<WriteItFeedbackLogEntry[]> => {
+    const { getAdminFirestore } = await import("./firebase-admin.server");
+    const db = getAdminFirestore();
+    const snap = await db
+      .collection("users")
+      .doc(context.userId)
+      .collection("aiFeedbackLog")
+      .orderBy("createdAt", "desc")
+      .get();
+    return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as WriteItFeedbackLogEntry);
   });

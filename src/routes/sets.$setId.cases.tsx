@@ -367,6 +367,9 @@ function CaseDrillPage() {
             term={question.card.term}
             caseHint={question.nounCase}
             explanationLanguage={explanationLanguage}
+            cardId={question.card.id}
+            setId={studySet.id}
+            setTitle={studySet.title}
           />
         </div>
       ) : null}

@@ -20,6 +20,11 @@ export type WriteItStepProps = {
    *  step's own static copy to Turkish, same as the reveal line's gloss/
    *  feedback already do; anything else falls back to English. */
   explanationLanguage?: string;
+  /** Identify which card/set an AI feedback request (and its log entry)
+   *  belongs to — not used by the rule-based check itself. */
+  cardId: string;
+  setId: string;
+  setTitle: string;
 };
 
 /** One fixed, hand-picked verb per case, chosen because it actually takes
@@ -51,12 +56,14 @@ function normalize(value: string): string {
  * judgment needs a model in the loop, which this slice deliberately
  * doesn't add).
  *
- * Nothing here is persisted: no server call, no Firestore write, no
- * write-history of any kind. What's typed lives only in this component's
- * own state and disappears the moment the learner moves on. A future
- * slice may save/aggregate what learners write; out of scope here by
- * design, not an oversight — see this component's own call sites for the
- * `key` that resets it per card.
+ * The rule-based result itself is never persisted: no server call, no
+ * Firestore write for it. What's typed lives only in this component's own
+ * state and disappears the moment the learner moves on (see this
+ * component's own call sites for the `key` that resets it per card). The
+ * separate, opt-in AI feedback below IS logged server-side (one row per
+ * request, see write-it-feedback.ts) so a learner can look it back up later
+ * from Account — the sentence and rule-based verdict that triggered it stay
+ * transient either way.
  */
 type AiFeedbackState =
   | { status: "idle" }
@@ -64,7 +71,15 @@ type AiFeedbackState =
   | { status: "ready"; text: string }
   | { status: "error"; error: string };
 
-export function WriteItStep({ correctForm, term, caseHint, explanationLanguage }: WriteItStepProps) {
+export function WriteItStep({
+  correctForm,
+  term,
+  caseHint,
+  explanationLanguage,
+  cardId,
+  setId,
+  setTitle,
+}: WriteItStepProps) {
   const [value, setValue] = useState("");
   const [checked, setChecked] = useState(false);
   const [aiFeedback, setAiFeedback] = useState<AiFeedbackState>({ status: "idle" });
@@ -89,6 +104,9 @@ export function WriteItStep({ correctForm, term, caseHint, explanationLanguage }
           correctForm,
           caseHint,
           learnerSentence: value,
+          cardId,
+          setId,
+          setTitle,
           ...(explanationLanguage ? { explanationLanguage } : {}),
         },
       });
