@@ -6,6 +6,7 @@ import {
   LayoutGrid,
   ListChecks,
   ListOrdered,
+  PenLine,
   SpellCheck,
   SquareDashed,
 } from "lucide-react";
@@ -44,6 +45,17 @@ const MODES = [
     title: "Match",
     icon: LayoutGrid,
     iconColor: "text-streak",
+  },
+  // Phase 3, second slice: free writing with optional AI feedback (Gemini).
+  // Unlike the article/case drills, cloze and Satzbau, this needs nothing
+  // from the card content beyond a term to suggest — no gender, no example
+  // sentence — so every set gets it, verb sets included, same as the base
+  // four above rather than a showX-gated tile.
+  {
+    to: "/sets/$setId/write" as const,
+    title: "Write",
+    icon: PenLine,
+    iconColor: "text-primary-ink",
   },
 ];
 
