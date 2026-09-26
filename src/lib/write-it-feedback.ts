@@ -64,6 +64,8 @@ export type WriteItFeedbackLogEntry = {
   learnerSentence: string;
   correctForm?: string;
   feedback: string;
+  /** Write mode Task tab only: id from src/content/write-prompts.ts. */
+  promptId?: string;
   createdAt: number;
 };
 

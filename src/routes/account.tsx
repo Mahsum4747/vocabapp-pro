@@ -1,3 +1,4 @@
+import { getPromptById, promptTitle } from "@/content/write-prompts";
 import { createFileRoute } from "@tanstack/react-router";
 import { format } from "date-fns";
 import { Award, Flame, Layers, Target, Zap } from "lucide-react";
@@ -427,7 +428,12 @@ function AiFeedbackTab() {
             {group.entries.map((entry) => (
               <div key={entry.id} className="rounded-card bg-surface p-4 shadow-[var(--elevation-1)]">
                 <p className="font-medium">
-                  {entry.term ?? <span className="text-muted italic">Free writing</span>}
+                  {entry.term ??
+                    (entry.promptId && getPromptById(entry.promptId) ? (
+                      promptTitle(getPromptById(entry.promptId)!)
+                    ) : (
+                      <span className="text-muted italic">Free writing</span>
+                    ))}
                 </p>
                 <p className="mt-1 text-sm text-muted">&ldquo;{entry.learnerSentence}&rdquo;</p>
                 <p className="mt-2 text-xs font-medium tracking-wide text-muted uppercase">

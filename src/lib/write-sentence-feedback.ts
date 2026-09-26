@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { getPromptById } from "@/content/write-prompts";
 import { authMiddleware } from "./auth/middleware";
 
 /**
@@ -24,7 +25,9 @@ import { authMiddleware } from "./auth/middleware";
 const inputSchema = z.object({
   /** The learner's free-form sentence(s) — the textarea's own maxLength
    *  (200) is the same practical cap enforced here. */
-  learnerSentence: z.string().trim().min(1).max(200),
+  learnerSentence: z.string().trim().min(1).max(2000),
+  /** Static task-bank id (src/content/write-prompts.ts). Present only in the Task tab. */
+  promptId: z.string().trim().min(1).max(100).optional(),
   setId: z.string().trim().min(1).max(200),
   setTitle: z.string().trim().min(1).max(200),
   /** `profile.explanationLanguage`, forwarded as-is — same convention as
@@ -33,7 +36,7 @@ const inputSchema = z.object({
 });
 
 const feedbackSchema = z.object({
-  feedback: z.string().trim().min(1).max(800),
+  feedback: z.string().trim().min(1).max(1600),
 });
 
 // Same model as every other Gemini call site in this codebase.
@@ -56,14 +59,35 @@ const RESPONSE_SCHEMA = {
 
 export function buildPrompt(data: z.infer<typeof inputSchema>): string {
   const responseLanguage = data.explanationLanguage === "tr" ? "Turkish" : "English";
+  const task = data.promptId ? getPromptById(data.promptId) : undefined;
+  if (!task) {
+    return [
+      `A German learner (level A1-A2) wrote this sentence: '${data.learnerSentence}'.`,
+      "Point out any errors (articles, case, word order, spelling) in one short paragraph.",
+      "If there are corrections, show the corrected sentence.",
+      "If the sentence is already correct, say so briefly and encourage them.",
+      "Keep it concise — this is for a beginner, don't overwhelm them.",
+      `Respond in ${responseLanguage}.`,
+    ].join(" ");
+  }
+  const strictness =
+    task.level === "A1" || task.level === "A2"
+      ? "Level-appropriate strictness: judge content and basic grammar only; don't nitpick style."
+      : "Level-appropriate strictness: also check that greeting and closing formulas match the register, and that simple connectors (weil, deshalb, dass) are used correctly.";
   return [
-    `A German learner (level A1-A2) wrote this sentence: '${data.learnerSentence}'.`,
-    "Point out any errors (articles, case, word order, spelling) in one short paragraph.",
-    "If there are corrections, show the corrected sentence.",
-    "If the sentence is already correct, say so briefly and encourage them.",
-    "Keep it concise — this is for a beginner, don't overwhelm them.",
+    `A German learner (level ${task.level}) wrote a ${task.taskType} for this writing task.`,
+    `Task: ${task.situationDe}`,
+    `Required register: ${task.register}.`,
+    "Content points (Leitpunkte):",
+    ...task.leitpunkte.map((l, i) => `${i + 1}. ${l}`),
+    `Learner's text: ${JSON.stringify(data.learnerSentence)}`,
+    "Give one compact review: (1) for each numbered Leitpunkt say whether it is addressed (yes/no) with a one-line reason; " +
+      `(2) check the register is used consistently (${task.register}; a mix of du and Sie is an error to point out); ` +
+      "(3) the main language errors (articles, case, word order, spelling) with corrected examples.",
+    strictness,
+    "Be warm and concise, don't give a full grammar lesson.",
     `Respond in ${responseLanguage}.`,
-  ].join(" ");
+  ].join("\n");
 }
 
 /**
@@ -150,6 +174,7 @@ export const getWriteSentenceFeedback = createServerFn({ method: "POST" })
         setId: data.setId,
         setTitle: data.setTitle,
         learnerSentence: data.learnerSentence,
+        ...(data.promptId ? { promptId: data.promptId } : {}),
         feedback: parsed.feedback,
         createdAt: Date.now(),
       });

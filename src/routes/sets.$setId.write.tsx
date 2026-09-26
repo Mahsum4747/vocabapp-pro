@@ -1,5 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
+import {
+  AVAILABLE_LEVELS,
+  CEFR_LEVELS,
+  countWords,
+  pickPrompt,
+  promptGloss,
+  type CefrLevel,
+} from "@/content/write-prompts";
 import { AppShell } from "@/components/app-shell";
 import { EmptyState } from "@/components/empty-state";
 import { StudySessionShell } from "@/components/study-session-shell";
@@ -17,6 +25,10 @@ export const Route = createFileRoute("/sets/$setId/write")({
 
 const SUGGESTED_WORD_COUNT = 3;
 const MAX_SENTENCE_LENGTH = 200;
+/** Task tab hard stop: maxWords + 20%. */
+const HARD_STOP_FACTOR = 1.2;
+
+type WriteTab = "words" | "task";
 
 type AiFeedbackState =
   | { status: "idle" }
@@ -61,16 +73,44 @@ function WritePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [studySet?.id]);
 
+  const [tab, setTab] = useState<WriteTab>("words");
+  const [level, setLevel] = useState<CefrLevel>("A2");
+  const [task, setTask] = useState(() => pickPrompt("A2"));
+  const [taskValue, setTaskValue] = useState("");
   const [value, setValue] = useState("");
   const [aiFeedback, setAiFeedback] = useState<AiFeedbackState>({ status: "idle" });
 
+  function changeTab(next: WriteTab) {
+    setTab(next);
+    setAiFeedback({ status: "idle" });
+  }
+
+  function changeLevel(next: CefrLevel) {
+    if (!AVAILABLE_LEVELS.includes(next)) return;
+    setLevel(next);
+    setTask(pickPrompt(next));
+    setTaskValue("");
+    setAiFeedback({ status: "idle" });
+  }
+
+  function nextTask() {
+    setTask(pickPrompt(level, task?.id));
+    setTaskValue("");
+    setAiFeedback({ status: "idle" });
+  }
+
+  const taskWords = countWords(taskValue);
+
   async function checkSentence() {
-    if (!studySet || !value.trim()) return;
+    const text = tab === "task" ? taskValue : value;
+    if (!studySet || !text.trim()) return;
+    if (tab === "task" && (!task || taskWords < task.minWords)) return;
     setAiFeedback({ status: "loading" });
     try {
       const result = await getWriteSentenceFeedback({
         data: {
-          learnerSentence: value,
+          learnerSentence: text,
+          ...(tab === "task" && task ? { promptId: task.id } : {}),
           setId: studySet.id,
           setTitle: studySet.title,
           ...(explanationLanguage ? { explanationLanguage } : {}),
@@ -103,7 +143,7 @@ function WritePage() {
     );
   }
 
-  if (suggestedWords.length === 0) {
+  if (tab === "words" && suggestedWords.length === 0) {
     return (
       <StudySessionShell setId={setId} title={studySet.title} mode="Write" index={0} total={0}>
         <EmptyState title="No cards" description="Add cards to this set before writing." />
@@ -113,38 +153,125 @@ function WritePage() {
 
   return (
     <StudySessionShell setId={setId} title={studySet.title} mode="Write" index={1} total={1}>
-      <div className="rounded-card bg-surface p-4 shadow-[var(--elevation-1)]">
-        <p className="text-sm text-fg">
-          Write a sentence using at least one of:{" "}
-          {suggestedWords.map((word, i) => (
-            <span key={word}>
-              <span className="font-semibold">{word}</span>
-              {i < suggestedWords.length - 1 ? ", " : ""}
-            </span>
-          ))}
-          .
-        </p>
+      <div className="mb-4 flex gap-1 rounded-control bg-surface-2 p-1" role="tablist">
+        {(["words", "task"] as const).map((k) => (
+          <button
+            key={k}
+            type="button"
+            role="tab"
+            aria-selected={tab === k}
+            onClick={() => changeTab(k)}
+            className={`flex-1 rounded-control px-3 py-1.5 text-sm font-medium ${
+              tab === k ? "bg-surface text-fg shadow-[var(--elevation-1)]" : "text-muted"
+            }`}
+          >
+            {k === "words" ? "Set words" : "Task"}
+          </button>
+        ))}
       </div>
 
-      <Textarea
-        value={value}
-        onChange={(e) => {
-          setValue(e.target.value);
-          setAiFeedback({ status: "idle" });
-        }}
-        maxLength={MAX_SENTENCE_LENGTH}
-        placeholder="Write your sentence(s) here…"
-        className="mt-4 min-h-32"
-      />
-      <p className="mt-1 text-right text-xs text-subtle tabular-nums">
-        {value.length} / {MAX_SENTENCE_LENGTH}
-      </p>
+      {tab === "task" ? (
+        <>
+          <div className="flex flex-wrap gap-1.5">
+            {CEFR_LEVELS.map((l) => {
+              const available = AVAILABLE_LEVELS.includes(l);
+              return (
+                <button
+                  key={l}
+                  type="button"
+                  disabled={!available}
+                  aria-pressed={level === l}
+                  onClick={() => changeLevel(l)}
+                  className={`rounded-control px-3 py-1 text-sm ${
+                    level === l
+                      ? "bg-surface font-semibold text-fg shadow-[var(--elevation-1)]"
+                      : "bg-surface-2 text-muted"
+                  } disabled:opacity-50`}
+                >
+                  {l}
+                  {available ? "" : " · coming soon"}
+                </button>
+              );
+            })}
+          </div>
+          {task ? (
+            <div className="mt-4 rounded-card bg-surface p-4 shadow-[var(--elevation-1)]">
+              <p className="text-sm text-fg">{task.situationDe}</p>
+              <ul className="mt-2 list-disc space-y-0.5 pl-5 text-sm text-fg">
+                {task.leitpunkte.map((l) => (
+                  <li key={l}>{l}</li>
+                ))}
+              </ul>
+              <p className="mt-2 text-xs text-muted">{promptGloss(task, explanationLanguage)}</p>
+              <p className="mt-1 text-xs text-subtle">
+                {task.register === "du" ? "Register: du" : "Register: Sie"}
+              </p>
+              <Button type="button" variant="ghost" size="sm" className="mt-2" onClick={nextTask}>
+                Different task
+              </Button>
+            </div>
+          ) : null}
+          <Textarea
+            value={taskValue}
+            onChange={(e) => {
+              const next = e.target.value;
+              if (task && countWords(next) > Math.floor(task.maxWords * HARD_STOP_FACTOR)) {
+                // Allow deletions/edits, block growth past the hard stop.
+                if (next.length > taskValue.length) return;
+              }
+              setTaskValue(next);
+              setAiFeedback({ status: "idle" });
+            }}
+            placeholder="Schreiben Sie hier…"
+            className="mt-4 min-h-48"
+          />
+          {task ? (
+            <p className="mt-1 text-right text-xs text-subtle tabular-nums">
+              {taskWords} / {task.minWords}–{task.maxWords} words
+            </p>
+          ) : null}
+        </>
+      ) : null}
+
+      {tab === "words" ? (
+        <>
+          <div className="rounded-card bg-surface p-4 shadow-[var(--elevation-1)]">
+            <p className="text-sm text-fg">
+              Write a sentence using at least one of:{" "}
+              {suggestedWords.map((word, i) => (
+                <span key={word}>
+                  <span className="font-semibold">{word}</span>
+                  {i < suggestedWords.length - 1 ? ", " : ""}
+                </span>
+              ))}
+              .
+            </p>
+          </div>
+
+          <Textarea
+            value={value}
+            onChange={(e) => {
+              setValue(e.target.value);
+              setAiFeedback({ status: "idle" });
+            }}
+            maxLength={MAX_SENTENCE_LENGTH}
+            placeholder="Write your sentence(s) here…"
+            className="mt-4 min-h-32"
+          />
+          <p className="mt-1 text-right text-xs text-subtle tabular-nums">
+            {value.length} / {MAX_SENTENCE_LENGTH}
+          </p>
+        </>
+      ) : null}
 
       <Button
         type="button"
         className="mt-2 w-full"
         onClick={checkSentence}
-        disabled={!value.trim() || aiFeedback.status === "loading"}
+        disabled={
+          aiFeedback.status === "loading" ||
+          (tab === "task" ? !task || taskWords < task.minWords : !value.trim())
+        }
       >
         {t.check}
       </Button>
