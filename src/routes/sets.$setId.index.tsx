@@ -11,6 +11,7 @@ import {
   MoreHorizontal,
   MoreVertical,
   Pencil,
+  Plus,
   Search,
   Star,
   Trash2,
@@ -56,7 +57,7 @@ import { serializeSetExport } from "@/lib/parse-cards";
 import { useSet, useSetProgress, useStudyStore } from "@/lib/store";
 import { isCardActive, resolveSetLanguages } from "@/lib/types";
 import { profileFor } from "@/lib/lang/profiles";
-import type { Card, CardStatus } from "@/lib/types";
+import type { Card, CardStatus, StudySet } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/sets/$setId/")({
@@ -71,6 +72,71 @@ const SORT_OPTIONS: { value: SortMode; label: string }[] = [
   { value: "mastery", label: "Mastery: lowest first" },
   { value: "starred", label: "Starred first" },
 ];
+
+/**
+ * Shown instead of the mastery/Leitner/mode block when the viewer hasn't
+ * added this set to their own library yet — a signed-in visitor browsing
+ * someone else's public set was otherwise shown a real-looking mastery bar
+ * and Leitner boxes that were always 0/empty, and a "Start learning" grid
+ * that behaved as if this were their own set. Static content only (card
+ * count, level, a couple of example cards) plus the same "Add to my
+ * library" action PublicSetCard already offers on the Public Sets tab —
+ * not a new flow, the same one. Once added, `isOwner` on the newly copied
+ * set's own page (a different id, its own ownerId) is true and this page
+ * renders the real block instead, same as any other owned set.
+ */
+function PublicSetPreview({ studySet }: { studySet: StudySet }) {
+  const navigate = useNavigate();
+  const copyPublicSet = useStudyStore((s) => s.copyPublicSet);
+  const [copying, setCopying] = useState(false);
+  const previewCards = studySet.cards.filter(isCardActive).slice(0, 2);
+
+  async function addToLibrary() {
+    setCopying(true);
+    try {
+      const id = await copyPublicSet(studySet.id);
+      if (id) {
+        toast.success("Set added to your library.");
+        void navigate({ to: "/sets/$setId", params: { setId: id } });
+      }
+    } catch (error) {
+      if (error instanceof Error && error.message === "Unauthorized") {
+        toast.error("Sign in to add this set to your library.");
+        void navigate({ to: "/login" });
+      } else {
+        toast.error("Couldn't add this set. Try again.");
+      }
+    } finally {
+      setCopying(false);
+    }
+  }
+
+  return (
+    <div className="mt-6 rounded-card bg-surface p-4 shadow-[var(--elevation-1)]">
+      <p className="text-sm text-muted">
+        Add this set to your library to start tracking mastery and reviews.
+      </p>
+      <p className="mt-2 text-sm font-medium text-fg">
+        {studySet.cards.length} card{studySet.cards.length === 1 ? "" : "s"}
+        {studySet.folder ? ` · ${studySet.folder}` : ""}
+      </p>
+      {previewCards.length > 0 ? (
+        <ul className="mt-3 space-y-2">
+          {previewCards.map((card) => (
+            <li key={card.id} className="rounded-control bg-surface-2 px-3 py-2">
+              <p className="font-medium">{card.term}</p>
+              <p className="text-sm text-muted">{card.definition}</p>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      <Button className="mt-4 w-full sm:w-auto" onClick={addToLibrary} disabled={copying}>
+        <Plus />
+        Add to my library
+      </Button>
+    </div>
+  );
+}
 
 function sortCards(cards: Card[], mode: SortMode, progress: ProgressMap): Card[] {
   if (mode === "original") return cards;
@@ -324,65 +390,73 @@ function SetPage() {
       <LibraryProgressPanel className="mt-6" showReview={false} />
 
       {!studySet.isReference ? (
-        <>
-          <div className="mt-6 flex flex-col gap-4 rounded-card bg-surface p-4 shadow-[var(--elevation-1)] sm:flex-row sm:items-center sm:gap-6">
-            <div className="min-w-40 flex-1">
-              <div className="flex justify-between text-xs text-muted">
-                <span>Mastery</span>
-                <span className="tabular-nums">
-                  {mastery}%{notStarted > 0 ? ` · ${notStarted} not started` : ""}
-                </span>
-              </div>
-              <Progress value={mastery} tone="mastery" className="mt-1.5" />
-            </div>
-            <LeitnerBoxes
-              cards={studySet.cards}
-              progress={progress}
-              setId={studySet.id}
-              selectedBox={selectedBox}
-              onSelectBox={setSelectedBox}
-            />
-          </div>
+        <OwnershipStatus ownerId={studySet.ownerId}>
+          {(isOwner) =>
+            isOwner ? (
+              <>
+                <div className="mt-6 flex flex-col gap-4 rounded-card bg-surface p-4 shadow-[var(--elevation-1)] sm:flex-row sm:items-center sm:gap-6">
+                  <div className="min-w-40 flex-1">
+                    <div className="flex justify-between text-xs text-muted">
+                      <span>Mastery</span>
+                      <span className="tabular-nums">
+                        {mastery}%{notStarted > 0 ? ` · ${notStarted} not started` : ""}
+                      </span>
+                    </div>
+                    <Progress value={mastery} tone="mastery" className="mt-1.5" />
+                  </div>
+                  <LeitnerBoxes
+                    cards={studySet.cards}
+                    progress={progress}
+                    setId={studySet.id}
+                    selectedBox={selectedBox}
+                    onSelectBox={setSelectedBox}
+                  />
+                </div>
 
-          {studySet.cards.length >= 2 ? (
-            <ReviewCallout setId={studySet.id} summary={summary} className="mt-4" />
-          ) : null}
+                {studySet.cards.length >= 2 ? (
+                  <ReviewCallout setId={studySet.id} summary={summary} className="mt-4" />
+                ) : null}
 
-          <div className="mt-4">
-            {selectedBox !== null ? (
-              <p className="mb-2 flex items-center gap-2 text-sm text-muted">
-                Studying Box {selectedBox} only
-                <button
-                  type="button"
-                  onClick={() => setSelectedBox(null)}
-                  className="tap-target text-primary-ink underline-offset-2 hover:underline"
-                >
-                  Clear
-                </button>
-              </p>
-            ) : null}
-            <SessionLength studySet={studySet} className="mb-4" />
-            <ModeGrid
-              setId={setId}
-              box={selectedBox ?? undefined}
-              disabled={studySet.cards.length < 2}
-              showArticleDrill={hasArticleDrillCards}
-              showCloze={hasClozeCards}
-              showSatzbau={hasSatzbauCards}
-              showCaseDrill={hasArticleDrillCards}
-            />
-            {studySet.cards.length < 2 ? (
-              <p className="mt-3 text-sm text-muted">You need at least two cards to study.</p>
-            ) : null}
-            {cardsWithoutExample.length > 0 ? (
-              <p className="mt-3 text-sm text-muted">
-                {cardsWithoutExample.length} card{cardsWithoutExample.length === 1 ? " has" : "s have"} no
-                example sentence: {cardsWithoutExample.slice(0, 5).map((c) => c.term).join(", ")}
-                {cardsWithoutExample.length > 5 ? `, +${cardsWithoutExample.length - 5} more` : ""}.
-              </p>
-            ) : null}
-          </div>
-        </>
+                <div className="mt-4">
+                  {selectedBox !== null ? (
+                    <p className="mb-2 flex items-center gap-2 text-sm text-muted">
+                      Studying Box {selectedBox} only
+                      <button
+                        type="button"
+                        onClick={() => setSelectedBox(null)}
+                        className="tap-target text-primary-ink underline-offset-2 hover:underline"
+                      >
+                        Clear
+                      </button>
+                    </p>
+                  ) : null}
+                  <SessionLength studySet={studySet} className="mb-4" />
+                  <ModeGrid
+                    setId={setId}
+                    box={selectedBox ?? undefined}
+                    disabled={studySet.cards.length < 2}
+                    showArticleDrill={hasArticleDrillCards}
+                    showCloze={hasClozeCards}
+                    showSatzbau={hasSatzbauCards}
+                    showCaseDrill={hasArticleDrillCards}
+                  />
+                  {studySet.cards.length < 2 ? (
+                    <p className="mt-3 text-sm text-muted">You need at least two cards to study.</p>
+                  ) : null}
+                  {cardsWithoutExample.length > 0 ? (
+                    <p className="mt-3 text-sm text-muted">
+                      {cardsWithoutExample.length} card{cardsWithoutExample.length === 1 ? " has" : "s have"} no
+                      example sentence: {cardsWithoutExample.slice(0, 5).map((c) => c.term).join(", ")}
+                      {cardsWithoutExample.length > 5 ? `, +${cardsWithoutExample.length - 5} more` : ""}.
+                    </p>
+                  ) : null}
+                </div>
+              </>
+            ) : (
+              <PublicSetPreview studySet={studySet} />
+            )
+          }
+        </OwnershipStatus>
       ) : null}
 
       <OwnershipStatus ownerId={studySet.ownerId}>
