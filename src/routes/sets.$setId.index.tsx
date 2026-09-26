@@ -24,6 +24,7 @@ import { ModeGrid } from "@/components/mode-grid";
 import { SessionLength } from "@/components/session-length";
 import { LeitnerBoxes } from "@/components/leitner-boxes";
 import { LibraryProgressPanel } from "@/components/library-progress-panel";
+import { PullToRefresh } from "@/components/pull-to-refresh";
 import { EmptyState } from "@/components/empty-state";
 import { ExampleLine } from "@/components/example-line";
 import { ReviewCallout } from "@/components/review-status";
@@ -193,6 +194,14 @@ function SetPage() {
   const fetchSets = useStudyStore((s) => s.fetchSets);
   const fetchAllProgress = useStudyStore((s) => s.fetchAllProgress);
   const fetchProfile = useStudyStore((s) => s.fetchProfile);
+  const fetchSetById = useStudyStore((s) => s.fetchSetById);
+  const fetchSetProgress = useStudyStore((s) => s.fetchSetProgress);
+  // Pull-to-refresh re-requests just this set and its progress — not the
+  // whole-library fetches above, those are a one-time "make sure the shared
+  // panel isn't stuck loading" fallback, not this page's own data.
+  function refreshSet() {
+    return Promise.all([fetchSetById(setId), fetchSetProgress(setId)]);
+  }
   useEffect(() => {
     if (!libraryIsLoaded) {
       fetchSets();
@@ -288,390 +297,408 @@ function SetPage() {
 
   return (
     <AppShell>
-      <Link
-        to="/"
-        className="tap-target inline-flex items-center gap-1 text-sm text-muted transition-colors hover:text-fg"
-      >
-        <ArrowLeft className="size-4" />
-        Library
-      </Link>
+      <PullToRefresh onRefresh={refreshSet}>
+        <Link
+          to="/"
+          className="tap-target inline-flex items-center gap-1 text-sm text-muted transition-colors hover:text-fg"
+        >
+          <ArrowLeft className="size-4" />
+          Library
+        </Link>
 
-      <div className="mt-5 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge>{studySet.subject}</Badge>
-            <Badge tone={studySet.isPublic ? "primary" : "muted"}>
-              {studySet.isPublic ? "Public" : "Private"}
-            </Badge>
-            {studySet.isReference ? <Badge tone="accent">Reference</Badge> : null}
-            <span className="text-sm text-muted tabular-nums">{studySet.cards.length} cards</span>
-            {starred > 0 ? (
-              <span className="inline-flex items-center gap-1 text-sm text-muted">
-                <Star className="size-3.5 fill-fg" />
-                {starred}
-              </span>
+        <div className="mt-5 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge>{studySet.subject}</Badge>
+              <Badge tone={studySet.isPublic ? "primary" : "muted"}>
+                {studySet.isPublic ? "Public" : "Private"}
+              </Badge>
+              {studySet.isReference ? <Badge tone="accent">Reference</Badge> : null}
+              <span className="text-sm text-muted tabular-nums">{studySet.cards.length} cards</span>
+              {starred > 0 ? (
+                <span className="inline-flex items-center gap-1 text-sm text-muted">
+                  <Star className="size-3.5 fill-fg" />
+                  {starred}
+                </span>
+              ) : null}
+            </div>
+            <h1 className="mt-3 font-display text-4xl font-medium tracking-tight">
+              {studySet.title}
+            </h1>
+            {studySet.description ? (
+              <p className="mt-2 max-w-2xl text-muted">{studySet.description}</p>
             ) : null}
           </div>
-          <h1 className="mt-3 font-display text-4xl font-medium tracking-tight">
-            {studySet.title}
-          </h1>
-          {studySet.description ? (
-            <p className="mt-2 max-w-2xl text-muted">{studySet.description}</p>
-          ) : null}
-        </div>
-        <div className="flex items-center gap-2">
-          <OwnerGate ownerId={studySet.ownerId}>
-            <Button
-              variant="outline"
-              disabled={togglingPublic}
-              onClick={async () => {
-                setTogglingPublic(true);
-                try {
-                  await togglePublic(setId);
-                  toast.success(studySet.isPublic ? "Set made private." : "Set made public.");
-                } finally {
-                  setTogglingPublic(false);
-                }
-              }}
-            >
-              {studySet.isPublic ? <Lock /> : <Globe />}
-              {studySet.isPublic ? "Make private" : "Make public"}
-            </Button>
-            <Button asChild variant="outline">
-              <Link to="/sets/$setId/edit" params={{ setId }}>
-                <Pencil />
-                Edit
-              </Link>
-            </Button>
-          </OwnerGate>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" aria-label="More">
-                <MoreHorizontal />
+          <div className="flex items-center gap-2">
+            <OwnerGate ownerId={studySet.ownerId}>
+              <Button
+                variant="outline"
+                disabled={togglingPublic}
+                onClick={async () => {
+                  setTogglingPublic(true);
+                  try {
+                    await togglePublic(setId);
+                    toast.success(studySet.isPublic ? "Set made private." : "Set made public.");
+                  } finally {
+                    setTogglingPublic(false);
+                  }
+                }}
+              >
+                {studySet.isPublic ? <Lock /> : <Globe />}
+                {studySet.isPublic ? "Make private" : "Make public"}
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onSelect={exportJson}>
-                <Download className="size-4" />
-                Export
-              </DropdownMenuItem>
-              <OwnerGate ownerId={studySet.ownerId}>
-                {!studySet.isReference ? (
-                  <DropdownMenuItem
-                    onSelect={() => {
-                      void resetProgress(setId);
-                      toast.success("Progress reset.");
-                    }}
-                  >
-                    Reset progress
-                  </DropdownMenuItem>
-                ) : null}
-                <DropdownMenuItem className="text-danger" onSelect={() => setConfirmDelete(true)}>
-                  <Trash2 className="size-4" />
-                  Delete
+              <Button asChild variant="outline">
+                <Link to="/sets/$setId/edit" params={{ setId }}>
+                  <Pencil />
+                  Edit
+                </Link>
+              </Button>
+            </OwnerGate>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" aria-label="More">
+                  <MoreHorizontal />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onSelect={exportJson}>
+                  <Download className="size-4" />
+                  Export
                 </DropdownMenuItem>
-              </OwnerGate>
-            </DropdownMenuContent>
-          </DropdownMenu>
+                <OwnerGate ownerId={studySet.ownerId}>
+                  {!studySet.isReference ? (
+                    <DropdownMenuItem
+                      onSelect={() => {
+                        void resetProgress(setId);
+                        toast.success("Progress reset.");
+                      }}
+                    >
+                      Reset progress
+                    </DropdownMenuItem>
+                  ) : null}
+                  <DropdownMenuItem className="text-danger" onSelect={() => setConfirmDelete(true)}>
+                    <Trash2 className="size-4" />
+                    Delete
+                  </DropdownMenuItem>
+                </OwnerGate>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
-      </div>
 
-      {studySet.isPublic && studySet.shareId ? (
-        <OwnerGate ownerId={studySet.ownerId}>
-          <ShareLink shareId={studySet.shareId} />
-        </OwnerGate>
-      ) : null}
+        {studySet.isPublic && studySet.shareId ? (
+          <OwnerGate ownerId={studySet.ownerId}>
+            <ShareLink shareId={studySet.shareId} />
+          </OwnerGate>
+        ) : null}
 
-      {/* Same account-wide streak/goal/XP/weak-words block as Home and
+        {/* Same account-wide streak/goal/XP/weak-words block as Home and
           Account, directly under the header here too. `showReview={false}`
           because this page already has its own per-set `ReviewCallout`
           below — showing the account-wide due count again right above it
           would just repeat the same kind of prompt at a different scope. */}
-      <LibraryProgressPanel className="mt-6" showReview={false} />
+        <LibraryProgressPanel className="mt-6" showReview={false} />
 
-      {!studySet.isReference ? (
-        <OwnershipStatus ownerId={studySet.ownerId}>
-          {(isOwner) =>
-            isOwner ? (
-              <>
-                <div className="mt-6 flex flex-col gap-4 rounded-card bg-surface p-4 shadow-[var(--elevation-1)] sm:flex-row sm:items-center sm:gap-6">
-                  <div className="min-w-40 flex-1">
-                    <div className="flex justify-between text-xs text-muted">
-                      <span>Mastery</span>
-                      <span className="tabular-nums">
-                        {mastery}%{notStarted > 0 ? ` · ${notStarted} not started` : ""}
-                      </span>
+        {!studySet.isReference ? (
+          <OwnershipStatus ownerId={studySet.ownerId}>
+            {(isOwner) =>
+              isOwner ? (
+                <>
+                  <div className="mt-6 flex flex-col gap-4 rounded-card bg-surface p-4 shadow-[var(--elevation-1)] sm:flex-row sm:items-center sm:gap-6">
+                    <div className="min-w-40 flex-1">
+                      <div className="flex justify-between text-xs text-muted">
+                        <span>Mastery</span>
+                        <span className="tabular-nums">
+                          {mastery}%{notStarted > 0 ? ` · ${notStarted} not started` : ""}
+                        </span>
+                      </div>
+                      <Progress value={mastery} tone="mastery" className="mt-1.5" />
                     </div>
-                    <Progress value={mastery} tone="mastery" className="mt-1.5" />
+                    <LeitnerBoxes
+                      cards={studySet.cards}
+                      progress={progress}
+                      setId={studySet.id}
+                      selectedBox={selectedBox}
+                      onSelectBox={setSelectedBox}
+                    />
                   </div>
-                  <LeitnerBoxes
-                    cards={studySet.cards}
-                    progress={progress}
-                    setId={studySet.id}
-                    selectedBox={selectedBox}
-                    onSelectBox={setSelectedBox}
-                  />
-                </div>
 
-                {studySet.cards.length >= 2 ? (
-                  <ReviewCallout setId={studySet.id} summary={summary} className="mt-4" />
-                ) : null}
+                  {studySet.cards.length >= 2 ? (
+                    <ReviewCallout setId={studySet.id} summary={summary} className="mt-4" />
+                  ) : null}
 
-                <div className="mt-4">
-                  {selectedBox !== null ? (
-                    <p className="mb-2 flex items-center gap-2 text-sm text-muted">
-                      Studying Box {selectedBox} only
-                      <button
-                        type="button"
-                        onClick={() => setSelectedBox(null)}
-                        className="tap-target text-primary-ink underline-offset-2 hover:underline"
-                      >
-                        Clear
-                      </button>
-                    </p>
-                  ) : null}
-                  <SessionLength studySet={studySet} className="mb-4" />
-                  <ModeGrid
-                    setId={setId}
-                    box={selectedBox ?? undefined}
-                    disabled={studySet.cards.length < 2}
-                    showArticleDrill={hasArticleDrillCards}
-                    showCloze={hasClozeCards}
-                    showSatzbau={hasSatzbauCards}
-                    showCaseDrill={hasArticleDrillCards}
-                  />
-                  {studySet.cards.length < 2 ? (
-                    <p className="mt-3 text-sm text-muted">You need at least two cards to study.</p>
-                  ) : null}
-                  {cardsWithoutExample.length > 0 ? (
-                    <p className="mt-3 text-sm text-muted">
-                      {cardsWithoutExample.length} card{cardsWithoutExample.length === 1 ? " has" : "s have"} no
-                      example sentence: {cardsWithoutExample.slice(0, 5).map((c) => c.term).join(", ")}
-                      {cardsWithoutExample.length > 5 ? `, +${cardsWithoutExample.length - 5} more` : ""}.
-                    </p>
-                  ) : null}
-                </div>
-              </>
-            ) : (
-              <PublicSetPreview studySet={studySet} />
-            )
-          }
-        </OwnershipStatus>
-      ) : null}
+                  <div className="mt-4">
+                    {selectedBox !== null ? (
+                      <p className="mb-2 flex items-center gap-2 text-sm text-muted">
+                        Studying Box {selectedBox} only
+                        <button
+                          type="button"
+                          onClick={() => setSelectedBox(null)}
+                          className="tap-target text-primary-ink underline-offset-2 hover:underline"
+                        >
+                          Clear
+                        </button>
+                      </p>
+                    ) : null}
+                    <SessionLength studySet={studySet} className="mb-4" />
+                    <ModeGrid
+                      setId={setId}
+                      box={selectedBox ?? undefined}
+                      disabled={studySet.cards.length < 2}
+                      showArticleDrill={hasArticleDrillCards}
+                      showCloze={hasClozeCards}
+                      showSatzbau={hasSatzbauCards}
+                      showCaseDrill={hasArticleDrillCards}
+                    />
+                    {studySet.cards.length < 2 ? (
+                      <p className="mt-3 text-sm text-muted">
+                        You need at least two cards to study.
+                      </p>
+                    ) : null}
+                    {cardsWithoutExample.length > 0 ? (
+                      <p className="mt-3 text-sm text-muted">
+                        {cardsWithoutExample.length} card
+                        {cardsWithoutExample.length === 1 ? " has" : "s have"} no example sentence:{" "}
+                        {cardsWithoutExample
+                          .slice(0, 5)
+                          .map((c) => c.term)
+                          .join(", ")}
+                        {cardsWithoutExample.length > 5
+                          ? `, +${cardsWithoutExample.length - 5} more`
+                          : ""}
+                        .
+                      </p>
+                    ) : null}
+                  </div>
+                </>
+              ) : (
+                <PublicSetPreview studySet={studySet} />
+              )
+            }
+          </OwnershipStatus>
+        ) : null}
 
-      <OwnershipStatus ownerId={studySet.ownerId}>
-        {(isOwner) => (
-          <>
-            <div className="mt-8 mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-center gap-2">
-                <button type="button" className="-m-2.5 p-2.5" onClick={() => switchView("active")}>
-                  <Badge tone={cardView === "active" ? "primary" : "muted"}>Cards</Badge>
-                </button>
-                {isOwner ? (
+        <OwnershipStatus ownerId={studySet.ownerId}>
+          {(isOwner) => (
+            <>
+              <div className="mt-8 mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-2">
                   <button
                     type="button"
                     className="-m-2.5 p-2.5"
-                    onClick={() => switchView("archived")}
+                    onClick={() => switchView("active")}
                   >
-                    <Badge tone={cardView === "archived" ? "primary" : "muted"}>
-                      Archived{archivedCount > 0 ? ` (${archivedCount})` : ""}
-                    </Badge>
+                    <Badge tone={cardView === "active" ? "primary" : "muted"}>Cards</Badge>
                   </button>
-                ) : null}
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="relative w-full sm:w-56">
-                  <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-subtle" />
-                  <Input
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    placeholder="Search cards"
-                    className="h-9 pl-9 text-sm pointer-coarse:h-11"
-                    aria-label="Search cards"
-                  />
-                </div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm">
-                      <ArrowUpDown className="size-4" />
-                      Sort
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    {SORT_OPTIONS.map((option) => (
-                      <DropdownMenuItem
-                        key={option.value}
-                        onSelect={() => setSortMode(option.value)}
-                        className={
-                          option.value === sortMode ? "bg-surface-2 font-medium" : undefined
-                        }
-                      >
-                        {option.label}
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </div>
-
-            {visibleCards.length > 0 ? (
-              <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                <div className="flex items-center gap-3 text-sm">
-                  <button
-                    type="button"
-                    className="-m-3 p-3 text-muted underline-offset-2 hover:text-fg hover:underline"
-                    onClick={selectAll}
-                  >
-                    Select all
-                  </button>
-                  {selectedIds.size > 0 ? (
+                  {isOwner ? (
                     <button
                       type="button"
-                      className="-m-3 p-3 text-muted underline-offset-2 hover:text-fg hover:underline"
-                      onClick={clearSelection}
+                      className="-m-2.5 p-2.5"
+                      onClick={() => switchView("archived")}
                     >
-                      Clear selection
+                      <Badge tone={cardView === "archived" ? "primary" : "muted"}>
+                        Archived{archivedCount > 0 ? ` (${archivedCount})` : ""}
+                      </Badge>
                     </button>
                   ) : null}
                 </div>
-                {selectedIds.size > 0 ? (
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-xs text-muted tabular-nums">
-                      {selectedIds.size} card{selectedIds.size === 1 ? "" : "s"} selected
-                    </span>
-                    <Button size="sm" variant="outline" onClick={() => setTransferMode("copy")}>
-                      <Copy className="size-4" />
-                      {isOwner ? "Copy to set…" : "Copy to my set…"}
-                    </Button>
-                    {isOwner ? (
-                      <Button size="sm" variant="outline" onClick={() => setTransferMode("move")}>
-                        <ArrowRightLeft className="size-4" />
-                        Move to set…
-                      </Button>
-                    ) : null}
+                <div className="flex items-center gap-2">
+                  <div className="relative w-full sm:w-56">
+                    <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-subtle" />
+                    <Input
+                      value={query}
+                      onChange={(e) => setQuery(e.target.value)}
+                      placeholder="Search cards"
+                      className="h-9 pl-9 text-sm pointer-coarse:h-11"
+                      aria-label="Search cards"
+                    />
                   </div>
-                ) : null}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="sm">
+                        <ArrowUpDown className="size-4" />
+                        Sort
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      {SORT_OPTIONS.map((option) => (
+                        <DropdownMenuItem
+                          key={option.value}
+                          onSelect={() => setSortMode(option.value)}
+                          className={
+                            option.value === sortMode ? "bg-surface-2 font-medium" : undefined
+                          }
+                        >
+                          {option.label}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
               </div>
-            ) : null}
 
-            {visibleCards.length === 0 ? (
-              <div className="rounded-card bg-surface px-4 py-8 text-center text-sm text-muted shadow-[var(--elevation-1)]">
-                {cardView === "archived" ? "No archived cards." : "No cards match your search."}
-              </div>
-            ) : (
-              <ul className="divide-y divide-border overflow-hidden rounded-card bg-surface shadow-[var(--elevation-1)]">
-                {visibleCards.map((card) => {
-                  const isExcluded = card.status === "excluded";
-                  return (
-                    <li
-                      key={card.id}
-                      className={cn(
-                        "flex items-start gap-3 px-4 py-3 md:px-5",
-                        studySet.isReference && "py-4 md:py-5",
-                        isExcluded && "opacity-50",
-                      )}
+              {visibleCards.length > 0 ? (
+                <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-3 text-sm">
+                    <button
+                      type="button"
+                      className="-m-3 p-3 text-muted underline-offset-2 hover:text-fg hover:underline"
+                      onClick={selectAll}
                     >
-                      {/* On touch the label grows the hit area to 44px; the negative
-                          margins cancel the padding, so the layout does not move. */}
-                      <label className="mt-3.5 shrink-0 pointer-coarse:-mx-3.5 pointer-coarse:-mb-3.5 pointer-coarse:mt-0 pointer-coarse:p-3.5">
-                        <input
-                          type="checkbox"
-                          checked={selectedIds.has(card.id)}
-                          onChange={() => toggleSelect(card.id)}
-                          aria-label={`Select ${card.term || "card"}`}
-                          className="block size-4 rounded border-border accent-primary-ink"
-                        />
-                      </label>
+                      Select all
+                    </button>
+                    {selectedIds.size > 0 ? (
                       <button
                         type="button"
-                        onClick={() => toggleStar(setId, card.id)}
-                        className="mt-0.5 grid size-11 shrink-0 place-items-center rounded-control text-muted hover:bg-surface-2 hover:text-fg"
-                        aria-label={card.starred ? "Unstar" : "Star"}
+                        className="-m-3 p-3 text-muted underline-offset-2 hover:text-fg hover:underline"
+                        onClick={clearSelection}
                       >
-                        <Star className={card.starred ? "size-4 fill-fg text-fg" : "size-4"} />
+                        Clear selection
                       </button>
-                      <div
+                    ) : null}
+                  </div>
+                  {selectedIds.size > 0 ? (
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-xs text-muted tabular-nums">
+                        {selectedIds.size} card{selectedIds.size === 1 ? "" : "s"} selected
+                      </span>
+                      <Button size="sm" variant="outline" onClick={() => setTransferMode("copy")}>
+                        <Copy className="size-4" />
+                        {isOwner ? "Copy to set…" : "Copy to my set…"}
+                      </Button>
+                      {isOwner ? (
+                        <Button size="sm" variant="outline" onClick={() => setTransferMode("move")}>
+                          <ArrowRightLeft className="size-4" />
+                          Move to set…
+                        </Button>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+
+              {visibleCards.length === 0 ? (
+                <div className="rounded-card bg-surface px-4 py-8 text-center text-sm text-muted shadow-[var(--elevation-1)]">
+                  {cardView === "archived" ? "No archived cards." : "No cards match your search."}
+                </div>
+              ) : (
+                <ul className="divide-y divide-border overflow-hidden rounded-card bg-surface shadow-[var(--elevation-1)]">
+                  {visibleCards.map((card) => {
+                    const isExcluded = card.status === "excluded";
+                    return (
+                      <li
+                        key={card.id}
                         className={cn(
-                          "grid min-w-0 flex-1 gap-1 md:grid-cols-2",
-                          studySet.isReference ? "md:gap-8" : "md:gap-6",
+                          "flex items-start gap-3 px-4 py-3 md:px-5",
+                          studySet.isReference && "py-4 md:py-5",
+                          isExcluded && "opacity-50",
                         )}
                       >
-                        <div className="flex min-w-0 items-center gap-1">
-                          <p
-                            className={cn(
-                              "min-w-0 break-words font-medium",
-                              studySet.isReference && "text-base md:text-lg",
-                            )}
-                          >
-                            <ArticleizedTerm
-                              term={card.term}
-                              enrichment={card.enrichment}
-                              profile={termProfile}
-                            />
-                          </p>
-                          <SpeakButton text={card.term} language={setLanguages.term ?? studySet.termLanguage} />
-                          {isExcluded ? (
-                            <span className="shrink-0 rounded-full bg-surface-2 px-1.5 py-0.5 text-2xs font-medium tracking-wide text-muted uppercase">
-                              Excluded
-                            </span>
-                          ) : null}
-                        </div>
-                        <div className="min-w-0 space-y-1">
-                          <p className="text-sm whitespace-pre-line break-words text-muted md:text-base">
-                            {card.definition}
-                          </p>
-                          <ExampleLine
-                            example={card.example}
-                            termLanguage={setLanguages.term ?? studySet.termLanguage}
+                        {/* On touch the label grows the hit area to 44px; the negative
+                          margins cancel the padding, so the layout does not move. */}
+                        <label className="mt-3.5 shrink-0 pointer-coarse:-mx-3.5 pointer-coarse:-mb-3.5 pointer-coarse:mt-0 pointer-coarse:p-3.5">
+                          <input
+                            type="checkbox"
+                            checked={selectedIds.has(card.id)}
+                            onChange={() => toggleSelect(card.id)}
+                            aria-label={`Select ${card.term || "card"}`}
+                            className="block size-4 rounded border-border accent-primary-ink"
                           />
-                        </div>
-                      </div>
-                      {isOwner ? (
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon-sm"
-                              aria-label="Card status"
-                              className="mt-0.5 shrink-0"
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => toggleStar(setId, card.id)}
+                          className="mt-0.5 grid size-11 shrink-0 place-items-center rounded-control text-muted hover:bg-surface-2 hover:text-fg"
+                          aria-label={card.starred ? "Unstar" : "Star"}
+                        >
+                          <Star className={card.starred ? "size-4 fill-fg text-fg" : "size-4"} />
+                        </button>
+                        <div
+                          className={cn(
+                            "grid min-w-0 flex-1 gap-1 md:grid-cols-2",
+                            studySet.isReference ? "md:gap-8" : "md:gap-6",
+                          )}
+                        >
+                          <div className="flex min-w-0 items-center gap-1">
+                            <p
+                              className={cn(
+                                "min-w-0 break-words font-medium",
+                                studySet.isReference && "text-base md:text-lg",
+                              )}
                             >
-                              <MoreVertical className="size-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            {(
-                              [
-                                { value: "active", label: "Active" },
-                                { value: "excluded", label: "Exclude from study" },
-                                { value: "archived", label: "Archive" },
-                              ] satisfies { value: CardStatus; label: string }[]
-                            ).map((option) => {
-                              const current = card.status ?? "active";
-                              return (
-                                <DropdownMenuItem
-                                  key={option.value}
-                                  onSelect={() => setCardStatus(setId, card.id, option.value)}
-                                  className={
-                                    current === option.value
-                                      ? "bg-surface-2 font-medium"
-                                      : undefined
-                                  }
-                                >
-                                  {option.label}
-                                </DropdownMenuItem>
-                              );
-                            })}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      ) : null}
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </>
-        )}
-      </OwnershipStatus>
+                              <ArticleizedTerm
+                                term={card.term}
+                                enrichment={card.enrichment}
+                                profile={termProfile}
+                              />
+                            </p>
+                            <SpeakButton
+                              text={card.term}
+                              language={setLanguages.term ?? studySet.termLanguage}
+                            />
+                            {isExcluded ? (
+                              <span className="shrink-0 rounded-full bg-surface-2 px-1.5 py-0.5 text-2xs font-medium tracking-wide text-muted uppercase">
+                                Excluded
+                              </span>
+                            ) : null}
+                          </div>
+                          <div className="min-w-0 space-y-1">
+                            <p className="text-sm whitespace-pre-line break-words text-muted md:text-base">
+                              {card.definition}
+                            </p>
+                            <ExampleLine
+                              example={card.example}
+                              termLanguage={setLanguages.term ?? studySet.termLanguage}
+                            />
+                          </div>
+                        </div>
+                        {isOwner ? (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon-sm"
+                                aria-label="Card status"
+                                className="mt-0.5 shrink-0"
+                              >
+                                <MoreVertical className="size-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              {(
+                                [
+                                  { value: "active", label: "Active" },
+                                  { value: "excluded", label: "Exclude from study" },
+                                  { value: "archived", label: "Archive" },
+                                ] satisfies { value: CardStatus; label: string }[]
+                              ).map((option) => {
+                                const current = card.status ?? "active";
+                                return (
+                                  <DropdownMenuItem
+                                    key={option.value}
+                                    onSelect={() => setCardStatus(setId, card.id, option.value)}
+                                    className={
+                                      current === option.value
+                                        ? "bg-surface-2 font-medium"
+                                        : undefined
+                                    }
+                                  >
+                                    {option.label}
+                                  </DropdownMenuItem>
+                                );
+                              })}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        ) : null}
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </>
+          )}
+        </OwnershipStatus>
+      </PullToRefresh>
 
       {transferMode ? (
         <TransferCardsDialog
