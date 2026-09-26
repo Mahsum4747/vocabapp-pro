@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { getWriteItFeedback } from "@/lib/write-it-feedback";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { writeItStrings } from "./write-it-tr";
@@ -57,9 +58,16 @@ function normalize(value: string): string {
  * design, not an oversight — see this component's own call sites for the
  * `key` that resets it per card.
  */
+type AiFeedbackState =
+  | { status: "idle" }
+  | { status: "loading" }
+  | { status: "ready"; text: string }
+  | { status: "error"; error: string };
+
 export function WriteItStep({ correctForm, term, caseHint, explanationLanguage }: WriteItStepProps) {
   const [value, setValue] = useState("");
   const [checked, setChecked] = useState(false);
+  const [aiFeedback, setAiFeedback] = useState<AiFeedbackState>({ status: "idle" });
 
   const phrase = `${correctForm} ${term}`;
   const usesForm = normalize(value).includes(normalize(phrase));
@@ -71,6 +79,28 @@ export function WriteItStep({ correctForm, term, caseHint, explanationLanguage }
   const example = EXAMPLE_TEMPLATE[caseHint](phrase);
   const t = writeItStrings(explanationLanguage);
   const instruction = t.instruction(phrase);
+
+  async function requestAiFeedback() {
+    setAiFeedback({ status: "loading" });
+    try {
+      const result = await getWriteItFeedback({
+        data: {
+          term,
+          correctForm,
+          caseHint,
+          learnerSentence: value,
+          ...(explanationLanguage ? { explanationLanguage } : {}),
+        },
+      });
+      if (!result.ok) {
+        setAiFeedback({ status: "error", error: result.error });
+        return;
+      }
+      setAiFeedback({ status: "ready", text: result.feedback });
+    } catch {
+      setAiFeedback({ status: "error", error: t.aiFeedbackError });
+    }
+  }
 
   return (
     <div className="mt-4 rounded-card bg-surface-2 p-4">
@@ -87,6 +117,7 @@ export function WriteItStep({ correctForm, term, caseHint, explanationLanguage }
           onChange={(e) => {
             setValue(e.target.value);
             setChecked(false);
+            setAiFeedback({ status: "idle" });
           }}
           onKeyDown={(e) => {
             if (e.key === "Enter" && value.trim()) {
@@ -105,6 +136,44 @@ export function WriteItStep({ correctForm, term, caseHint, explanationLanguage }
         <p className={`mt-2 text-sm ${usesForm ? "text-success" : "text-muted"}`}>
           {usesForm ? t.correct : t.incorrect(phrase)}
         </p>
+      ) : null}
+      {/* Always available once something's been checked — right or wrong,
+          a learner may still want the extra explanation. Fully separate
+          from the rule-based result above: its own budget-gated Gemini
+          call, its own visually distinct block, never blocking or altering
+          the Correct/Almost verdict. */}
+      {checked ? (
+        <div className="mt-3 border-t border-border pt-3">
+          {aiFeedback.status === "idle" ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={requestAiFeedback}
+            >
+              {t.aiFeedbackButton}
+            </Button>
+          ) : null}
+          {aiFeedback.status === "loading" ? (
+            <p className="text-sm text-muted">{t.aiFeedbackLoading}</p>
+          ) : null}
+          {aiFeedback.status === "ready" ? (
+            <div className="rounded-control bg-surface px-3 py-2">
+              <p className="text-xs font-medium tracking-wide text-muted uppercase">
+                {t.aiFeedbackLabel}
+              </p>
+              <p className="mt-1 text-sm text-fg">{aiFeedback.text}</p>
+            </div>
+          ) : null}
+          {aiFeedback.status === "error" ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-sm text-muted">{aiFeedback.error}</p>
+              <Button type="button" variant="ghost" size="sm" onClick={requestAiFeedback}>
+                {t.aiFeedbackButton}
+              </Button>
+            </div>
+          ) : null}
+        </div>
       ) : null}
     </div>
   );

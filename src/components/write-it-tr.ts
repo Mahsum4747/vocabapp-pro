@@ -19,6 +19,12 @@ type WriteItStrings = {
   check: string;
   correct: string;
   incorrect: (phrase: string) => string;
+  /** The optional review-time Gemini step, separate from the rule-based
+   *  Correct/Almost result above — same "opsiyonel" convention as `label`. */
+  aiFeedbackLabel: string;
+  aiFeedbackButton: string;
+  aiFeedbackLoading: string;
+  aiFeedbackError: string;
 };
 
 const EN: WriteItStrings = {
@@ -28,6 +34,10 @@ const EN: WriteItStrings = {
   check: "Check",
   correct: "Correct — that's the right form.",
   incorrect: (phrase) => `Almost — the form here is "${phrase}".`,
+  aiFeedbackLabel: "AI feedback",
+  aiFeedbackButton: "Get AI feedback",
+  aiFeedbackLoading: "Getting feedback…",
+  aiFeedbackError: "Couldn't get feedback right now — try again.",
 };
 
 const TR: WriteItStrings = {
@@ -37,6 +47,10 @@ const TR: WriteItStrings = {
   check: "Kontrol et",
   correct: "Doğru — doğru hâl bu.",
   incorrect: (phrase) => `Neredeyse — doğru hâl: "${phrase}".`,
+  aiFeedbackLabel: "AI geri bildirimi",
+  aiFeedbackButton: "AI geri bildirimi al",
+  aiFeedbackLoading: "Geri bildirim alınıyor…",
+  aiFeedbackError: "Şu anda geri bildirim alınamadı — tekrar dene.",
 };
 
 export function writeItStrings(explanationLanguage: string | null | undefined): WriteItStrings {
