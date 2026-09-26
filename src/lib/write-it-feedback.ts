@@ -13,11 +13,14 @@ import type { WriteItCase } from "@/components/write-it-step";
  *
  * Not cached: unlike suggest-card.ts/example-suggestions.ts, the input here
  * is a free-text sentence a learner just typed, so there's no meaningful
- * cache key that would ever hit twice. Every click spends one aiActionsToday
- * action, same counter/message as the rest of P1.6 — no new budget system.
+ * cache key that would ever hit twice. Every click spends one action from
+ * the shared project-wide AI pool (ai-budget.ts/ai-budget.server.ts) — no
+ * per-user cap, no new budget system.
  *
- * The result is never persisted (no Firestore write of any kind) — purely a
- * transient response the client holds in local state until the page changes.
+ * The generated feedback is logged (see `getWriteItFeedback`'s own handler
+ * below) so a learner can look it back up later from Account; the sentence
+ * and rule-based verdict that triggered it stay transient either way (see
+ * write-it-step.tsx).
  */
 
 const inputSchema = z.object({
@@ -111,7 +114,7 @@ export const getWriteItFeedback = createServerFn({ method: "POST" })
       return { ok: false as const, error: "AI feedback isn't available in this environment." };
     }
 
-    const budget = await (await import("./ai-budget.server")).spendAiAction(context.userId, "assist");
+    const budget = await (await import("./ai-budget.server")).spendAiAction("assist");
     if (!budget.ok) return { ok: false as const, error: budget.error };
 
     let res: Response;

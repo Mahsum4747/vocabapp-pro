@@ -112,7 +112,7 @@ function buildPrompt(data: z.infer<typeof inputSchema>): string {
 export const suggestCardContent = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
   .validator((input: unknown) => inputSchema.parse(input))
-  .handler(async ({ context, data }) => {
+  .handler(async ({ data }) => {
     const { getAdminFirestore } = await import("./firebase-admin.server");
     const cacheKey = await cacheKeyFor(data);
     const db = getAdminFirestore();
@@ -136,7 +136,7 @@ export const suggestCardContent = createServerFn({ method: "POST" })
       return { ok: false as const, error: "AI suggestions aren't available in this environment." };
     }
 
-    const budget = await (await import("./ai-budget.server")).spendAiAction(context.userId, "assist");
+    const budget = await (await import("./ai-budget.server")).spendAiAction("assist");
     if (!budget.ok) return { ok: false as const, error: budget.error };
 
     let res: Response;
