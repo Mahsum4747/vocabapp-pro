@@ -426,7 +426,9 @@ function AiFeedbackTab() {
           <div className="mt-2 space-y-2">
             {group.entries.map((entry) => (
               <div key={entry.id} className="rounded-card bg-surface p-4 shadow-[var(--elevation-1)]">
-                <p className="font-medium">{entry.term}</p>
+                <p className="font-medium">
+                  {entry.term ?? <span className="text-muted italic">Free writing</span>}
+                </p>
                 <p className="mt-1 text-sm text-muted">&ldquo;{entry.learnerSentence}&rdquo;</p>
                 <p className="mt-2 text-xs font-medium tracking-wide text-muted uppercase">
                   AI feedback

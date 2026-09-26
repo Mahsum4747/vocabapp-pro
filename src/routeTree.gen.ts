@@ -27,6 +27,7 @@ import { Route as SetsSetIdLearnRouteImport } from './routes/sets.$setId.learn'
 import { Route as SetsSetIdMatchRouteImport } from './routes/sets.$setId.match'
 import { Route as SetsSetIdSatzbauRouteImport } from './routes/sets.$setId.satzbau'
 import { Route as SetsSetIdTestRouteImport } from './routes/sets.$setId.test'
+import { Route as SetsSetIdWriteRouteImport } from './routes/sets.$setId.write'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -118,6 +119,11 @@ const SetsSetIdTestRoute = SetsSetIdTestRouteImport.update({
   path: '/test',
   getParentRoute: () => SetsSetIdRoute,
 } as any)
+const SetsSetIdWriteRoute = SetsSetIdWriteRouteImport.update({
+  id: '/write',
+  path: '/write',
+  getParentRoute: () => SetsSetIdRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -137,6 +143,7 @@ export interface FileRoutesByFullPath {
   '/sets/$setId/match': typeof SetsSetIdMatchRoute
   '/sets/$setId/satzbau': typeof SetsSetIdSatzbauRoute
   '/sets/$setId/test': typeof SetsSetIdTestRoute
+  '/sets/$setId/write': typeof SetsSetIdWriteRoute
   '/sets/$setId/': typeof SetsSetIdIndexRoute
 }
 export interface FileRoutesByTo {
@@ -156,6 +163,7 @@ export interface FileRoutesByTo {
   '/sets/$setId/match': typeof SetsSetIdMatchRoute
   '/sets/$setId/satzbau': typeof SetsSetIdSatzbauRoute
   '/sets/$setId/test': typeof SetsSetIdTestRoute
+  '/sets/$setId/write': typeof SetsSetIdWriteRoute
   '/sets/$setId': typeof SetsSetIdIndexRoute
 }
 export interface FileRoutesById {
@@ -177,6 +185,7 @@ export interface FileRoutesById {
   '/sets/$setId/match': typeof SetsSetIdMatchRoute
   '/sets/$setId/satzbau': typeof SetsSetIdSatzbauRoute
   '/sets/$setId/test': typeof SetsSetIdTestRoute
+  '/sets/$setId/write': typeof SetsSetIdWriteRoute
   '/sets/$setId/': typeof SetsSetIdIndexRoute
 }
 export interface FileRouteTypes {
@@ -199,6 +208,7 @@ export interface FileRouteTypes {
     | '/sets/$setId/match'
     | '/sets/$setId/satzbau'
     | '/sets/$setId/test'
+    | '/sets/$setId/write'
     | '/sets/$setId/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -218,6 +228,7 @@ export interface FileRouteTypes {
     | '/sets/$setId/match'
     | '/sets/$setId/satzbau'
     | '/sets/$setId/test'
+    | '/sets/$setId/write'
     | '/sets/$setId'
   id:
     | '__root__'
@@ -238,6 +249,7 @@ export interface FileRouteTypes {
     | '/sets/$setId/match'
     | '/sets/$setId/satzbau'
     | '/sets/$setId/test'
+    | '/sets/$setId/write'
     | '/sets/$setId/'
   fileRoutesById: FileRoutesById
 }
@@ -380,6 +392,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SetsSetIdTestRouteImport
       parentRoute: typeof SetsSetIdRoute
     }
+    '/sets/$setId/write': {
+      id: '/sets/$setId/write'
+      path: '/write'
+      fullPath: '/sets/$setId/write'
+      preLoaderRoute: typeof SetsSetIdWriteRouteImport
+      parentRoute: typeof SetsSetIdRoute
+    }
   }
 }
 
@@ -393,6 +412,7 @@ interface SetsSetIdRouteChildren {
   SetsSetIdMatchRoute: typeof SetsSetIdMatchRoute
   SetsSetIdSatzbauRoute: typeof SetsSetIdSatzbauRoute
   SetsSetIdTestRoute: typeof SetsSetIdTestRoute
+  SetsSetIdWriteRoute: typeof SetsSetIdWriteRoute
   SetsSetIdIndexRoute: typeof SetsSetIdIndexRoute
 }
 
@@ -406,6 +426,7 @@ const SetsSetIdRouteChildren: SetsSetIdRouteChildren = {
   SetsSetIdMatchRoute: SetsSetIdMatchRoute,
   SetsSetIdSatzbauRoute: SetsSetIdSatzbauRoute,
   SetsSetIdTestRoute: SetsSetIdTestRoute,
+  SetsSetIdWriteRoute: SetsSetIdWriteRoute,
   SetsSetIdIndexRoute: SetsSetIdIndexRoute,
 }
 

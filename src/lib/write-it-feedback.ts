@@ -48,16 +48,21 @@ const feedbackSchema = z.object({
 
 /** One row of `users/{uid}/aiFeedbackLog` — every AI feedback a learner has
  *  ever requested, oldest fields first. Append-only, never edited; nothing
- *  here is deleted except by the whole-account delete path. */
+ *  here is deleted except by the whole-account delete path.
+ *
+ * `cardId`/`term`/`caseHint`/`correctForm` are optional: a WriteIt row (see
+ * `getWriteItFeedback` below) always has them, but a free-writing row (see
+ * write-sentence-feedback.ts's `getWriteSentenceFeedback`) isn't about one
+ * specific card and omits them entirely rather than writing empty strings. */
 export type WriteItFeedbackLogEntry = {
   id: string;
-  cardId: string;
+  cardId?: string;
   setId: string;
   setTitle: string;
-  term: string;
-  caseHint: z.infer<typeof inputSchema>["caseHint"];
+  term?: string;
+  caseHint?: z.infer<typeof inputSchema>["caseHint"];
   learnerSentence: string;
-  correctForm: string;
+  correctForm?: string;
   feedback: string;
   createdAt: number;
 };
