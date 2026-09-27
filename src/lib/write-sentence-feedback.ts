@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { getPromptById } from "@/content/write-prompts";
 import { authMiddleware } from "./auth/middleware";
+import { ERROR_CATEGORIES, parseErrorTags, type FeedbackErrorTag } from "./write-feedback-types";
 
 /**
  * Free-writing AI feedback — Phase 3's second slice, sitting next to WriteIt
@@ -35,8 +36,12 @@ const inputSchema = z.object({
   explanationLanguage: z.string().trim().max(20).optional(),
 });
 
+// `errorTags` is parsed fail-safe via `parseErrorTags` below, not through
+// this schema — a malformed tag must never take the whole response down
+// with it the way a strict z.array(...) parse would.
 const feedbackSchema = z.object({
   feedback: z.string().trim().min(1).max(1600),
+  errorTags: z.array(z.unknown()).optional(),
 });
 
 // Same model as every other Gemini call site in this codebase.
@@ -53,8 +58,31 @@ const RESPONSE_SCHEMA = {
         "are corrections. If it's already correct, say so briefly and encourage them. Beginner-" +
         "friendly — don't overwhelm with a full grammar lesson.",
     },
+    errorTags: {
+      type: "ARRAY",
+      description:
+        "Structured tags for each error found, using ONLY the given category values. Empty array " +
+        "if there are no errors.",
+      items: {
+        type: "OBJECT",
+        properties: {
+          category: { type: "STRING", enum: [...ERROR_CATEGORIES] },
+          severity: {
+            type: "STRING",
+            enum: ["minor", "major"],
+            description:
+              "'major' if the error breaks meaning or invalidates a Leitpunkt, 'minor' otherwise.",
+          },
+          excerpt: {
+            type: "STRING",
+            description: "Optional short quote from the learner's text pinpointing the error.",
+          },
+        },
+        required: ["category", "severity"],
+      },
+    },
   },
-  required: ["feedback"],
+  required: ["feedback", "errorTags"],
 };
 
 export function buildPrompt(data: z.infer<typeof inputSchema>): string {
@@ -68,6 +96,7 @@ export function buildPrompt(data: z.infer<typeof inputSchema>): string {
       "If the sentence is already correct, say so briefly and encourage them.",
       "Keep it concise — this is for a beginner, don't overwhelm them.",
       `Respond in ${responseLanguage}.`,
+      errorTagInstructions(),
     ].join(" ");
   }
   const strictness =
@@ -87,7 +116,28 @@ export function buildPrompt(data: z.infer<typeof inputSchema>): string {
     strictness,
     "Be warm and concise, don't give a full grammar lesson.",
     `Respond in ${responseLanguage}.`,
+    errorTagInstructions(),
   ].join("\n");
+}
+
+/**
+ * Shared across both prompt branches (task-based and plain sentence): asks
+ * for the structured `errorTags` array alongside the free-text feedback,
+ * restricted to the literal category list so the model can't invent new
+ * ones. This never changes what the user sees — `errorTags` is a separate
+ * field in the same JSON response, parsed out before display.
+ */
+function errorTagInstructions(): string {
+  return [
+    `Also return "errorTags": an array using ONLY these category values: ${ERROR_CATEGORIES.join(", ")}.`,
+    "Map: any missed Leitpunkt -> one 'missing_leitpunkt' tag (severity 'major'); du/Sie inconsistency or wrong " +
+      "formality -> 'register'; wrong der/die/das -> 'article_gender'; wrong case ending (Akkusativ/Dativ/Genitiv) " +
+      "-> 'case'; verb-second/verb-final word order errors -> 'verb_position'; wrong conjugation (bin/ist, " +
+      "haben/sein, etc.) -> 'verb_conjugation'; wrong word/preposition choice -> 'word_choice'; spelling -> " +
+      "'spelling'; any other word-order issue -> 'word_order_other'.",
+    "severity: 'major' if it breaks meaning or invalidates a Leitpunkt, 'minor' otherwise. `excerpt` is optional, " +
+      "only include it if a short quote helps pinpoint the error. Empty array if there are no errors.",
+  ].join(" ");
 }
 
 /**
@@ -163,6 +213,10 @@ export const getWriteSentenceFeedback = createServerFn({ method: "POST" })
       return { ok: false as const, error: "Couldn't get feedback right now — try again." };
     }
 
+    // Fail-safe, not fail-loud: a malformed/missing errorTags block never
+    // affects the free-text feedback the user sees — see write-feedback-types.ts.
+    const errorTags: FeedbackErrorTag[] = parseErrorTags(parsed.errorTags);
+
     // Best-effort, same as write-it-feedback.ts: a logging failure shouldn't
     // take away feedback the learner already spent a budget action for.
     // cardId/term/caseHint/correctForm are deliberately omitted (not set to
@@ -170,14 +224,19 @@ export const getWriteSentenceFeedback = createServerFn({ method: "POST" })
     try {
       const { getAdminFirestore } = await import("./firebase-admin.server");
       const db = getAdminFirestore();
-      await db.collection("users").doc(context.userId).collection("aiFeedbackLog").add({
-        setId: data.setId,
-        setTitle: data.setTitle,
-        learnerSentence: data.learnerSentence,
-        ...(data.promptId ? { promptId: data.promptId } : {}),
-        feedback: parsed.feedback,
-        createdAt: Date.now(),
-      });
+      await db
+        .collection("users")
+        .doc(context.userId)
+        .collection("aiFeedbackLog")
+        .add({
+          setId: data.setId,
+          setTitle: data.setTitle,
+          learnerSentence: data.learnerSentence,
+          ...(data.promptId ? { promptId: data.promptId } : {}),
+          feedback: parsed.feedback,
+          ...(errorTags.length > 0 ? { errorTags } : {}),
+          createdAt: Date.now(),
+        });
     } catch (error) {
       console.error("Failed to log Write mode AI feedback:", error);
     }

@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { authMiddleware } from "./auth/middleware";
+import type { FeedbackErrorTag } from "./write-feedback-types";
 import type { WriteItCase } from "@/components/write-it-step";
 
 /**
@@ -66,6 +67,11 @@ export type WriteItFeedbackLogEntry = {
   feedback: string;
   /** Write mode Task tab only: id from src/content/write-prompts.ts. */
   promptId?: string;
+  /** Structured tags alongside the free-text `feedback` (Dilim 3), Write mode
+   *  Task/free-write calls only — see write-feedback-types.ts. Absent on
+   *  older rows and on WriteIt rows; write-only in this slice, not read or
+   *  aggregated anywhere yet. */
+  errorTags?: FeedbackErrorTag[];
   createdAt: number;
 };
 
