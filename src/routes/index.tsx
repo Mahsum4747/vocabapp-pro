@@ -21,6 +21,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { masteryStats } from "@/lib/quiz";
 import { useProgress, useStudyStore } from "@/lib/store";
+import { DEFAULT_DIRECTION, prioritizeByDirection } from "@/lib/learning-prefs";
+import { resolveSetLanguages } from "@/lib/types";
 import { DEFAULT_DAILY_GOAL } from "@/lib/daily-goal";
 import { LearningPrefsPrompt } from "@/components/learning-prefs";
 import { buildTodaySummary, describeToday, type TodayQueue } from "@/lib/today-summary";
@@ -59,6 +61,7 @@ function Home() {
   const progress = useProgress();
   const isLoaded = useStudyStore((s) => s.isLoaded);
   const profile = useStudyStore((s) => s.profile);
+  const direction = profile?.direction ?? DEFAULT_DIRECTION;
 
   // The server's cached summary is the source; if it couldn't be fetched (signed
   // out with local sample sets, or a failed read) fall back to computing the
@@ -136,8 +139,12 @@ function Home() {
   // into this route's bundle.
   const otherPublicSets = useMemo(() => {
     const ownIds = new Set(sets.map((s) => s.id));
-    return publicSets.filter((set) => !ownIds.has(set.id));
-  }, [publicSets, sets]);
+    return prioritizeByDirection(
+      publicSets.filter((set) => !ownIds.has(set.id)),
+      direction,
+      resolveSetLanguages,
+    );
+  }, [publicSets, sets, direction]);
 
   const continueSet = useMemo(() => {
     return [...sets]
@@ -152,8 +159,10 @@ function Home() {
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return sets;
-    return sets.filter(
+    // Sets in the learner's chosen `direction` list first (nothing hidden).
+    const ordered = prioritizeByDirection(sets, direction, resolveSetLanguages);
+    if (!q) return ordered;
+    return ordered.filter(
       (set) =>
         set.title.toLowerCase().includes(q) ||
         set.description.toLowerCase().includes(q) ||
@@ -163,7 +172,7 @@ function Home() {
             card.term.toLowerCase().includes(q) || card.definition.toLowerCase().includes(q),
         ),
     );
-  }, [sets, query]);
+  }, [sets, query, direction]);
 
   const UNCATEGORIZED = "Uncategorized";
   const folderGroups = useMemo(() => {

@@ -36,6 +36,36 @@ export const DIRECTION_LABELS: Record<Direction, string> = {
   learn_ku: "Learn Kurdish",
 };
 
+const DIRECTION_TERM_LANGUAGE: Record<Direction, string> = {
+  learn_de: "de",
+  learn_tr: "tr",
+  learn_ku: "ku",
+};
+
+/**
+ * Whether a set (by its resolved languages, see `resolveSetLanguages`)
+ * serves the learner's `direction`. Used to list matching sets first on
+ * Home; never hides anything.
+ */
+export function setMatchesDirection(
+  langs: { term: string | null; definition: string | null },
+  direction: Direction,
+): boolean {
+  return langs.term === DIRECTION_TERM_LANGUAGE[direction];
+}
+
+/** Stable reorder: sets matching `direction` first, others after, each group in original order. */
+export function prioritizeByDirection<T>(
+  items: readonly T[],
+  direction: Direction,
+  langsOf: (item: T) => { term: string | null; definition: string | null },
+): T[] {
+  const match: T[] = [];
+  const rest: T[] = [];
+  for (const item of items) (setMatchesDirection(langsOf(item), direction) ? match : rest).push(item);
+  return [...match, ...rest];
+}
+
 export function isExplanationLanguage(value: unknown): value is ExplanationLanguage {
   return typeof value === "string" && (EXPLANATION_LANGUAGES as readonly string[]).includes(value);
 }

@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import {
   DEFAULT_LEARNING_PREFS,
   pickExplanation,
+  prioritizeByDirection,
   readLearningPrefs,
   shouldPromptForPrefs,
 } from "./learning-prefs.ts";
@@ -39,5 +40,22 @@ describe("shouldPromptForPrefs", () => {
     assert.equal(shouldPromptForPrefs({ totalReviews: 0, prefsPrompted: false }), false);
     assert.equal(shouldPromptForPrefs({ totalReviews: 5, prefsPrompted: false }), true);
     assert.equal(shouldPromptForPrefs({ totalReviews: 50, prefsPrompted: true }), false);
+  });
+});
+
+describe("prioritizeByDirection", () => {
+  const sets = [
+    { id: "a", term: "de", definition: "en" },
+    { id: "b", term: "tr", definition: "ku" },
+    { id: "c", term: null, definition: null },
+    { id: "d", term: "de", definition: "tr" },
+  ];
+  const ids = (d: Parameters<typeof prioritizeByDirection>[1]) =>
+    prioritizeByDirection(sets, d, (s) => s).map((s) => s.id);
+
+  it("lists matching sets first, stable, hiding nothing", () => {
+    assert.deepEqual(ids("learn_de"), ["a", "d", "b", "c"]);
+    assert.deepEqual(ids("learn_tr"), ["b", "a", "c", "d"]);
+    assert.deepEqual(ids("learn_ku"), ["a", "b", "c", "d"]);
   });
 });
