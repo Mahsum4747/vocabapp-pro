@@ -57,5 +57,11 @@ describe("prioritizeByDirection", () => {
     assert.deepEqual(ids("learn_de"), ["a", "d", "b", "c"]);
     assert.deepEqual(ids("learn_tr"), ["b", "a", "c", "d"]);
     assert.deepEqual(ids("learn_ku"), ["a", "b", "c", "d"]);
+    assert.deepEqual(ids("learn_ku_from_tr"), ["b", "a", "c", "d"]);
+  });
+
+  it("persists the new TR/KU directions through readLearningPrefs", () => {
+    assert.equal(readLearningPrefs({ direction: "learn_ku_from_tr" }).direction, "learn_ku_from_tr");
+    assert.equal(readLearningPrefs({ direction: "learn_tr_from_ku" }).direction, "learn_tr_from_ku");
   });
 });

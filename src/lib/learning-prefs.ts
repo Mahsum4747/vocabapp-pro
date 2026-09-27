@@ -10,7 +10,14 @@ export const EXPLANATION_LANGUAGES = ["en", "tr", "ku"] as const;
 export type ExplanationLanguage = (typeof EXPLANATION_LANGUAGES)[number];
 export const DEFAULT_EXPLANATION_LANGUAGE: ExplanationLanguage = "en";
 
-export const DIRECTIONS = ["learn_de", "learn_tr", "learn_ku"] as const;
+export const DIRECTIONS = [
+  "learn_de",
+  "learn_tr",
+  "learn_ku",
+  // Karta pairs "tr-ku" / "ku-tr" (term language first).
+  "learn_ku_from_tr",
+  "learn_tr_from_ku",
+] as const;
 export type Direction = (typeof DIRECTIONS)[number];
 export const DEFAULT_DIRECTION: Direction = "learn_de";
 
@@ -34,12 +41,17 @@ export const DIRECTION_LABELS: Record<Direction, string> = {
   learn_de: "Learn German",
   learn_tr: "Learn Turkish",
   learn_ku: "Learn Kurdish",
+  learn_ku_from_tr: "Turkish → Kurdish",
+  learn_tr_from_ku: "Kurdish → Turkish",
 };
 
-const DIRECTION_TERM_LANGUAGE: Record<Direction, string> = {
-  learn_de: "de",
-  learn_tr: "tr",
-  learn_ku: "ku",
+/** Which set languages each direction matches; `definition` only when it narrows. */
+const DIRECTION_MATCH: Record<Direction, { term: string; definition?: string }> = {
+  learn_de: { term: "de" },
+  learn_tr: { term: "tr" },
+  learn_ku: { term: "ku" },
+  learn_ku_from_tr: { term: "tr", definition: "ku" },
+  learn_tr_from_ku: { term: "ku", definition: "tr" },
 };
 
 /**
@@ -51,7 +63,8 @@ export function setMatchesDirection(
   langs: { term: string | null; definition: string | null },
   direction: Direction,
 ): boolean {
-  return langs.term === DIRECTION_TERM_LANGUAGE[direction];
+  const want = DIRECTION_MATCH[direction];
+  return langs.term === want.term && (want.definition === undefined || langs.definition === want.definition);
 }
 
 /** Stable reorder: sets matching `direction` first, others after, each group in original order. */
