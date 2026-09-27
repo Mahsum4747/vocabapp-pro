@@ -50,7 +50,7 @@ export type KartaParseResult =
 
 /** "pair" is legacy: accepted and ignored (languages come from the UI). */
 const ROOT_KEYS = ["title", "description", "pair", "level", "cards"];
-const CARD_KEYS = ["term", "pos", "gender", "plural", "noPlural", "gloss", "examples", "sourceNote"];
+const CARD_KEYS = ["term", "pos", "gender", "plural", "noPlural", "gloss", "example", "examples", "sourceNote"];
 const EXAMPLE_KEYS = ["nom", "akk", "dat"];
 const POS = ["noun", "verb", "adj", "other"];
 const GENDER_TO_CODE: Record<string, GrammaticalGender> = { der: "m", die: "f", das: "n" };
@@ -162,11 +162,24 @@ export function parseKartaJson(raw: string, options: KartaParseOptions): KartaPa
       fail(`${at} (${term}): "gender" must be null unless pos is "noun".`);
     }
 
+    // Non-German cards use the plain singular "example" field (Karta's
+    // simplified schema); German cards use the case-keyed "examples" object.
+    // Both map onto the same `ex.nom` slot — a card is never expected to
+    // carry both, but if it does, "examples.nom" wins.
+    const rawSingleExample = entry.example ?? null;
+    if (rawSingleExample !== null && typeof rawSingleExample !== "string") {
+      fail(`${at} (${term}): "example" must be a string or null.`);
+    }
+
     const rawExamples = entry.examples ?? null;
     if (rawExamples !== null && !isObject(rawExamples)) {
       fail(`${at} (${term}): "examples" must be an object or null.`);
     }
-    const ex: Record<string, string | null> = { nom: null, akk: null, dat: null };
+    const ex: Record<string, string | null> = {
+      nom: typeof rawSingleExample === "string" ? rawSingleExample.trim() || null : null,
+      akk: null,
+      dat: null,
+    };
     if (isObject(rawExamples)) {
       for (const key of unknownKeys(rawExamples, EXAMPLE_KEYS)) {
         fail(`${at} (${term}): unknown examples field "${key}".`);
@@ -175,8 +188,8 @@ export function parseKartaJson(raw: string, options: KartaParseOptions): KartaPa
         const value = rawExamples[key] ?? null;
         if (value !== null && typeof value !== "string") {
           fail(`${at} (${term}): examples.${key} must be a string or null.`);
-        } else {
-          ex[key] = value?.trim() || null;
+        } else if (value != null) {
+          ex[key] = value.trim() || null;
         }
       }
     }

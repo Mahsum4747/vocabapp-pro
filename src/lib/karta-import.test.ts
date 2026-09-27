@@ -136,6 +136,26 @@ test("non-German term language rejects German-only grammar fields", () => {
   );
 });
 
+test("non-German term language accepts the simplified singular \"example\" field", () => {
+  const r = parseKartaJson(placeholders({ example: "  Ez kawa vedixwim.  " }), NON_DE);
+  assert.ok(r.ok);
+  assert.equal(r.value.cards[0].example, "Ez kawa vedixwim.");
+  assert.deepEqual(r.value.cards[0].examples, {
+    nom: "Ez kawa vedixwim.",
+    akk: null,
+    dat: null,
+  });
+});
+
+test("\"examples.nom\" wins when both \"example\" and \"examples\" are given", () => {
+  const r = parseKartaJson(
+    placeholders({ example: "singular", examples: { nom: "plural-nom", akk: null, dat: null } }),
+    NON_DE,
+  );
+  assert.ok(r.ok);
+  assert.equal(r.value.cards[0].example, "plural-nom");
+});
+
 test("sourceNote populates enrichment.sourceNote; non-string rejected", () => {
   const r = parseKartaJson(placeholders({ sourceNote: "  Zend dictionary  " }), NON_DE);
   assert.ok(r.ok);
