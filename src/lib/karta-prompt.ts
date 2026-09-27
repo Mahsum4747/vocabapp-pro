@@ -16,11 +16,11 @@ Output ONLY valid JSON. No markdown. No commentary.
 {
   "title": "string",
   "description": "one short sentence, or null",
-  "pair": "de-en" | "de-tr",
+  "pair": "de-en" | "de-tr" | "tr-ku" | "ku-tr",
   "level": "A1" | "A2",
   "cards": [
     {
-      "term": "German dictionary form, no article in the string",
+      "term": "dictionary form in the SOURCE language (German: no article in the string)",
       "pos": "noun" | "verb" | "adj" | "other",
       "gender": "der" | "die" | "das" | null,
       "plural": "string or null",
@@ -45,9 +45,15 @@ Rules:
   Never guess.
 - Verbs: gender null. examples may be nom-only.
 - Gloss language = TARGET below.
+- pair = "<source>-<target>": "de-en" / "de-tr" German terms;
+  "tr-ku" Turkish terms, Kurdish glosses; "ku-tr" Kurdish terms,
+  Turkish glosses. Kurdish = Kurmanji, Latin script only.
+- Non-German pairs (tr-ku, ku-tr): gender, plural = null,
+  noPlural = false, examples.akk and examples.dat = null.
+  The German rules above apply only to de-en / de-tr.
 
 TOPIC: 
-SOURCE LANGUAGE: German
+SOURCE LANGUAGE: German | Turkish | Kurdish (Kurmanji)
 TARGET LANGUAGE: 
 LEVEL: 
 COUNT: `;

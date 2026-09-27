@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { parseKartaJson } from "./karta-import.ts";
+import { kartaPairLanguages, parseKartaJson } from "./karta-import.ts";
 import { caseExampleFor } from "./case-forms.ts";
 
 const base = (cards: unknown[]) =>
@@ -67,4 +67,38 @@ test("Cases shows no sentence when no case example exists", () => {
     caseExampleFor({ ...card, examples: { dat: "Ich helfe der Freundin." } }, "der", "die", "dativ"),
     "Ich helfe der Freundin.",
   );
+});
+
+// Infrastructure check only: "test1".."test8" are placeholders, NOT real
+// Turkish/Kurdish content.
+const placeholders = (pair: string, extra: Record<string, unknown> = {}) =>
+  JSON.stringify({
+    title: "placeholder",
+    pair,
+    level: "A1",
+    cards: Array.from({ length: 8 }, (_, i) => ({
+      term: `test${i + 1}`,
+      pos: "noun",
+      gloss: `gloss${i + 1}`,
+      ...extra,
+    })),
+  });
+
+test("tr-ku / ku-tr pairs import and derive term/definition languages", () => {
+  const r = parseKartaJson(placeholders("tr-ku"));
+  assert.ok(r.ok);
+  assert.equal(r.value.pair, "tr-ku");
+  assert.deepEqual(kartaPairLanguages(r.value.pair), { term: "tr", definition: "ku" });
+  assert.equal(r.value.cards.length, 8);
+  assert.ok(r.value.cards.every((c) => c.enrichment === null));
+  assert.deepEqual(r.value.warnings, []);
+  assert.deepEqual(kartaPairLanguages("ku-tr"), { term: "ku", definition: "tr" });
+  assert.deepEqual(kartaPairLanguages("de-en"), { term: "de", definition: "en" });
+  assert.deepEqual(kartaPairLanguages("de-tr"), { term: "de", definition: "tr" });
+});
+
+test("non-German pairs reject German-only grammar fields; unknown pair rejected", () => {
+  assert.ok(!parseKartaJson(placeholders("tr-ku", { gender: "der" })).ok);
+  assert.ok(!parseKartaJson(placeholders("ku-tr", { examples: { nom: null, akk: "x", dat: null } })).ok);
+  assert.ok(!parseKartaJson(placeholders("en-ku")).ok);
 });

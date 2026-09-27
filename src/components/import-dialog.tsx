@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Copy, FileUp } from "lucide-react";
 import { toast } from "sonner";
 import { KARTA_PROMPT, KARTA_RULE } from "@/lib/karta-prompt";
-import { parseKartaJson } from "@/lib/karta-import";
+import { parseKartaJson, type KartaPair } from "@/lib/karta-import";
 import { parseCardText } from "@/lib/parse-cards";
 import { Button } from "./ui/button";
 import { Dialog, DialogContent, DialogTrigger } from "./ui/dialog";
@@ -10,7 +10,7 @@ import { Textarea } from "./ui/input";
 import type { EditorCard } from "./card-editor";
 
 /** Set-level fields a Karta JSON import carries alongside its cards. */
-export type ImportMeta = { title: string; description: string; pair: "de-en" | "de-tr" };
+export type ImportMeta = { title: string; description: string; pair: KartaPair };
 
 /**
  * Same shape check `apply()` below uses to route pasted text to

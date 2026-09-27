@@ -6,6 +6,7 @@ import { CardEditor, type EditorCard } from "@/components/card-editor";
 import { GenerateDialog } from "@/components/generate-dialog";
 import { LanguageSelect } from "@/components/language-select";
 import { NO_LANGUAGE, languageChoice, type LanguageChoice } from "@/lib/lang/choice";
+import { kartaPairLanguages } from "@/lib/karta-import";
 import { ImportDialog, looksLikeKartaJson } from "@/components/import-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -187,8 +188,9 @@ function CreatePage() {
                 if (meta) {
                   if (!title.trim()) setTitle(meta.title);
                   if (!description.trim() && meta.description) setDescription(meta.description);
-                  setTermLang(languageChoice("de"));
-                  setDefLang(languageChoice(meta.pair === "de-tr" ? "tr" : "en"));
+                  const langs = kartaPairLanguages(meta.pair);
+                  setTermLang(languageChoice(langs.term));
+                  setDefLang(languageChoice(langs.definition));
                 }
               }}
             />
