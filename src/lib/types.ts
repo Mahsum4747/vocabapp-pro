@@ -68,6 +68,13 @@ export type CardEnrichment = {
   directCase?: "dativ";
   source: CardEnrichmentSource;
   inferred?: true;
+  /**
+   * Optional free-text note on where this content came from, e.g.
+   * "Kurmanji Latin, source: X dictionary, 2026". Transparency only — not a
+   * validation or approval mechanism; nothing reads it to gate publishing.
+   * Absent/null on every card that predates it (no migration).
+   */
+  sourceNote?: string | null;
 };
 
 /**

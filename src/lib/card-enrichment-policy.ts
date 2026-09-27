@@ -33,12 +33,17 @@ export function sanitizeUserEnrichment(value: unknown): CardEnrichment | null {
 
   // "No plural" and a plural are mutually exclusive; an actual plural wins.
   const noPlural = record.noPlural === true && !plural;
+  const sourceNote =
+    typeof record.sourceNote === "string" && record.sourceNote.trim()
+      ? record.sourceNote.trim().slice(0, 500)
+      : undefined;
 
   return {
     source: "user",
     ...(gender ? { gender } : {}),
     ...(plural ? { plural } : {}),
     ...(noPlural ? { noPlural: true as const } : {}),
+    ...(sourceNote ? { sourceNote } : {}),
   };
 }
 

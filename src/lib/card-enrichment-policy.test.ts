@@ -141,3 +141,14 @@ describe("resolveEnrichmentOnOmit — an edit that omitted the field entirely", 
     assert.deepEqual(resolveEnrichmentOnOmit("Tisch", prior, context(false)), prior);
   });
 });
+
+describe("sourceNote — optional provenance note", () => {
+  it("keeps a trimmed note on a user correction and omits a blank one", () => {
+    assert.deepEqual(sanitizeUserEnrichment({ source: "user", sourceNote: "  dict X, 2026 " }), {
+      source: "user",
+      sourceNote: "dict X, 2026",
+    });
+    assert.deepEqual(sanitizeUserEnrichment({ source: "user", sourceNote: "  " }), { source: "user" });
+    assert.deepEqual(sanitizeUserEnrichment({ source: "user", sourceNote: 42 }), { source: "user" });
+  });
+});
