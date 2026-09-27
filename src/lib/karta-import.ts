@@ -1,25 +1,5 @@
 import { caseFormFor, sentenceHasForm } from "./case-forms.ts";
 import type { CaseExamples, CardEnrichment, GrammaticalGender } from "./types.ts";
-import type { LanguageCode } from "./lang/languages.ts";
-
-/**
- * Accepted `pair` values, as "<term language>-<definition language>".
- * A flat union (not separate source/target fields) so existing JSON and
- * every existing `pair` consumer keep working unchanged; the languages are
- * derived by `kartaPairLanguages`, the one place that splits a pair.
- */
-export const KARTA_PAIRS = ["de-en", "de-tr", "tr-ku", "ku-tr"] as const;
-export type KartaPair = (typeof KARTA_PAIRS)[number];
-
-export function isKartaPair(value: unknown): value is KartaPair {
-  return typeof value === "string" && (KARTA_PAIRS as readonly string[]).includes(value);
-}
-
-/** `"tr-ku"` → `{ term: "tr", definition: "ku" }`. */
-export function kartaPairLanguages(pair: KartaPair): { term: LanguageCode; definition: LanguageCode } {
-  const [term, definition] = pair.split("-") as [LanguageCode, LanguageCode];
-  return { term, definition };
-}
 
 /**
  * The Karta JSON upload contract (see karta-prompt.ts for the text a learner
@@ -31,7 +11,19 @@ export function kartaPairLanguages(pair: KartaPair): { term: LanguageCode; defin
  * examples.nom → `example` (what Cloze/Satzbau read), examples → `examples`,
  * gender/plural/noPlural → `enrichment` (source "user", so the dictionary
  * never overwrites it). `pos` is used to validate and is not stored.
+ * Optional per-card `sourceNote` → `enrichment.sourceNote`.
+ *
+ * The term/definition languages are NOT in the JSON: the learner picks them
+ * in the Paste screen (same pickers as manual Create) and the caller passes
+ * whether the term language is German. A legacy `pair` field is tolerated
+ * and ignored so older prompts' output still parses.
  */
+export type KartaParseOptions = {
+  /** True when the selected term language is German: enables
+   *  gender/plural/case rules (same invariant as dictionary enrichment). */
+  germanTerms: boolean;
+};
+
 export type KartaCard = {
   term: string;
   definition: string;
@@ -46,7 +38,6 @@ export type KartaImport = {
    *  field. Never a raw dump of the JSON itself, and never card content —
    *  only this one, explicitly-typed string field ever reaches it. */
   description: string;
-  pair: KartaPair;
   level: "A1" | "A2";
   cards: KartaCard[];
   /** Non-fatal notes: what was left out of Articles/Cases and why. */
@@ -57,8 +48,9 @@ export type KartaParseResult =
   | { ok: true; value: KartaImport }
   | { ok: false; errors: string[] };
 
+/** "pair" is legacy: accepted and ignored (languages come from the UI). */
 const ROOT_KEYS = ["title", "description", "pair", "level", "cards"];
-const CARD_KEYS = ["term", "pos", "gender", "plural", "noPlural", "gloss", "examples"];
+const CARD_KEYS = ["term", "pos", "gender", "plural", "noPlural", "gloss", "examples", "sourceNote"];
 const EXAMPLE_KEYS = ["nom", "akk", "dat"];
 const POS = ["noun", "verb", "adj", "other"];
 const GENDER_TO_CODE: Record<string, GrammaticalGender> = { der: "m", die: "f", das: "n" };
@@ -74,7 +66,8 @@ function unknownKeys(obj: Record<string, unknown>, allowed: string[]): string[] 
   return Object.keys(obj).filter((k) => !allowed.includes(k));
 }
 
-export function parseKartaJson(raw: string): KartaParseResult {
+export function parseKartaJson(raw: string, options: KartaParseOptions): KartaParseResult {
+  const { germanTerms } = options;
   // Tolerate a fenced ```json block: chat models add it despite the prompt.
   const text = raw
     .trim()
@@ -105,12 +98,6 @@ export function parseKartaJson(raw: string): KartaParseResult {
   if (rawDescription !== null && typeof rawDescription !== "string") {
     fail('"description" must be a string or null.');
   }
-  const pair = data.pair;
-  if (!isKartaPair(pair)) fail(`"pair" must be one of ${KARTA_PAIRS.map((p) => `"${p}"`).join(", ")}.`);
-  // Gender/plural/case sentences are German grammar: only a German-term set
-  // carries them (same invariant as dictionary enrichment). An invalid pair
-  // is already an error; keep German rules then so card errors stay quiet.
-  const germanTerms = !isKartaPair(pair) || kartaPairLanguages(pair).term === "de";
   const level = data.level;
   if (level !== "A1" && level !== "A2") fail('"level" must be "A1" or "A2".');
   const rawCards = data.cards;
@@ -165,11 +152,11 @@ export function parseKartaJson(raw: string): KartaParseResult {
       fail(`${at}: "${term}" has the article inside term; put it in "gender".`);
     }
     if (!germanTerms && (genderWord !== null || (typeof plural === "string" && plural.trim()) || noPlural)) {
-      fail(`${at} (${term}): "gender"/"plural"/"noPlural" are German-only; use null/false for pair "${String(pair)}".`);
+      fail(`${at} (${term}): "gender"/"plural"/"noPlural" are German-only; use null/false when the term language isn't German.`);
     }
     const peek = isObject(entry.examples) ? entry.examples : null;
     if (!germanTerms && peek && (peek.akk != null || peek.dat != null)) {
-      fail(`${at} (${term}): examples.akk/dat are German-only; use null for pair "${String(pair)}".`);
+      fail(`${at} (${term}): examples.akk/dat are German-only; use null when the term language isn't German.`);
     }
     if (pos !== "noun" && genderWord !== null) {
       fail(`${at} (${term}): "gender" must be null unless pos is "noun".`);
@@ -211,13 +198,22 @@ export function parseKartaJson(raw: string): KartaParseResult {
       }
     }
 
+    const rawSourceNote = entry.sourceNote ?? null;
+    if (rawSourceNote !== null && typeof rawSourceNote !== "string") {
+      fail(`${at} (${term}): "sourceNote" must be a string or null.`);
+    }
+    const sourceNote = typeof rawSourceNote === "string" ? rawSourceNote.trim().slice(0, 500) : "";
+
     if (errors.length > 0 || !term || !gloss) return;
+    const grammar =
+      germanTerms && pos === "noun" && !!(code || noPlural || (typeof plural === "string" && plural.trim()));
     const enrichment: CardEnrichment | null =
-      germanTerms && pos === "noun" && (code || noPlural || (typeof plural === "string" && plural.trim()))
+      grammar || sourceNote
         ? {
-            ...(code ? { gender: code } : {}),
-            ...(typeof plural === "string" && plural.trim() ? { plural: plural.trim() } : {}),
-            ...(noPlural ? { noPlural: true as const } : {}),
+            ...(grammar && code ? { gender: code } : {}),
+            ...(grammar && typeof plural === "string" && plural.trim() ? { plural: plural.trim() } : {}),
+            ...(grammar && noPlural ? { noPlural: true as const } : {}),
+            ...(sourceNote ? { sourceNote } : {}),
             source: "user",
           }
         : null;
@@ -242,7 +238,6 @@ export function parseKartaJson(raw: string): KartaParseResult {
     value: {
       title: (title as string).trim(),
       description: typeof rawDescription === "string" ? rawDescription.trim() : "",
-      pair: pair as KartaPair,
       level: level as "A1" | "A2",
       cards,
       warnings,

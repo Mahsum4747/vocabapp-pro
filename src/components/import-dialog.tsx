@@ -2,15 +2,18 @@ import { useState } from "react";
 import { Copy, FileUp } from "lucide-react";
 import { toast } from "sonner";
 import { KARTA_PROMPT, KARTA_RULE } from "@/lib/karta-prompt";
-import { parseKartaJson, type KartaPair } from "@/lib/karta-import";
+import { parseKartaJson } from "@/lib/karta-import";
+import type { LanguageChoice } from "@/lib/lang/choice";
+import { LanguageSelect } from "./language-select";
 import { parseCardText } from "@/lib/parse-cards";
 import { Button } from "./ui/button";
 import { Dialog, DialogContent, DialogTrigger } from "./ui/dialog";
 import { Textarea } from "./ui/input";
 import type { EditorCard } from "./card-editor";
 
-/** Set-level fields a Karta JSON import carries alongside its cards. */
-export type ImportMeta = { title: string; description: string; pair: KartaPair };
+/** Set-level fields a Karta JSON import carries alongside its cards. The
+ *  language pair is not among them: it comes from the pickers below. */
+export type ImportMeta = { title: string; description: string };
 
 /**
  * Same shape check `apply()` below uses to route pasted text to
@@ -27,8 +30,18 @@ export function looksLikeKartaJson(text: string): boolean {
 
 export function ImportDialog({
   onImport,
+  termLang,
+  onTermLangChange,
+  defLang,
+  onDefLangChange,
 }: {
   onImport: (cards: EditorCard[], meta?: ImportMeta) => void;
+  /** The set's Term / Definition language — the same state the page's own
+   *  pickers edit. Karta JSON is validated against the chosen term language. */
+  termLang: LanguageChoice;
+  onTermLangChange: (value: LanguageChoice) => void;
+  defLang: LanguageChoice;
+  onDefLangChange: (value: LanguageChoice) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
@@ -39,15 +52,15 @@ export function ImportDialog({
     if (looksLikeKartaJson(text)) {
       // Karta JSON: all-or-nothing. Any problem lists every error and adds
       // no cards at all.
-      const result = parseKartaJson(text);
+      const result = parseKartaJson(text, { germanTerms: termLang.code === "de" });
       if (!result.ok) {
         setErrors(result.errors);
         return;
       }
-      const { cards, warnings, title, description, pair } = result.value;
+      const { cards, warnings, title, description } = result.value;
       onImport(
         cards.map((card) => ({ id: crypto.randomUUID(), ...card })),
-        { title, description, pair },
+        { title, description },
       );
       setOpen(false);
       toast.success(`${cards.length} cards added.`);
@@ -82,7 +95,7 @@ export function ImportDialog({
           <summary className="cursor-pointer font-medium text-fg">Karta JSON</summary>
           <p className="mt-2 text-muted">{KARTA_RULE}</p>
           <p className="mt-1 text-muted">
-            Paste this prompt into your own AI chat, fill TOPIC / TARGET LANGUAGE / LEVEL, then
+            Paste this prompt into your own AI chat, fill TOPIC / TERM LANGUAGE / DEFINITION LANGUAGE / LEVEL (matching the languages picked below), then
             paste the JSON it returns below.
           </p>
           <pre className="mt-2 max-h-48 overflow-auto rounded-card bg-surface p-3 font-mono text-xs whitespace-pre-wrap text-fg">
@@ -104,6 +117,22 @@ export function ImportDialog({
             Copy prompt
           </Button>
         </details>
+        <div className="grid grid-cols-2 gap-3">
+          <LanguageSelect
+            id="import-term-lang"
+            label="Term language"
+            value={termLang}
+            onChange={onTermLangChange}
+            placeholder="e.g. German"
+          />
+          <LanguageSelect
+            id="import-def-lang"
+            label="Definition language"
+            value={defLang}
+            onChange={onDefLangChange}
+            placeholder="e.g. English"
+          />
+        </div>
         <Textarea
           value={text}
           onChange={(e) => setText(e.target.value)}

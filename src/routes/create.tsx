@@ -6,7 +6,6 @@ import { CardEditor, type EditorCard } from "@/components/card-editor";
 import { GenerateDialog } from "@/components/generate-dialog";
 import { LanguageSelect } from "@/components/language-select";
 import { NO_LANGUAGE, languageChoice, type LanguageChoice } from "@/lib/lang/choice";
-import { kartaPairLanguages } from "@/lib/karta-import";
 import { ImportDialog, looksLikeKartaJson } from "@/components/import-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -175,22 +174,23 @@ function CreatePage() {
               }}
             />
             <ImportDialog
+              termLang={termLang}
+              onTermLangChange={setTermLang}
+              defLang={defLang}
+              onDefLangChange={setDefLang}
               onImport={(incoming, meta) => {
                 // Only a real, term-filled row survives an import merge — a
                 // still-blank template row (empty term, whatever its
                 // definition) is never a card, so it must never combine
                 // with the incoming ones into a bigger saved count.
                 setCards((prev) => [...prev.filter((c) => c.term.trim()), ...incoming]);
-                // Karta JSON also names the set and its language pair.
+                // Karta JSON also names the set; its languages come from the pickers.
                 // `meta.description` is the JSON's own typed "description"
                 // field (or "" when it left that out) — never the raw JSON
                 // text itself, and never a card's own gloss/definition.
                 if (meta) {
                   if (!title.trim()) setTitle(meta.title);
                   if (!description.trim() && meta.description) setDescription(meta.description);
-                  const langs = kartaPairLanguages(meta.pair);
-                  setTermLang(languageChoice(langs.term));
-                  setDefLang(languageChoice(langs.definition));
                 }
               }}
             />

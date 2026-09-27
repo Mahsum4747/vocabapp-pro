@@ -203,6 +203,10 @@ function EditPage() {
               }}
             />
             <ImportDialog
+              termLang={termLang}
+              onTermLangChange={setTermLang}
+              defLang={defLang}
+              onDefLangChange={setDefLang}
               onImport={(incoming) =>
                 // Only a real, term-filled row survives an import merge —
                 // a still-blank template row (empty term, whatever its
