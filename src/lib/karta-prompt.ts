@@ -6,10 +6,13 @@
  * LEVEL / COUNT are left for the learner to fill. The languages are NOT part
  * of the JSON: the learner picks them in the Paste screen.
  */
-export const KARTA_RULE =
+export const KARTA_RULE_GERMAN =
   "Karta JSON. term/def isn't enough: gender + a sentence per case. At least 8, at most 200 cards.";
 
-export const KARTA_PROMPT = `You write a Karta study set. Karta trains German PRODUCTION:
+export const KARTA_RULE_GENERAL =
+  "Karta JSON. term/gloss/example, one natural sentence per card. At least 8, at most 200 cards.";
+
+const KARTA_PROMPT_GERMAN = `You write a Karta study set. Karta trains German PRODUCTION:
 article, case, then a sentence — not a word list.
 
 Output ONLY valid JSON. No markdown. No commentary.
@@ -46,13 +49,57 @@ Rules:
   Never guess.
 - Verbs: gender null. examples may be nom-only.
 - Terms in TERM LANGUAGE, glosses in DEFINITION LANGUAGE below.
-  Kurdish = Kurmanji, Latin script only.
-- Terms not German: gender, plural = null, noPlural = false,
-  examples.akk and examples.dat = null. The German rules above
-  apply only to German terms.
 
 TOPIC:
 TERM LANGUAGE:
 DEFINITION LANGUAGE:
 LEVEL:
 COUNT: `;
+
+const KARTA_PROMPT_GENERAL = `You write a Karta vocabulary set with real example sentences —
+not a bare word list.
+
+Output ONLY valid JSON. No markdown. No commentary.
+
+{
+  "title": "string",
+  "description": "one short sentence, or null",
+  "level": "A1" | "A2",
+  "cards": [
+    {
+      "term": "dictionary form in the TERM language",
+      "pos": "noun" | "verb" | "adj" | "other",
+      "gloss": "meaning in the DEFINITION language",
+      "example": "one natural sentence in the TERM language using the term, or null",
+      "sourceNote": "where this entry comes from (dictionary, book), or null"
+    }
+  ]
+}
+
+Rules:
+- Card count = COUNT below. Not fixed at 50.
+  Minimum 8, maximum 200.
+  Topic smaller → fewer cards. Do not pad.
+- Terms in TERM LANGUAGE, glosses in DEFINITION LANGUAGE below.
+  Kurdish = Kurmanji, Latin script only.
+- If you cannot write a correct, natural example sentence, use null.
+  Never guess.
+
+TOPIC:
+TERM LANGUAGE:
+DEFINITION LANGUAGE:
+LEVEL:
+COUNT: `;
+
+/** Term language drives the schema: German gets case-aware gender/examples,
+ *  everything else gets the plain term/gloss/example shape (karta-import.ts
+ *  rejects gender/plural/examples.akk/dat for non-German terms either way —
+ *  this just keeps the prompt from asking for fields it can't use, which
+ *  otherwise confuses the model into producing German content by habit). */
+export function kartaPromptFor(isGermanTerm: boolean): string {
+  return isGermanTerm ? KARTA_PROMPT_GERMAN : KARTA_PROMPT_GENERAL;
+}
+
+export function kartaRuleFor(isGermanTerm: boolean): string {
+  return isGermanTerm ? KARTA_RULE_GERMAN : KARTA_RULE_GENERAL;
+}

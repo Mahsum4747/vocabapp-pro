@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Copy, FileUp } from "lucide-react";
 import { toast } from "sonner";
-import { KARTA_PROMPT, KARTA_RULE } from "@/lib/karta-prompt";
+import { kartaPromptFor, kartaRuleFor } from "@/lib/karta-prompt";
 import { parseKartaJson } from "@/lib/karta-import";
 import type { LanguageChoice } from "@/lib/lang/choice";
 import { LanguageSelect } from "./language-select";
@@ -93,13 +93,13 @@ export function ImportDialog({
         </p>
         <details className="rounded-card bg-surface-2 p-3 text-sm">
           <summary className="cursor-pointer font-medium text-fg">Karta JSON</summary>
-          <p className="mt-2 text-muted">{KARTA_RULE}</p>
+          <p className="mt-2 text-muted">{kartaRuleFor(termLang.code === "de")}</p>
           <p className="mt-1 text-muted">
             Paste this prompt into your own AI chat, fill TOPIC / TERM LANGUAGE / DEFINITION LANGUAGE / LEVEL (matching the languages picked below), then
             paste the JSON it returns below.
           </p>
           <pre className="mt-2 max-h-48 overflow-auto rounded-card bg-surface p-3 font-mono text-xs whitespace-pre-wrap text-fg">
-            {KARTA_PROMPT}
+            {kartaPromptFor(termLang.code === "de")}
           </pre>
           <Button
             type="button"
@@ -108,7 +108,7 @@ export function ImportDialog({
             className="mt-2"
             onClick={() => {
               navigator.clipboard
-                .writeText(KARTA_PROMPT)
+                .writeText(kartaPromptFor(termLang.code === "de"))
                 .then(() => toast.success("Prompt copied."))
                 .catch(() => toast.error("Couldn't copy the prompt."));
             }}
