@@ -117,8 +117,27 @@ export const EMPTY_PROFILE: LanguageProfile = {
   hasTermAutocomplete: false,
 };
 
+/**
+ * KU and TR share a profile: both get the bundled (offline) KU<->TR gloss
+ * lookup (src/lib/kurdish/), nothing else. No noun enrichment (KU/TR nouns
+ * don't carry German-style gender/plural data here), no AI example
+ * suggestions (out of scope for this task, same as German's own
+ * `hasExampleSuggestions` gate before Phase 3C), no term autocomplete (the
+ * dataset has no frequency signal, same reasoning `hasTermAutocomplete`'s
+ * own doc comment gives for not sourcing it from an unranked dictionary).
+ */
+const KURDISH_TURKISH_PROFILE: LanguageProfile = {
+  hasNounEnrichment: false,
+  articleWords: [],
+  hasExampleSuggestions: false,
+  hasBundledSuggestions: true,
+  hasTermAutocomplete: false,
+};
+
 const PROFILES: Partial<Record<LanguageCode, LanguageProfile>> = {
   de: GERMAN_PROFILE,
+  ku: KURDISH_TURKISH_PROFILE,
+  tr: KURDISH_TURKISH_PROFILE,
 };
 
 /** The profile for a resolved term-language code, or `EMPTY_PROFILE` for

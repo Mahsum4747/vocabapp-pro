@@ -6,6 +6,7 @@ import { suggestCardContent } from "@/lib/suggest-card";
 import { suggestExampleSentences } from "@/lib/example-suggestions";
 import { previewGermanEnrichment } from "@/lib/german/preview-enrichment";
 import { lookupBundledSuggestions } from "@/lib/german/bundled-suggestions";
+import { lookupKurdishBundledSuggestions } from "@/lib/kurdish/bundled-suggestions";
 import { suggestTermPrefix } from "@/lib/german/term-suggestions";
 import { profileFor } from "@/lib/lang/profiles";
 import { isIncompleteNoun } from "@/lib/term-display";
@@ -387,7 +388,36 @@ export function CardEditor({
     if (!term) return null;
     let entry: BundledEntry | null = null;
     try {
-      entry = await lookupBundledSuggestions({ data: { term } });
+      // German has its own bundled example/translation dataset
+      // (gender/plural/examples included); Kurmancî (ku) and Turkish (tr)
+      // only get the offline KU<->TR gloss dataset (no gender/plural/
+      // examples — see src/lib/kurdish/KURDISH-ATTRIBUTION.md), mapped onto
+      // the same `BundledEntry` shape so the rest of this component (chip
+      // rows, the example panel) doesn't need a second code path. The
+      // branch is on `termLangCode`, never on `profile` alone, so a future
+      // language with `hasBundledSuggestions: true` but no case here still
+      // falls through to `null` instead of silently reusing German's or
+      // Kurdish's lookup.
+      if (termLangCode === "de") {
+        entry = await lookupBundledSuggestions({ data: { term } });
+      } else if (termLangCode === "ku" || termLangCode === "tr") {
+        const direction = termLangCode;
+        const kurdish = await lookupKurdishBundledSuggestions({ data: { term, direction } });
+        entry = kurdish
+          ? {
+              lemma: kurdish.lemma,
+              pos: "",
+              gender: null,
+              plural: null,
+              examples: [],
+              translations: {
+                en: [],
+                tr: direction === "ku" ? kurdish.translations : [],
+                ku: direction === "tr" ? kurdish.translations : [],
+              },
+            }
+          : null;
+      }
     } catch {
       entry = null;
     }
