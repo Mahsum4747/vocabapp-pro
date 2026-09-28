@@ -382,6 +382,13 @@ export function CardEditor({
    * out of the same render's stale closure.
    */
   async function checkBundledSuggestions(id: string): Promise<BundledEntry | null> {
+    // TEMP DIAGNOSTIC — not for commit.
+    console.log("[diag] checkBundledSuggestions called", {
+      id,
+      termLangCode,
+      defLangCode,
+      hasBundledSuggestions: profile.hasBundledSuggestions,
+    });
     if (!profile.hasBundledSuggestions) return null;
     const card = cardsRef.current.find((c) => c.id === id);
     const term = card?.term.trim();
@@ -418,9 +425,13 @@ export function CardEditor({
             }
           : null;
       }
-    } catch {
+    } catch (e) {
+      // TEMP DIAGNOSTIC — not for commit.
+      console.error("[diag] checkBundledSuggestions threw", e);
       entry = null;
     }
+    // TEMP DIAGNOSTIC — not for commit.
+    console.log("[diag] checkBundledSuggestions result", { id, term, entry });
     setBundled((prev) => ({ ...prev, [id]: { term, entry } }));
     return entry;
   }
