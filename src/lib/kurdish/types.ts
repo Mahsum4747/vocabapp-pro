@@ -8,11 +8,12 @@
  * pipeline — see KURDISH-ATTRIBUTION.md).
  */
 export interface KurdishBundledEntry {
-  /** The dictionary's own headword (KU direction) or the matched KU
-   *  headword (TR direction) — never the query string's casing. */
+  /** The dictionary's own headword (KU direction) or the first matched KU
+   *  headword (TR direction, when the query matches 2+ headwords) — never
+   *  the query string's casing. */
   lemma: string;
-  /** Turkish gloss(es) for a KU query, or the single Turkish translation
-   *  that was looked up, for a TR query. Never empty when this entry is
-   *  returned at all. */
+  /** Turkish gloss(es) for a KU query, or the matched KU headword(s) for a
+   *  TR query — 1 to 5 entries, never empty when this entry is returned at
+   *  all. */
   translations: string[];
 }

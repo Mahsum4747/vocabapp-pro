@@ -36,16 +36,29 @@ describe("lookupKurdishToTurkish — unambiguous term resolves", () => {
   });
 });
 
-describe("lookupKurdishToTurkish — known dirty/ambiguous headwords return null", () => {
+describe("lookupKurdishToTurkish — multi-sense/cross-POS headwords now resolve with all glosses", () => {
   // Confirmed against the real dataset, not assumed: each of these either
   // has multiple senses under one part-of-speech ("şev": night vs. an
   // "apple tree" sense sharing the same section), multiple different
-  // parts-of-speech ("dê", "nan", "dost"), or both — the build-time filter
-  // (see KURDISH-ATTRIBUTION.md) excludes all of them, so the runtime
-  // lookup returns null exactly like an unrecognized term.
+  // parts-of-speech ("dê", "nan", "dost"), or both. These used to be
+  // excluded entirely at build time; they're now included with every
+  // translation the entry has (deduped, capped at 5) since there was never
+  // a principled way to split them by sense (see KURDISH-ATTRIBUTION.md).
+  it(`"mal" (house/property/goods) resolves to multiple Turkish glosses`, () => {
+    const entry = lookupKurdishToTurkish("mal");
+    assert.equal(entry?.lemma, "mal");
+    assert.ok(entry!.translations.length >= 2, "expected 2+ translations for 'mal'");
+    assert.ok(entry!.translations.length <= 5);
+    assert.ok(entry!.translations.includes("ev"));
+    assert.ok(entry!.translations.includes("mal"));
+  });
+
   for (const term of ["şev", "dê", "nan", "dost"]) {
-    it(`"${term}" -> null`, () => {
-      assert.equal(lookupKurdishToTurkish(term), null);
+    it(`"${term}" resolves with 2+ translations, capped at 5`, () => {
+      const entry = lookupKurdishToTurkish(term);
+      assert.equal(entry?.lemma, term);
+      assert.ok(entry!.translations.length >= 2, `expected 2+ translations for '${term}'`);
+      assert.ok(entry!.translations.length <= 5, `expected at most 5 translations for '${term}'`);
     });
   }
 });
@@ -59,16 +72,23 @@ describe("lookupKurdishToTurkish — not found", () => {
 });
 
 describe("lookupTurkishToKurdish — reverse lookup", () => {
-  it("a Turkish word with exactly one Kurdish source resolves", () => {
+  it("'fare' (mouse, one clear KU headword) still resolves the same as before", () => {
+    const entry = lookupTurkishToKurdish("fare");
+    assert.equal(entry?.lemma, "mişk");
+    assert.deepEqual(entry!.translations, ["mişk"]);
+  });
+
+  it("a Turkish word linked to 2+ different Kurdish headwords now resolves with all of them", () => {
+    // "aile" translates several distinct KU words (malbat, binemal, xêzan,
+    // ...) in the real dataset — this used to be dropped entirely by the
+    // old "exactly one match" rule; it's now included with every distinct
+    // headword it maps to, deduped and capped at 5.
     const entry = lookupTurkishToKurdish("aile");
-    // "aile" is one of malbat's glosses; assert on the mechanism rather
-    // than assuming which single Kurdish headword wins if several
-    // (non-malbat) Turkish words happen to also map 1:1 — just require the
-    // shape to be right and self-consistent with the forward direction.
-    if (entry) {
-      assert.equal(typeof entry.lemma, "string");
-      assert.deepEqual(entry.translations, [entry.lemma]);
-    }
+    assert.ok(entry, "'aile' should resolve");
+    assert.ok(entry!.translations.length >= 2, "expected 2+ KU headwords for 'aile'");
+    assert.ok(entry!.translations.length <= 5, "expected at most 5 KU headwords for 'aile'");
+    assert.ok(entry!.translations.includes("malbat"));
+    assert.equal(entry!.lemma, entry!.translations[0]);
   });
 
   it("not found / empty input -> null", () => {
@@ -78,10 +98,11 @@ describe("lookupTurkishToKurdish — reverse lookup", () => {
   });
 
   it("is case-insensitive", () => {
-    const lower = lookupTurkishToKurdish("aile");
-    const upper = lookupTurkishToKurdish("AILE".toLocaleLowerCase("tr"));
-    // Only compare when the lowercase form actually resolves — guards
-    // against depending on "aile" specifically staying unambiguous forever.
-    if (lower) assert.deepEqual(upper, lower);
+    // "fare" has no dotted/dotless-I ambiguity under Turkish casing rules,
+    // unlike "aile" (whose Turkish-locale-uppercase round-trip changes
+    // letters), so a plain toUpperCase() round-trip is safe here.
+    const lower = lookupTurkishToKurdish("fare");
+    const upper = lookupTurkishToKurdish("FARE".toLowerCase());
+    assert.deepEqual(upper, lower);
   });
 });

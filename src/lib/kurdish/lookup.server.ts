@@ -8,30 +8,31 @@ import type { KurdishBundledEntry } from "./types.ts";
  * one big TSV string per direction, parsed once into a lazily-built Map, so
  * a cold start that never looks up a KU/TR term never pays the parse cost.
  *
- * AMBIGUOUS TERMS RETURN NOTHING, ON PURPOSE — the exact same decision
- * `examples.server.ts` documents for German, applied here for the same
- * reason: this app's editor has no part-of-speech input to disambiguate
- * with, so there is no principled way to guess which sense a bare typed
- * term means. Both datasets were already filtered at build time (see
- * `KURDISH-ATTRIBUTION.md`) to contain ONLY unambiguous records, so at
- * runtime "found" and "unambiguous" are the same thing: a lookup miss here
- * covers both "never in the dictionary" and "was in the dictionary but
- * ambiguous," indistinguishably, matching the German module's own contract.
+ * A LOOKUP CAN RETURN MULTIPLE TRANSLATIONS, ON PURPOSE — unlike
+ * `examples.server.ts`'s German rule ("more than one candidate -> null,
+ * never guess which one"), this dataset's `translations` table has no
+ * sense-level FK at all (see `KURDISH-ATTRIBUTION.md`): a multi-sense
+ * headword's translations were never separable by sense in the source
+ * data, so there is nothing to disambiguate BETWEEN — every gloss the
+ * dictionary lists for a headword is presented, and the editor's chip UI
+ * (`card-editor.tsx`) lets the person pick the one they meant. "Found" no
+ * longer means "unambiguous": a lookup hit can carry 1 to 5 translations.
  *
- * What "unambiguous" meant at build time, for the record (the filtering
- * itself already happened, offline, before this file's data existed):
- *   - KU -> TR: a KU headword's dictionary entry is kept only if (a) no
- *     OTHER entry shares that exact (lowercased) headword, (b) all of its
- *     senses share one part-of-speech `section` tag, and (c) it has
- *     exactly one sense. Any of those failing means the headword's meaning
- *     isn't pinned down by a bare string match, so it's left out entirely.
- *   - TR -> KU: the source `translations` table has no sense-level FK (see
- *     KURDISH-ATTRIBUTION.md) — a translation belongs to an entry, not a
- *     sense — so a Turkish string is kept only if it is never listed as a
- *     translation of more than one DISTINCT Kurdish headword, across every
- *     Kurdish entry (ambiguous or not) that lists it. A Turkish word that
- *     genuinely translates several different Kurdish words (a common,
- *     general word) is exactly the case this excludes.
+ * What's still filtered out at build time (see `KURDISH-ATTRIBUTION.md`):
+ *   - KU -> TR: a KU headword's dictionary entry is kept only if no OTHER
+ *     entry shares that exact (lowercased) headword (`ambiguous_cross_entry`
+ *     — 0 cases in the v2.5.0 release, so this filter passes almost every
+ *     headword in practice). Multi-sense and cross-part-of-speech headwords
+ *     are NO LONGER excluded — all of an included entry's Turkish
+ *     translations are kept (deduped, capped at 5, in source row order).
+ *   - TR -> KU: every Turkish string that translates at least one Kurdish
+ *     headword is kept, pointing at ALL of the distinct Kurdish headwords
+ *     it translates (deduped, capped at 5, in source row order) — not just
+ *     a single "unambiguous" one anymore.
+ *
+ * Both TSVs are pre-capped at 5 translations/headwords per row at build
+ * time; the `.slice(0, 5)` calls below are a defensive re-cap only, in case
+ * the data is ever regenerated without the cap.
  */
 
 interface Direction {
@@ -82,8 +83,8 @@ function splitList(value: string): string[] {
 
 /**
  * Look up Turkish gloss(es) for a Kurmancî term, or `null` when nothing is
- * bundled for it OR the term is ambiguous (both indistinguishable — see the
- * module doc comment). Case-insensitive.
+ * bundled for it. A hit can carry 1 to 5 translations (see module doc
+ * comment) — never zero. Case-insensitive.
  */
 export function lookupKurdishToTurkish(term: string): KurdishBundledEntry | null {
   const key = term.trim().toLowerCase();
@@ -93,14 +94,15 @@ export function lookupKurdishToTurkish(term: string): KurdishBundledEntry | null
   if (row === undefined) return null;
   const line = rows[row]!;
   const [headword = "", tr = ""] = line.split("\t");
-  const translations = splitList(tr);
+  const translations = splitList(tr).slice(0, 5);
   if (translations.length === 0) return null;
   return { lemma: headword, translations };
 }
 
 /**
- * Look up the single Kurmancî headword a Turkish term unambiguously
- * translates, or `null` (see module doc comment). Case-insensitive.
+ * Look up the Kurmancî headword(s) a Turkish term translates, or `null`
+ * when nothing is bundled for it. A hit can carry 1 to 5 headwords (see
+ * module doc comment) — never zero. Case-insensitive.
  */
 export function lookupTurkishToKurdish(term: string): KurdishBundledEntry | null {
   const key = term.trim().toLowerCase();
@@ -109,9 +111,10 @@ export function lookupTurkishToKurdish(term: string): KurdishBundledEntry | null
   const row = byKey.get(key);
   if (row === undefined) return null;
   const line = rows[row]!;
-  const [, headword = ""] = line.split("\t");
-  if (!headword) return null;
-  return { lemma: headword, translations: [headword] };
+  const [, headwords = ""] = line.split("\t");
+  const translations = splitList(headwords).slice(0, 5);
+  if (translations.length === 0) return null;
+  return { lemma: translations[0]!, translations };
 }
 
 /** Records in the loaded forward/reverse dictionaries. Forces the build;

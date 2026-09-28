@@ -51,7 +51,7 @@ For every `ku` entry with at least one non-empty `tr` translation
 
 - **`clear`** (36,112 entries) — the headword belongs to exactly one entry
   in the source, all of that entry's senses share one `section` (POS) tag,
-  and it has exactly one sense. **Only these are kept in `ku-data.ts`.**
+  and it has exactly one sense.
 - **`ambiguous_cross_pos`** (3,510) — the single entry's senses span more
   than one `section`.
 - **`ambiguous_multi_sense`** (8,890) — one `section`, but more than one
@@ -60,27 +60,46 @@ For every `ku` entry with at least one non-empty `tr` translation
   to map to exactly one source `entries` row) — would be headwords shared
   by two or more distinct entries, the cross-POS-by-different-rows case.
 
-This mirrors `examples.server.ts`'s own stated rule for German ("more than
-one row for a lemma -> null, never guess which one") rather than any
-embedding/NLP-based sense clustering — deliberately the simplest rule that
-fits the data, per this task's own instructions.
+**Updated rule (superseding the original build):** since `translations` has
+no sense-level FK, `ambiguous_cross_pos` and `ambiguous_multi_sense` were
+never actually resolvable by picking "the right sense" — a multi-sense
+entry's translations were always one undifferentiated list. Excluding them
+meant a genuinely multi-meaning word (e.g. "mal" = ev/mal/mülk/emlak) surfaced
+nothing at all, which is worse than showing every gloss and letting the
+person pick. `ku-data.ts` now keeps **every** entry from `clear` +
+`ambiguous_cross_pos` + `ambiguous_multi_sense` (36,112 + 3,510 + 8,890 =
+**48,512 entries — all of them**, since `ambiguous_cross_entry` is 0). Only
+`ambiguous_cross_entry` would still be excluded (headword collision across
+*distinct* source `entries` rows, not distinguishable by picking a sense at
+all) — moot in this release since it's 0. For each kept entry, all of its
+`tr` translations are deduped and capped at **5**, in source `translations`
+row-id order (no relevance ranking invented). 22,497 of the 48,512 entries
+have more than one translation after dedupe/cap, and now show all of them as
+separate tap-to-fill chips in the card editor instead of nothing.
 
 For the reverse direction (`tr-data.ts`), we built a Turkish-text -> Kurdish
 headword(s) index from the SAME 48,512-entry pool (ambiguous KU entries
 included, since a Turkish word can legitimately be the correct translation
 of an entry that is itself internally ambiguous — the two ambiguity
-questions are independent). A Turkish text is kept only when it maps to
-**exactly one** distinct Kurdish headword across every entry that lists it;
-42,456 distinct Turkish texts were found this way, of which 17,071 map to
-exactly one Kurdish headword (kept) and 25,385 map to two or more different
-Kurdish headwords (dropped — the exact "genuinely translates several
-different Kurdish words" case this is meant to exclude).
+questions are independent). 42,456 distinct Turkish texts exist in this
+pool: 17,071 map to exactly one Kurdish headword and 25,385 map to two or
+more different Kurdish headwords.
 
-## Known dirty entries in the source data (not corrected, kept as-is)
+**Updated rule (superseding the original build):** the old build dropped
+all 25,385 multi-headword Turkish texts entirely (the "genuinely translates
+several different Kurdish words" case). `tr-data.ts` now keeps **all
+42,456** — every Turkish text that translates at least one Kurdish
+headword — listing every distinct headword it translates (deduped, capped
+at **5**, in source row-id order) instead of requiring exactly one.
 
-Per this task's instructions, none of these are hand-fixed — the ambiguity
-rule above is relied on to keep them from ever being surfaced as a false
-"unambiguous" answer:
+## Known multi-sense entries in the source data (not corrected, kept as-is)
+
+These headwords carry several senses (and, in some cases, several parts of
+speech) under one headword string. Since translations aren't separable by
+sense in the source data (see above), they are now INCLUDED — all their
+translations are shown together as chips, and it's up to the person to pick
+the right one, rather than being silently excluded as they were before this
+change:
 
 - **"şev"** — 3 senses under one `Navder` (noun) section; one of them is an
   "apple tree" sense unrelated to the primary "night" meaning, filed under
@@ -98,7 +117,9 @@ rule above is relied on to keep them from ever being surfaced as a false
 These are the source data's own tagging, not an artifact of our filtering —
 they are left uncorrected because correcting a dictionary's sense
 boundaries is out of scope for this task and would require judgment calls
-about a language neither of us can independently verify.
+about a language neither of us can independently verify. Each now resolves
+to up to 5 of its (deduped) Turkish translations, capped the same way every
+other entry is.
 
 ## What CC BY-SA 4.0 requires of us
 
