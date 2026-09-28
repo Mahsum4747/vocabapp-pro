@@ -34,7 +34,9 @@ export function LanguageSelect({
   return (
     <div className="space-y-1.5">
       <Label htmlFor={id}>{label}</Label>
-      {hint ? <p className="text-xs text-muted">{hint}</p> : null}
+      <p className="text-xs text-muted" aria-hidden={hint ? undefined : true}>
+        {hint ?? " "}
+      </p>
       <Input
         id={id}
         list={listId}
