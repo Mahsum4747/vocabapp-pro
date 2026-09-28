@@ -737,12 +737,23 @@ export function CardEditor({
                     setActiveSuggestionId(null);
                   }}
                   placeholder="e.g. mitochondria"
+                  // Name has no user/email/password/address-shaped substring, so
+                  // browser/password-manager autofill heuristics (which can render
+                  // a suggestion strip over the keyboard and swallow the next tap)
+                  // have nothing to match here — same reasoning as the reference
+                  // pattern in sets.$setId.test.tsx's answer input.
+                  name={`karta-card-term-${card.id}`}
                   autoComplete="off"
                   // A term is typed exactly as it should be stored: the phone's keyboard must
                   // not capitalise, "correct" or underline it (German words especially).
                   autoCapitalize="none"
                   autoCorrect="off"
                   spellCheck={false}
+                  inputMode="text"
+                  enterKeyHint="next"
+                  data-1p-ignore
+                  data-lpignore="true"
+                  data-form-type="other"
                 />
                 {profile.hasTermAutocomplete &&
                 activeSuggestionId === card.id &&
@@ -778,6 +789,13 @@ export function CardEditor({
                 onChange={(e) => update(card.id, { definition: e.target.value })}
                 placeholder="A short, clear definition"
                 className="min-h-11 md:min-h-20"
+                name={`karta-card-definition-${card.id}`}
+                autoComplete="off"
+                inputMode="text"
+                enterKeyHint="done"
+                data-1p-ignore
+                data-lpignore="true"
+                data-form-type="other"
               />
               {defLangCode === "de" ? (
                 <DiacriticRow
