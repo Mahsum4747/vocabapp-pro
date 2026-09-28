@@ -10,14 +10,13 @@ export const EXPLANATION_LANGUAGES = ["en", "tr", "ku"] as const;
 export type ExplanationLanguage = (typeof EXPLANATION_LANGUAGES)[number];
 export const DEFAULT_EXPLANATION_LANGUAGE: ExplanationLanguage = "en";
 
-export const DIRECTIONS = [
-  "learn_de",
-  "learn_tr",
-  "learn_ku",
-  // Karta pairs "tr-ku" / "ku-tr" (term language first).
-  "learn_ku_from_tr",
-  "learn_tr_from_ku",
-] as const;
+/** Single-language directions: "Learn X" — the explanation language decides "from what". */
+export const SINGLE_LANGUAGE_DIRECTIONS = ["learn_de", "learn_tr", "learn_ku"] as const;
+// Karta pairs "tr-ku" / "ku-tr" (term language first).
+/** Fixed-pair directions: both languages are named up front, so "X → Y" already reads unambiguously. */
+export const PAIR_DIRECTIONS = ["learn_ku_from_tr", "learn_tr_from_ku"] as const;
+
+export const DIRECTIONS = [...SINGLE_LANGUAGE_DIRECTIONS, ...PAIR_DIRECTIONS] as const;
 export type Direction = (typeof DIRECTIONS)[number];
 export const DEFAULT_DIRECTION: Direction = "learn_de";
 

@@ -4,10 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/input";
 import {
-  DIRECTIONS,
   DIRECTION_LABELS,
   EXPLANATION_LANGUAGES,
   EXPLANATION_LANGUAGE_LABELS,
+  SINGLE_LANGUAGE_DIRECTIONS,
+  PAIR_DIRECTIONS,
   isDirection,
   isExplanationLanguage,
   shouldPromptForPrefs,
@@ -32,11 +33,20 @@ function PrefsFields({
           value={value.direction}
           onChange={(e) => isDirection(e.target.value) && onChange({ ...value, direction: e.target.value })}
         >
-          {DIRECTIONS.map((d) => (
-            <option key={d} value={d}>
-              {DIRECTION_LABELS[d]}
-            </option>
-          ))}
+          <optgroup label="Learn a language">
+            {SINGLE_LANGUAGE_DIRECTIONS.map((d) => (
+              <option key={d} value={d}>
+                {DIRECTION_LABELS[d]}
+              </option>
+            ))}
+          </optgroup>
+          <optgroup label="Language pairs">
+            {PAIR_DIRECTIONS.map((d) => (
+              <option key={d} value={d}>
+                {DIRECTION_LABELS[d]}
+              </option>
+            ))}
+          </optgroup>
         </Select>
       </div>
       <div className="space-y-1.5">
