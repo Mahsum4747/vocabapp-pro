@@ -16,6 +16,7 @@ import { Route as GrammarRouteImport } from './routes/grammar'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ReviewRouteImport } from './routes/review'
 import { Route as SignupRouteImport } from './routes/signup'
+import { Route as GrammarIndexRouteImport } from './routes/grammar.index'
 import { Route as GrammarAdjektivendungenRouteImport } from './routes/grammar.adjektivendungen'
 import { Route as GrammarDiktatRouteImport } from './routes/grammar.diktat'
 import { Route as GrammarImperativRouteImport } from './routes/grammar.imperativ'
@@ -79,6 +80,11 @@ const SignupRoute = SignupRouteImport.update({
   id: '/signup',
   path: '/signup',
   getParentRoute: () => rootRouteImport,
+} as any)
+const GrammarIndexRoute = GrammarIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => GrammarRoute,
 } as any)
 const GrammarAdjektivendungenRoute = GrammarAdjektivendungenRouteImport.update({
   id: '/adjektivendungen',
@@ -244,6 +250,7 @@ export interface FileRoutesByFullPath {
   '/grammar/steigerung': typeof GrammarSteigerungRoute
   '/grammar/trennbare-verben': typeof GrammarTrennbareVerbenRoute
   '/sets/$setId': typeof SetsSetIdRouteWithChildren
+  '/grammar/': typeof GrammarIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/sets/$setId/articles': typeof SetsSetIdArticlesRoute
   '/sets/$setId/cases': typeof SetsSetIdCasesRoute
@@ -262,7 +269,6 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/account': typeof AccountRoute
   '/create': typeof CreateRoute
-  '/grammar': typeof GrammarRouteWithChildren
   '/login': typeof LoginRoute
   '/review': typeof ReviewRoute
   '/signup': typeof SignupRoute
@@ -280,6 +286,7 @@ export interface FileRoutesByTo {
   '/grammar/relativsaetze': typeof GrammarRelativsaetzeRoute
   '/grammar/steigerung': typeof GrammarSteigerungRoute
   '/grammar/trennbare-verben': typeof GrammarTrennbareVerbenRoute
+  '/grammar': typeof GrammarIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/sets/$setId/articles': typeof SetsSetIdArticlesRoute
   '/sets/$setId/cases': typeof SetsSetIdCasesRoute
@@ -318,6 +325,7 @@ export interface FileRoutesById {
   '/grammar/steigerung': typeof GrammarSteigerungRoute
   '/grammar/trennbare-verben': typeof GrammarTrennbareVerbenRoute
   '/sets/$setId': typeof SetsSetIdRouteWithChildren
+  '/grammar/': typeof GrammarIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/sets/$setId/articles': typeof SetsSetIdArticlesRoute
   '/sets/$setId/cases': typeof SetsSetIdCasesRoute
@@ -357,6 +365,7 @@ export interface FileRouteTypes {
     | '/grammar/steigerung'
     | '/grammar/trennbare-verben'
     | '/sets/$setId'
+    | '/grammar/'
     | '/api/auth/$'
     | '/sets/$setId/articles'
     | '/sets/$setId/cases'
@@ -375,7 +384,6 @@ export interface FileRouteTypes {
     | '/'
     | '/account'
     | '/create'
-    | '/grammar'
     | '/login'
     | '/review'
     | '/signup'
@@ -393,6 +401,7 @@ export interface FileRouteTypes {
     | '/grammar/relativsaetze'
     | '/grammar/steigerung'
     | '/grammar/trennbare-verben'
+    | '/grammar'
     | '/api/auth/$'
     | '/sets/$setId/articles'
     | '/sets/$setId/cases'
@@ -430,6 +439,7 @@ export interface FileRouteTypes {
     | '/grammar/steigerung'
     | '/grammar/trennbare-verben'
     | '/sets/$setId'
+    | '/grammar/'
     | '/api/auth/$'
     | '/sets/$setId/articles'
     | '/sets/$setId/cases'
@@ -507,6 +517,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/signup'
       preLoaderRoute: typeof SignupRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/grammar/': {
+      id: '/grammar/'
+      path: '/'
+      fullPath: '/grammar/'
+      preLoaderRoute: typeof GrammarIndexRouteImport
+      parentRoute: typeof GrammarRoute
     }
     '/grammar/adjektivendungen': {
       id: '/grammar/adjektivendungen'
@@ -722,6 +739,7 @@ interface GrammarRouteChildren {
   GrammarRelativsaetzeRoute: typeof GrammarRelativsaetzeRoute
   GrammarSteigerungRoute: typeof GrammarSteigerungRoute
   GrammarTrennbareVerbenRoute: typeof GrammarTrennbareVerbenRoute
+  GrammarIndexRoute: typeof GrammarIndexRoute
 }
 
 const GrammarRouteChildren: GrammarRouteChildren = {
@@ -739,6 +757,7 @@ const GrammarRouteChildren: GrammarRouteChildren = {
   GrammarRelativsaetzeRoute: GrammarRelativsaetzeRoute,
   GrammarSteigerungRoute: GrammarSteigerungRoute,
   GrammarTrennbareVerbenRoute: GrammarTrennbareVerbenRoute,
+  GrammarIndexRoute: GrammarIndexRoute,
 }
 
 const GrammarRouteWithChildren =
