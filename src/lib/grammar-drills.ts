@@ -100,14 +100,14 @@ export function buildPluralQuestion(entry: NounEntry, rng: Rng = Math.random): P
   const candidates = [...new Set(pluralCandidates(entry.lemma))].filter(
     (candidate) => candidate !== correctAnswer,
   );
-  const distractors = shuffle(candidates).slice(0, 3);
+  const distractors = shuffle(candidates, rng).slice(0, 3);
   // Backfill with lemma-suffixed fallbacks on the rare lemma where the
   // pattern set collapses to fewer than 3 distinct wrong forms.
   while (distractors.length < 3) {
     const fallback = `${entry.lemma}${"x".repeat(distractors.length + 1)}`;
     if (!distractors.includes(fallback) && fallback !== correctAnswer) distractors.push(fallback);
   }
-  const options = shuffle([correctAnswer, ...distractors]);
+  const options = shuffle([correctAnswer, ...distractors], rng);
   const article = NOMINATIVE_ARTICLE[genus];
   return {
     lemma: entry.lemma,
@@ -162,8 +162,8 @@ export function buildNichtKeinQuestion(
   const pool = [...new Set(["nicht", ...ALL_KEIN_FORMS])].filter(
     (candidate) => candidate !== correctAnswer,
   );
-  const distractors = shuffle(pool).slice(0, 3);
-  const options = shuffle([correctAnswer, ...distractors]);
+  const distractors = shuffle(pool, rng).slice(0, 3);
+  const options = shuffle([correctAnswer, ...distractors], rng);
   return {
     lemma: entry.lemma,
     prompt: template.build(entry.lemma, article),
@@ -223,8 +223,8 @@ export function buildPossessiveQuestion(
     (["m", "f", "n", "pl"] as GenusOrPlural[]).map((g) => inflect(stem, g, c)),
   );
   const pool = [...new Set(allFormsForStem)].filter((candidate) => candidate !== correctAnswer);
-  const distractors = shuffle(pool).slice(0, 3);
-  const options = shuffle([correctAnswer, ...distractors]);
+  const distractors = shuffle(pool, rng).slice(0, 3);
+  const options = shuffle([correctAnswer, ...distractors], rng);
   return {
     lemma: entry.lemma,
     person,
@@ -264,9 +264,9 @@ export function buildTrennbareVerbenQuestion(
   const otherPrefixes = ["an", "auf", "aus", "mit", "zu", "ab", "bei", "ein", "vor", "nach", "zurück", "weg"].filter(
     (p) => p !== prefix,
   );
-  const pool = [...new Set([entry.infinitive, ...shuffle(otherPrefixes)])].filter((c) => c !== prefix);
+  const pool = [...new Set([entry.infinitive, ...shuffle(otherPrefixes, rng)])].filter((c) => c !== prefix);
   const distractors = pool.slice(0, 3);
-  const options = shuffle([prefix, ...distractors]);
+  const options = shuffle([prefix, ...distractors], rng);
   return {
     infinitive: entry.infinitive,
     prefix,
@@ -310,8 +310,8 @@ export function buildModalverbenQuestion(rng: Rng = Math.random): ModalverbenQue
   const pool = new Set<string>();
   for (const m of MODAL_VERBS) for (const p of MODAL_PERSONS) pool.add(MODAL_FORMS[m][p]);
   pool.delete(correctAnswer);
-  const distractors = shuffle([...pool]).slice(0, 3);
-  const options = shuffle([correctAnswer, ...distractors]);
+  const distractors = shuffle([...pool], rng).slice(0, 3);
+  const options = shuffle([correctAnswer, ...distractors], rng);
   return {
     modal,
     person,
@@ -360,7 +360,7 @@ export function buildImperativQuestion(
     ...IMPERATIV_TARGETS.filter((t) => t !== target).map((t) => forms[t]),
     entry.infinitive,
   ];
-  const options = shuffle([correctAnswer, ...distractors]);
+  const options = shuffle([correctAnswer, ...distractors], rng);
   return {
     infinitive: entry.infinitive,
     target,
@@ -405,8 +405,8 @@ export function buildPronomenQuestion(rng: Rng = Math.random): PronomenQuestion 
     pool.add(PRONOUN_TABLE[p].dativ);
   }
   pool.delete(correctAnswer);
-  const distractors = shuffle([...pool]).slice(0, 3);
-  const options = shuffle([correctAnswer, ...distractors]);
+  const distractors = shuffle([...pool], rng).slice(0, 3);
+  const options = shuffle([correctAnswer, ...distractors], rng);
   return {
     person,
     pronounCase,
@@ -462,7 +462,7 @@ export function buildAdjektivendungenQuestion(
   const adjective = pick(ADJECTIVES, rng);
   const correctAnswer = ADJ_ENDINGS[grammaticalCase][genus];
   const distractors = ALL_ADJ_ENDINGS.filter((e) => e !== correctAnswer);
-  const options = shuffle([correctAnswer, ...distractors]);
+  const options = shuffle([correctAnswer, ...distractors], rng);
   const caseLabel = grammaticalCase[0]!.toUpperCase() + grammaticalCase.slice(1);
   return {
     lemma: entry.lemma,
@@ -513,8 +513,8 @@ export function buildSteigerungQuestion(rng: Rng = Math.random): SteigerungQuest
   const pool = STEIGERUNG_ADJECTIVES.flatMap((e) => [e.komparativ, e.superlativ]).filter(
     (candidate) => candidate !== correctAnswer,
   );
-  const distractors = shuffle([...new Set(pool)]).slice(0, 3);
-  const options = shuffle([correctAnswer, ...distractors]);
+  const distractors = shuffle([...new Set(pool)], rng).slice(0, 3);
+  const options = shuffle([correctAnswer, ...distractors], rng);
   return {
     base: entry.base,
     form,
@@ -553,7 +553,7 @@ export function buildPassivQuestion(
   const tense = pick(PASSIV_TENSES, rng);
   const correctAnswer = passivForm(entry, tense);
   const otherTenseForms = PASSIV_TENSES.filter((t) => t !== tense).map((t) => passivForm(entry, t));
-  const options = shuffle([correctAnswer, ...otherTenseForms, entry.er]);
+  const options = shuffle([correctAnswer, ...otherTenseForms, entry.er], rng);
   return {
     infinitive: entry.infinitive,
     tense,
@@ -579,10 +579,9 @@ export function buildKonjunktivQuestion(
   entry: VerbConjugationEntry,
   rng: Rng = Math.random,
 ): KonjunktivQuestion {
-  void rng;
   const correctAnswer = `würde ${entry.infinitive}`;
   const distractors = [`hätte ${entry.infinitive}`, `wäre ${entry.infinitive}`, `ich ${entry.ich}`];
-  const options = shuffle([correctAnswer, ...distractors]);
+  const options = shuffle([correctAnswer, ...distractors], rng);
   return {
     infinitive: entry.infinitive,
     prompt: `Konjunktiv II: ich ___`,
@@ -623,8 +622,8 @@ export function buildRelativsatzQuestion(
   const pool = new Set<string>();
   for (const c of CASES) for (const g of ["m", "f", "n", "pl"] as GenusOrPlural[]) pool.add(RELATIVE_PRONOUN[c][g]);
   pool.delete(correctAnswer);
-  const distractors = shuffle([...pool]).slice(0, 3);
-  const options = shuffle([correctAnswer, ...distractors]);
+  const distractors = shuffle([...pool], rng).slice(0, 3);
+  const options = shuffle([correctAnswer, ...distractors], rng);
   return {
     lemma: entry.lemma,
     grammaticalCase,

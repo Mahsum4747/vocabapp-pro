@@ -9,10 +9,15 @@ export function uid() {
   return crypto.randomUUID();
 }
 
-export function shuffle<T>(items: T[]): T[] {
+/**
+ * Fisher-Yates shuffle. `rng` defaults to `Math.random` but accepts any
+ * `() => number` in `[0, 1)` — callers that need a reproducible sequence
+ * (tests, "deterministic given a fixed rng" guarantees) pass their own.
+ */
+export function shuffle<T>(items: T[], rng: () => number = Math.random): T[] {
   const next = [...items];
   for (let i = next.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(Math.random() * (i + 1));
+    const j = Math.floor(rng() * (i + 1));
     const a = next[i];
     const b = next[j];
     if (a === undefined || b === undefined) continue;
