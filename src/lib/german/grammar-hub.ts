@@ -73,3 +73,16 @@ export function masteryPercentForMode(
 export function isGermanSet(set: StudySet): boolean {
   return resolveSetLanguages(set).term === "de";
 }
+
+/**
+ * The three set-independent grammar drills (plural, nicht/kein,
+ * mein/dein/sein) draw their noun pool from `nouns-data.ts`'s ~102k-entry
+ * dictionary, not from any one set's own cards — that pool always exists,
+ * so unlike `hasArticleDrillCards`/`hasClozeCards`/etc these have no
+ * per-set eligibility to compute. Always `true`, kept as a function (not a
+ * bare constant) only so a caller can treat all eight grammar-hub entries
+ * uniformly as `(set) => boolean`.
+ */
+export function alwaysEligible(): boolean {
+  return true;
+}

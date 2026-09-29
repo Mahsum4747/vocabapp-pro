@@ -16,6 +16,9 @@ import { Route as GrammarRouteImport } from './routes/grammar'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ReviewRouteImport } from './routes/review'
 import { Route as SignupRouteImport } from './routes/signup'
+import { Route as GrammarNichtKeinRouteImport } from './routes/grammar.nicht-kein'
+import { Route as GrammarPluralRouteImport } from './routes/grammar.plural'
+import { Route as GrammarPossessiveRouteImport } from './routes/grammar.possessive'
 import { Route as SetsSetIdRouteImport } from './routes/sets.$setId'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as SetsSetIdIndexRouteImport } from './routes/sets.$setId.index'
@@ -65,6 +68,21 @@ const SignupRoute = SignupRouteImport.update({
   id: '/signup',
   path: '/signup',
   getParentRoute: () => rootRouteImport,
+} as any)
+const GrammarNichtKeinRoute = GrammarNichtKeinRouteImport.update({
+  id: '/nicht-kein',
+  path: '/nicht-kein',
+  getParentRoute: () => GrammarRoute,
+} as any)
+const GrammarPluralRoute = GrammarPluralRouteImport.update({
+  id: '/plural',
+  path: '/plural',
+  getParentRoute: () => GrammarRoute,
+} as any)
+const GrammarPossessiveRoute = GrammarPossessiveRouteImport.update({
+  id: '/possessive',
+  path: '/possessive',
+  getParentRoute: () => GrammarRoute,
 } as any)
 const SetsSetIdRoute = SetsSetIdRouteImport.update({
   id: '/sets/$setId',
@@ -141,10 +159,13 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/account': typeof AccountRoute
   '/create': typeof CreateRoute
-  '/grammar': typeof GrammarRoute
+  '/grammar': typeof GrammarRouteWithChildren
   '/login': typeof LoginRoute
   '/review': typeof ReviewRoute
   '/signup': typeof SignupRoute
+  '/grammar/nicht-kein': typeof GrammarNichtKeinRoute
+  '/grammar/plural': typeof GrammarPluralRoute
+  '/grammar/possessive': typeof GrammarPossessiveRoute
   '/sets/$setId': typeof SetsSetIdRouteWithChildren
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/sets/$setId/articles': typeof SetsSetIdArticlesRoute
@@ -164,10 +185,13 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/account': typeof AccountRoute
   '/create': typeof CreateRoute
-  '/grammar': typeof GrammarRoute
+  '/grammar': typeof GrammarRouteWithChildren
   '/login': typeof LoginRoute
   '/review': typeof ReviewRoute
   '/signup': typeof SignupRoute
+  '/grammar/nicht-kein': typeof GrammarNichtKeinRoute
+  '/grammar/plural': typeof GrammarPluralRoute
+  '/grammar/possessive': typeof GrammarPossessiveRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/sets/$setId/articles': typeof SetsSetIdArticlesRoute
   '/sets/$setId/cases': typeof SetsSetIdCasesRoute
@@ -187,10 +211,13 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/account': typeof AccountRoute
   '/create': typeof CreateRoute
-  '/grammar': typeof GrammarRoute
+  '/grammar': typeof GrammarRouteWithChildren
   '/login': typeof LoginRoute
   '/review': typeof ReviewRoute
   '/signup': typeof SignupRoute
+  '/grammar/nicht-kein': typeof GrammarNichtKeinRoute
+  '/grammar/plural': typeof GrammarPluralRoute
+  '/grammar/possessive': typeof GrammarPossessiveRoute
   '/sets/$setId': typeof SetsSetIdRouteWithChildren
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/sets/$setId/articles': typeof SetsSetIdArticlesRoute
@@ -216,6 +243,9 @@ export interface FileRouteTypes {
     | '/login'
     | '/review'
     | '/signup'
+    | '/grammar/nicht-kein'
+    | '/grammar/plural'
+    | '/grammar/possessive'
     | '/sets/$setId'
     | '/api/auth/$'
     | '/sets/$setId/articles'
@@ -239,6 +269,9 @@ export interface FileRouteTypes {
     | '/login'
     | '/review'
     | '/signup'
+    | '/grammar/nicht-kein'
+    | '/grammar/plural'
+    | '/grammar/possessive'
     | '/api/auth/$'
     | '/sets/$setId/articles'
     | '/sets/$setId/cases'
@@ -261,6 +294,9 @@ export interface FileRouteTypes {
     | '/login'
     | '/review'
     | '/signup'
+    | '/grammar/nicht-kein'
+    | '/grammar/plural'
+    | '/grammar/possessive'
     | '/sets/$setId'
     | '/api/auth/$'
     | '/sets/$setId/articles'
@@ -281,7 +317,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AccountRoute: typeof AccountRoute
   CreateRoute: typeof CreateRoute
-  GrammarRoute: typeof GrammarRoute
+  GrammarRoute: typeof GrammarRouteWithChildren
   LoginRoute: typeof LoginRoute
   ReviewRoute: typeof ReviewRoute
   SignupRoute: typeof SignupRoute
@@ -339,6 +375,27 @@ declare module '@tanstack/react-router' {
       fullPath: '/signup'
       preLoaderRoute: typeof SignupRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/grammar/nicht-kein': {
+      id: '/grammar/nicht-kein'
+      path: '/nicht-kein'
+      fullPath: '/grammar/nicht-kein'
+      preLoaderRoute: typeof GrammarNichtKeinRouteImport
+      parentRoute: typeof GrammarRoute
+    }
+    '/grammar/plural': {
+      id: '/grammar/plural'
+      path: '/plural'
+      fullPath: '/grammar/plural'
+      preLoaderRoute: typeof GrammarPluralRouteImport
+      parentRoute: typeof GrammarRoute
+    }
+    '/grammar/possessive': {
+      id: '/grammar/possessive'
+      path: '/possessive'
+      fullPath: '/grammar/possessive'
+      preLoaderRoute: typeof GrammarPossessiveRouteImport
+      parentRoute: typeof GrammarRoute
     }
     '/sets/$setId': {
       id: '/sets/$setId'
@@ -441,6 +498,21 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface GrammarRouteChildren {
+  GrammarNichtKeinRoute: typeof GrammarNichtKeinRoute
+  GrammarPluralRoute: typeof GrammarPluralRoute
+  GrammarPossessiveRoute: typeof GrammarPossessiveRoute
+}
+
+const GrammarRouteChildren: GrammarRouteChildren = {
+  GrammarNichtKeinRoute: GrammarNichtKeinRoute,
+  GrammarPluralRoute: GrammarPluralRoute,
+  GrammarPossessiveRoute: GrammarPossessiveRoute,
+}
+
+const GrammarRouteWithChildren =
+  GrammarRoute._addFileChildren(GrammarRouteChildren)
+
 interface SetsSetIdRouteChildren {
   SetsSetIdArticlesRoute: typeof SetsSetIdArticlesRoute
   SetsSetIdCasesRoute: typeof SetsSetIdCasesRoute
@@ -479,7 +551,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AccountRoute: AccountRoute,
   CreateRoute: CreateRoute,
-  GrammarRoute: GrammarRoute,
+  GrammarRoute: GrammarRouteWithChildren,
   LoginRoute: LoginRoute,
   ReviewRoute: ReviewRoute,
   SignupRoute: SignupRoute,

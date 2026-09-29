@@ -144,5 +144,56 @@ export function dictionarySize(): number {
   return dict().rows.length;
 }
 
+/**
+ * Row indices of "real" common nouns eligible for the set-independent
+ * grammar drills (plural, nicht/kein, mein/dein/sein): `pos` is EXACTLY
+ * `["Substantiv"]` (no Vorname/Nachname/Toponym/etc — a drill asking for
+ * the plural of a person's name would be nonsense), both `genus` and
+ * `plural` are non-empty, and the lemma is a real word rather than one of
+ * the file's own affix/suffix example rows (which the header documents as
+ * starting with "-", e.g. "-algie", "-ant"). Built once, lazily, kept for
+ * the life of the instance — same shape as `dict()`.
+ */
+let drillEligibleRows: number[] | null = null;
+
+function eligibleRows(): number[] {
+  if (drillEligibleRows) return drillEligibleRows;
+  const { rows } = dict();
+  const out: number[] = [];
+  for (let row = 0; row < rows.length; row++) {
+    const line = rows[row]!;
+    if (line.startsWith("-")) continue;
+    const entry = parseRow(line);
+    if (entry.pos.length !== 1) continue; // exactly ["Substantiv"], no extra tags
+    if (entry.genus.length === 0 || entry.plural.length === 0) continue;
+    if (!entry.lemma) continue;
+    out.push(row);
+  }
+  drillEligibleRows = out;
+  return out;
+}
+
+/**
+ * `count` distinct random common nouns (gender + plural known, real words
+ * only — see `eligibleRows`), for the plural/nicht-kein/possessive grammar
+ * drills. Never returns duplicates; returns fewer than `count` only if the
+ * eligible pool itself is smaller (never happens in practice: ~80k+ rows
+ * qualify).
+ */
+export function randomNounSample(count: number): NounEntry[] {
+  const { rows } = dict();
+  const pool = eligibleRows();
+  const picked = new Set<number>();
+  const out: NounEntry[] = [];
+  const target = Math.min(count, pool.length);
+  while (out.length < target) {
+    const row = pool[Math.floor(Math.random() * pool.length)]!;
+    if (picked.has(row)) continue;
+    picked.add(row);
+    out.push(parseRow(rows[row]!));
+  }
+  return out;
+}
+
 /** Asserted by the tests: data file and loader must be regenerated together. */
 export const EXPECTED_ROWS = NOUNS_TSV_ROWS;
