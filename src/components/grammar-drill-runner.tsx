@@ -7,9 +7,20 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { EmptyState } from "@/components/empty-state";
 import { fetchRandomNounSample } from "@/lib/german/grammar-drill-sample";
 import { GRAMMAR_RULES, type GrammarRuleTopic } from "@/content/grammar-rules";
-import { cn } from "@/lib/utils";
+import { cn, shuffle } from "@/lib/utils";
 import type { NounEntry } from "@/lib/german/types";
 import type { DrillQuestion } from "@/lib/grammar-drills";
+
+/** Best-effort "same lemma" key for dedupe between the user's own cards and
+ *  the general-pool sample — a plain lemma/infinitive lowercase compare,
+ *  deliberately not smarter than that (see the runner's own doc comment). */
+function entryKey(entry: unknown): string | null {
+  if (!entry || typeof entry !== "object") return null;
+  const lemma = (entry as { lemma?: unknown }).lemma;
+  const infinitive = (entry as { infinitive?: unknown }).infinitive;
+  const key = typeof lemma === "string" ? lemma : typeof infinitive === "string" ? infinitive : null;
+  return key ? key.trim().toLowerCase() : null;
+}
 
 const ROUND_SIZE = 10;
 // A little slack over ROUND_SIZE: nicht/kein and possessive draw several
@@ -35,6 +46,7 @@ export function GrammarDrillRunner<T = NounEntry>({
   topic,
   buildRound,
   fetchSample,
+  userEntries,
 }: {
   mode: string;
   topic: GrammarRuleTopic;
@@ -43,6 +55,18 @@ export function GrammarDrillRunner<T = NounEntry>({
    *  drills (trennbare Verben, Modalverben, Imperativ, Passiv, Konjunktiv)
    *  pass a verb sample fetcher instead (see grammar-drill-sample.ts). */
   fetchSample?: () => Promise<T[]>;
+  /**
+   * Entries drawn from the user's OWN library (already mapped to `T` by the
+   * route — see grammar-hub.ts's `userNounEligibleCards`/
+   * `userVerbEligibleCards`), prioritized over the general pool. When
+   * present and non-empty, up to `ROUND_SIZE` of these (shuffled, deduped)
+   * are used first and the general pool only fills the remainder; entries
+   * from the general pool that share a lemma/infinitive with one already
+   * picked from the user's own are dropped. Omitted or empty: unchanged
+   * behavior, entirely general-pool, so a user with no eligible cards never
+   * sees an empty/broken round.
+   */
+  userEntries?: T[];
 }) {
   const [round, setRound] = useState(0);
   const [entries, setEntries] = useState<T[] | null>(null);
@@ -56,9 +80,42 @@ export function GrammarDrillRunner<T = NounEntry>({
     const fetcher =
       fetchSample ??
       (() => fetchRandomNounSample({ data: { count: SAMPLE_SIZE } }) as unknown as Promise<T[]>);
+
+    const ownPicks = userEntries?.length
+      ? (() => {
+          const seen = new Set<string>();
+          const deduped: T[] = [];
+          for (const entry of shuffle(userEntries)) {
+            const key = entryKey(entry);
+            if (key && seen.has(key)) continue;
+            if (key) seen.add(key);
+            deduped.push(entry);
+          }
+          return { picks: deduped.slice(0, ROUND_SIZE), seen };
+        })()
+      : null;
+
+    if (ownPicks && ownPicks.picks.length >= SAMPLE_SIZE) {
+      // Enough of the user's own cards alone to fill a full sample — no
+      // general-pool round-trip needed at all.
+      if (!cancelled) setEntries(ownPicks.picks);
+      return () => {
+        cancelled = true;
+      };
+    }
+
     fetcher()
       .then((sample) => {
-        if (!cancelled) setEntries(sample);
+        if (cancelled) return;
+        if (!ownPicks) {
+          setEntries(sample);
+          return;
+        }
+        const filler = sample.filter((entry) => {
+          const key = entryKey(entry);
+          return !key || !ownPicks.seen.has(key);
+        });
+        setEntries([...ownPicks.picks, ...filler]);
       })
       .catch(() => {
         if (!cancelled) setLoadError(true);
@@ -66,6 +123,7 @@ export function GrammarDrillRunner<T = NounEntry>({
     return () => {
       cancelled = true;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [round]);
 
   const questions = useMemo(() => {

@@ -1,10 +1,12 @@
 import { clozeBlankForCard } from "@/lib/cloze";
 import { satzbauChipsForCard } from "@/lib/satzbau";
-import { lookupVerbConjugation } from "@/lib/german/verb-conjugation-data";
+import { lookupVerbConjugation, separablePrefixOf } from "@/lib/german/verb-conjugation-data";
 import { masteryPercent, type ProgressMap } from "@/lib/quiz";
 import { isCardActive, resolveSetLanguages } from "@/lib/types";
 import { profileFor } from "@/lib/lang/profiles";
 import type { Card, StudySet } from "@/lib/types";
+import type { NounEntry } from "@/lib/german/types";
+import type { VerbConjugationEntry } from "@/lib/german/verb-conjugation-data";
 
 /**
  * The five real grammar-mode eligibility checks, factored out of
@@ -85,4 +87,63 @@ export function isGermanSet(set: StudySet): boolean {
  */
 export function alwaysEligible(): boolean {
   return true;
+}
+
+/**
+ * User-library sourcing for the noun-based standalone grammar drills
+ * (Plural, nicht/kein, mein/dein/sein, Adjektivendungen, Relativsätze):
+ * every active card across the user's German sets that has a known
+ * `enrichment.gender` maps to a `NounEntry`, so the user's own vocabulary is
+ * tried before falling back to the general `nouns-data.ts` pool
+ * (`GrammarDrillRunner`'s `userEntries` prop does that mixing). `pos` is
+ * left empty — none of these drills' builders read it — and only the first
+ * plural form a card records is used (a `Card` only ever stores one).
+ */
+export function userNounEligibleCards(sets: StudySet[]): NounEntry[] {
+  return sets
+    .filter(isGermanSet)
+    .flatMap((set) => set.cards)
+    .filter((card) => isCardActive(card) && card.enrichment?.gender)
+    .map((card) => ({
+      lemma: card.term,
+      genus: [card.enrichment!.gender!],
+      plural: card.enrichment!.plural ? [card.enrichment!.plural!] : [],
+      pos: [],
+    }));
+}
+
+/**
+ * Same as `userNounEligibleCards`, but additionally requires a known plural
+ * — the Plural drill's `buildPluralQuestion` needs a non-empty
+ * `entry.plural[0]` to have a correct answer at all (see its own doc
+ * comment).
+ */
+export function userPluralEligibleCards(sets: StudySet[]): NounEntry[] {
+  return userNounEligibleCards(sets).filter((entry) => entry.plural.length > 0);
+}
+
+/**
+ * User-library sourcing for the verb-based standalone grammar drills
+ * (Trennbare Verben, Imperativ, Passiv, Konjunktiv): every active card
+ * across the user's German sets whose term `lookupVerbConjugation`
+ * recognizes — the REAL UniMorph conjugation for that exact verb, not a
+ * synthetic one — is used as-is. `filter`:
+ * - "separable": only verbs with a recognized separable prefix (Trennbare
+ *   Verben's only eligible pool, same restriction `randomVerbSample`
+ *   applies to the general pool).
+ * - "any": every recognized verb (Imperativ/Passiv/Konjunktiv), same as
+ *   `randomVerbSample(count, "any")`'s general pool.
+ */
+export function userVerbEligibleCards(
+  sets: StudySet[],
+  filter: "separable" | "any" = "any",
+): VerbConjugationEntry[] {
+  const entries = sets
+    .filter(isGermanSet)
+    .flatMap((set) => set.cards)
+    .filter(isCardActive)
+    .map((card) => lookupVerbConjugation(card.term))
+    .filter((entry): entry is VerbConjugationEntry => entry !== null);
+  if (filter === "any") return entries;
+  return entries.filter((entry) => separablePrefixOf(entry.infinitive) !== null);
 }

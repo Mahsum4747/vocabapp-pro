@@ -12,6 +12,11 @@ export const Route = createFileRoute("/grammar/steigerung")({
  * Set-independent comparison drill: fixed adjective list in
  * grammar-drills.ts (regular + the four named irregulars), same
  * "ignore the sample contents" pattern as Modalverben/Pronomen.
+ *
+ * Deliberately NOT given a `userEntries` prop, same reasoning as
+ * Modalverben's own doc comment: a small fixed adjective list is already
+ * the drill's entire pool, and no card property identifies "this card is
+ * one of these comparison adjectives" to match a user's own card against.
  */
 function SteigerungDrillRoute() {
   return (
