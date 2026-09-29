@@ -813,29 +813,14 @@ export function CardEditor({
             <div className="space-y-1.5">
               <Label htmlFor={`term-${card.id}`}>Term</Label>
               <div className="relative">
-                {/* EXPERIMENTAL, Term-only: a single-row <textarea> instead of
-                    <input type="text"> — WebKit's autofill/QuickType strip
-                    keys mostly off input elements, and the three previous
-                    techniques (attributes, form separation, random tokens,
-                    readonly+focus) didn't stop it on a real iPhone. Enter is
-                    suppressed in onKeyDown so it never grows past one row or
-                    submits the page. Unverified whether this actually helps
-                    on WebKit — see the task report; revert if the strip
-                    persists or the field itself feels wrong (line jumping,
-                    focus issues). */}
-                <Textarea
+                <Input
                   id={`term-${card.id}`}
                   ref={registerFieldRef(`term-${card.id}`)}
-                  rows={1}
-                  className="h-11 min-h-11 resize-none overflow-hidden py-2.5 leading-6"
                   value={card.term}
                   onChange={(e) => {
                     update(card.id, { term: e.target.value });
                     scheduleTermSuggestions(card.id, e.target.value);
                     setActiveSuggestionId(card.id);
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") e.preventDefault();
                   }}
                   readOnly={isTermReadOnly}
                   onFocus={(e) => {
