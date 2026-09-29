@@ -46,6 +46,24 @@ export type VerbConjugationEntry = {
   partizipII?: string;
 };
 
+let conjugationLookupIndex: Map<string, VerbConjugationEntry> | null = null;
+
+/**
+ * Case-insensitive lookup by infinitive, keyed on `term.trim().toLowerCase()`
+ * — same normalization every other German lookup here uses (nouns.server.ts)
+ * — since a card's own term isn't guaranteed to match this file's raw,
+ * case-sensitive `infinitive` spelling exactly. Lazily built once, like
+ * nouns.server.ts's own index.
+ */
+export function lookupVerbConjugation(term: string): VerbConjugationEntry | null {
+  if (!conjugationLookupIndex) {
+    conjugationLookupIndex = new Map(
+      VERB_CONJUGATION_DATA.map((entry) => [entry.infinitive.trim().toLowerCase(), entry]),
+    );
+  }
+  return conjugationLookupIndex.get(term.trim().toLowerCase()) ?? null;
+}
+
 export const VERB_CONJUGATION_DATA: readonly VerbConjugationEntry[] = [
   { infinitive: "Aa machen", ich: "mache", du: "machst", er: "macht", partizipII: "Aa gemacht" },
   { infinitive: "aalen", ich: "aale", du: "aalst", er: "aalt", partizipII: "geaalt" },

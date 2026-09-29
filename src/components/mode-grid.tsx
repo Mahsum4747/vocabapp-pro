@@ -7,6 +7,7 @@ import {
   ListChecks,
   ListOrdered,
   PenLine,
+  Repeat,
   SpellCheck,
   SquareDashed,
 } from "lucide-react";
@@ -96,6 +97,17 @@ const SATZBAU_MODE = {
   iconColor: "text-primary-ink",
 };
 
+// Repeat (a cycling arrow) reads as "run this again in a different form"
+// which matches conjugating a verb across persons — distinct in shape from
+// every icon above it, no new color needed (default green, per the palette
+// note above).
+const CONJUGATION_MODE = {
+  to: "/sets/$setId/conjugation" as const,
+  title: "Verbs",
+  icon: Repeat,
+  iconColor: "text-primary-ink",
+};
+
 export function ModeGrid({
   setId,
   box,
@@ -118,6 +130,10 @@ export function ModeGrid({
    *  eligibility as the article drill (known gender). Its own separate card
    *  pool, same as the article drill. */
   showCaseDrill = false,
+  /** Show the conjugation drill tile — only when the set has at least one
+   *  card whose term is a verb `VERB_CONJUGATION_DATA` covers. Same real-FSRS
+   *  treatment as Cloze/Satzbau, so it stays in the box-filtered mode list. */
+  showConjugationDrill = false,
 }: {
   setId: string;
   /** Restrict the study session to just this Leitner box (0..MASTERY_MAX). */
@@ -127,11 +143,13 @@ export function ModeGrid({
   showCloze?: boolean;
   showSatzbau?: boolean;
   showCaseDrill?: boolean;
+  showConjugationDrill?: boolean;
 }) {
   const modes = [
     ...MODES,
     ...(showCloze ? [CLOZE_MODE] : []),
     ...(showSatzbau ? [SATZBAU_MODE] : []),
+    ...(showConjugationDrill ? [CONJUGATION_MODE] : []),
     ...(showArticleDrill ? [ARTICLE_DRILL_MODE] : []),
     ...(showCaseDrill ? [CASE_DRILL_MODE] : []),
   ];

@@ -52,6 +52,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { clozeBlankForCard } from "@/lib/cloze";
 import { satzbauChipsForCard } from "@/lib/satzbau";
+import { lookupVerbConjugation } from "@/lib/german/verb-conjugation-data";
 import { masteryScoreFor, masteryStats, type ProgressMap } from "@/lib/quiz";
 import { reviewSummary } from "@/lib/srs";
 import { serializeSetExport } from "@/lib/parse-cards";
@@ -175,6 +176,13 @@ function SetPage() {
   // same as Cloze).
   const hasSatzbauCards =
     studySet?.cards.some((card) => isCardActive(card) && satzbauChipsForCard(card) !== null) ??
+    false;
+  // Gates the conjugation drill tile — only when at least one active card's
+  // term is a verb VERB_CONJUGATION_DATA covers (German-only, same as the
+  // article/case drills; the data itself is German-only, so no additional
+  // language check is needed here beyond the lookup succeeding).
+  const hasConjugationCards =
+    studySet?.cards.some((card) => isCardActive(card) && lookupVerbConjugation(card.term) !== null) ??
     false;
   const progress = useSetProgress(setId);
   const navigate = useNavigate();
@@ -447,6 +455,7 @@ function SetPage() {
                       disabled={studySet.cards.length < 2}
                       showArticleDrill={hasArticleDrillCards}
                       showCloze={hasClozeCards}
+                      showConjugationDrill={hasConjugationCards}
                       showSatzbau={hasSatzbauCards}
                       showCaseDrill={hasArticleDrillCards}
                     />

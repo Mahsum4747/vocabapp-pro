@@ -21,6 +21,7 @@ import { Route as SetsSetIdIndexRouteImport } from './routes/sets.$setId.index'
 import { Route as SetsSetIdArticlesRouteImport } from './routes/sets.$setId.articles'
 import { Route as SetsSetIdCasesRouteImport } from './routes/sets.$setId.cases'
 import { Route as SetsSetIdClozeRouteImport } from './routes/sets.$setId.cloze'
+import { Route as SetsSetIdConjugationRouteImport } from './routes/sets.$setId.conjugation'
 import { Route as SetsSetIdEditRouteImport } from './routes/sets.$setId.edit'
 import { Route as SetsSetIdFlashcardsRouteImport } from './routes/sets.$setId.flashcards'
 import { Route as SetsSetIdLearnRouteImport } from './routes/sets.$setId.learn'
@@ -89,6 +90,11 @@ const SetsSetIdClozeRoute = SetsSetIdClozeRouteImport.update({
   path: '/cloze',
   getParentRoute: () => SetsSetIdRoute,
 } as any)
+const SetsSetIdConjugationRoute = SetsSetIdConjugationRouteImport.update({
+  id: '/conjugation',
+  path: '/conjugation',
+  getParentRoute: () => SetsSetIdRoute,
+} as any)
 const SetsSetIdEditRoute = SetsSetIdEditRouteImport.update({
   id: '/edit',
   path: '/edit',
@@ -137,6 +143,7 @@ export interface FileRoutesByFullPath {
   '/sets/$setId/articles': typeof SetsSetIdArticlesRoute
   '/sets/$setId/cases': typeof SetsSetIdCasesRoute
   '/sets/$setId/cloze': typeof SetsSetIdClozeRoute
+  '/sets/$setId/conjugation': typeof SetsSetIdConjugationRoute
   '/sets/$setId/edit': typeof SetsSetIdEditRoute
   '/sets/$setId/flashcards': typeof SetsSetIdFlashcardsRoute
   '/sets/$setId/learn': typeof SetsSetIdLearnRoute
@@ -157,6 +164,7 @@ export interface FileRoutesByTo {
   '/sets/$setId/articles': typeof SetsSetIdArticlesRoute
   '/sets/$setId/cases': typeof SetsSetIdCasesRoute
   '/sets/$setId/cloze': typeof SetsSetIdClozeRoute
+  '/sets/$setId/conjugation': typeof SetsSetIdConjugationRoute
   '/sets/$setId/edit': typeof SetsSetIdEditRoute
   '/sets/$setId/flashcards': typeof SetsSetIdFlashcardsRoute
   '/sets/$setId/learn': typeof SetsSetIdLearnRoute
@@ -179,6 +187,7 @@ export interface FileRoutesById {
   '/sets/$setId/articles': typeof SetsSetIdArticlesRoute
   '/sets/$setId/cases': typeof SetsSetIdCasesRoute
   '/sets/$setId/cloze': typeof SetsSetIdClozeRoute
+  '/sets/$setId/conjugation': typeof SetsSetIdConjugationRoute
   '/sets/$setId/edit': typeof SetsSetIdEditRoute
   '/sets/$setId/flashcards': typeof SetsSetIdFlashcardsRoute
   '/sets/$setId/learn': typeof SetsSetIdLearnRoute
@@ -202,6 +211,7 @@ export interface FileRouteTypes {
     | '/sets/$setId/articles'
     | '/sets/$setId/cases'
     | '/sets/$setId/cloze'
+    | '/sets/$setId/conjugation'
     | '/sets/$setId/edit'
     | '/sets/$setId/flashcards'
     | '/sets/$setId/learn'
@@ -222,6 +232,7 @@ export interface FileRouteTypes {
     | '/sets/$setId/articles'
     | '/sets/$setId/cases'
     | '/sets/$setId/cloze'
+    | '/sets/$setId/conjugation'
     | '/sets/$setId/edit'
     | '/sets/$setId/flashcards'
     | '/sets/$setId/learn'
@@ -243,6 +254,7 @@ export interface FileRouteTypes {
     | '/sets/$setId/articles'
     | '/sets/$setId/cases'
     | '/sets/$setId/cloze'
+    | '/sets/$setId/conjugation'
     | '/sets/$setId/edit'
     | '/sets/$setId/flashcards'
     | '/sets/$setId/learn'
@@ -350,6 +362,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SetsSetIdClozeRouteImport
       parentRoute: typeof SetsSetIdRoute
     }
+    '/sets/$setId/conjugation': {
+      id: '/sets/$setId/conjugation'
+      path: '/conjugation'
+      fullPath: '/sets/$setId/conjugation'
+      preLoaderRoute: typeof SetsSetIdConjugationRouteImport
+      parentRoute: typeof SetsSetIdRoute
+    }
     '/sets/$setId/edit': {
       id: '/sets/$setId/edit'
       path: '/edit'
@@ -406,6 +425,7 @@ interface SetsSetIdRouteChildren {
   SetsSetIdArticlesRoute: typeof SetsSetIdArticlesRoute
   SetsSetIdCasesRoute: typeof SetsSetIdCasesRoute
   SetsSetIdClozeRoute: typeof SetsSetIdClozeRoute
+  SetsSetIdConjugationRoute: typeof SetsSetIdConjugationRoute
   SetsSetIdEditRoute: typeof SetsSetIdEditRoute
   SetsSetIdFlashcardsRoute: typeof SetsSetIdFlashcardsRoute
   SetsSetIdLearnRoute: typeof SetsSetIdLearnRoute
@@ -420,6 +440,7 @@ const SetsSetIdRouteChildren: SetsSetIdRouteChildren = {
   SetsSetIdArticlesRoute: SetsSetIdArticlesRoute,
   SetsSetIdCasesRoute: SetsSetIdCasesRoute,
   SetsSetIdClozeRoute: SetsSetIdClozeRoute,
+  SetsSetIdConjugationRoute: SetsSetIdConjugationRoute,
   SetsSetIdEditRoute: SetsSetIdEditRoute,
   SetsSetIdFlashcardsRoute: SetsSetIdFlashcardsRoute,
   SetsSetIdLearnRoute: SetsSetIdLearnRoute,
