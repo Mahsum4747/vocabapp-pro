@@ -1,11 +1,21 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import {
+  buildAdjektivendungenQuestion,
+  buildImperativQuestion,
+  buildKonjunktivQuestion,
+  buildModalverbenQuestion,
   buildNichtKeinQuestion,
+  buildPassivQuestion,
   buildPluralQuestion,
   buildPossessiveQuestion,
+  buildPronomenQuestion,
+  buildRelativsatzQuestion,
+  buildSteigerungQuestion,
+  buildTrennbareVerbenQuestion,
 } from "./grammar-drills.ts";
 import type { NounEntry } from "./german/types.ts";
+import type { VerbConjugationEntry } from "./german/verb-conjugation-data.ts";
 
 const TISCH: NounEntry = { lemma: "Tisch", genus: ["m"], plural: ["Tische"], pos: ["Substantiv"] };
 const MUTTER: NounEntry = { lemma: "Mutter", genus: ["f"], plural: ["Mütter"], pos: ["Substantiv"] };
@@ -70,5 +80,139 @@ describe("buildPossessiveQuestion", () => {
       }
     }
     assert.ok(found, "expected to hit ich+dativ at least once in 200 tries");
+  });
+});
+
+const ANRUFEN: VerbConjugationEntry = {
+  infinitive: "anrufen",
+  ich: "rufe",
+  du: "rufst",
+  er: "ruft",
+  partizipII: "angerufen",
+};
+const MACHEN: VerbConjugationEntry = {
+  infinitive: "machen",
+  ich: "mache",
+  du: "machst",
+  er: "macht",
+  partizipII: "gemacht",
+};
+
+describe("buildTrennbareVerbenQuestion", () => {
+  it("correct answer is the separable prefix, options are 4 distinct real forms", () => {
+    for (let i = 0; i < 10; i++) {
+      const q = buildTrennbareVerbenQuestion(ANRUFEN);
+      assertValidQuestion(q);
+      assert.equal(q.correctAnswer, "an");
+      assert.ok(q.prompt.includes("___"));
+    }
+  });
+});
+
+describe("buildModalverbenQuestion", () => {
+  it("produces 4 distinct options, correct answer is a real modal conjugation", () => {
+    for (let i = 0; i < 20; i++) {
+      const q = buildModalverbenQuestion();
+      assertValidQuestion(q);
+    }
+  });
+});
+
+describe("buildImperativQuestion", () => {
+  it("produces 4 distinct options including the right-person form", () => {
+    for (let i = 0; i < 10; i++) {
+      const q = buildImperativQuestion(MACHEN);
+      assertValidQuestion(q);
+    }
+  });
+
+  it("Sie-target uses infinitive + Sie", () => {
+    let found = false;
+    for (let i = 0; i < 50 && !found; i++) {
+      const q = buildImperativQuestion(MACHEN);
+      if (q.target === "Sie") {
+        assert.equal(q.correctAnswer, "Machen Sie!");
+        found = true;
+      }
+    }
+    assert.ok(found, "expected to hit Sie at least once in 50 tries");
+  });
+});
+
+describe("buildPronomenQuestion", () => {
+  it("produces 4 distinct options, correct answer matches the fixed table", () => {
+    for (let i = 0; i < 20; i++) {
+      const q = buildPronomenQuestion();
+      assertValidQuestion(q);
+    }
+  });
+});
+
+describe("buildAdjektivendungenQuestion", () => {
+  it("masculine akkusativ takes -en", () => {
+    let found = false;
+    for (let i = 0; i < 50 && !found; i++) {
+      const q = buildAdjektivendungenQuestion(TISCH);
+      if (q.grammaticalCase === "akkusativ") {
+        assert.equal(q.correctAnswer, "en");
+        found = true;
+      }
+    }
+    assert.ok(found, "expected to hit akkusativ at least once in 50 tries");
+  });
+
+  it("produces 4 distinct ending options", () => {
+    for (let i = 0; i < 10; i++) {
+      assertValidQuestion(buildAdjektivendungenQuestion(MUTTER));
+    }
+  });
+});
+
+describe("buildSteigerungQuestion", () => {
+  it("produces 4 distinct options, correct answer is a real comparison form", () => {
+    for (let i = 0; i < 20; i++) {
+      assertValidQuestion(buildSteigerungQuestion());
+    }
+  });
+});
+
+describe("buildPassivQuestion", () => {
+  it("präsens builds wird + Partizip II", () => {
+    let found = false;
+    for (let i = 0; i < 50 && !found; i++) {
+      const q = buildPassivQuestion(MACHEN);
+      if (q.tense === "präsens") {
+        assert.equal(q.correctAnswer, "wird gemacht");
+        found = true;
+      }
+    }
+    assert.ok(found, "expected to hit präsens at least once in 50 tries");
+    for (let i = 0; i < 10; i++) assertValidQuestion(buildPassivQuestion(MACHEN));
+  });
+});
+
+describe("buildKonjunktivQuestion", () => {
+  it("correct answer is würde + infinitive", () => {
+    const q = buildKonjunktivQuestion(MACHEN);
+    assertValidQuestion(q);
+    assert.equal(q.correctAnswer, "würde machen");
+  });
+});
+
+describe("buildRelativsatzQuestion", () => {
+  it("nominativ masculine takes der", () => {
+    let found = false;
+    for (let i = 0; i < 50 && !found; i++) {
+      const q = buildRelativsatzQuestion(TISCH);
+      if (q.grammaticalCase === "nominativ") {
+        assert.equal(q.correctAnswer, "der");
+        found = true;
+      }
+    }
+    assert.ok(found, "expected to hit nominativ at least once in 50 tries");
+  });
+
+  it("produces 4 distinct options", () => {
+    for (let i = 0; i < 10; i++) assertValidQuestion(buildRelativsatzQuestion(KIND));
   });
 });

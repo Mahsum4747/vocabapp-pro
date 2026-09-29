@@ -30,17 +30,22 @@ const SAMPLE_SIZE = 12;
  * `logReview`/`recordArticleDrillAttempt`/any FSRS write with. Score is a
  * bare `useState` counter that resets on unmount and is never persisted.
  */
-export function GrammarDrillRunner({
+export function GrammarDrillRunner<T = NounEntry>({
   mode,
   topic,
   buildRound,
+  fetchSample,
 }: {
   mode: string;
   topic: GrammarRuleTopic;
-  buildRound: (entries: NounEntry[]) => DrillQuestion[];
+  buildRound: (entries: T[]) => DrillQuestion[];
+  /** Defaults to the noun sample (the original three drills' pool). Verb-based
+   *  drills (trennbare Verben, Modalverben, Imperativ, Passiv, Konjunktiv)
+   *  pass a verb sample fetcher instead (see grammar-drill-sample.ts). */
+  fetchSample?: () => Promise<T[]>;
 }) {
   const [round, setRound] = useState(0);
-  const [entries, setEntries] = useState<NounEntry[] | null>(null);
+  const [entries, setEntries] = useState<T[] | null>(null);
   const [loadError, setLoadError] = useState(false);
   const [ruleOpen, setRuleOpen] = useState(false);
 
@@ -48,7 +53,10 @@ export function GrammarDrillRunner({
     let cancelled = false;
     setEntries(null);
     setLoadError(false);
-    fetchRandomNounSample({ data: { count: SAMPLE_SIZE } })
+    const fetcher =
+      fetchSample ??
+      (() => fetchRandomNounSample({ data: { count: SAMPLE_SIZE } }) as unknown as Promise<T[]>);
+    fetcher()
       .then((sample) => {
         if (!cancelled) setEntries(sample);
       })

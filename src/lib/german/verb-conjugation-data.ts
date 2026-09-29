@@ -64,6 +64,78 @@ export function lookupVerbConjugation(term: string): VerbConjugationEntry | null
   return conjugationLookupIndex.get(term.trim().toLowerCase()) ?? null;
 }
 
+/** Known separable prefixes, used only as a simple heuristic (not a real
+ *  morphological analysis) to decide whether an infinitive is a separable
+ *  verb, for the Trennbare-Verben grammar drill (grammar-drills.ts). */
+export const SEPARABLE_PREFIXES = [
+  "an",
+  "auf",
+  "aus",
+  "mit",
+  "zu",
+  "ab",
+  "bei",
+  "ein",
+  "vor",
+  "nach",
+  "zurück",
+  "weg",
+] as const;
+
+/** The separable prefix `infinitive` appears to start with, longest match
+ *  first (so "zurückrufen" resolves to "zurück", not "zu"), or `null` when
+ *  none of `SEPARABLE_PREFIXES` matches. A heuristic, not a dictionary
+ *  lookup — see this file's own module doc comment on why a curated list
+ *  of true separable verbs does not exist here. */
+export function separablePrefixOf(infinitive: string): string | null {
+  const lower = infinitive.toLowerCase();
+  const sorted = [...SEPARABLE_PREFIXES].sort((a, b) => b.length - a.length);
+  for (const prefix of sorted) {
+    if (lower.startsWith(prefix) && lower.length > prefix.length + 2) return prefix;
+  }
+  return null;
+}
+
+let separableVerbPool: VerbConjugationEntry[] | null = null;
+let nonSeparableVerbPool: VerbConjugationEntry[] | null = null;
+
+/**
+ * `count` distinct random verbs from `VERB_CONJUGATION_DATA`, restricted to
+ * `filter`: "separable" (has a recognized separable prefix, for the
+ * Trennbare-Verben drill) or "any" (every verb, for Modalverben-adjacent
+ * drills — Imperativ, Passiv, Konjunktiv II — none of which need a curated
+ * subset). Filtered on `partizipII` presence too, since three of the four
+ * downstream drills need it. Already client-bundled data (this file is
+ * imported directly by grammar-hub.ts/conjugation-drill.ts on the client),
+ * so unlike the noun/example datasets this needs no server round-trip.
+ */
+export function randomVerbSample(
+  count: number,
+  filter: "separable" | "any" = "any",
+): VerbConjugationEntry[] {
+  if (!separableVerbPool) {
+    separableVerbPool = VERB_CONJUGATION_DATA.filter(
+      (entry) => entry.partizipII && separablePrefixOf(entry.infinitive) !== null,
+    );
+  }
+  if (!nonSeparableVerbPool) {
+    nonSeparableVerbPool = VERB_CONJUGATION_DATA.filter(
+      (entry) => entry.partizipII && separablePrefixOf(entry.infinitive) === null,
+    );
+  }
+  const pool = filter === "separable" ? separableVerbPool : nonSeparableVerbPool;
+  const picked = new Set<number>();
+  const out: VerbConjugationEntry[] = [];
+  const target = Math.min(count, pool.length);
+  while (out.length < target) {
+    const index = Math.floor(Math.random() * pool.length);
+    if (picked.has(index)) continue;
+    picked.add(index);
+    out.push(pool[index]!);
+  }
+  return out;
+}
+
 export const VERB_CONJUGATION_DATA: readonly VerbConjugationEntry[] = [
   { infinitive: "Aa machen", ich: "mache", du: "machst", er: "macht", partizipII: "Aa gemacht" },
   { infinitive: "aalen", ich: "aale", du: "aalst", er: "aalt", partizipII: "geaalt" },

@@ -25,3 +25,29 @@ export const fetchRandomNounSample = createServerFn({ method: "GET" })
     const { randomNounSample } = await import("./nouns.server");
     return randomNounSample(data.count);
   });
+
+/**
+ * A bare `[0, 1, ..., count - 1]` array — no server round-trip, no dataset.
+ * For the three grammar drills whose whole question pool is a small fixed
+ * table baked into `grammar-drills.ts` (Modalverben, Pronomen, Steigerung):
+ * `GrammarDrillRunner` still needs a same-length sample array to drive one
+ * question per round slot, but these drills' `buildRound` ignores its
+ * contents entirely and calls the fixed-table builder directly.
+ */
+export function numberSample(count: number): number[] {
+  return Array.from({ length: count }, (_, i) => i);
+}
+
+/**
+ * Client-callable wrapper around `examples.server.ts`'s
+ * `randomExampleSentence`, same thin-wrapper/auth-gated shape as
+ * `fetchRandomNounSample` above. The Diktat drill (grammar.diktat.tsx)
+ * is the only caller — never a generated sentence, always one of the
+ * bundled dataset's real examples.
+ */
+export const fetchRandomExampleSentence = createServerFn({ method: "GET" })
+  .middleware([authMiddleware])
+  .handler(async (): Promise<string | null> => {
+    const { randomExampleSentence } = await import("./examples.server");
+    return randomExampleSentence();
+  });

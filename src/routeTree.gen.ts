@@ -16,9 +16,20 @@ import { Route as GrammarRouteImport } from './routes/grammar'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ReviewRouteImport } from './routes/review'
 import { Route as SignupRouteImport } from './routes/signup'
+import { Route as GrammarAdjektivendungenRouteImport } from './routes/grammar.adjektivendungen'
+import { Route as GrammarDiktatRouteImport } from './routes/grammar.diktat'
+import { Route as GrammarImperativRouteImport } from './routes/grammar.imperativ'
+import { Route as GrammarKonjunktivRouteImport } from './routes/grammar.konjunktiv'
+import { Route as GrammarLesenRouteImport } from './routes/grammar.lesen'
+import { Route as GrammarModalverbenRouteImport } from './routes/grammar.modalverben'
 import { Route as GrammarNichtKeinRouteImport } from './routes/grammar.nicht-kein'
+import { Route as GrammarPassivRouteImport } from './routes/grammar.passiv'
 import { Route as GrammarPluralRouteImport } from './routes/grammar.plural'
 import { Route as GrammarPossessiveRouteImport } from './routes/grammar.possessive'
+import { Route as GrammarPronomenRouteImport } from './routes/grammar.pronomen'
+import { Route as GrammarRelativsaetzeRouteImport } from './routes/grammar.relativsaetze'
+import { Route as GrammarSteigerungRouteImport } from './routes/grammar.steigerung'
+import { Route as GrammarTrennbareVerbenRouteImport } from './routes/grammar.trennbare-verben'
 import { Route as SetsSetIdRouteImport } from './routes/sets.$setId'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as SetsSetIdIndexRouteImport } from './routes/sets.$setId.index'
@@ -69,9 +80,44 @@ const SignupRoute = SignupRouteImport.update({
   path: '/signup',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GrammarAdjektivendungenRoute = GrammarAdjektivendungenRouteImport.update({
+  id: '/adjektivendungen',
+  path: '/adjektivendungen',
+  getParentRoute: () => GrammarRoute,
+} as any)
+const GrammarDiktatRoute = GrammarDiktatRouteImport.update({
+  id: '/diktat',
+  path: '/diktat',
+  getParentRoute: () => GrammarRoute,
+} as any)
+const GrammarImperativRoute = GrammarImperativRouteImport.update({
+  id: '/imperativ',
+  path: '/imperativ',
+  getParentRoute: () => GrammarRoute,
+} as any)
+const GrammarKonjunktivRoute = GrammarKonjunktivRouteImport.update({
+  id: '/konjunktiv',
+  path: '/konjunktiv',
+  getParentRoute: () => GrammarRoute,
+} as any)
+const GrammarLesenRoute = GrammarLesenRouteImport.update({
+  id: '/lesen',
+  path: '/lesen',
+  getParentRoute: () => GrammarRoute,
+} as any)
+const GrammarModalverbenRoute = GrammarModalverbenRouteImport.update({
+  id: '/modalverben',
+  path: '/modalverben',
+  getParentRoute: () => GrammarRoute,
+} as any)
 const GrammarNichtKeinRoute = GrammarNichtKeinRouteImport.update({
   id: '/nicht-kein',
   path: '/nicht-kein',
+  getParentRoute: () => GrammarRoute,
+} as any)
+const GrammarPassivRoute = GrammarPassivRouteImport.update({
+  id: '/passiv',
+  path: '/passiv',
   getParentRoute: () => GrammarRoute,
 } as any)
 const GrammarPluralRoute = GrammarPluralRouteImport.update({
@@ -82,6 +128,26 @@ const GrammarPluralRoute = GrammarPluralRouteImport.update({
 const GrammarPossessiveRoute = GrammarPossessiveRouteImport.update({
   id: '/possessive',
   path: '/possessive',
+  getParentRoute: () => GrammarRoute,
+} as any)
+const GrammarPronomenRoute = GrammarPronomenRouteImport.update({
+  id: '/pronomen',
+  path: '/pronomen',
+  getParentRoute: () => GrammarRoute,
+} as any)
+const GrammarRelativsaetzeRoute = GrammarRelativsaetzeRouteImport.update({
+  id: '/relativsaetze',
+  path: '/relativsaetze',
+  getParentRoute: () => GrammarRoute,
+} as any)
+const GrammarSteigerungRoute = GrammarSteigerungRouteImport.update({
+  id: '/steigerung',
+  path: '/steigerung',
+  getParentRoute: () => GrammarRoute,
+} as any)
+const GrammarTrennbareVerbenRoute = GrammarTrennbareVerbenRouteImport.update({
+  id: '/trennbare-verben',
+  path: '/trennbare-verben',
   getParentRoute: () => GrammarRoute,
 } as any)
 const SetsSetIdRoute = SetsSetIdRouteImport.update({
@@ -163,9 +229,20 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/review': typeof ReviewRoute
   '/signup': typeof SignupRoute
+  '/grammar/adjektivendungen': typeof GrammarAdjektivendungenRoute
+  '/grammar/diktat': typeof GrammarDiktatRoute
+  '/grammar/imperativ': typeof GrammarImperativRoute
+  '/grammar/konjunktiv': typeof GrammarKonjunktivRoute
+  '/grammar/lesen': typeof GrammarLesenRoute
+  '/grammar/modalverben': typeof GrammarModalverbenRoute
   '/grammar/nicht-kein': typeof GrammarNichtKeinRoute
+  '/grammar/passiv': typeof GrammarPassivRoute
   '/grammar/plural': typeof GrammarPluralRoute
   '/grammar/possessive': typeof GrammarPossessiveRoute
+  '/grammar/pronomen': typeof GrammarPronomenRoute
+  '/grammar/relativsaetze': typeof GrammarRelativsaetzeRoute
+  '/grammar/steigerung': typeof GrammarSteigerungRoute
+  '/grammar/trennbare-verben': typeof GrammarTrennbareVerbenRoute
   '/sets/$setId': typeof SetsSetIdRouteWithChildren
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/sets/$setId/articles': typeof SetsSetIdArticlesRoute
@@ -189,9 +266,20 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/review': typeof ReviewRoute
   '/signup': typeof SignupRoute
+  '/grammar/adjektivendungen': typeof GrammarAdjektivendungenRoute
+  '/grammar/diktat': typeof GrammarDiktatRoute
+  '/grammar/imperativ': typeof GrammarImperativRoute
+  '/grammar/konjunktiv': typeof GrammarKonjunktivRoute
+  '/grammar/lesen': typeof GrammarLesenRoute
+  '/grammar/modalverben': typeof GrammarModalverbenRoute
   '/grammar/nicht-kein': typeof GrammarNichtKeinRoute
+  '/grammar/passiv': typeof GrammarPassivRoute
   '/grammar/plural': typeof GrammarPluralRoute
   '/grammar/possessive': typeof GrammarPossessiveRoute
+  '/grammar/pronomen': typeof GrammarPronomenRoute
+  '/grammar/relativsaetze': typeof GrammarRelativsaetzeRoute
+  '/grammar/steigerung': typeof GrammarSteigerungRoute
+  '/grammar/trennbare-verben': typeof GrammarTrennbareVerbenRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/sets/$setId/articles': typeof SetsSetIdArticlesRoute
   '/sets/$setId/cases': typeof SetsSetIdCasesRoute
@@ -215,9 +303,20 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/review': typeof ReviewRoute
   '/signup': typeof SignupRoute
+  '/grammar/adjektivendungen': typeof GrammarAdjektivendungenRoute
+  '/grammar/diktat': typeof GrammarDiktatRoute
+  '/grammar/imperativ': typeof GrammarImperativRoute
+  '/grammar/konjunktiv': typeof GrammarKonjunktivRoute
+  '/grammar/lesen': typeof GrammarLesenRoute
+  '/grammar/modalverben': typeof GrammarModalverbenRoute
   '/grammar/nicht-kein': typeof GrammarNichtKeinRoute
+  '/grammar/passiv': typeof GrammarPassivRoute
   '/grammar/plural': typeof GrammarPluralRoute
   '/grammar/possessive': typeof GrammarPossessiveRoute
+  '/grammar/pronomen': typeof GrammarPronomenRoute
+  '/grammar/relativsaetze': typeof GrammarRelativsaetzeRoute
+  '/grammar/steigerung': typeof GrammarSteigerungRoute
+  '/grammar/trennbare-verben': typeof GrammarTrennbareVerbenRoute
   '/sets/$setId': typeof SetsSetIdRouteWithChildren
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/sets/$setId/articles': typeof SetsSetIdArticlesRoute
@@ -243,9 +342,20 @@ export interface FileRouteTypes {
     | '/login'
     | '/review'
     | '/signup'
+    | '/grammar/adjektivendungen'
+    | '/grammar/diktat'
+    | '/grammar/imperativ'
+    | '/grammar/konjunktiv'
+    | '/grammar/lesen'
+    | '/grammar/modalverben'
     | '/grammar/nicht-kein'
+    | '/grammar/passiv'
     | '/grammar/plural'
     | '/grammar/possessive'
+    | '/grammar/pronomen'
+    | '/grammar/relativsaetze'
+    | '/grammar/steigerung'
+    | '/grammar/trennbare-verben'
     | '/sets/$setId'
     | '/api/auth/$'
     | '/sets/$setId/articles'
@@ -269,9 +379,20 @@ export interface FileRouteTypes {
     | '/login'
     | '/review'
     | '/signup'
+    | '/grammar/adjektivendungen'
+    | '/grammar/diktat'
+    | '/grammar/imperativ'
+    | '/grammar/konjunktiv'
+    | '/grammar/lesen'
+    | '/grammar/modalverben'
     | '/grammar/nicht-kein'
+    | '/grammar/passiv'
     | '/grammar/plural'
     | '/grammar/possessive'
+    | '/grammar/pronomen'
+    | '/grammar/relativsaetze'
+    | '/grammar/steigerung'
+    | '/grammar/trennbare-verben'
     | '/api/auth/$'
     | '/sets/$setId/articles'
     | '/sets/$setId/cases'
@@ -294,9 +415,20 @@ export interface FileRouteTypes {
     | '/login'
     | '/review'
     | '/signup'
+    | '/grammar/adjektivendungen'
+    | '/grammar/diktat'
+    | '/grammar/imperativ'
+    | '/grammar/konjunktiv'
+    | '/grammar/lesen'
+    | '/grammar/modalverben'
     | '/grammar/nicht-kein'
+    | '/grammar/passiv'
     | '/grammar/plural'
     | '/grammar/possessive'
+    | '/grammar/pronomen'
+    | '/grammar/relativsaetze'
+    | '/grammar/steigerung'
+    | '/grammar/trennbare-verben'
     | '/sets/$setId'
     | '/api/auth/$'
     | '/sets/$setId/articles'
@@ -376,11 +508,60 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SignupRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/grammar/adjektivendungen': {
+      id: '/grammar/adjektivendungen'
+      path: '/adjektivendungen'
+      fullPath: '/grammar/adjektivendungen'
+      preLoaderRoute: typeof GrammarAdjektivendungenRouteImport
+      parentRoute: typeof GrammarRoute
+    }
+    '/grammar/diktat': {
+      id: '/grammar/diktat'
+      path: '/diktat'
+      fullPath: '/grammar/diktat'
+      preLoaderRoute: typeof GrammarDiktatRouteImport
+      parentRoute: typeof GrammarRoute
+    }
+    '/grammar/imperativ': {
+      id: '/grammar/imperativ'
+      path: '/imperativ'
+      fullPath: '/grammar/imperativ'
+      preLoaderRoute: typeof GrammarImperativRouteImport
+      parentRoute: typeof GrammarRoute
+    }
+    '/grammar/konjunktiv': {
+      id: '/grammar/konjunktiv'
+      path: '/konjunktiv'
+      fullPath: '/grammar/konjunktiv'
+      preLoaderRoute: typeof GrammarKonjunktivRouteImport
+      parentRoute: typeof GrammarRoute
+    }
+    '/grammar/lesen': {
+      id: '/grammar/lesen'
+      path: '/lesen'
+      fullPath: '/grammar/lesen'
+      preLoaderRoute: typeof GrammarLesenRouteImport
+      parentRoute: typeof GrammarRoute
+    }
+    '/grammar/modalverben': {
+      id: '/grammar/modalverben'
+      path: '/modalverben'
+      fullPath: '/grammar/modalverben'
+      preLoaderRoute: typeof GrammarModalverbenRouteImport
+      parentRoute: typeof GrammarRoute
+    }
     '/grammar/nicht-kein': {
       id: '/grammar/nicht-kein'
       path: '/nicht-kein'
       fullPath: '/grammar/nicht-kein'
       preLoaderRoute: typeof GrammarNichtKeinRouteImport
+      parentRoute: typeof GrammarRoute
+    }
+    '/grammar/passiv': {
+      id: '/grammar/passiv'
+      path: '/passiv'
+      fullPath: '/grammar/passiv'
+      preLoaderRoute: typeof GrammarPassivRouteImport
       parentRoute: typeof GrammarRoute
     }
     '/grammar/plural': {
@@ -395,6 +576,34 @@ declare module '@tanstack/react-router' {
       path: '/possessive'
       fullPath: '/grammar/possessive'
       preLoaderRoute: typeof GrammarPossessiveRouteImport
+      parentRoute: typeof GrammarRoute
+    }
+    '/grammar/pronomen': {
+      id: '/grammar/pronomen'
+      path: '/pronomen'
+      fullPath: '/grammar/pronomen'
+      preLoaderRoute: typeof GrammarPronomenRouteImport
+      parentRoute: typeof GrammarRoute
+    }
+    '/grammar/relativsaetze': {
+      id: '/grammar/relativsaetze'
+      path: '/relativsaetze'
+      fullPath: '/grammar/relativsaetze'
+      preLoaderRoute: typeof GrammarRelativsaetzeRouteImport
+      parentRoute: typeof GrammarRoute
+    }
+    '/grammar/steigerung': {
+      id: '/grammar/steigerung'
+      path: '/steigerung'
+      fullPath: '/grammar/steigerung'
+      preLoaderRoute: typeof GrammarSteigerungRouteImport
+      parentRoute: typeof GrammarRoute
+    }
+    '/grammar/trennbare-verben': {
+      id: '/grammar/trennbare-verben'
+      path: '/trennbare-verben'
+      fullPath: '/grammar/trennbare-verben'
+      preLoaderRoute: typeof GrammarTrennbareVerbenRouteImport
       parentRoute: typeof GrammarRoute
     }
     '/sets/$setId': {
@@ -499,15 +708,37 @@ declare module '@tanstack/react-router' {
 }
 
 interface GrammarRouteChildren {
+  GrammarAdjektivendungenRoute: typeof GrammarAdjektivendungenRoute
+  GrammarDiktatRoute: typeof GrammarDiktatRoute
+  GrammarImperativRoute: typeof GrammarImperativRoute
+  GrammarKonjunktivRoute: typeof GrammarKonjunktivRoute
+  GrammarLesenRoute: typeof GrammarLesenRoute
+  GrammarModalverbenRoute: typeof GrammarModalverbenRoute
   GrammarNichtKeinRoute: typeof GrammarNichtKeinRoute
+  GrammarPassivRoute: typeof GrammarPassivRoute
   GrammarPluralRoute: typeof GrammarPluralRoute
   GrammarPossessiveRoute: typeof GrammarPossessiveRoute
+  GrammarPronomenRoute: typeof GrammarPronomenRoute
+  GrammarRelativsaetzeRoute: typeof GrammarRelativsaetzeRoute
+  GrammarSteigerungRoute: typeof GrammarSteigerungRoute
+  GrammarTrennbareVerbenRoute: typeof GrammarTrennbareVerbenRoute
 }
 
 const GrammarRouteChildren: GrammarRouteChildren = {
+  GrammarAdjektivendungenRoute: GrammarAdjektivendungenRoute,
+  GrammarDiktatRoute: GrammarDiktatRoute,
+  GrammarImperativRoute: GrammarImperativRoute,
+  GrammarKonjunktivRoute: GrammarKonjunktivRoute,
+  GrammarLesenRoute: GrammarLesenRoute,
+  GrammarModalverbenRoute: GrammarModalverbenRoute,
   GrammarNichtKeinRoute: GrammarNichtKeinRoute,
+  GrammarPassivRoute: GrammarPassivRoute,
   GrammarPluralRoute: GrammarPluralRoute,
   GrammarPossessiveRoute: GrammarPossessiveRoute,
+  GrammarPronomenRoute: GrammarPronomenRoute,
+  GrammarRelativsaetzeRoute: GrammarRelativsaetzeRoute,
+  GrammarSteigerungRoute: GrammarSteigerungRoute,
+  GrammarTrennbareVerbenRoute: GrammarTrennbareVerbenRoute,
 }
 
 const GrammarRouteWithChildren =

@@ -155,3 +155,34 @@ export function lookupBundled(term: string): BundledEntry | null {
 export function dictionarySize(): number {
   return dict().rows.length;
 }
+
+/** Row indices with at least one non-empty example sentence — the pool the
+ *  Diktat drill (grammar.diktat.tsx) draws from. Built once, lazily, same
+ *  shape as nouns.server.ts's `eligibleRows`. */
+let dictationEligibleRows: number[] | null = null;
+
+function dictationRows(): number[] {
+  if (dictationEligibleRows) return dictationEligibleRows;
+  const { rows } = dict();
+  const out: number[] = [];
+  for (let row = 0; row < rows.length; row++) {
+    if (parseRow(rows[row]!).examples.length > 0) out.push(row);
+  }
+  dictationEligibleRows = out;
+  return out;
+}
+
+/**
+ * One random real German example sentence from `examples-data.ts`'s bundled
+ * Wiktionary dataset, for the Diktat drill — NEVER a generated/AI sentence,
+ * per that drill's own constraint (see grammar.diktat.tsx). `null` only if
+ * the dataset genuinely has no examples at all (placeholder/empty file).
+ */
+export function randomExampleSentence(): string | null {
+  const pool = dictationRows();
+  if (pool.length === 0) return null;
+  const { rows } = dict();
+  const row = pool[Math.floor(Math.random() * pool.length)]!;
+  const examples = parseRow(rows[row]!).examples;
+  return examples[Math.floor(Math.random() * examples.length)]!;
+}

@@ -1,16 +1,27 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import {
+  ArrowLeftRight,
+  BookOpen,
   ChevronDown,
   ChevronRight,
   Grid3x3,
   Hash,
+  Headphones,
+  Link2,
+  Megaphone,
   ListOrdered,
   MinusCircle,
   Repeat,
+  Scissors,
   SpellCheck,
   SquareDashed,
+  TrendingUp,
+  Type,
   UserCircle,
+  Users,
+  Wand2,
+  Wrench,
 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { AuthGate } from "@/components/auth-gate";
@@ -49,7 +60,18 @@ type ModeId =
   | "cloze"
   | "plural"
   | "nicht-kein"
-  | "possessive";
+  | "possessive"
+  | "trennbare-verben"
+  | "modalverben"
+  | "imperativ"
+  | "pronomen"
+  | "adjektivendungen"
+  | "steigerung"
+  | "passiv"
+  | "konjunktiv"
+  | "relativsaetze"
+  | "diktat"
+  | "lesen";
 
 /**
  * The five real grammar modes (mode-grid.tsx), grouped the way Lernkartei's
@@ -77,7 +99,26 @@ const CATEGORIES: {
     description: string;
     icon: typeof SpellCheck;
     to?: "/sets/$setId/articles" | "/sets/$setId/cases" | "/sets/$setId/conjugation" | "/sets/$setId/satzbau" | "/sets/$setId/cloze";
-    standaloneTo?: "/grammar/plural" | "/grammar/nicht-kein" | "/grammar/possessive";
+    standaloneTo?:
+      | "/grammar/plural"
+      | "/grammar/nicht-kein"
+      | "/grammar/possessive"
+      | "/grammar/trennbare-verben"
+      | "/grammar/modalverben"
+      | "/grammar/imperativ"
+      | "/grammar/pronomen"
+      | "/grammar/adjektivendungen"
+      | "/grammar/steigerung"
+      | "/grammar/passiv"
+      | "/grammar/konjunktiv"
+      | "/grammar/relativsaetze"
+      | "/grammar/diktat"
+      | "/grammar/lesen";
+    /** Lesen only: the destination is a real route, but it's a "coming
+     *  soon" skeleton with no content yet (see grammar.lesen.tsx's own
+     *  doc comment) — renders the card dimmed with a "Coming soon" label
+     *  instead of pretending there's a real drill to jump into. */
+    comingSoon?: boolean;
     eligible: (set: StudySet) => boolean;
     /** Articles/Cases: `masteryScore` is never written by these two drills
      *  (see CardProgress's own doc comment on articleMissCount/caseMissCount)
@@ -120,21 +161,7 @@ const CATEGORIES: {
     ],
   },
   {
-    title: "Pronouns",
-    modes: [
-      {
-        id: "possessive",
-        title: "mein / dein / sein",
-        description: "Possessive adjective endings",
-        icon: UserCircle,
-        standaloneTo: "/grammar/possessive",
-        eligible: alwaysEligible,
-        progressKind: "none",
-      },
-    ],
-  },
-  {
-    title: "Cases",
+    title: "Cases & Pronouns",
     modes: [
       {
         id: "cases",
@@ -144,6 +171,33 @@ const CATEGORIES: {
         to: "/sets/$setId/cases",
         eligible: hasCaseDrillCards,
         progressKind: "missCount",
+      },
+      {
+        id: "possessive",
+        title: "mein / dein / sein",
+        description: "Possessive adjective endings",
+        icon: UserCircle,
+        standaloneTo: "/grammar/possessive",
+        eligible: alwaysEligible,
+        progressKind: "none",
+      },
+      {
+        id: "pronomen",
+        title: "Pronomen",
+        description: "mich/mir, dich/dir... Akkusativ or Dativ",
+        icon: Users,
+        standaloneTo: "/grammar/pronomen",
+        eligible: alwaysEligible,
+        progressKind: "none",
+      },
+      {
+        id: "adjektivendungen",
+        title: "Adjektivendungen",
+        description: "der große Hund — the right -e/-en ending",
+        icon: Type,
+        standaloneTo: "/grammar/adjektivendungen",
+        eligible: alwaysEligible,
+        progressKind: "none",
       },
     ],
   },
@@ -158,6 +212,51 @@ const CATEGORIES: {
         to: "/sets/$setId/conjugation",
         eligible: hasConjugationCards,
         progressKind: "masteryPercent",
+      },
+      {
+        id: "trennbare-verben",
+        title: "Trennbare Verben",
+        description: "anrufen → Ich rufe dich an.",
+        icon: Scissors,
+        standaloneTo: "/grammar/trennbare-verben",
+        eligible: alwaysEligible,
+        progressKind: "none",
+      },
+      {
+        id: "modalverben",
+        title: "Modalverben",
+        description: "können, müssen, dürfen...",
+        icon: Wrench,
+        standaloneTo: "/grammar/modalverben",
+        eligible: alwaysEligible,
+        progressKind: "none",
+      },
+      {
+        id: "imperativ",
+        title: "Imperativ",
+        description: "Komm! Kommt! Kommen Sie!",
+        icon: Megaphone,
+        standaloneTo: "/grammar/imperativ",
+        eligible: alwaysEligible,
+        progressKind: "none",
+      },
+      {
+        id: "passiv",
+        title: "Passiv",
+        description: "werden + Partizip II",
+        icon: ArrowLeftRight,
+        standaloneTo: "/grammar/passiv",
+        eligible: alwaysEligible,
+        progressKind: "none",
+      },
+      {
+        id: "konjunktiv",
+        title: "Konjunktiv II",
+        description: "hätte, wäre, würde + Infinitiv",
+        icon: Wand2,
+        standaloneTo: "/grammar/konjunktiv",
+        eligible: alwaysEligible,
+        progressKind: "none",
       },
     ],
   },
@@ -181,6 +280,48 @@ const CATEGORIES: {
         to: "/sets/$setId/cloze",
         eligible: hasClozeCards,
         progressKind: "masteryPercent",
+      },
+      {
+        id: "steigerung",
+        title: "Steigerung",
+        description: "klein → kleiner → am kleinsten",
+        icon: TrendingUp,
+        standaloneTo: "/grammar/steigerung",
+        eligible: alwaysEligible,
+        progressKind: "none",
+      },
+      {
+        id: "relativsaetze",
+        title: "Relativsätze",
+        description: "der Mann, den ich kenne",
+        icon: Link2,
+        standaloneTo: "/grammar/relativsaetze",
+        eligible: alwaysEligible,
+        progressKind: "none",
+      },
+    ],
+  },
+  {
+    title: "Listening & Reading",
+    modes: [
+      {
+        id: "diktat",
+        title: "Diktat",
+        description: "Listen and type what you heard",
+        icon: Headphones,
+        standaloneTo: "/grammar/diktat",
+        eligible: alwaysEligible,
+        progressKind: "none",
+      },
+      {
+        id: "lesen",
+        title: "Lesen",
+        description: "Reading passages — coming soon",
+        icon: BookOpen,
+        standaloneTo: "/grammar/lesen",
+        comingSoon: true,
+        eligible: alwaysEligible,
+        progressKind: "none",
       },
     ],
   },
@@ -259,12 +400,18 @@ function GrammarPage() {
                     <Link
                       key={mode.id}
                       to={mode.standaloneTo}
-                      className="flex items-center gap-3 rounded-card bg-surface p-card shadow-[var(--elevation-1)] transition-shadow hover:shadow-[var(--elevation-2)]"
+                      className={cn(
+                        "flex items-center gap-3 rounded-card bg-surface p-card shadow-[var(--elevation-1)] transition-shadow hover:shadow-[var(--elevation-2)]",
+                        mode.comingSoon && "opacity-50",
+                      )}
                     >
                       <Icon className="size-5 shrink-0 text-primary-ink" />
                       <div className="min-w-0">
                         <p className="font-medium">{mode.title}</p>
                         <p className="text-sm text-muted">{mode.description}</p>
+                        {mode.comingSoon ? (
+                          <p className="mt-1 text-xs text-subtle">Coming soon</p>
+                        ) : null}
                       </div>
                     </Link>
                   );
