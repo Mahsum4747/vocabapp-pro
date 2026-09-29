@@ -50,9 +50,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { clozeBlankForCard } from "@/lib/cloze";
-import { satzbauChipsForCard } from "@/lib/satzbau";
-import { lookupVerbConjugation } from "@/lib/german/verb-conjugation-data";
+import {
+  hasArticleDrillCards as computeHasArticleDrillCards,
+  hasCaseDrillCards as computeHasCaseDrillCards,
+  hasClozeCards as computeHasClozeCards,
+  hasConjugationCards as computeHasConjugationCards,
+  hasSatzbauCards as computeHasSatzbauCards,
+} from "@/lib/german/grammar-hub";
 import { masteryScoreFor, masteryStats, type ProgressMap } from "@/lib/quiz";
 import { reviewSummary } from "@/lib/srs";
 import { serializeSetExport } from "@/lib/parse-cards";
@@ -155,35 +159,20 @@ function SetPage() {
   const studySet = useSet(setId);
   const setLanguages = resolveSetLanguages(studySet ?? {});
   const termProfile = profileFor(setLanguages.term);
-  // Gates the Articles drill tile (Phase 3C Part B) — only when the set has
-  // at least one German card with a known gender. Non-German sets and
-  // ungendered German cards never see it.
-  const hasArticleDrillCards =
-    termProfile.hasNounEnrichment &&
-    (studySet?.cards.some((card) => card.enrichment?.gender) ?? false);
+  // Gates the Articles/Cases/Cloze/Satzbau/Conjugation tiles — shared with
+  // the grammar hub (/grammar) via src/lib/german/grammar-hub.ts so both
+  // pages compute "does this set qualify for this mode" the same way.
+  const hasArticleDrillCards = studySet ? computeHasArticleDrillCards(studySet) : false;
   // Thin cards are allowed when written by hand; the set page says which ones
   // have no example, since Cloze and Satzbau are built from examples.
   const cardsWithoutExample =
     studySet && !studySet.isReference
       ? studySet.cards.filter((card) => isCardActive(card) && !card.example?.trim())
       : [];
-  // Gates the Cloze tile — only when at least one active card's own example
-  // can actually be blanked (not German-specific, unlike the article drill).
-  const hasClozeCards =
-    studySet?.cards.some((card) => isCardActive(card) && clozeBlankForCard(card) !== null) ?? false;
-  // Gates the Satzbau tile — only when at least one active card's example is
-  // in the 4-12 word range this mode is scoped to (not language-specific,
-  // same as Cloze).
-  const hasSatzbauCards =
-    studySet?.cards.some((card) => isCardActive(card) && satzbauChipsForCard(card) !== null) ??
-    false;
-  // Gates the conjugation drill tile — only when at least one active card's
-  // term is a verb VERB_CONJUGATION_DATA covers (German-only, same as the
-  // article/case drills; the data itself is German-only, so no additional
-  // language check is needed here beyond the lookup succeeding).
-  const hasConjugationCards =
-    studySet?.cards.some((card) => isCardActive(card) && lookupVerbConjugation(card.term) !== null) ??
-    false;
+  const hasClozeCards = studySet ? computeHasClozeCards(studySet) : false;
+  const hasSatzbauCards = studySet ? computeHasSatzbauCards(studySet) : false;
+  const hasConjugationCards = studySet ? computeHasConjugationCards(studySet) : false;
+  const hasCaseDrillCards = studySet ? computeHasCaseDrillCards(studySet) : false;
   const progress = useSetProgress(setId);
   const navigate = useNavigate();
   const deleteSet = useStudyStore((s) => s.deleteSet);
@@ -457,7 +446,7 @@ function SetPage() {
                       showCloze={hasClozeCards}
                       showConjugationDrill={hasConjugationCards}
                       showSatzbau={hasSatzbauCards}
-                      showCaseDrill={hasArticleDrillCards}
+                      showCaseDrill={hasCaseDrillCards}
                     />
                     {studySet.cards.length < 2 ? (
                       <p className="mt-3 text-sm text-muted">

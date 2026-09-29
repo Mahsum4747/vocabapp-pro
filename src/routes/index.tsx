@@ -4,6 +4,7 @@ import {
   Check,
   ChevronDown,
   ChevronRight,
+  ListOrdered,
   Plus,
   Search,
   Sparkles,
@@ -293,6 +294,24 @@ function Home() {
         </section>
 
         <LibraryProgressPanel className="mt-section" showReview={false} />
+
+        {/* Extra entry point into the German grammar-mode hub (Articles,
+          Cases, Conjugation, Satzbau, Cloze grouped by category) — set-
+          independent, so it lives here rather than inside any one set's own
+          mode grid, which stays exactly as it was. */}
+        <Link
+          to="/grammar"
+          className="mt-section flex items-center justify-between gap-3 rounded-card bg-surface p-card shadow-[var(--elevation-1)] transition-shadow hover:shadow-[var(--elevation-2)]"
+        >
+          <div className="flex items-center gap-3">
+            <ListOrdered className="size-5 shrink-0 text-primary-ink" />
+            <div>
+              <p className="font-medium">Grammar practice</p>
+              <p className="text-sm text-muted">Articles, cases, verbs and sentence drills</p>
+            </div>
+          </div>
+          <ChevronRight className="size-4 shrink-0 text-subtle" />
+        </Link>
 
         {continueSet ? (
           <Link

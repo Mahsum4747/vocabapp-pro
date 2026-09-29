@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AccountRouteImport } from './routes/account'
 import { Route as CreateRouteImport } from './routes/create'
+import { Route as GrammarRouteImport } from './routes/grammar'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ReviewRouteImport } from './routes/review'
 import { Route as SignupRouteImport } from './routes/signup'
@@ -43,6 +44,11 @@ const AccountRoute = AccountRouteImport.update({
 const CreateRoute = CreateRouteImport.update({
   id: '/create',
   path: '/create',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GrammarRoute = GrammarRouteImport.update({
+  id: '/grammar',
+  path: '/grammar',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -135,6 +141,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/account': typeof AccountRoute
   '/create': typeof CreateRoute
+  '/grammar': typeof GrammarRoute
   '/login': typeof LoginRoute
   '/review': typeof ReviewRoute
   '/signup': typeof SignupRoute
@@ -157,6 +164,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/account': typeof AccountRoute
   '/create': typeof CreateRoute
+  '/grammar': typeof GrammarRoute
   '/login': typeof LoginRoute
   '/review': typeof ReviewRoute
   '/signup': typeof SignupRoute
@@ -179,6 +187,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/account': typeof AccountRoute
   '/create': typeof CreateRoute
+  '/grammar': typeof GrammarRoute
   '/login': typeof LoginRoute
   '/review': typeof ReviewRoute
   '/signup': typeof SignupRoute
@@ -203,6 +212,7 @@ export interface FileRouteTypes {
     | '/'
     | '/account'
     | '/create'
+    | '/grammar'
     | '/login'
     | '/review'
     | '/signup'
@@ -225,6 +235,7 @@ export interface FileRouteTypes {
     | '/'
     | '/account'
     | '/create'
+    | '/grammar'
     | '/login'
     | '/review'
     | '/signup'
@@ -246,6 +257,7 @@ export interface FileRouteTypes {
     | '/'
     | '/account'
     | '/create'
+    | '/grammar'
     | '/login'
     | '/review'
     | '/signup'
@@ -269,6 +281,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AccountRoute: typeof AccountRoute
   CreateRoute: typeof CreateRoute
+  GrammarRoute: typeof GrammarRoute
   LoginRoute: typeof LoginRoute
   ReviewRoute: typeof ReviewRoute
   SignupRoute: typeof SignupRoute
@@ -297,6 +310,13 @@ declare module '@tanstack/react-router' {
       path: '/create'
       fullPath: '/create'
       preLoaderRoute: typeof CreateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/grammar': {
+      id: '/grammar'
+      path: '/grammar'
+      fullPath: '/grammar'
+      preLoaderRoute: typeof GrammarRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -459,6 +479,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AccountRoute: AccountRoute,
   CreateRoute: CreateRoute,
+  GrammarRoute: GrammarRoute,
   LoginRoute: LoginRoute,
   ReviewRoute: ReviewRoute,
   SignupRoute: SignupRoute,
