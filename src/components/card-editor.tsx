@@ -389,34 +389,87 @@ export function CardEditor({
     let entry: BundledEntry | null = null;
     try {
       // German has its own bundled example/translation dataset
-      // (gender/plural/examples included); Kurmancî (ku) and Turkish (tr)
-      // only get the offline KU<->TR gloss dataset (no gender/plural/
-      // examples — see src/lib/kurdish/KURDISH-ATTRIBUTION.md), mapped onto
-      // the same `BundledEntry` shape so the rest of this component (chip
-      // rows, the example panel) doesn't need a second code path. The
-      // branch is on `termLangCode`, never on `profile` alone, so a future
-      // language with `hasBundledSuggestions: true` but no case here still
-      // falls through to `null` instead of silently reusing German's or
-      // Kurdish's lookup.
+      // (gender/plural/examples included); Kurmancî (ku), Turkish (tr) and
+      // English (en) [as a query language, KU-side only] get the offline
+      // KU<->{DE,EN,TR} gloss dataset (no gender/plural/examples — see
+      // src/lib/kurdish/KURDISH-ATTRIBUTION.md), mapped onto the same
+      // `BundledEntry` shape so the rest of this component (chip rows, the
+      // example panel) doesn't need a second code path. The branch is on
+      // `termLangCode`, never on `profile` alone, so a future language with
+      // `hasBundledSuggestions: true` but no case here still falls through
+      // to `null` instead of silently reusing German's or Kurdish's lookup.
       if (termLangCode === "de") {
         entry = await lookupBundledSuggestions({ data: { term } });
-      } else if (termLangCode === "ku" || termLangCode === "tr") {
-        const direction = termLangCode;
-        const kurdish = await lookupKurdishBundledSuggestions({ data: { term, direction } });
-        entry = kurdish
-          ? {
-              lemma: kurdish.lemma,
-              pos: "",
-              gender: null,
-              plural: null,
-              examples: [],
-              translations: {
-                en: [],
-                tr: direction === "ku" ? kurdish.translations : [],
-                ku: direction === "tr" ? kurdish.translations : [],
-              },
+        // German->Kurmancî also has a second, independent example source:
+        // the Ferheng+ DE->KU reverse index (src/lib/kurdish/de-data.ts).
+        // examples-data.ts's own `ku` column is real but thin (CLAUDE.md:
+        // "Kurdish zayıf kapsam") — rather than replace it (risking losing
+        // a real gloss it already had) or branch the whole component on a
+        // second entry shape, the simplest, lowest-risk fix is to fetch
+        // both and UNION their `ku` lists (deduped, examples-data's own
+        // entries first) into the one `entry` this function already
+        // returns. Only attempted when there's a Kurmancî definition to
+        // fill (mirrors every other branch's `defLangCode` gate) and only
+        // when German's own lookup actually found something (an entry to
+        // attach to) or is otherwise null (then the Ferheng+ hit becomes
+        // the whole `entry`, in German's own `BundledEntry` shape).
+        if (defLangCode === "ku") {
+          const ferheng = await lookupKurdishBundledSuggestions({
+            data: { term, termLang: "de", otherLang: "ku" },
+          });
+          if (ferheng) {
+            const existingKu = entry?.translations.ku ?? [];
+            const mergedKu = [...existingKu];
+            for (const word of ferheng.translations) {
+              if (!mergedKu.includes(word)) mergedKu.push(word);
             }
-          : null;
+            entry = entry
+              ? { ...entry, translations: { ...entry.translations, ku: mergedKu } }
+              : {
+                  lemma: ferheng.lemma,
+                  pos: "",
+                  gender: null,
+                  plural: null,
+                  examples: [],
+                  translations: { en: [], tr: [], de: [], ku: mergedKu },
+                };
+          }
+        }
+      } else if (termLangCode === "ku" || termLangCode === "tr" || termLangCode === "en") {
+        // Kurdish's own three offline target languages. `termLangCode ===
+        // "ku"` picks its target from `defLangCode` (de/en/tr, whichever
+        // the card's definition is written in); "tr" and "en" only ever
+        // resolve back to "ku" (the dataset's other pairs — de<->tr,
+        // de<->en, tr<->en — are examples-data.ts's own territory, untouched
+        // here).
+        const otherLang =
+          termLangCode === "ku"
+            ? defLangCode === "de" || defLangCode === "en" || defLangCode === "tr"
+              ? defLangCode
+              : null
+            : defLangCode === "ku"
+              ? "ku"
+              : null;
+        if (otherLang) {
+          const kurdish = await lookupKurdishBundledSuggestions({
+            data: { term, termLang: termLangCode, otherLang },
+          });
+          entry = kurdish
+            ? {
+                lemma: kurdish.lemma,
+                pos: "",
+                gender: null,
+                plural: null,
+                examples: [],
+                translations: {
+                  en: termLangCode === "ku" && otherLang === "en" ? kurdish.translations : [],
+                  tr: termLangCode === "ku" && otherLang === "tr" ? kurdish.translations : [],
+                  de: termLangCode === "ku" && otherLang === "de" ? kurdish.translations : [],
+                  ku: termLangCode !== "ku" ? kurdish.translations : [],
+                },
+              }
+            : null;
+        }
       }
     } catch {
       entry = null;
@@ -494,7 +547,7 @@ export function CardEditor({
    *  data, no panel" rule the example side already follows. */
   function chipWordsFor(entry: BundledEntry | null, code: LanguageCode | undefined): string[] {
     if (!entry || !code) return [];
-    if (code === "en" || code === "tr" || code === "ku") return entry.translations[code];
+    if (code === "en" || code === "tr" || code === "ku" || code === "de") return entry.translations[code];
     return [];
   }
 

@@ -1,7 +1,15 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import {
+  englishForwardDictionarySize,
+  englishReverseDictionarySize,
   forwardDictionarySize,
+  germanForwardDictionarySize,
+  germanReverseDictionarySize,
+  lookupEnglishToKurdish,
+  lookupGermanToKurdish,
+  lookupKurdishToEnglish,
+  lookupKurdishToGerman,
   lookupKurdishToTurkish,
   lookupTurkishToKurdish,
   reverseDictionarySize,
@@ -69,6 +77,71 @@ describe("lookupKurdishToTurkish — not found", () => {
       assert.equal(lookupKurdishToTurkish(term), null);
     });
   }
+});
+
+describe("the real DE/EN datasets load", () => {
+  it("has a non-trivial number of records in all four directions", () => {
+    assert.ok(germanForwardDictionarySize() > 5_000, "suspiciously small KU->DE dataset");
+    assert.ok(germanReverseDictionarySize() > 5_000, "suspiciously small DE->KU dataset");
+    assert.ok(englishForwardDictionarySize() > 10_000, "suspiciously small KU->EN dataset");
+    assert.ok(englishReverseDictionarySize() > 10_000, "suspiciously small EN->KU dataset");
+  });
+});
+
+describe("lookupKurdishToGerman / lookupGermanToKurdish", () => {
+  it("'malbat' (family) resolves to a German gloss", () => {
+    const entry = lookupKurdishToGerman("malbat");
+    assert.equal(entry?.lemma, "malbat");
+    assert.ok(entry!.translations.includes("Familie"));
+  });
+
+  it("'mal' (house/property/goods) resolves to multiple German glosses", () => {
+    const entry = lookupKurdishToGerman("mal");
+    assert.equal(entry?.lemma, "mal");
+    assert.ok(entry!.translations.length >= 2, "expected 2+ German translations for 'mal'");
+    assert.ok(entry!.translations.length <= 5);
+  });
+
+  it("'Familie' resolves back to the Kurmancî headword", () => {
+    const entry = lookupGermanToKurdish("Familie");
+    assert.ok(entry, "'Familie' should resolve");
+    assert.ok(entry!.translations.includes("malbat"));
+  });
+
+  it("is case-insensitive and not-found -> null", () => {
+    assert.equal(lookupKurdishToGerman("MALBAT")?.lemma, "malbat");
+    assert.equal(lookupKurdishToGerman(""), null);
+    assert.equal(lookupKurdishToGerman("xyzzyxyzzy"), null);
+    assert.equal(lookupGermanToKurdish("xyzzyxyzzy"), null);
+  });
+});
+
+describe("lookupKurdishToEnglish / lookupEnglishToKurdish", () => {
+  it("'malbat' (family) resolves to an English gloss", () => {
+    const entry = lookupKurdishToEnglish("malbat");
+    assert.equal(entry?.lemma, "malbat");
+    assert.ok(entry!.translations.includes("family"));
+  });
+
+  it("'mal' (house/property/goods) resolves to multiple English glosses", () => {
+    const entry = lookupKurdishToEnglish("mal");
+    assert.equal(entry?.lemma, "mal");
+    assert.ok(entry!.translations.length >= 2, "expected 2+ English translations for 'mal'");
+    assert.ok(entry!.translations.length <= 5);
+  });
+
+  it("'family' resolves back to the Kurmancî headword(s)", () => {
+    const entry = lookupEnglishToKurdish("family");
+    assert.ok(entry, "'family' should resolve");
+    assert.ok(entry!.translations.includes("malbat"));
+  });
+
+  it("is case-insensitive and not-found -> null", () => {
+    assert.equal(lookupKurdishToEnglish("MALBAT")?.lemma, "malbat");
+    assert.equal(lookupKurdishToEnglish(""), null);
+    assert.equal(lookupKurdishToEnglish("xyzzyxyzzy"), null);
+    assert.equal(lookupEnglishToKurdish("xyzzyxyzzy"), null);
+  });
 });
 
 describe("lookupTurkishToKurdish — reverse lookup", () => {

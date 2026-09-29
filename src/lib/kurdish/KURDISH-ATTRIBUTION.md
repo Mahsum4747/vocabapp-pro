@@ -1,6 +1,7 @@
-# Kurmancî (KU) ↔ Turkish (TR) bundled dataset — attribution
+# Kurmancî (KU) ↔ {German (DE), English (EN), Turkish (TR)} bundled dataset — attribution
 
-`ku-data.ts` and `tr-data.ts` in this directory are trimmed derivatives of
+`ku-data.ts`/`tr-data.ts` (KU↔TR), `de-data.ts` (KU↔DE) and `en-data.ts`
+(KU↔EN) in this directory are trimmed derivatives of
 third-party data, in the same position as `src/lib/german/nouns-data.ts` and
 `examples-data.ts` (see those files' own `ATTRIBUTION.md` /
 `EXAMPLES-ATTRIBUTION.md`): not original work of this project, and carrying
@@ -40,11 +41,50 @@ FreeDict-sourced rows in this release).
 
 ## What we changed / kept
 
+Only Kurmancî (`ku`) entries, and their Turkish (`tr`), German (`de`) and
+English (`en`) translations — **example sentences were skipped entirely**
+for all three target languages; this dataset does not carry example
+sentences as a distinct field the way the German Wiktionary extraction
+does.
+
+The TR pair was built first (see the historical section below); the DE and
+EN pairs were added later, from the SAME Ferheng+ v2.5.0 export and the
+SAME `ku` entry pool, filtered by `translations.language_code = 'de'` /
+`'en'` instead of `'tr'`. Same rule, same cap, same dedupe, same
+`ambiguous_cross_entry` exclusion (0 collisions in this release, for every
+target language) — see "KU→DE / KU→EN pairs" below for the actual counts.
+
+### KU→DE / KU→EN pairs (added after the TR pair)
+
+`translations.language_code = 'de'`: 49,688 rows; `= 'en'`: 97,667 rows (see
+counts above). Same headword pool as the TR pair (48,512 non-cross-entry
+`ku` entries), same per-entry dedupe/cap-at-5/source-row-order rule:
+
+- **KU→DE** (`de-data.ts`, `KU_DE_FORWARD_TSV`): 20,611 entries have at
+  least one German translation after dedupe/cap; 10,860 resolve to exactly
+  one gloss, 9,751 to 2–5.
+- **DE→KU** (`de-data.ts`, `DE_KU_REVERSE_TSV`): 21,348 distinct German
+  strings translate at least one Kurdish headword; 8,738 map to exactly one
+  headword, 12,610 to 2–5.
+- **KU→EN** (`en-data.ts`, `KU_EN_FORWARD_TSV`): 36,042 entries have at
+  least one English translation after dedupe/cap; 18,121 resolve to exactly
+  one gloss, 17,921 to 2–5.
+- **EN→KU** (`en-data.ts`, `EN_KU_REVERSE_TSV`): 44,215 distinct English
+  strings translate at least one Kurdish headword; 22,931 map to exactly one
+  headword, 21,284 to 2–5.
+
+These are smaller than the TR pair's 48,512/42,456 because fewer `ku`
+entries in this release happen to carry a `de`/`en` translation at all than
+carry a `tr` one (113,561 `tr` rows vs. 49,688 `de` / 97,667 `en` — see the
+row counts above), not because of any extra filtering beyond the same
+`ambiguous_cross_entry` rule already applied to the TR pair.
+
+## What we changed / kept (original TR-only build)
+
 Only Kurmancî (`ku`) entries and only their Turkish (`tr`) translations.
 **English and German translations, and example sentences, were skipped
-entirely** — out of scope for this task (KU↔TR only), and this dataset does
-not even carry example sentences as a distinct field the way the German
-Wiktionary extraction does.
+entirely** at the time — out of scope for that first pass (KU↔TR only); see
+"KU→DE / KU→EN pairs" above for how those were later added.
 
 For every `ku` entry with at least one non-empty `tr` translation
 (48,512 of them), we grouped by lowercased headword and classified:

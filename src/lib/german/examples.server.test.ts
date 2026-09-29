@@ -44,7 +44,7 @@ describe("lookupInDictionary — parsing", () => {
       gender: "neuter",
       plural: "Häuser",
       examples: ["Das Haus ist sehr groß.", "Wir bauen ein neues Haus."],
-      translations: { en: ["house"], tr: ["haus"], ku: ["mal"] },
+      translations: { en: ["house"], tr: ["haus"], ku: ["mal"], de: [] },
     });
   });
 
@@ -56,7 +56,7 @@ describe("lookupInDictionary — parsing", () => {
       gender: null,
       plural: null,
       examples: [],
-      translations: { en: [], tr: [], ku: [] },
+      translations: { en: [], tr: [], ku: [], de: [] },
     });
   });
 

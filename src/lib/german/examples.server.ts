@@ -113,7 +113,12 @@ function parseRow(line: string): BundledEntry {
     gender: gender || null,
     plural: plural || null,
     examples: splitList(examples),
-    translations: { en: splitList(en), tr: splitList(tr), ku: splitList(ku) },
+    // `de` is always empty here: a German entry has no Kurmancî-Ferheng+
+    // German translation of ITSELF (that field is only ever filled by the
+    // Kurdish->German lookup path in card-editor.tsx, never by this
+    // dataset). Kept as an explicit `[]`, not an omitted field, so
+    // `BundledEntry.translations` never needs an optional `de`.
+    translations: { en: splitList(en), tr: splitList(tr), ku: splitList(ku), de: [] },
   };
 }
 

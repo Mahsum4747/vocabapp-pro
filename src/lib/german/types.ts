@@ -46,7 +46,7 @@ export interface BundledEntry {
   gender: string | null;
   plural: string | null;
   examples: string[];
-  translations: { en: string[]; tr: string[]; ku: string[] };
+  translations: { en: string[]; tr: string[]; ku: string[]; de: string[] };
 }
 
 /** Tags that mark a record as a name rather than an ordinary noun. */

@@ -118,13 +118,22 @@ export const EMPTY_PROFILE: LanguageProfile = {
 };
 
 /**
- * KU and TR share a profile: both get the bundled (offline) KU<->TR gloss
- * lookup (src/lib/kurdish/), nothing else. No noun enrichment (KU/TR nouns
- * don't carry German-style gender/plural data here), no AI example
- * suggestions (out of scope for this task, same as German's own
- * `hasExampleSuggestions` gate before Phase 3C), no term autocomplete (the
- * dataset has no frequency signal, same reasoning `hasTermAutocomplete`'s
- * own doc comment gives for not sourcing it from an unranked dictionary).
+ * KU, TR and EN share a profile: all three get the bundled (offline)
+ * KU<->{DE,EN,TR} gloss lookup (src/lib/kurdish/), nothing else. No noun
+ * enrichment (these nouns don't carry German-style gender/plural data
+ * here), no AI example suggestions (out of scope for this task, same as
+ * German's own `hasExampleSuggestions` gate before Phase 3C), no term
+ * autocomplete (the dataset has no frequency signal, same reasoning
+ * `hasTermAutocomplete`'s own doc comment gives for not sourcing it from an
+ * unranked dictionary).
+ *
+ * `en`'s own `hasExampleSuggestions`/`hasTermAutocomplete`/
+ * `hasNounEnrichment` stay exactly as false as German's own equivalents for
+ * non-German languages — this profile only turns on the one thing English
+ * actually has: the Kurmancî<->English side of the Ferheng+ dataset (used
+ * only when EN is the query language against a KU definition/term; the
+ * existing de<->en pair inside examples-data.ts is untouched, keyed off
+ * `termLangCode === "de"` as before).
  */
 const KURDISH_TURKISH_PROFILE: LanguageProfile = {
   hasNounEnrichment: false,
@@ -138,6 +147,7 @@ const PROFILES: Partial<Record<LanguageCode, LanguageProfile>> = {
   de: GERMAN_PROFILE,
   ku: KURDISH_TURKISH_PROFILE,
   tr: KURDISH_TURKISH_PROFILE,
+  en: KURDISH_TURKISH_PROFILE,
 };
 
 /** The profile for a resolved term-language code, or `EMPTY_PROFILE` for

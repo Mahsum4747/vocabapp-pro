@@ -129,14 +129,15 @@ describe("hasExampleSuggestions", () => {
 });
 
 describe("hasBundledSuggestions", () => {
-  it("is enabled for German, Kurmancî and Turkish", () => {
+  it("is enabled for German, Kurmancî, Turkish and English (KU-side Ferheng+ pairs)", () => {
     assert.equal(profileFor("de").hasBundledSuggestions, true);
     assert.equal(profileFor("ku").hasBundledSuggestions, true);
     assert.equal(profileFor("tr").hasBundledSuggestions, true);
+    assert.equal(profileFor("en").hasBundledSuggestions, true);
   });
 
   it("is disabled for every other language and the empty profile", () => {
-    for (const code of ["en", "ckb", "fr", "ru"] as const) {
+    for (const code of ["ckb", "fr", "ru"] as const) {
       assert.equal(profileFor(code).hasBundledSuggestions, false, code);
     }
     assert.equal(EMPTY_PROFILE.hasBundledSuggestions, false);
