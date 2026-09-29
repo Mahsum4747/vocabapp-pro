@@ -70,7 +70,14 @@ const GERMAN_DIACRITICS = ["ä", "ö", "ü", "ß", "Ä", "Ö", "Ü"];
  *  Stateless: the caller owns the actual insert. */
 function DiacriticRow({ onInsert }: { onInsert: (char: string) => void }) {
   return (
-    <div className="flex flex-wrap gap-1">
+    // Single-row, horizontally-scrollable strip so it never wraps onto a
+    // second line and eats vertical space between the input and the
+    // keyboard — flex-wrap previously let 7 chars spill onto 2-3 rows on
+    // narrow phones. min-h/min-w-9 (36px) stays above the 24px WCAG floor
+    // while being noticeably more compact than the old 44px targets. No
+    // extra margin here: the parent's space-y-1.5 already sets the gap
+    // to the input above it.
+    <div className="flex flex-nowrap gap-1 overflow-x-auto">
       {GERMAN_DIACRITICS.map((char) => (
         <button
           key={char}
@@ -80,7 +87,7 @@ function DiacriticRow({ onInsert }: { onInsert: (char: string) => void }) {
           // (read in onClick) are still whatever the user left them at.
           onMouseDown={(e) => e.preventDefault()}
           onClick={() => onInsert(char)}
-          className="rounded-control bg-surface-2 px-2 py-0.5 text-xs font-medium text-fg hover:bg-border active:bg-border pointer-coarse:min-h-11 pointer-coarse:min-w-11"
+          className="shrink-0 rounded-control bg-surface-2 px-2 py-0.5 text-xs font-medium text-fg hover:bg-border active:bg-border pointer-coarse:min-h-9 pointer-coarse:min-w-9"
         >
           {char}
         </button>
@@ -796,7 +803,12 @@ export function CardEditor({
                   // have nothing to match here — same reasoning as the reference
                   // pattern in sets.$setId.test.tsx's answer input.
                   name={`karta-card-term-${card.id}`}
-                  autoComplete="off"
+                  // "off" is documented but Chrome/WebKit's own (non-3rd-party)
+                  // autofill heuristics are known to ignore it outright; a
+                  // nonsense autocomplete token is a commonly cited workaround
+                  // for that specific browser bug. Unverified on real hardware
+                  // — see report.
+                  autoComplete="karta-no-autofill"
                   // A term is typed exactly as it should be stored: the phone's keyboard must
                   // not capitalise, "correct" or underline it (German words especially).
                   autoCapitalize="none"
@@ -843,7 +855,7 @@ export function CardEditor({
                 placeholder="A short, clear definition"
                 className="min-h-11 md:min-h-20"
                 name={`karta-card-definition-${card.id}`}
-                autoComplete="off"
+                autoComplete="karta-no-autofill"
                 inputMode="text"
                 enterKeyHint="done"
                 data-1p-ignore
