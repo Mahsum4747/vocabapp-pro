@@ -182,6 +182,19 @@ export function CardEditor({
         : Math.random().toString(36).slice(2);
     return { term: `t-${rand()}`, definition: `d-${rand()}` };
   });
+  /**
+   * EXPERIMENTAL, Term-only: starts a Term input `readOnly` and lifts that
+   * the instant it's focused, on the theory that some WebKit/Chrome-iOS
+   * autofill heuristics scan for editable fields at paint time rather than
+   * at focus time — a field that's read-only until touched has nothing to
+   * scan. Kept as one shared boolean rather than per-card state on purpose
+   * (the task's own instruction): only one Term field can be focused at a
+   * time in practice, so a global toggle behaves the same as a per-card one
+   * would, with less state to reason about. NOT yet proven to help on real
+   * hardware — see the commit message / task report before extending this
+   * to Definition or removing it.
+   */
+  const [isTermReadOnly, setIsTermReadOnly] = useState(true);
   const [uploadingId, setUploadingId] = useState<string | null>(null);
   // Keyed `${cardId}:${field}` rather than just the card id: a card's primary
   // and second-definition suggestions are independent requests and can
@@ -809,11 +822,20 @@ export function CardEditor({
                     scheduleTermSuggestions(card.id, e.target.value);
                     setActiveSuggestionId(card.id);
                   }}
-                  onFocus={() => setActiveSuggestionId(card.id)}
+                  readOnly={isTermReadOnly}
+                  onFocus={(e) => {
+                    setActiveSuggestionId(card.id);
+                    if (isTermReadOnly) {
+                      setIsTermReadOnly(false);
+                      const el = e.currentTarget;
+                      requestAnimationFrame(() => el.focus());
+                    }
+                  }}
                   onBlur={() => {
                     void checkGermanEnrichment(card.id);
                     void checkBundledSuggestions(card.id);
                     setActiveSuggestionId(null);
+                    setIsTermReadOnly(true);
                   }}
                   placeholder="e.g. mitochondria"
                   // Name has no user/email/password/address-shaped substring, so
