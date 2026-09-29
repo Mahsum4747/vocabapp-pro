@@ -163,6 +163,25 @@ export function CardEditor({
       else fieldRefs.current.delete(fieldId);
     };
   }
+  // Per-mount, unpredictable name/autoComplete tokens for the Term/Definition
+  // fields (Technique 2 against WebKit autofill/QuickType). Previously these
+  // were fixed strings (`karta-card-term-${card.id}`, `karta-no-autofill`)
+  // with a stable prefix across every mount — WebKit's heuristics may have
+  // learned/matched that pattern. `useState(() => ...)` runs its initializer
+  // exactly once per component mount and the value is then stable across
+  // every re-render (unlike computing it inline on each render, which would
+  // change `name` on every keystroke and force React to remount the input,
+  // dropping focus/caret — this is the exact regression the task warns
+  // about). `crypto.randomUUID` is used elsewhere in this file already
+  // (`add()` above), so browser support is a non-issue here; the fallback
+  // only guards a hypothetical runtime where it's missing.
+  const [fieldTokens] = useState(() => {
+    const rand = () =>
+      typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+        ? crypto.randomUUID()
+        : Math.random().toString(36).slice(2);
+    return { term: `t-${rand()}`, definition: `d-${rand()}` };
+  });
   const [uploadingId, setUploadingId] = useState<string | null>(null);
   // Keyed `${cardId}:${field}` rather than just the card id: a card's primary
   // and second-definition suggestions are independent requests and can
@@ -801,14 +820,17 @@ export function CardEditor({
                   // browser/password-manager autofill heuristics (which can render
                   // a suggestion strip over the keyboard and swallow the next tap)
                   // have nothing to match here — same reasoning as the reference
-                  // pattern in sets.$setId.test.tsx's answer input.
-                  name={`karta-card-term-${card.id}`}
+                  // pattern in sets.$setId.test.tsx's answer input. Also
+                  // per-mount-random (see `fieldTokens` above), not a fixed
+                  // string, so WebKit can't learn a stable name/autoComplete
+                  // pattern across visits either.
+                  name={fieldTokens.term}
                   // "off" is documented but Chrome/WebKit's own (non-3rd-party)
                   // autofill heuristics are known to ignore it outright; a
-                  // nonsense autocomplete token is a commonly cited workaround
-                  // for that specific browser bug. Unverified on real hardware
-                  // — see report.
-                  autoComplete="karta-no-autofill"
+                  // nonsense, per-mount-random autocomplete token is a
+                  // commonly cited workaround for that specific browser bug.
+                  // Unverified on real hardware — see report.
+                  autoComplete={fieldTokens.term}
                   // A term is typed exactly as it should be stored: the phone's keyboard must
                   // not capitalise, "correct" or underline it (German words especially).
                   autoCapitalize="none"
@@ -854,8 +876,8 @@ export function CardEditor({
                 onChange={(e) => update(card.id, { definition: e.target.value })}
                 placeholder="A short, clear definition"
                 className="min-h-11 md:min-h-20"
-                name={`karta-card-definition-${card.id}`}
-                autoComplete="karta-no-autofill"
+                name={fieldTokens.definition}
+                autoComplete={fieldTokens.definition}
                 inputMode="text"
                 enterKeyHint="done"
                 data-1p-ignore

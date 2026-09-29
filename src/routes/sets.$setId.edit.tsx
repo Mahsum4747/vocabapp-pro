@@ -216,13 +216,22 @@ function EditPage() {
               }
             />
           </div>
-          <form
-            className="mt-8 space-y-6"
-            onSubmit={(e) => {
-              e.preventDefault();
-              save();
-            }}
-          >
+          {/* Term/Definition (in CardEditor below) sit OUTSIDE this <form> on
+              purpose — WebKit's autofill/QuickType heuristics key off form
+              context, and those two fields are the ones that kept getting a
+              suggestion strip on real iPhones. The Save button stays wired
+              to this form via the native `form="set-form"` attribute rather
+              than JS, so submit/Enter-to-submit/validation behave exactly as
+              before; only the DOM nesting changed. */}
+          <div className="mt-8 space-y-6">
+            <form
+              id="set-form"
+              className="space-y-6"
+              onSubmit={(e) => {
+                e.preventDefault();
+                save();
+              }}
+            >
             <div className="space-y-1.5">
               <Label htmlFor="title">Title</Label>
               <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} />
@@ -312,6 +321,7 @@ function EditPage() {
                 />
               ) : null}
             </div>
+            </form>
             <CardEditor
               cards={cards}
               onChange={setCards}
@@ -328,11 +338,11 @@ function EditPage() {
                   Cancel
                 </Link>
               </Button>
-              <Button type="submit" size="lg">
+              <Button type="submit" form="set-form" size="lg">
                 Save
               </Button>
             </div>
-          </form>
+          </div>
         </div>
       </OwnerGate>
     </AppShell>
