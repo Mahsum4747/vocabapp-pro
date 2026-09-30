@@ -433,6 +433,61 @@ const CATEGORIES: {
   },
 ];
 
+/**
+ * CEFR level labels — purely informational/sorting, never a gate: every
+ * mode stays clickable regardless of level (see CATEGORIES' own doc comment
+ * on "no lock/gamification"). A mode with no entry here (Lesen — coming
+ * soon, not leveled yet; Paste — free-topic, no fixed level applies) shows
+ * no badge and sorts to the end of its category.
+ */
+type CefrLevel = "A1.1" | "A1.2" | "A2.1" | "A2.2" | "B1.1" | "B1.2" | "B2" | "B2/C1";
+
+const CEFR_LEVEL: Partial<Record<ModeId, CefrLevel>> = {
+  articles: "A1.1",
+  plural: "A1.1",
+  pronomen: "A1.1",
+  possessive: "A1.1",
+  "nicht-kein": "A1.1",
+  cases: "A1.2",
+  conjugation: "A1.2",
+  modalverben: "A1.2",
+  "trennbare-verben": "A1.2",
+  imperativ: "A1.2",
+  adjektivendungen: "A2.1",
+  steigerung: "A2.1",
+  satzbau: "A2.1",
+  cloze: "A2.2",
+  diktat: "A2.2",
+  passiv: "B1.1",
+  relativsaetze: "B1.1",
+  konjunktiv: "B1.2",
+  partizipial: "B2",
+  nominalisierung: "B2",
+  funktionsverbgefuege: "B2",
+  modalpartikeln: "B2",
+  konjunktiv1: "B2/C1",
+  "subjektive-modalverben": "B2/C1",
+  passiversatzformen: "B2/C1",
+};
+
+const CEFR_ORDER: CefrLevel[] = ["A1.1", "A1.2", "A2.1", "A2.2", "B1.1", "B1.2", "B2", "B2/C1"];
+
+function cefrRank(modeId: ModeId): number {
+  const level = CEFR_LEVEL[modeId];
+  return level ? CEFR_ORDER.indexOf(level) : CEFR_ORDER.length;
+}
+
+/** Small muted-pill level tag, e.g. "A1.1" — next to a mode's title. */
+function CefrBadge({ modeId }: { modeId: ModeId }) {
+  const level = CEFR_LEVEL[modeId];
+  if (!level) return null;
+  return (
+    <span className="shrink-0 rounded-full bg-surface-2 px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-subtle tabular-nums">
+      {level}
+    </span>
+  );
+}
+
 /** The one ModeId whose grammarProgress topicId differs from its own id —
  *  "partizipial" writes under the same topic string its `GrammarDrillRunner`
  *  `topic` prop already uses, "partizipialkonstruktionen" (see
@@ -505,7 +560,7 @@ function GrammarPage() {
               {category.title}
             </h2>
             <div className="mt-3 grid gap-gutter sm:grid-cols-2">
-              {category.modes.map((mode) => {
+              {[...category.modes].sort((a, b) => cefrRank(a.id) - cefrRank(b.id)).map((mode) => {
                 const Icon = mode.icon;
 
                 // The three set-independent drills: always go straight to
@@ -525,7 +580,10 @@ function GrammarPage() {
                     >
                       <Icon className="size-5 shrink-0 text-primary-ink" />
                       <div className="min-w-0">
-                        <p className="font-medium">{mode.title}</p>
+                        <p className="flex items-center gap-1.5 font-medium">
+                          {mode.title}
+                          <CefrBadge modeId={mode.id} />
+                        </p>
                         <p className="text-sm text-muted">{mode.description}</p>
                         {mode.comingSoon ? (
                           <p className="mt-1 text-xs text-subtle">Coming soon</p>
@@ -547,7 +605,10 @@ function GrammarPage() {
                     >
                       <Icon className="size-5 shrink-0 text-primary-ink" />
                       <div className="min-w-0">
-                        <p className="font-medium">{mode.title}</p>
+                        <p className="flex items-center gap-1.5 font-medium">
+                          {mode.title}
+                          <CefrBadge modeId={mode.id} />
+                        </p>
                         <p className="text-sm text-muted">{mode.description}</p>
                         <p className="mt-1 text-xs text-subtle">No eligible cards yet</p>
                       </div>
@@ -575,7 +636,10 @@ function GrammarPage() {
                     >
                       <Icon className="size-5 shrink-0 text-primary-ink" />
                       <div className="min-w-0">
-                        <p className="font-medium">{mode.title}</p>
+                        <p className="flex items-center gap-1.5 font-medium">
+                          {mode.title}
+                          <CefrBadge modeId={mode.id} />
+                        </p>
                         <p className="text-sm text-muted">{mode.description}</p>
                         <p className="mt-1 text-xs text-subtle tabular-nums">
                           {progressLine}
@@ -604,7 +668,10 @@ function GrammarPage() {
                     >
                       <Icon className="size-5 shrink-0 text-primary-ink" />
                       <div className="min-w-0 flex-1">
-                        <p className="font-medium">{mode.title}</p>
+                        <p className="flex items-center gap-1.5 font-medium">
+                          {mode.title}
+                          <CefrBadge modeId={mode.id} />
+                        </p>
                         <p className="text-sm text-muted">{mode.description}</p>
                         <p className="mt-1 text-xs text-subtle tabular-nums">
                           {progressLine} · {eligibleSets.length} sets
