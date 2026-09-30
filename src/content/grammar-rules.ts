@@ -17,7 +17,14 @@ export type GrammarRuleTopic =
   | "steigerung"
   | "passiv"
   | "konjunktiv"
-  | "relativsaetze";
+  | "relativsaetze"
+  | "partizipialkonstruktionen"
+  | "nominalisierung"
+  | "funktionsverbgefuege"
+  | "modalpartikeln"
+  | "konjunktiv1"
+  | "subjektive-modalverben"
+  | "passiversatzformen";
 
 export interface GrammarRule {
   topic: GrammarRuleTopic;
@@ -172,6 +179,58 @@ export const GRAMMAR_RULES: Record<GrammarRuleTopic, GrammarRule> = {
         ["Dativ", "keinem", "keiner", "keinem", "keinen"],
       ],
     },
+  },
+  partizipialkonstruktionen: {
+    topic: "partizipialkonstruktionen",
+    title: "Partizipialkonstruktionen",
+    intro:
+      "Partizip I/II can replace a relative clause, used attributively like an adjective. Partizip I (-end) = an ongoing/active meaning; Partizip II = a completed/passive meaning.",
+    examples: [
+      "der lesende Mann (= der Mann, der liest)",
+      "das geschriebene Buch (= das Buch, das geschrieben wurde)",
+    ],
+  },
+  nominalisierung: {
+    topic: "nominalisierung",
+    title: "Nominalisierung",
+    intro:
+      "A verb or adjective turned into a noun, usually with -ung/-heit/-keit, or by capitalizing the bare infinitive (always neuter with 'das').",
+    examples: ["entscheiden → die Entscheidung", "schön → die Schönheit", "lesen → das Lesen"],
+  },
+  funktionsverbgefuege: {
+    topic: "funktionsverbgefuege",
+    title: "Funktionsverbgefüge",
+    intro:
+      "A semantically weak verb (nehmen, kommen, bringen, stellen, ziehen...) + a noun is used instead of one simple verb — common in formal/written German.",
+    examples: ["Rücksicht nehmen (= berücksichtigen)", "zum Ausdruck bringen (= ausdrücken)"],
+  },
+  modalpartikeln: {
+    topic: "modalpartikeln",
+    title: "Modalpartikeln",
+    intro:
+      "Small, usually untranslatable words that color a sentence's tone/attitude rather than its meaning: doch, mal, ja, eben, halt, denn, schon, wohl.",
+    examples: ["Komm mal her! (Bitte, freundlich)", "Das ist doch klar! (Betonung)"],
+  },
+  konjunktiv1: {
+    topic: "konjunktiv1",
+    title: "Konjunktiv I (indirekte Rede)",
+    intro:
+      "Used to report someone else's words without a direct quote — signals \"this is what was said\", not necessarily true.",
+    examples: ["Er sagt, er komme morgen. (= er hat gesagt, dass er morgen kommt)"],
+  },
+  "subjektive-modalverben": {
+    topic: "subjektive-modalverben",
+    title: "Subjektive Modalverben",
+    intro:
+      "müssen/dürfte/können can express a GUESS about how certain something is, not an obligation/permission: müssen = near-certain, dürfte = probable, können = possible.",
+    examples: ["Er muss zu Hause sein. (= wahrscheinlich ist er es)", "Das dürfte stimmen."],
+  },
+  passiversatzformen: {
+    topic: "passiversatzformen",
+    title: "Passiversatzformen",
+    intro:
+      "Ways to express a passive meaning without werden: sich lassen + Infinitiv, or sein + zu + Infinitiv.",
+    examples: ["Das lässt sich machen.", "Das ist zu machen."],
   },
   possessive: {
     topic: "possessive",

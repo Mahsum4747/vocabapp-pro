@@ -19,17 +19,24 @@ import { Route as SignupRouteImport } from './routes/signup'
 import { Route as GrammarIndexRouteImport } from './routes/grammar.index'
 import { Route as GrammarAdjektivendungenRouteImport } from './routes/grammar.adjektivendungen'
 import { Route as GrammarDiktatRouteImport } from './routes/grammar.diktat'
+import { Route as GrammarFunktionsverbgefuegeRouteImport } from './routes/grammar.funktionsverbgefuege'
 import { Route as GrammarImperativRouteImport } from './routes/grammar.imperativ'
 import { Route as GrammarKonjunktivRouteImport } from './routes/grammar.konjunktiv'
+import { Route as GrammarKonjunktiv1RouteImport } from './routes/grammar.konjunktiv1'
 import { Route as GrammarLesenRouteImport } from './routes/grammar.lesen'
+import { Route as GrammarModalpartikelnRouteImport } from './routes/grammar.modalpartikeln'
 import { Route as GrammarModalverbenRouteImport } from './routes/grammar.modalverben'
 import { Route as GrammarNichtKeinRouteImport } from './routes/grammar.nicht-kein'
+import { Route as GrammarNominalisierungRouteImport } from './routes/grammar.nominalisierung'
+import { Route as GrammarPartizipialRouteImport } from './routes/grammar.partizipial'
 import { Route as GrammarPassivRouteImport } from './routes/grammar.passiv'
+import { Route as GrammarPassiversatzformenRouteImport } from './routes/grammar.passiversatzformen'
 import { Route as GrammarPluralRouteImport } from './routes/grammar.plural'
 import { Route as GrammarPossessiveRouteImport } from './routes/grammar.possessive'
 import { Route as GrammarPronomenRouteImport } from './routes/grammar.pronomen'
 import { Route as GrammarRelativsaetzeRouteImport } from './routes/grammar.relativsaetze'
 import { Route as GrammarSteigerungRouteImport } from './routes/grammar.steigerung'
+import { Route as GrammarSubjektiveModalverbenRouteImport } from './routes/grammar.subjektive-modalverben'
 import { Route as GrammarTrennbareVerbenRouteImport } from './routes/grammar.trennbare-verben'
 import { Route as SetsSetIdRouteImport } from './routes/sets.$setId'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
@@ -96,6 +103,12 @@ const GrammarDiktatRoute = GrammarDiktatRouteImport.update({
   path: '/diktat',
   getParentRoute: () => GrammarRoute,
 } as any)
+const GrammarFunktionsverbgefuegeRoute =
+  GrammarFunktionsverbgefuegeRouteImport.update({
+    id: '/funktionsverbgefuege',
+    path: '/funktionsverbgefuege',
+    getParentRoute: () => GrammarRoute,
+  } as any)
 const GrammarImperativRoute = GrammarImperativRouteImport.update({
   id: '/imperativ',
   path: '/imperativ',
@@ -106,9 +119,19 @@ const GrammarKonjunktivRoute = GrammarKonjunktivRouteImport.update({
   path: '/konjunktiv',
   getParentRoute: () => GrammarRoute,
 } as any)
+const GrammarKonjunktiv1Route = GrammarKonjunktiv1RouteImport.update({
+  id: '/konjunktiv1',
+  path: '/konjunktiv1',
+  getParentRoute: () => GrammarRoute,
+} as any)
 const GrammarLesenRoute = GrammarLesenRouteImport.update({
   id: '/lesen',
   path: '/lesen',
+  getParentRoute: () => GrammarRoute,
+} as any)
+const GrammarModalpartikelnRoute = GrammarModalpartikelnRouteImport.update({
+  id: '/modalpartikeln',
+  path: '/modalpartikeln',
   getParentRoute: () => GrammarRoute,
 } as any)
 const GrammarModalverbenRoute = GrammarModalverbenRouteImport.update({
@@ -121,11 +144,27 @@ const GrammarNichtKeinRoute = GrammarNichtKeinRouteImport.update({
   path: '/nicht-kein',
   getParentRoute: () => GrammarRoute,
 } as any)
+const GrammarNominalisierungRoute = GrammarNominalisierungRouteImport.update({
+  id: '/nominalisierung',
+  path: '/nominalisierung',
+  getParentRoute: () => GrammarRoute,
+} as any)
+const GrammarPartizipialRoute = GrammarPartizipialRouteImport.update({
+  id: '/partizipial',
+  path: '/partizipial',
+  getParentRoute: () => GrammarRoute,
+} as any)
 const GrammarPassivRoute = GrammarPassivRouteImport.update({
   id: '/passiv',
   path: '/passiv',
   getParentRoute: () => GrammarRoute,
 } as any)
+const GrammarPassiversatzformenRoute =
+  GrammarPassiversatzformenRouteImport.update({
+    id: '/passiversatzformen',
+    path: '/passiversatzformen',
+    getParentRoute: () => GrammarRoute,
+  } as any)
 const GrammarPluralRoute = GrammarPluralRouteImport.update({
   id: '/plural',
   path: '/plural',
@@ -151,6 +190,12 @@ const GrammarSteigerungRoute = GrammarSteigerungRouteImport.update({
   path: '/steigerung',
   getParentRoute: () => GrammarRoute,
 } as any)
+const GrammarSubjektiveModalverbenRoute =
+  GrammarSubjektiveModalverbenRouteImport.update({
+    id: '/subjektive-modalverben',
+    path: '/subjektive-modalverben',
+    getParentRoute: () => GrammarRoute,
+  } as any)
 const GrammarTrennbareVerbenRoute = GrammarTrennbareVerbenRouteImport.update({
   id: '/trennbare-verben',
   path: '/trennbare-verben',
@@ -237,17 +282,24 @@ export interface FileRoutesByFullPath {
   '/signup': typeof SignupRoute
   '/grammar/adjektivendungen': typeof GrammarAdjektivendungenRoute
   '/grammar/diktat': typeof GrammarDiktatRoute
+  '/grammar/funktionsverbgefuege': typeof GrammarFunktionsverbgefuegeRoute
   '/grammar/imperativ': typeof GrammarImperativRoute
   '/grammar/konjunktiv': typeof GrammarKonjunktivRoute
+  '/grammar/konjunktiv1': typeof GrammarKonjunktiv1Route
   '/grammar/lesen': typeof GrammarLesenRoute
+  '/grammar/modalpartikeln': typeof GrammarModalpartikelnRoute
   '/grammar/modalverben': typeof GrammarModalverbenRoute
   '/grammar/nicht-kein': typeof GrammarNichtKeinRoute
+  '/grammar/nominalisierung': typeof GrammarNominalisierungRoute
+  '/grammar/partizipial': typeof GrammarPartizipialRoute
   '/grammar/passiv': typeof GrammarPassivRoute
+  '/grammar/passiversatzformen': typeof GrammarPassiversatzformenRoute
   '/grammar/plural': typeof GrammarPluralRoute
   '/grammar/possessive': typeof GrammarPossessiveRoute
   '/grammar/pronomen': typeof GrammarPronomenRoute
   '/grammar/relativsaetze': typeof GrammarRelativsaetzeRoute
   '/grammar/steigerung': typeof GrammarSteigerungRoute
+  '/grammar/subjektive-modalverben': typeof GrammarSubjektiveModalverbenRoute
   '/grammar/trennbare-verben': typeof GrammarTrennbareVerbenRoute
   '/sets/$setId': typeof SetsSetIdRouteWithChildren
   '/grammar/': typeof GrammarIndexRoute
@@ -274,17 +326,24 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/grammar/adjektivendungen': typeof GrammarAdjektivendungenRoute
   '/grammar/diktat': typeof GrammarDiktatRoute
+  '/grammar/funktionsverbgefuege': typeof GrammarFunktionsverbgefuegeRoute
   '/grammar/imperativ': typeof GrammarImperativRoute
   '/grammar/konjunktiv': typeof GrammarKonjunktivRoute
+  '/grammar/konjunktiv1': typeof GrammarKonjunktiv1Route
   '/grammar/lesen': typeof GrammarLesenRoute
+  '/grammar/modalpartikeln': typeof GrammarModalpartikelnRoute
   '/grammar/modalverben': typeof GrammarModalverbenRoute
   '/grammar/nicht-kein': typeof GrammarNichtKeinRoute
+  '/grammar/nominalisierung': typeof GrammarNominalisierungRoute
+  '/grammar/partizipial': typeof GrammarPartizipialRoute
   '/grammar/passiv': typeof GrammarPassivRoute
+  '/grammar/passiversatzformen': typeof GrammarPassiversatzformenRoute
   '/grammar/plural': typeof GrammarPluralRoute
   '/grammar/possessive': typeof GrammarPossessiveRoute
   '/grammar/pronomen': typeof GrammarPronomenRoute
   '/grammar/relativsaetze': typeof GrammarRelativsaetzeRoute
   '/grammar/steigerung': typeof GrammarSteigerungRoute
+  '/grammar/subjektive-modalverben': typeof GrammarSubjektiveModalverbenRoute
   '/grammar/trennbare-verben': typeof GrammarTrennbareVerbenRoute
   '/grammar': typeof GrammarIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -312,17 +371,24 @@ export interface FileRoutesById {
   '/signup': typeof SignupRoute
   '/grammar/adjektivendungen': typeof GrammarAdjektivendungenRoute
   '/grammar/diktat': typeof GrammarDiktatRoute
+  '/grammar/funktionsverbgefuege': typeof GrammarFunktionsverbgefuegeRoute
   '/grammar/imperativ': typeof GrammarImperativRoute
   '/grammar/konjunktiv': typeof GrammarKonjunktivRoute
+  '/grammar/konjunktiv1': typeof GrammarKonjunktiv1Route
   '/grammar/lesen': typeof GrammarLesenRoute
+  '/grammar/modalpartikeln': typeof GrammarModalpartikelnRoute
   '/grammar/modalverben': typeof GrammarModalverbenRoute
   '/grammar/nicht-kein': typeof GrammarNichtKeinRoute
+  '/grammar/nominalisierung': typeof GrammarNominalisierungRoute
+  '/grammar/partizipial': typeof GrammarPartizipialRoute
   '/grammar/passiv': typeof GrammarPassivRoute
+  '/grammar/passiversatzformen': typeof GrammarPassiversatzformenRoute
   '/grammar/plural': typeof GrammarPluralRoute
   '/grammar/possessive': typeof GrammarPossessiveRoute
   '/grammar/pronomen': typeof GrammarPronomenRoute
   '/grammar/relativsaetze': typeof GrammarRelativsaetzeRoute
   '/grammar/steigerung': typeof GrammarSteigerungRoute
+  '/grammar/subjektive-modalverben': typeof GrammarSubjektiveModalverbenRoute
   '/grammar/trennbare-verben': typeof GrammarTrennbareVerbenRoute
   '/sets/$setId': typeof SetsSetIdRouteWithChildren
   '/grammar/': typeof GrammarIndexRoute
@@ -352,17 +418,24 @@ export interface FileRouteTypes {
     | '/signup'
     | '/grammar/adjektivendungen'
     | '/grammar/diktat'
+    | '/grammar/funktionsverbgefuege'
     | '/grammar/imperativ'
     | '/grammar/konjunktiv'
+    | '/grammar/konjunktiv1'
     | '/grammar/lesen'
+    | '/grammar/modalpartikeln'
     | '/grammar/modalverben'
     | '/grammar/nicht-kein'
+    | '/grammar/nominalisierung'
+    | '/grammar/partizipial'
     | '/grammar/passiv'
+    | '/grammar/passiversatzformen'
     | '/grammar/plural'
     | '/grammar/possessive'
     | '/grammar/pronomen'
     | '/grammar/relativsaetze'
     | '/grammar/steigerung'
+    | '/grammar/subjektive-modalverben'
     | '/grammar/trennbare-verben'
     | '/sets/$setId'
     | '/grammar/'
@@ -389,17 +462,24 @@ export interface FileRouteTypes {
     | '/signup'
     | '/grammar/adjektivendungen'
     | '/grammar/diktat'
+    | '/grammar/funktionsverbgefuege'
     | '/grammar/imperativ'
     | '/grammar/konjunktiv'
+    | '/grammar/konjunktiv1'
     | '/grammar/lesen'
+    | '/grammar/modalpartikeln'
     | '/grammar/modalverben'
     | '/grammar/nicht-kein'
+    | '/grammar/nominalisierung'
+    | '/grammar/partizipial'
     | '/grammar/passiv'
+    | '/grammar/passiversatzformen'
     | '/grammar/plural'
     | '/grammar/possessive'
     | '/grammar/pronomen'
     | '/grammar/relativsaetze'
     | '/grammar/steigerung'
+    | '/grammar/subjektive-modalverben'
     | '/grammar/trennbare-verben'
     | '/grammar'
     | '/api/auth/$'
@@ -426,17 +506,24 @@ export interface FileRouteTypes {
     | '/signup'
     | '/grammar/adjektivendungen'
     | '/grammar/diktat'
+    | '/grammar/funktionsverbgefuege'
     | '/grammar/imperativ'
     | '/grammar/konjunktiv'
+    | '/grammar/konjunktiv1'
     | '/grammar/lesen'
+    | '/grammar/modalpartikeln'
     | '/grammar/modalverben'
     | '/grammar/nicht-kein'
+    | '/grammar/nominalisierung'
+    | '/grammar/partizipial'
     | '/grammar/passiv'
+    | '/grammar/passiversatzformen'
     | '/grammar/plural'
     | '/grammar/possessive'
     | '/grammar/pronomen'
     | '/grammar/relativsaetze'
     | '/grammar/steigerung'
+    | '/grammar/subjektive-modalverben'
     | '/grammar/trennbare-verben'
     | '/sets/$setId'
     | '/grammar/'
@@ -539,6 +626,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GrammarDiktatRouteImport
       parentRoute: typeof GrammarRoute
     }
+    '/grammar/funktionsverbgefuege': {
+      id: '/grammar/funktionsverbgefuege'
+      path: '/funktionsverbgefuege'
+      fullPath: '/grammar/funktionsverbgefuege'
+      preLoaderRoute: typeof GrammarFunktionsverbgefuegeRouteImport
+      parentRoute: typeof GrammarRoute
+    }
     '/grammar/imperativ': {
       id: '/grammar/imperativ'
       path: '/imperativ'
@@ -553,11 +647,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GrammarKonjunktivRouteImport
       parentRoute: typeof GrammarRoute
     }
+    '/grammar/konjunktiv1': {
+      id: '/grammar/konjunktiv1'
+      path: '/konjunktiv1'
+      fullPath: '/grammar/konjunktiv1'
+      preLoaderRoute: typeof GrammarKonjunktiv1RouteImport
+      parentRoute: typeof GrammarRoute
+    }
     '/grammar/lesen': {
       id: '/grammar/lesen'
       path: '/lesen'
       fullPath: '/grammar/lesen'
       preLoaderRoute: typeof GrammarLesenRouteImport
+      parentRoute: typeof GrammarRoute
+    }
+    '/grammar/modalpartikeln': {
+      id: '/grammar/modalpartikeln'
+      path: '/modalpartikeln'
+      fullPath: '/grammar/modalpartikeln'
+      preLoaderRoute: typeof GrammarModalpartikelnRouteImport
       parentRoute: typeof GrammarRoute
     }
     '/grammar/modalverben': {
@@ -574,11 +682,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GrammarNichtKeinRouteImport
       parentRoute: typeof GrammarRoute
     }
+    '/grammar/nominalisierung': {
+      id: '/grammar/nominalisierung'
+      path: '/nominalisierung'
+      fullPath: '/grammar/nominalisierung'
+      preLoaderRoute: typeof GrammarNominalisierungRouteImport
+      parentRoute: typeof GrammarRoute
+    }
+    '/grammar/partizipial': {
+      id: '/grammar/partizipial'
+      path: '/partizipial'
+      fullPath: '/grammar/partizipial'
+      preLoaderRoute: typeof GrammarPartizipialRouteImport
+      parentRoute: typeof GrammarRoute
+    }
     '/grammar/passiv': {
       id: '/grammar/passiv'
       path: '/passiv'
       fullPath: '/grammar/passiv'
       preLoaderRoute: typeof GrammarPassivRouteImport
+      parentRoute: typeof GrammarRoute
+    }
+    '/grammar/passiversatzformen': {
+      id: '/grammar/passiversatzformen'
+      path: '/passiversatzformen'
+      fullPath: '/grammar/passiversatzformen'
+      preLoaderRoute: typeof GrammarPassiversatzformenRouteImport
       parentRoute: typeof GrammarRoute
     }
     '/grammar/plural': {
@@ -614,6 +743,13 @@ declare module '@tanstack/react-router' {
       path: '/steigerung'
       fullPath: '/grammar/steigerung'
       preLoaderRoute: typeof GrammarSteigerungRouteImport
+      parentRoute: typeof GrammarRoute
+    }
+    '/grammar/subjektive-modalverben': {
+      id: '/grammar/subjektive-modalverben'
+      path: '/subjektive-modalverben'
+      fullPath: '/grammar/subjektive-modalverben'
+      preLoaderRoute: typeof GrammarSubjektiveModalverbenRouteImport
       parentRoute: typeof GrammarRoute
     }
     '/grammar/trennbare-verben': {
@@ -727,17 +863,24 @@ declare module '@tanstack/react-router' {
 interface GrammarRouteChildren {
   GrammarAdjektivendungenRoute: typeof GrammarAdjektivendungenRoute
   GrammarDiktatRoute: typeof GrammarDiktatRoute
+  GrammarFunktionsverbgefuegeRoute: typeof GrammarFunktionsverbgefuegeRoute
   GrammarImperativRoute: typeof GrammarImperativRoute
   GrammarKonjunktivRoute: typeof GrammarKonjunktivRoute
+  GrammarKonjunktiv1Route: typeof GrammarKonjunktiv1Route
   GrammarLesenRoute: typeof GrammarLesenRoute
+  GrammarModalpartikelnRoute: typeof GrammarModalpartikelnRoute
   GrammarModalverbenRoute: typeof GrammarModalverbenRoute
   GrammarNichtKeinRoute: typeof GrammarNichtKeinRoute
+  GrammarNominalisierungRoute: typeof GrammarNominalisierungRoute
+  GrammarPartizipialRoute: typeof GrammarPartizipialRoute
   GrammarPassivRoute: typeof GrammarPassivRoute
+  GrammarPassiversatzformenRoute: typeof GrammarPassiversatzformenRoute
   GrammarPluralRoute: typeof GrammarPluralRoute
   GrammarPossessiveRoute: typeof GrammarPossessiveRoute
   GrammarPronomenRoute: typeof GrammarPronomenRoute
   GrammarRelativsaetzeRoute: typeof GrammarRelativsaetzeRoute
   GrammarSteigerungRoute: typeof GrammarSteigerungRoute
+  GrammarSubjektiveModalverbenRoute: typeof GrammarSubjektiveModalverbenRoute
   GrammarTrennbareVerbenRoute: typeof GrammarTrennbareVerbenRoute
   GrammarIndexRoute: typeof GrammarIndexRoute
 }
@@ -745,17 +888,24 @@ interface GrammarRouteChildren {
 const GrammarRouteChildren: GrammarRouteChildren = {
   GrammarAdjektivendungenRoute: GrammarAdjektivendungenRoute,
   GrammarDiktatRoute: GrammarDiktatRoute,
+  GrammarFunktionsverbgefuegeRoute: GrammarFunktionsverbgefuegeRoute,
   GrammarImperativRoute: GrammarImperativRoute,
   GrammarKonjunktivRoute: GrammarKonjunktivRoute,
+  GrammarKonjunktiv1Route: GrammarKonjunktiv1Route,
   GrammarLesenRoute: GrammarLesenRoute,
+  GrammarModalpartikelnRoute: GrammarModalpartikelnRoute,
   GrammarModalverbenRoute: GrammarModalverbenRoute,
   GrammarNichtKeinRoute: GrammarNichtKeinRoute,
+  GrammarNominalisierungRoute: GrammarNominalisierungRoute,
+  GrammarPartizipialRoute: GrammarPartizipialRoute,
   GrammarPassivRoute: GrammarPassivRoute,
+  GrammarPassiversatzformenRoute: GrammarPassiversatzformenRoute,
   GrammarPluralRoute: GrammarPluralRoute,
   GrammarPossessiveRoute: GrammarPossessiveRoute,
   GrammarPronomenRoute: GrammarPronomenRoute,
   GrammarRelativsaetzeRoute: GrammarRelativsaetzeRoute,
   GrammarSteigerungRoute: GrammarSteigerungRoute,
+  GrammarSubjektiveModalverbenRoute: GrammarSubjektiveModalverbenRoute,
   GrammarTrennbareVerbenRoute: GrammarTrennbareVerbenRoute,
   GrammarIndexRoute: GrammarIndexRoute,
 }

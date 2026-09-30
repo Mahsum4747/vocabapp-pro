@@ -1,5 +1,6 @@
 import { shuffle } from "./utils.ts";
 import { separablePrefixOf } from "./german/verb-conjugation-data.ts";
+import { lookupVerbConjugationExtended } from "./german/verb-conjugation-extended-data.ts";
 import type { Genus, NounEntry } from "./german/types.ts";
 import type { VerbConjugationEntry } from "./german/verb-conjugation-data.ts";
 
@@ -531,10 +532,25 @@ export function buildSteigerungQuestion(rng: Rng = Math.random): SteigerungQuest
 export type PassivTense = "präsens" | "präteritum" | "perfekt";
 const PASSIV_TENSES: PassivTense[] = ["präsens", "präteritum", "perfekt"];
 
+/**
+ * Perfekt Passiv always takes `sein` as its auxiliary (never the main verb's
+ * own `auxiliary`, which governs its ACTIVE Perfekt) — "worden" (not
+ * "geworden") is the fixed passive-specific participle of werden. The past
+ * participle itself is taken from `verb-conjugation-extended-data.ts` when
+ * available (cross-checked against `entry.partizipII`, which is the same
+ * word 99%+ of the time — the two files are independently generated, so
+ * this also guards against either file's rare typo/divergence) and falls
+ * back to `entry.partizipII` when the extended lookup misses.
+ */
+function partizipIIFor(entry: VerbConjugationEntry): string {
+  return lookupVerbConjugationExtended(entry.infinitive)?.pastParticiple ?? entry.partizipII ?? "";
+}
+
 function passivForm(entry: VerbConjugationEntry, tense: PassivTense): string {
-  if (tense === "präsens") return `wird ${entry.partizipII}`;
-  if (tense === "präteritum") return `wurde ${entry.partizipII}`;
-  return `ist ${entry.partizipII} worden`;
+  const partizipII = partizipIIFor(entry);
+  if (tense === "präsens") return `wird ${partizipII}`;
+  if (tense === "präteritum") return `wurde ${partizipII}`;
+  return `ist ${partizipII} worden`;
 }
 
 export interface PassivQuestion extends DrillQuestion {
@@ -543,9 +559,12 @@ export interface PassivQuestion extends DrillQuestion {
 }
 
 /** `entry` must have `partizipII` (`randomVerbSample`'s pools already
- *  filter to that). werden + Partizip II per tense; the fourth (wrong)
- *  option is the plain active-voice `er`-form, so a wrong pick is still a
- *  real conjugated form of the same verb, just active instead of passive. */
+ *  filter to that). werden + Partizip II per tense (Präsens/Präteritum/
+ *  Perfekt — Perfekt Passiv's participle is cross-checked against
+ *  `verb-conjugation-extended-data.ts`, see `partizipIIFor`); the fourth
+ *  (wrong) option is the plain active-voice `er`-form, so a wrong pick is
+ *  still a real conjugated form of the same verb, just active instead of
+ *  passive. */
 export function buildPassivQuestion(
   entry: VerbConjugationEntry,
   rng: Rng = Math.random,
@@ -569,21 +588,55 @@ export function buildPassivQuestion(
 
 export interface KonjunktivQuestion extends DrillQuestion {
   infinitive: string;
+  /** "würde": the general-purpose würde-construction (always available).
+   *  "synthetic": the verb's own inflected Konjunktiv II form (e.g.
+   *  "ginge", "käme") from `verb-conjugation-extended-data.ts` — only
+   *  chosen when that lookup succeeds AND the synthetic form actually
+   *  differs from the würde-construction (for most weak verbs the two
+   *  forms are identical or the synthetic one sounds archaic, so this
+   *  sub-mode naturally favors the irregular/strong verbs it's meant to
+   *  teach). */
+  variant: "würde" | "synthetic";
 }
 
-/** würde + infinitive (the general-purpose Konjunktiv II construction) vs.
- *  hätte/wäre + infinitive (real Konjunktiv II auxiliaries, just the wrong
- *  one for a plain verb) and the plain present-tense `ich`-form, as
- *  distractors. */
+/**
+ * würde + infinitive (the general-purpose Konjunktiv II construction) vs.
+ * hätte/wäre + infinitive (real Konjunktiv II auxiliaries, just the wrong
+ * one for a plain verb) and the plain present-tense `ich`-form, as
+ * distractors. When `verb-conjugation-extended-data.ts` has this
+ * infinitive AND its own inflected `konjunktiv2` (ich-form) actually
+ * differs from the würde-construction, roughly half of rounds instead ask
+ * the learner to pick that synthetic form — distractors then are the
+ * würde-construction (a real, just less form-specific answer), the
+ * `konjunktiv1` ich-form (a real Konjunktiv I form, wrong mood-nuance
+ * here), and the plain indicative `ich`-form.
+ */
 export function buildKonjunktivQuestion(
   entry: VerbConjugationEntry,
   rng: Rng = Math.random,
 ): KonjunktivQuestion {
-  const correctAnswer = `würde ${entry.infinitive}`;
+  const extended = lookupVerbConjugationExtended(entry.infinitive);
+  const syntheticIch = extended?.konjunktiv2[0];
+  const wuerdeForm = `würde ${entry.infinitive}`;
+  const canUseSynthetic = Boolean(syntheticIch && syntheticIch !== `würde ${entry.infinitive}` && syntheticIch !== entry.ich);
+  if (canUseSynthetic && rng() < 0.5) {
+    const correctAnswer = syntheticIch!;
+    const distractors = [wuerdeForm, extended!.konjunktiv1[0], `ich ${entry.ich}`];
+    const options = shuffle([correctAnswer, ...distractors], rng);
+    return {
+      infinitive: entry.infinitive,
+      variant: "synthetic",
+      prompt: `Konjunktiv II (synthetische Form): ich ___`,
+      options,
+      correctAnswer,
+    };
+  }
+  const correctAnswer = wuerdeForm;
   const distractors = [`hätte ${entry.infinitive}`, `wäre ${entry.infinitive}`, `ich ${entry.ich}`];
   const options = shuffle([correctAnswer, ...distractors], rng);
   return {
     infinitive: entry.infinitive,
+    variant: "würde",
     prompt: `Konjunktiv II: ich ___`,
     options,
     correctAnswer,
@@ -628,6 +681,355 @@ export function buildRelativsatzQuestion(
     lemma: entry.lemma,
     grammaticalCase,
     prompt: RELATIVSATZ_TEMPLATE[grammaticalCase](NOMINATIVE_ARTICLE[genus], entry.lemma),
+    options,
+    correctAnswer,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Partizipialkonstruktionen drill (B2/C1)
+// ---------------------------------------------------------------------------
+
+export type PartizipialVariant = "partizip1" | "partizip2";
+
+export interface PartizipialQuestion extends DrillQuestion {
+  infinitive: string;
+  variant: PartizipialVariant;
+}
+
+/**
+ * `entry.infinitive` must resolve via `lookupVerbConjugationExtended`
+ * (callers filter their pool to that — see grammar.partizipial.tsx).
+ * Partizip I (presentParticiple) as an attributive adjective — "der
+ * lesende Mann" (= der Mann, der liest) — vs. Partizip II
+ * (pastParticiple) — "das geschriebene Buch" (= das Buch, das
+ * geschrieben wurde). Both take the weak masculine-nominative "-e" ending
+ * for the prompt's fixed "der/das ___ Mann/Buch" frame, since this drill
+ * is about Partizip-as-relative-clause-replacement, not adjective-ending
+ * agreement (that's Adjektivendungen's own job). Distractors are the
+ * OTHER participle form (correct word, wrong Partizip I/II), the bare
+ * participle without the "-e" ending, and the bare infinitive — all real
+ * forms of the same verb.
+ */
+export function buildPartizipialQuestion(
+  entry: VerbConjugationEntry,
+  rng: Rng = Math.random,
+): PartizipialQuestion {
+  const extended = lookupVerbConjugationExtended(entry.infinitive)!;
+  const variant = pick<PartizipialVariant>(["partizip1", "partizip2"], rng);
+  if (variant === "partizip1") {
+    const correctAnswer = `${extended.presentParticiple}e`;
+    const distractors = [
+      extended.presentParticiple,
+      `${extended.pastParticiple}e`,
+      entry.infinitive,
+    ];
+    const options = shuffle([correctAnswer, ...distractors], rng);
+    return {
+      infinitive: entry.infinitive,
+      variant,
+      prompt: `der Mann, der ${entry.er} → der ___ Mann`,
+      options,
+      correctAnswer,
+    };
+  }
+  const correctAnswer = `${extended.pastParticiple}e`;
+  const distractors = [
+    extended.pastParticiple,
+    `${extended.presentParticiple}e`,
+    entry.infinitive,
+  ];
+  const options = shuffle([correctAnswer, ...distractors], rng);
+  return {
+    infinitive: entry.infinitive,
+    variant,
+    prompt: `das Buch, das ${entry.partizipII ?? extended.pastParticiple} wurde → das ___ Buch`,
+    options,
+    correctAnswer,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Nominalisierung drill (B2/C1) — fixed verb/adjective → noun list
+// ---------------------------------------------------------------------------
+
+interface NominalisierungEntry {
+  base: string;
+  article: "der" | "die" | "das";
+  noun: string;
+}
+
+/** Fixed, common A2–B1 vocabulary — per the task's own pre-decision (no
+ *  fiil→isim türetme field in nouns-data.ts), NOT AI-generated, NOT derived
+ *  from any data file. Real German words only. */
+const NOMINALISIERUNG_ENTRIES: NominalisierungEntry[] = [
+  { base: "entscheiden", article: "die", noun: "Entscheidung" },
+  { base: "schön", article: "die", noun: "Schönheit" },
+  { base: "lesen", article: "das", noun: "Lesen" },
+  { base: "ankommen", article: "die", noun: "Ankunft" },
+  { base: "beginnen", article: "der", noun: "Beginn" },
+  { base: "bewegen", article: "die", noun: "Bewegung" },
+  { base: "krank", article: "die", noun: "Krankheit" },
+  { base: "frei", article: "die", noun: "Freiheit" },
+  { base: "wichtig", article: "die", noun: "Wichtigkeit" },
+  { base: "möglich", article: "die", noun: "Möglichkeit" },
+  { base: "freundlich", article: "die", noun: "Freundlichkeit" },
+  { base: "sauber", article: "die", noun: "Sauberkeit" },
+  { base: "erklären", article: "die", noun: "Erklärung" },
+  { base: "verbessern", article: "die", noun: "Verbesserung" },
+  { base: "untersuchen", article: "die", noun: "Untersuchung" },
+  { base: "verändern", article: "die", noun: "Veränderung" },
+  { base: "prüfen", article: "die", noun: "Prüfung" },
+  { base: "lösen", article: "die", noun: "Lösung" },
+  { base: "warten", article: "die", noun: "Wartung" },
+  { base: "wohnen", article: "die", noun: "Wohnung" },
+  { base: "rechnen", article: "die", noun: "Rechnung" },
+  { base: "essen", article: "das", noun: "Essen" },
+  { base: "leben", article: "das", noun: "Leben" },
+  { base: "schwimmen", article: "das", noun: "Schwimmen" },
+  { base: "gesund", article: "die", noun: "Gesundheit" },
+  { base: "sicher", article: "die", noun: "Sicherheit" },
+  { base: "einsam", article: "die", noun: "Einsamkeit" },
+  { base: "abfahren", article: "die", noun: "Abfahrt" },
+];
+
+export interface NominalisierungQuestion extends DrillQuestion {
+  base: string;
+}
+
+/** Set-independent (fixed list) — see buildModalverbenQuestion's doc
+ *  comment on the same pattern. */
+export function buildNominalisierungQuestion(rng: Rng = Math.random): NominalisierungQuestion {
+  const entry = pick(NOMINALISIERUNG_ENTRIES, rng);
+  const correctAnswer = `${entry.article} ${entry.noun}`;
+  const pool = NOMINALISIERUNG_ENTRIES.map((e) => `${e.article} ${e.noun}`).filter(
+    (candidate) => candidate !== correctAnswer,
+  );
+  const distractors = shuffle(pool, rng).slice(0, 3);
+  const options = shuffle([correctAnswer, ...distractors], rng);
+  return {
+    base: entry.base,
+    prompt: `${entry.base} → ___ (Nominalisierung)`,
+    options,
+    correctAnswer,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Funktionsverbgefüge drill (B2/C1) — fixed phrase list
+// ---------------------------------------------------------------------------
+
+interface FunktionsverbgefuegeEntry {
+  phrase: string;
+  simpleVerb: string;
+}
+
+/** Fixed, common Funktionsverbgefüge — a weak-meaning verb (nehmen, kommen,
+ *  bringen, ziehen, finden, geben, stehen...) + noun, paired with the
+ *  single verb it paraphrases. NOT AI-generated. */
+const FUNKTIONSVERBGEFUEGE_ENTRIES: FunktionsverbgefuegeEntry[] = [
+  { phrase: "Rücksicht nehmen", simpleVerb: "berücksichtigen" },
+  { phrase: "zum Ausdruck bringen", simpleVerb: "ausdrücken" },
+  { phrase: "in Frage stellen", simpleVerb: "bezweifeln" },
+  { phrase: "zur Verfügung stellen", simpleVerb: "bereitstellen" },
+  { phrase: "Anwendung finden", simpleVerb: "angewendet werden" },
+  { phrase: "in Betracht ziehen", simpleVerb: "erwägen" },
+  { phrase: "Kritik üben", simpleVerb: "kritisieren" },
+  { phrase: "Einfluss nehmen", simpleVerb: "beeinflussen" },
+  { phrase: "zur Sprache bringen", simpleVerb: "ansprechen" },
+  { phrase: "in Kraft treten", simpleVerb: "gültig werden" },
+  { phrase: "Stellung nehmen", simpleVerb: "sich äußern" },
+  { phrase: "eine Entscheidung treffen", simpleVerb: "entscheiden" },
+  { phrase: "zum Abschluss bringen", simpleVerb: "abschließen" },
+  { phrase: "in Erwägung ziehen", simpleVerb: "erwägen" },
+  { phrase: "zum Stillstand kommen", simpleVerb: "stillstehen" },
+];
+
+export interface FunktionsverbgefuegeQuestion extends DrillQuestion {
+  simpleVerb: string;
+}
+
+/** Set-independent (fixed list). */
+export function buildFunktionsverbgefuegeQuestion(
+  rng: Rng = Math.random,
+): FunktionsverbgefuegeQuestion {
+  const entry = pick(FUNKTIONSVERBGEFUEGE_ENTRIES, rng);
+  const correctAnswer = entry.phrase;
+  const pool = FUNKTIONSVERBGEFUEGE_ENTRIES.map((e) => e.phrase).filter(
+    (candidate) => candidate !== correctAnswer,
+  );
+  const distractors = shuffle(pool, rng).slice(0, 3);
+  const options = shuffle([correctAnswer, ...distractors], rng);
+  return {
+    simpleVerb: entry.simpleVerb,
+    prompt: `${entry.simpleVerb} → ___ (Funktionsverbgefüge)`,
+    options,
+    correctAnswer,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Modalpartikeln drill (B2/C1) — fixed sentence/particle list
+// ---------------------------------------------------------------------------
+
+interface ModalpartikelEntry {
+  sentence: string; // with "___" blank
+  partikel: string;
+}
+
+/** Fixed, common Modalpartikeln in a fixed sentence each — NOT
+ *  AI-generated. `ALL_PARTIKELN` (below) is the closed distractor pool. */
+const MODALPARTIKEL_ENTRIES: ModalpartikelEntry[] = [
+  { sentence: "Komm ___ her!", partikel: "mal" },
+  { sentence: "Das ist ___ klar!", partikel: "doch" },
+  { sentence: "Ich habe es ___ vergessen.", partikel: "eben" },
+  { sentence: "Dann mach es ___ so.", partikel: "halt" },
+  { sentence: "Das war ___ ein tolles Konzert!", partikel: "ja" },
+  { sentence: "Was machst du ___ hier?", partikel: "denn" },
+  { sentence: "Das wird ___ schon klappen.", partikel: "schon" },
+  { sentence: "Er ist ___ ziemlich müde.", partikel: "wohl" },
+  { sentence: "Setz dich ___ hin.", partikel: "doch" },
+  { sentence: "Schau ___ mal, was ich gefunden habe.", partikel: "mal" },
+];
+
+const ALL_PARTIKELN = ["doch", "mal", "ja", "eben", "halt", "denn", "schon", "wohl"] as const;
+
+export interface ModalpartikelQuestion extends DrillQuestion {
+  partikel: string;
+}
+
+/** Set-independent (fixed list). Distractors are OTHER real
+ *  Modalpartikeln from the closed 8-word pool, not invented filler. */
+export function buildModalpartikelQuestion(rng: Rng = Math.random): ModalpartikelQuestion {
+  const entry = pick(MODALPARTIKEL_ENTRIES, rng);
+  const correctAnswer = entry.partikel;
+  const pool = ALL_PARTIKELN.filter((p) => p !== correctAnswer);
+  const distractors = shuffle([...pool], rng).slice(0, 3);
+  const options = shuffle([correctAnswer, ...distractors], rng);
+  return {
+    partikel: entry.partikel,
+    prompt: entry.sentence,
+    options,
+    correctAnswer,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Konjunktiv I (indirekte Rede) drill (B2/C1)
+// ---------------------------------------------------------------------------
+
+export interface KonjunktivEinsQuestion extends DrillQuestion {
+  infinitive: string;
+}
+
+/**
+ * `entry.infinitive` must resolve via `lookupVerbConjugationExtended`
+ * (callers filter their pool to that — see grammar.konjunktiv1.tsx). This
+ * is a DIFFERENT drill from `buildKonjunktivQuestion`'s "synthetic" variant
+ * above: that one drills FORM production (Konjunktiv I vs II form), this
+ * one drills the USAGE rule — reported/indirect speech ("Er sagt, er
+ * komme morgen"). Correct answer is the `konjunktiv1` er-form; distractors
+ * are the plain indicative `er`-form (real, just direct-speech-only here),
+ * the `konjunktiv2` er-form (real, but the wrong mood for indirekte Rede
+ * of a present-tense statement), and the würde-construction.
+ */
+export function buildKonjunktivEinsQuestion(
+  entry: VerbConjugationEntry,
+  rng: Rng = Math.random,
+): KonjunktivEinsQuestion {
+  const extended = lookupVerbConjugationExtended(entry.infinitive)!;
+  const correctAnswer = extended.konjunktiv1[2]!; // er
+  const distractors = [entry.er, extended.konjunktiv2[2]!, `würde ${entry.infinitive}`];
+  const options = shuffle([correctAnswer, ...distractors], rng);
+  return {
+    infinitive: entry.infinitive,
+    prompt: `Er sagt: "Ich ${entry.ich} morgen." → Er sagt, er ___ morgen. (indirekte Rede)`,
+    options,
+    correctAnswer,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Subjektive Modalverben drill (B2/C1)
+// ---------------------------------------------------------------------------
+
+export type SubjektiveModalCertainty = "sicher" | "wahrscheinlich" | "möglich";
+
+const SUBJEKTIVE_MODAL_TEMPLATES: {
+  certainty: SubjektiveModalCertainty;
+  context: string;
+  modal: string;
+}[] = [
+  { certainty: "sicher", context: "Er ist seit Jahren Ärztin.", modal: "muss" },
+  { certainty: "wahrscheinlich", context: "Das Licht ist aus.", modal: "dürfte" },
+  { certainty: "möglich", context: "Vielleicht regnet es.", modal: "kann" },
+];
+
+export interface SubjektiveModalverbenQuestion extends DrillQuestion {
+  infinitive: string;
+  certainty: SubjektiveModalCertainty;
+}
+
+/**
+ * `entry.infinitive` is used as the main verb the subjective modal
+ * governs — any recognized verb works, no extended-data lookup needed for
+ * the modal itself since müssen/dürfte/kann's subjective forms are fixed
+ * (per the task's rule data), only their main-verb infinitive slot varies.
+ * müssen = certain guess, dürfte = probable guess, kann = possible guess.
+ * Distractors are the OTHER two modals from this same fixed 3-modal pool.
+ */
+export function buildSubjektiveModalverbenQuestion(
+  entry: VerbConjugationEntry,
+  rng: Rng = Math.random,
+): SubjektiveModalverbenQuestion {
+  const template = pick(SUBJEKTIVE_MODAL_TEMPLATES, rng);
+  const correctAnswer = template.modal;
+  const distractors = SUBJEKTIVE_MODAL_TEMPLATES.filter((t) => t.modal !== correctAnswer).map(
+    (t) => t.modal,
+  );
+  const options = shuffle([correctAnswer, ...distractors], rng);
+  return {
+    infinitive: entry.infinitive,
+    certainty: template.certainty,
+    prompt: `${template.context} → Er ___ ${entry.infinitive}. (Vermutung, ${template.certainty})`,
+    options,
+    correctAnswer,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Passiversatzformen drill (B2/C1)
+// ---------------------------------------------------------------------------
+
+export type PassiversatzForm = "lassen" | "sein-zu";
+
+export interface PassiversatzformenQuestion extends DrillQuestion {
+  infinitive: string;
+  form: PassiversatzForm;
+}
+
+/**
+ * `entry.infinitive` any recognized verb. sich lassen + Infinitiv ("Das
+ * lässt sich machen") vs. sein + zu + Infinitiv ("Das ist zu machen") —
+ * both real Passiversatzformen, the question is which one fits the fixed
+ * prompt frame. Distractors are the OTHER construction and the plain
+ * werden-Passiv Präsens (a real passive, just not a Passiversatzform).
+ */
+export function buildPassiversatzformenQuestion(
+  entry: VerbConjugationEntry,
+  rng: Rng = Math.random,
+): PassiversatzformenQuestion {
+  const form = pick<PassiversatzForm>(["lassen", "sein-zu"], rng);
+  const lassenForm = `lässt sich ${entry.infinitive}`;
+  const seinZuForm = `ist zu ${entry.infinitive}`;
+  const correctAnswer = form === "lassen" ? lassenForm : seinZuForm;
+  const werdenPassiv = entry.partizipII ? `wird ${entry.partizipII}` : `wird ${entry.infinitive}`;
+  const distractors = [form === "lassen" ? seinZuForm : lassenForm, werdenPassiv, entry.infinitive];
+  const options = shuffle([correctAnswer, ...distractors], rng);
+  return {
+    infinitive: entry.infinitive,
+    form,
+    prompt: `Passiversatzform: Das ___. (${entry.infinitive})`,
     options,
     correctAnswer,
   };

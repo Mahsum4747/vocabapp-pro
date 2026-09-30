@@ -1,6 +1,7 @@
 import { clozeBlankForCard } from "@/lib/cloze";
 import { satzbauChipsForCard } from "@/lib/satzbau";
 import { lookupVerbConjugation, separablePrefixOf } from "@/lib/german/verb-conjugation-data";
+import { lookupVerbConjugationExtended } from "@/lib/german/verb-conjugation-extended-data";
 import { masteryPercent, type ProgressMap } from "@/lib/quiz";
 import { isCardActive, resolveSetLanguages } from "@/lib/types";
 import { profileFor } from "@/lib/lang/profiles";
@@ -146,4 +147,20 @@ export function userVerbEligibleCards(
     .filter((entry): entry is VerbConjugationEntry => entry !== null);
   if (filter === "any") return entries;
   return entries.filter((entry) => separablePrefixOf(entry.infinitive) !== null);
+}
+
+/**
+ * User-library sourcing for the four B2/C1 verb-based drills
+ * (Partizipialkonstruktionen, Konjunktiv I indirekte Rede, Subjektive
+ * Modalverben, Passiversatzformen): same pool as `userVerbEligibleCards`,
+ * further narrowed to verbs `lookupVerbConjugationExtended` also
+ * recognizes — Partizipialkonstruktionen and Konjunktiv I need its
+ * `presentParticiple`/`pastParticiple`/`konjunktiv1` fields, and
+ * Subjektive Modalverben/Passiversatzformen only need the infinitive but
+ * are kept on this same narrower pool for a consistent "B2/C1 verbs" set.
+ */
+export function userExtendedVerbEligibleCards(sets: StudySet[]): VerbConjugationEntry[] {
+  return userVerbEligibleCards(sets, "any").filter(
+    (entry) => lookupVerbConjugationExtended(entry.infinitive) !== null,
+  );
 }

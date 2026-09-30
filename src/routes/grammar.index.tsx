@@ -5,17 +5,24 @@ import {
   BookOpen,
   ChevronDown,
   ChevronRight,
+  Combine,
+  Feather,
   Grid3x3,
   Hash,
   Headphones,
+  HelpCircle,
   Link2,
+  MessageSquareQuote,
   Megaphone,
   ListOrdered,
   MinusCircle,
+  Quote,
   Repeat,
   Scissors,
+  Shuffle,
   SpellCheck,
   SquareDashed,
+  Sparkles,
   TrendingUp,
   Type,
   UserCircle,
@@ -70,7 +77,14 @@ type ModeId =
   | "konjunktiv"
   | "relativsaetze"
   | "diktat"
-  | "lesen";
+  | "lesen"
+  | "partizipial"
+  | "nominalisierung"
+  | "funktionsverbgefuege"
+  | "modalpartikeln"
+  | "konjunktiv1"
+  | "subjektive-modalverben"
+  | "passiversatzformen";
 
 /**
  * The five real grammar modes (mode-grid.tsx), grouped the way Lernkartei's
@@ -112,7 +126,14 @@ const CATEGORIES: {
       | "/grammar/konjunktiv"
       | "/grammar/relativsaetze"
       | "/grammar/diktat"
-      | "/grammar/lesen";
+      | "/grammar/lesen"
+      | "/grammar/partizipial"
+      | "/grammar/nominalisierung"
+      | "/grammar/funktionsverbgefuege"
+      | "/grammar/modalpartikeln"
+      | "/grammar/konjunktiv1"
+      | "/grammar/subjektive-modalverben"
+      | "/grammar/passiversatzformen";
     /** Lesen only: the destination is a real route, but it's a "coming
      *  soon" skeleton with no content yet (see grammar.lesen.tsx's own
      *  doc comment) — renders the card dimmed with a "Coming soon" label
@@ -319,6 +340,74 @@ const CATEGORIES: {
         icon: BookOpen,
         standaloneTo: "/grammar/lesen",
         comingSoon: true,
+        eligible: alwaysEligible,
+        progressKind: "none",
+      },
+    ],
+  },
+  {
+    title: "B2/C1",
+    modes: [
+      {
+        id: "partizipial",
+        title: "Partizipialkonstruktionen",
+        description: "der lesende Mann — Partizip als Relativsatz-Ersatz",
+        icon: Combine,
+        standaloneTo: "/grammar/partizipial",
+        eligible: alwaysEligible,
+        progressKind: "none",
+      },
+      {
+        id: "nominalisierung",
+        title: "Nominalisierung",
+        description: "entscheiden → die Entscheidung",
+        icon: Sparkles,
+        standaloneTo: "/grammar/nominalisierung",
+        eligible: alwaysEligible,
+        progressKind: "none",
+      },
+      {
+        id: "funktionsverbgefuege",
+        title: "Funktionsverbgefüge",
+        description: "Rücksicht nehmen (= berücksichtigen)",
+        icon: Feather,
+        standaloneTo: "/grammar/funktionsverbgefuege",
+        eligible: alwaysEligible,
+        progressKind: "none",
+      },
+      {
+        id: "modalpartikeln",
+        title: "Modalpartikeln",
+        description: "doch, mal, ja, eben, halt...",
+        icon: MessageSquareQuote,
+        standaloneTo: "/grammar/modalpartikeln",
+        eligible: alwaysEligible,
+        progressKind: "none",
+      },
+      {
+        id: "konjunktiv1",
+        title: "Konjunktiv I",
+        description: "Er sagt, er komme morgen. (indirekte Rede)",
+        icon: Quote,
+        standaloneTo: "/grammar/konjunktiv1",
+        eligible: alwaysEligible,
+        progressKind: "none",
+      },
+      {
+        id: "subjektive-modalverben",
+        title: "Subjektive Modalverben",
+        description: "Er muss zu Hause sein. (Vermutung)",
+        icon: HelpCircle,
+        standaloneTo: "/grammar/subjektive-modalverben",
+        eligible: alwaysEligible,
+        progressKind: "none",
+      },
+      {
+        id: "passiversatzformen",
+        title: "Passiversatzformen",
+        description: "Das lässt sich machen. / Das ist zu machen.",
+        icon: Shuffle,
+        standaloneTo: "/grammar/passiversatzformen",
         eligible: alwaysEligible,
         progressKind: "none",
       },
