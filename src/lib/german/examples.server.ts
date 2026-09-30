@@ -156,19 +156,40 @@ export function dictionarySize(): number {
   return dict().rows.length;
 }
 
-/** Row indices with at least one non-empty example sentence — the pool the
- *  Diktat drill (grammar.diktat.tsx) draws from. Built once, lazily, same
- *  shape as nouns.server.ts's `eligibleRows`. */
-let dictationEligibleRows: number[] | null = null;
+/**
+ * A1-friendly length cap for the Diktat drill's sentence pool — word count,
+ * not difficulty: examples-data.ts has no CEFR/frequency-tier field to
+ * filter on (see EXAMPLES-ATTRIBUTION.md — the dataset is frequency-
+ * *bounded* at build time, never frequency-*ranked* within itself), so word
+ * count is the only honest lever available. Measured against the real
+ * dataset before picking this number: <=9 words keeps 3,709 of 5,412 total
+ * example sentences (2,347 of 2,885 lemma rows have at least one) — nowhere
+ * near thin enough to need loosening to 10.
+ */
+const DICTATION_MAX_WORDS = 9;
 
-function dictationRows(): number[] {
-  if (dictationEligibleRows) return dictationEligibleRows;
+function wordCount(sentence: string): number {
+  return sentence.trim().split(/\s+/).length;
+}
+
+/** Every example sentence at or under `DICTATION_MAX_WORDS` words, flattened
+ *  across all lemma rows — the pool the Diktat drill (grammar.diktat.tsx)
+ *  draws from. Built once, lazily, same shape as nouns.server.ts's
+ *  `eligibleRows`. Filtering at the sentence level (not just "this row has
+ *  at least one short example") matters: a row can mix a short and a long
+ *  example, and only the short one should ever be picked. */
+let dictationSentencePool: string[] | null = null;
+
+function dictationSentences(): string[] {
+  if (dictationSentencePool) return dictationSentencePool;
   const { rows } = dict();
-  const out: number[] = [];
-  for (let row = 0; row < rows.length; row++) {
-    if (parseRow(rows[row]!).examples.length > 0) out.push(row);
+  const out: string[] = [];
+  for (const row of rows) {
+    for (const example of parseRow(row).examples) {
+      if (wordCount(example) <= DICTATION_MAX_WORDS) out.push(example);
+    }
   }
-  dictationEligibleRows = out;
+  dictationSentencePool = out;
   return out;
 }
 
@@ -179,10 +200,7 @@ function dictationRows(): number[] {
  * the dataset genuinely has no examples at all (placeholder/empty file).
  */
 export function randomExampleSentence(): string | null {
-  const pool = dictationRows();
+  const pool = dictationSentences();
   if (pool.length === 0) return null;
-  const { rows } = dict();
-  const row = pool[Math.floor(Math.random() * pool.length)]!;
-  const examples = parseRow(rows[row]!).examples;
-  return examples[Math.floor(Math.random() * examples.length)]!;
+  return pool[Math.floor(Math.random() * pool.length)]!;
 }
