@@ -781,7 +781,11 @@ export function buildNominalisierungQuestion(
   return {
     base: entry.base,
     kind: entry.kind,
-    prompt: `${entry.base} → ___ (Nominalisierung)`,
+    // No trailing "(Nominalisierung)" — StudySessionShell's header/subtitle
+    // already shows the mode name, so repeating it here was pure noise, not
+    // information (unlike e.g. Passiv's "(${tense})", which tells the
+    // learner which of three tenses this specific question wants).
+    prompt: `${entry.base} → ___`,
     options,
     correctAnswer: entry.correctAnswer,
   };
@@ -834,7 +838,10 @@ export function buildFunktionsverbgefuegeQuestion(
   const options = shuffle([correctAnswer, ...distractors], rng);
   return {
     simpleVerb: entry.simpleVerb,
-    prompt: `${entry.simpleVerb} → ___ (Funktionsverbgefüge)`,
+    // No trailing "(Funktionsverbgefüge)" — same reasoning as
+    // buildNominalisierungQuestion's own prompt above, the mode name is
+    // already in the header.
+    prompt: `${entry.simpleVerb} → ___`,
     options,
     correctAnswer,
   };
