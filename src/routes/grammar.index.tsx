@@ -14,6 +14,7 @@ import {
   Link2,
   MessageSquareQuote,
   Megaphone,
+  PencilLine,
   ListOrdered,
   MinusCircle,
   Quote,
@@ -85,7 +86,8 @@ type ModeId =
   | "modalpartikeln"
   | "konjunktiv1"
   | "subjektive-modalverben"
-  | "passiversatzformen";
+  | "passiversatzformen"
+  | "paste";
 
 /**
  * The five real grammar modes (mode-grid.tsx), grouped the way Lernkartei's
@@ -134,7 +136,8 @@ const CATEGORIES: {
       | "/grammar/modalpartikeln"
       | "/grammar/konjunktiv1"
       | "/grammar/subjektive-modalverben"
-      | "/grammar/passiversatzformen";
+      | "/grammar/passiversatzformen"
+      | "/grammar/paste";
     /** Lesen only: the destination is a real route, but it's a "coming
      *  soon" skeleton with no content yet (see grammar.lesen.tsx's own
      *  doc comment) — renders the card dimmed with a "Coming soon" label
@@ -409,6 +412,20 @@ const CATEGORIES: {
         description: "Das lässt sich machen. / Das ist zu machen.",
         icon: Shuffle,
         standaloneTo: "/grammar/passiversatzformen",
+        eligible: alwaysEligible,
+        progressKind: "none",
+      },
+    ],
+  },
+  {
+    title: "Your Own Topic",
+    modes: [
+      {
+        id: "paste",
+        title: "Practice your own topic",
+        description: "Any grammar topic — AI-generated, not reviewed by Karta",
+        icon: PencilLine,
+        standaloneTo: "/grammar/paste",
         eligible: alwaysEligible,
         progressKind: "none",
       },

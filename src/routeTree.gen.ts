@@ -31,6 +31,7 @@ import { Route as GrammarNominalisierungRouteImport } from './routes/grammar.nom
 import { Route as GrammarPartizipialRouteImport } from './routes/grammar.partizipial'
 import { Route as GrammarPassivRouteImport } from './routes/grammar.passiv'
 import { Route as GrammarPassiversatzformenRouteImport } from './routes/grammar.passiversatzformen'
+import { Route as GrammarPasteRouteImport } from './routes/grammar.paste'
 import { Route as GrammarPluralRouteImport } from './routes/grammar.plural'
 import { Route as GrammarPossessiveRouteImport } from './routes/grammar.possessive'
 import { Route as GrammarPronomenRouteImport } from './routes/grammar.pronomen'
@@ -165,6 +166,11 @@ const GrammarPassiversatzformenRoute =
     path: '/passiversatzformen',
     getParentRoute: () => GrammarRoute,
   } as any)
+const GrammarPasteRoute = GrammarPasteRouteImport.update({
+  id: '/paste',
+  path: '/paste',
+  getParentRoute: () => GrammarRoute,
+} as any)
 const GrammarPluralRoute = GrammarPluralRouteImport.update({
   id: '/plural',
   path: '/plural',
@@ -294,6 +300,7 @@ export interface FileRoutesByFullPath {
   '/grammar/partizipial': typeof GrammarPartizipialRoute
   '/grammar/passiv': typeof GrammarPassivRoute
   '/grammar/passiversatzformen': typeof GrammarPassiversatzformenRoute
+  '/grammar/paste': typeof GrammarPasteRoute
   '/grammar/plural': typeof GrammarPluralRoute
   '/grammar/possessive': typeof GrammarPossessiveRoute
   '/grammar/pronomen': typeof GrammarPronomenRoute
@@ -338,6 +345,7 @@ export interface FileRoutesByTo {
   '/grammar/partizipial': typeof GrammarPartizipialRoute
   '/grammar/passiv': typeof GrammarPassivRoute
   '/grammar/passiversatzformen': typeof GrammarPassiversatzformenRoute
+  '/grammar/paste': typeof GrammarPasteRoute
   '/grammar/plural': typeof GrammarPluralRoute
   '/grammar/possessive': typeof GrammarPossessiveRoute
   '/grammar/pronomen': typeof GrammarPronomenRoute
@@ -383,6 +391,7 @@ export interface FileRoutesById {
   '/grammar/partizipial': typeof GrammarPartizipialRoute
   '/grammar/passiv': typeof GrammarPassivRoute
   '/grammar/passiversatzformen': typeof GrammarPassiversatzformenRoute
+  '/grammar/paste': typeof GrammarPasteRoute
   '/grammar/plural': typeof GrammarPluralRoute
   '/grammar/possessive': typeof GrammarPossessiveRoute
   '/grammar/pronomen': typeof GrammarPronomenRoute
@@ -430,6 +439,7 @@ export interface FileRouteTypes {
     | '/grammar/partizipial'
     | '/grammar/passiv'
     | '/grammar/passiversatzformen'
+    | '/grammar/paste'
     | '/grammar/plural'
     | '/grammar/possessive'
     | '/grammar/pronomen'
@@ -474,6 +484,7 @@ export interface FileRouteTypes {
     | '/grammar/partizipial'
     | '/grammar/passiv'
     | '/grammar/passiversatzformen'
+    | '/grammar/paste'
     | '/grammar/plural'
     | '/grammar/possessive'
     | '/grammar/pronomen'
@@ -518,6 +529,7 @@ export interface FileRouteTypes {
     | '/grammar/partizipial'
     | '/grammar/passiv'
     | '/grammar/passiversatzformen'
+    | '/grammar/paste'
     | '/grammar/plural'
     | '/grammar/possessive'
     | '/grammar/pronomen'
@@ -710,6 +722,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GrammarPassiversatzformenRouteImport
       parentRoute: typeof GrammarRoute
     }
+    '/grammar/paste': {
+      id: '/grammar/paste'
+      path: '/paste'
+      fullPath: '/grammar/paste'
+      preLoaderRoute: typeof GrammarPasteRouteImport
+      parentRoute: typeof GrammarRoute
+    }
     '/grammar/plural': {
       id: '/grammar/plural'
       path: '/plural'
@@ -875,6 +894,7 @@ interface GrammarRouteChildren {
   GrammarPartizipialRoute: typeof GrammarPartizipialRoute
   GrammarPassivRoute: typeof GrammarPassivRoute
   GrammarPassiversatzformenRoute: typeof GrammarPassiversatzformenRoute
+  GrammarPasteRoute: typeof GrammarPasteRoute
   GrammarPluralRoute: typeof GrammarPluralRoute
   GrammarPossessiveRoute: typeof GrammarPossessiveRoute
   GrammarPronomenRoute: typeof GrammarPronomenRoute
@@ -900,6 +920,7 @@ const GrammarRouteChildren: GrammarRouteChildren = {
   GrammarPartizipialRoute: GrammarPartizipialRoute,
   GrammarPassivRoute: GrammarPassivRoute,
   GrammarPassiversatzformenRoute: GrammarPassiversatzformenRoute,
+  GrammarPasteRoute: GrammarPasteRoute,
   GrammarPluralRoute: GrammarPluralRoute,
   GrammarPossessiveRoute: GrammarPossessiveRoute,
   GrammarPronomenRoute: GrammarPronomenRoute,

@@ -7,7 +7,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { EmptyState } from "@/components/empty-state";
 import { fetchGermanGlosses, fetchRandomNounSample, type GermanGloss } from "@/lib/german/grammar-drill-sample";
 import { recordGrammarRoundResult } from "@/lib/grammar-progress";
-import { GRAMMAR_RULES, type GrammarRuleTopic } from "@/content/grammar-rules";
+import { GRAMMAR_RULES, type GrammarRule, type GrammarRuleTopic } from "@/content/grammar-rules";
 import { pickExplanation } from "@/lib/learning-prefs";
 import { useStudyStore } from "@/lib/store";
 import { cn, shuffle } from "@/lib/utils";
@@ -50,9 +50,17 @@ export function GrammarDrillRunner<T = NounEntry>({
   buildRound,
   fetchSample,
   userEntries,
+  trackProgress = true,
+  ruleOverride,
 }: {
   mode: string;
-  topic: GrammarRuleTopic;
+  /** One of the 26 fixed hub topics, used both as the `grammarProgress`
+   *  topicId (when `trackProgress` is true) and, absent `ruleOverride`, to
+   *  look up "See the rule" content. Optional so a session with no fixed
+   *  identity (Grammar Paste's free-topic drill) can omit it entirely —
+   *  such a session must also pass `trackProgress={false}`, since there is
+   *  no real topicId to write progress under. */
+  topic?: GrammarRuleTopic;
   buildRound: (entries: T[]) => DrillQuestion[];
   /** Defaults to the noun sample (the original three drills' pool). Verb-based
    *  drills (trennbare Verben, Modalverben, Imperativ, Passiv, Konjunktiv)
@@ -70,6 +78,17 @@ export function GrammarDrillRunner<T = NounEntry>({
    * sees an empty/broken round.
    */
   userEntries?: T[];
+  /** false skips the one-write-per-round `recordGrammarRoundResult` call
+   *  entirely — for sessions with no fixed topicId to file it under, like
+   *  Grammar Paste's free-topic AI-generated round (see grammar.paste.tsx).
+   *  Defaults to true, unchanged behavior for all 19 fixed-topic callers. */
+  trackProgress?: boolean;
+  /** A rule to show in "See the rule" instead of looking `topic` up in the
+   *  fixed `GRAMMAR_RULES` table — for a topic that isn't one of the 26
+   *  fixed ones (Grammar Paste again: the AI's own short rule explanation
+   *  becomes this). When neither this nor a resolvable `topic` is given,
+   *  the "See the rule" button itself is hidden rather than shown broken. */
+  ruleOverride?: Omit<GrammarRule, "topic">;
 }) {
   const [round, setRound] = useState(0);
   const [entries, setEntries] = useState<T[] | null>(null);
@@ -177,13 +196,13 @@ export function GrammarDrillRunner<T = NounEntry>({
     setRound((n) => n + 1);
   }
 
-  const rule = GRAMMAR_RULES[topic];
-  const ruleButton = (
+  const rule = ruleOverride ?? (topic ? GRAMMAR_RULES[topic] : undefined);
+  const ruleButton = rule ? (
     <Button type="button" variant="ghost" size="sm" onClick={() => setRuleOpen(true)}>
       <Info className="size-4" />
       See the rule
     </Button>
-  );
+  ) : undefined;
 
   if (loadError) {
     return (
@@ -248,9 +267,14 @@ export function GrammarDrillRunner<T = NounEntry>({
       // grammar-progress.ts's own doc comment on the write-budget
       // constraint. Fire-and-forget: a failed write here must never block
       // or degrade the (purely session-local, non-FSRS) score screen.
-      void recordGrammarRoundResult({
-        data: { topicId: topic, correctInRound: correctCount, totalInRound: questions.length },
-      }).catch(() => {});
+      // Skipped entirely when trackProgress is false (Grammar Paste's
+      // free-topic session — there's no fixed topicId to file it under,
+      // and this round's questions aren't Karta's own verified content).
+      if (trackProgress && topic) {
+        void recordGrammarRoundResult({
+          data: { topicId: topic, correctInRound: correctCount, totalInRound: questions.length },
+        }).catch(() => {});
+      }
       return;
     }
     setIndex((i) => i + 1);
@@ -315,9 +339,9 @@ export function GrammarDrillRunner<T = NounEntry>({
         </div>
       </StudySessionShell>
       <Dialog open={ruleOpen} onOpenChange={setRuleOpen}>
-        <DialogContent title={rule.title}>
-          <p className="mt-2 text-sm text-muted">{rule.intro}</p>
-          {rule.table ? (
+        <DialogContent title={rule?.title ?? ""}>
+          <p className="mt-2 text-sm text-muted">{rule?.intro}</p>
+          {rule?.table ? (
             <div className="mt-4 overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
@@ -343,7 +367,7 @@ export function GrammarDrillRunner<T = NounEntry>({
               </table>
             </div>
           ) : null}
-          {rule.examples ? (
+          {rule?.examples ? (
             <ul className="mt-4 space-y-1 text-sm text-fg">
               {rule.examples.map((example) => (
                 <li key={example}>{example}</li>
