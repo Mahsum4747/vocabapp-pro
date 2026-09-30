@@ -1,34 +1,30 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo } from "react";
 import { AuthGate } from "@/components/auth-gate";
 import { GrammarDrillRunner } from "@/components/grammar-drill-runner";
 import { buildSubjektiveModalverbenQuestion } from "@/lib/grammar-drills";
-import { randomVerbSample } from "@/lib/german/verb-conjugation-data";
-import { userVerbEligibleCards } from "@/lib/german/grammar-hub";
-import { useStudyStore } from "@/lib/store";
-import type { VerbConjugationEntry } from "@/lib/german/verb-conjugation-data";
+import { numberSample } from "@/lib/german/grammar-drill-sample";
 
 export const Route = createFileRoute("/grammar/subjektive-modalverben")({
   component: SubjektiveModalverbenDrillRoute,
 });
 
 /**
- * Subjektive Modalverben drill: the user's own German verb cards
- * (`userVerbEligibleCards`, "any" — the main-verb infinitive slot works
- * for any recognized verb, see `buildSubjektiveModalverbenQuestion`'s own
- * doc comment) are prioritized over `randomVerbSample(12, "any")`.
+ * Subjektive Modalverben drill: the whole question pool is now the fixed
+ * scenario/verb templates in `grammar-drills.ts` (context and main verb are
+ * bound together per template, never drawn independently from the general
+ * verb pool — see `buildSubjektiveModalverbenQuestion`'s own doc comment),
+ * so this uses `numberSample` purely to size the round, same pattern as
+ * Modalverben/Pronomen/Steigerung. No `userEntries` — there is no card
+ * property that identifies "this card fits one of these scenarios".
  */
 function SubjektiveModalverbenDrillRoute() {
-  const sets = useStudyStore((s) => s.sets);
-  const userEntries = useMemo(() => userVerbEligibleCards(sets, "any"), [sets]);
   return (
     <AuthGate>
-      <GrammarDrillRunner<VerbConjugationEntry>
+      <GrammarDrillRunner<number>
         mode="Subjektive Modalverben"
         topic="subjektive-modalverben"
-        userEntries={userEntries}
-        fetchSample={() => Promise.resolve(randomVerbSample(12, "any"))}
-        buildRound={(entries) => entries.map((entry) => buildSubjektiveModalverbenQuestion(entry))}
+        fetchSample={() => Promise.resolve(numberSample(12))}
+        buildRound={(entries) => entries.map(() => buildSubjektiveModalverbenQuestion())}
       />
     </AuthGate>
   );

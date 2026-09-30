@@ -7,6 +7,7 @@ import { StudySessionShell } from "@/components/study-session-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { conjugationQuestionForCard, type ConjugationQuestion } from "@/lib/conjugation-drill";
+import { recordGrammarRoundResult } from "@/lib/grammar-progress";
 import { leitnerBoxOf } from "@/lib/quiz";
 import { queuedCards } from "@/lib/srs";
 import { useSessionPlan } from "@/lib/use-session";
@@ -121,6 +122,9 @@ function ConjugationPage() {
     setShownAt(Date.now());
     if (index + 1 >= questions.length) {
       setDone(true);
+      void recordGrammarRoundResult({
+        data: { topicId: "conjugation", correctInRound: score, totalInRound: questions.length },
+      }).catch(() => {});
       return;
     }
     setIndex((i) => i + 1);

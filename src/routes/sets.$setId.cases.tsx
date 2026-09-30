@@ -8,6 +8,7 @@ import { StudySessionShell } from "@/components/study-session-shell";
 import { Button } from "@/components/ui/button";
 import { a1NounTrEntry } from "@/content/a1-german-nouns-tr";
 import { getArticleDrillProgress, recordArticleDrillAttempt } from "@/lib/article-drill";
+import { recordGrammarRoundResult } from "@/lib/grammar-progress";
 import {
   CASE_ABBR,
   CASE_LABEL,
@@ -223,6 +224,9 @@ function CaseDrillPage() {
     setSelected(null);
     if (index + 1 >= order.length) {
       setDone(true);
+      void recordGrammarRoundResult({
+        data: { topicId: "cases", correctInRound: correctCount, totalInRound: order.length },
+      }).catch(() => {});
       return;
     }
     setIndex((i) => i + 1);

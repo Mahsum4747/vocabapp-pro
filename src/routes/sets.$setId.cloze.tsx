@@ -10,6 +10,7 @@ import { caseBlankMatches, clozeBlankForCard, type ClozeBlank } from "@/lib/cloz
 import { CASE_ABBR, CASE_LABEL, caseFormFor } from "@/lib/case-forms";
 import { verbConfirmsCase } from "@/lib/german/verb-case-hint";
 import { leitnerBoxOf } from "@/lib/quiz";
+import { recordGrammarRoundResult } from "@/lib/grammar-progress";
 import { queuedCards } from "@/lib/srs";
 import { useSessionPlan } from "@/lib/use-session";
 import { ratingForOutcome, useReviewLogger } from "@/lib/review-log";
@@ -121,6 +122,12 @@ function ClozePage() {
     setShownAt(Date.now());
     if (index + 1 >= questions.length) {
       setDone(true);
+      // Topic-level grammar mastery tracking (grammarProgress/{uid}) — a
+      // separate write from logReview's per-card FSRS update above, one per
+      // finished round, never per question. See grammar-progress.ts.
+      void recordGrammarRoundResult({
+        data: { topicId: "cloze", correctInRound: score, totalInRound: questions.length },
+      }).catch(() => {});
       return;
     }
     setIndex((i) => i + 1);

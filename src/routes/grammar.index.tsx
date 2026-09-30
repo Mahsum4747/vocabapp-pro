@@ -42,6 +42,7 @@ import {
   isGermanSet,
   masteryPercentForMode,
 } from "@/lib/german/grammar-hub";
+import { getGrammarProgress, type GrammarProgressDoc } from "@/lib/grammar-progress";
 import { useProgress, useStudyStore } from "@/lib/store";
 import type { StudySet } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -415,6 +416,23 @@ const CATEGORIES: {
   },
 ];
 
+/** The one ModeId whose grammarProgress topicId differs from its own id —
+ *  "partizipial" writes under the same topic string its `GrammarDrillRunner`
+ *  `topic` prop already uses, "partizipialkonstruktionen" (see
+ *  grammar.partizipial.tsx). Every other mode's topicId equals its ModeId. */
+const TOPIC_ID_OVERRIDE: Partial<Record<ModeId, string>> = {
+  partizipial: "partizipialkonstruktionen",
+};
+
+/** "72% (12 questions)" — or null when the topic has never been practiced
+ *  (no line shown, same as a mode with no misses yet shows no fake 0%). */
+function grammarAccuracyLine(modeId: ModeId, grammarProgress: GrammarProgressDoc): string | null {
+  const topicId = TOPIC_ID_OVERRIDE[modeId] ?? modeId;
+  const entry = grammarProgress[topicId];
+  if (!entry) return null;
+  return `Grammar accuracy: ${entry.accuracy}% (${entry.totalAttempts} q)`;
+}
+
 function GrammarPage() {
   const sets = useStudyStore((s) => s.sets);
   const isLoaded = useStudyStore((s) => s.isLoaded);
@@ -422,10 +440,19 @@ function GrammarPage() {
   const fetchAllProgress = useStudyStore((s) => s.fetchAllProgress);
   const progress = useProgress();
   const [expanded, setExpanded] = useState<ModeId | null>(null);
+  const [grammarProgress, setGrammarProgress] = useState<GrammarProgressDoc>({});
 
   useEffect(() => {
     fetchSets();
     fetchAllProgress();
+    // Topic-level grammar mastery (grammarProgress/{uid}) — entirely
+    // separate from the FSRS-backed `progress` above, purely additive to
+    // the hub's existing missCount/masteryPercent lines (see
+    // `grammarAccuracyLine` below). A failed fetch just leaves the tiles
+    // without an accuracy line, same as a topic never practiced yet.
+    getGrammarProgress()
+      .then(setGrammarProgress)
+      .catch(() => {});
   }, [fetchSets, fetchAllProgress]);
 
   // Only German sets participate — the five modes below are German-only
@@ -469,6 +496,7 @@ function GrammarPage() {
                 // their noun pool is the whole nouns-data.ts dictionary, not
                 // any set's cards (alwaysEligible's doc comment).
                 if (mode.standaloneTo) {
+                  const accuracyLine = grammarAccuracyLine(mode.id, grammarProgress);
                   return (
                     <Link
                       key={mode.id}
@@ -484,6 +512,8 @@ function GrammarPage() {
                         <p className="text-sm text-muted">{mode.description}</p>
                         {mode.comingSoon ? (
                           <p className="mt-1 text-xs text-subtle">Coming soon</p>
+                        ) : accuracyLine ? (
+                          <p className="mt-1 text-xs text-subtle tabular-nums">{accuracyLine}</p>
                         ) : null}
                       </div>
                     </Link>
@@ -516,6 +546,7 @@ function GrammarPage() {
                         eligibleSets,
                         progress,
                       )}% mastery`;
+                const accuracyLine = grammarAccuracyLine(mode.id, grammarProgress);
 
                 if (eligibleSets.length === 1) {
                   return (
@@ -529,7 +560,10 @@ function GrammarPage() {
                       <div className="min-w-0">
                         <p className="font-medium">{mode.title}</p>
                         <p className="text-sm text-muted">{mode.description}</p>
-                        <p className="mt-1 text-xs text-subtle tabular-nums">{progressLine}</p>
+                        <p className="mt-1 text-xs text-subtle tabular-nums">
+                          {progressLine}
+                          {accuracyLine ? ` · ${accuracyLine}` : ""}
+                        </p>
                       </div>
                     </Link>
                   );
@@ -557,6 +591,7 @@ function GrammarPage() {
                         <p className="text-sm text-muted">{mode.description}</p>
                         <p className="mt-1 text-xs text-subtle tabular-nums">
                           {progressLine} · {eligibleSets.length} sets
+                          {accuracyLine ? ` · ${accuracyLine}` : ""}
                         </p>
                       </div>
                       {isOpen ? (

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { EmptyState } from "@/components/empty-state";
 import { fetchRandomExampleSentence } from "@/lib/german/grammar-drill-sample";
+import { recordGrammarRoundResult } from "@/lib/grammar-progress";
 import { speak } from "@/lib/speech";
 import { answersMatch, cn } from "@/lib/utils";
 
@@ -87,6 +88,10 @@ function DiktatPage() {
     setRevealed(false);
     if (index + 1 >= ROUND_SIZE) {
       setDone(true);
+      // One write per finished round — see grammar-progress.ts.
+      void recordGrammarRoundResult({
+        data: { topicId: "diktat", correctInRound: correctCount, totalInRound: ROUND_SIZE },
+      }).catch(() => {});
       return;
     }
     setIndex((i) => i + 1);

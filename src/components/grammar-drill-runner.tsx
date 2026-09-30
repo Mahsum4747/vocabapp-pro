@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { EmptyState } from "@/components/empty-state";
 import { fetchRandomNounSample } from "@/lib/german/grammar-drill-sample";
+import { recordGrammarRoundResult } from "@/lib/grammar-progress";
 import { GRAMMAR_RULES, type GrammarRuleTopic } from "@/content/grammar-rules";
 import { cn, shuffle } from "@/lib/utils";
 import type { NounEntry } from "@/lib/german/types";
@@ -215,6 +216,13 @@ export function GrammarDrillRunner<T = NounEntry>({
     setSelected(null);
     if (index + 1 >= questions.length) {
       setDone(true);
+      // One write per finished round (never per question) — see
+      // grammar-progress.ts's own doc comment on the write-budget
+      // constraint. Fire-and-forget: a failed write here must never block
+      // or degrade the (purely session-local, non-FSRS) score screen.
+      void recordGrammarRoundResult({
+        data: { topicId: topic, correctInRound: correctCount, totalInRound: questions.length },
+      }).catch(() => {});
       return;
     }
     setIndex((i) => i + 1);

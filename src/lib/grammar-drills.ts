@@ -880,16 +880,43 @@ interface ModalpartikelEntry {
 /** Fixed, common Modalpartikeln in a fixed sentence each — NOT
  *  AI-generated. `ALL_PARTIKELN` (below) is the closed distractor pool. */
 const MODALPARTIKEL_ENTRIES: ModalpartikelEntry[] = [
-  { sentence: "Komm ___ her!", partikel: "mal" },
+  // doch — Behauptung/Vorwurf: der Sprecher erinnert an etwas Bekanntes.
   { sentence: "Das ist ___ klar!", partikel: "doch" },
-  { sentence: "Ich habe es ___ vergessen.", partikel: "eben" },
-  { sentence: "Dann mach es ___ so.", partikel: "halt" },
-  { sentence: "Das war ___ ein tolles Konzert!", partikel: "ja" },
-  { sentence: "Was machst du ___ hier?", partikel: "denn" },
-  { sentence: "Das wird ___ schon klappen.", partikel: "schon" },
-  { sentence: "Er ist ___ ziemlich müde.", partikel: "wohl" },
+  { sentence: "Du weißt das ___ genau.", partikel: "doch" },
   { sentence: "Setz dich ___ hin.", partikel: "doch" },
-  { sentence: "Schau ___ mal, was ich gefunden habe.", partikel: "mal" },
+  { sentence: "Ruf mich ___ an, wenn du Zeit hast.", partikel: "doch" },
+  // mal — beiläufige Aufforderung/Bitte.
+  { sentence: "Komm ___ her!", partikel: "mal" },
+  { sentence: "Schau ___, was ich gefunden habe.", partikel: "mal" },
+  { sentence: "Warte ___ kurz.", partikel: "mal" },
+  { sentence: "Probier das ___ aus.", partikel: "mal" },
+  // ja — Ausruf/Feststellung, die der Sprecher als offensichtlich ansieht.
+  { sentence: "Das war ___ ein tolles Konzert!", partikel: "ja" },
+  { sentence: "Du bist ___ schon da!", partikel: "ja" },
+  { sentence: "Das kann ___ nicht wahr sein!", partikel: "ja" },
+  { sentence: "Sei ___ vorsichtig!", partikel: "ja" },
+  // halt — Resignation, "so ist es eben".
+  { sentence: "Dann mach es ___ so.", partikel: "halt" },
+  { sentence: "Ich bin ___ müde.", partikel: "halt" },
+  { sentence: "Das ist ___ so im Leben.", partikel: "halt" },
+  // eben — ähnlich wie halt, "genau das".
+  { sentence: "Ich habe es ___ vergessen.", partikel: "eben" },
+  { sentence: "So ist das Leben ___.", partikel: "eben" },
+  { sentence: "Das war ___ ein Missverständnis.", partikel: "eben" },
+  // denn — echte Neugier in Fragen.
+  { sentence: "Was machst du ___ hier?", partikel: "denn" },
+  { sentence: "Wie geht es dir ___?", partikel: "denn" },
+  { sentence: "Wo warst du ___ so lange?", partikel: "denn" },
+  { sentence: "Was ist ___ los?", partikel: "denn" },
+  { sentence: "Kommst du ___ endlich?", partikel: "denn" },
+  // schon — Beschwichtigung/Ungeduld.
+  { sentence: "Das wird ___ klappen.", partikel: "schon" },
+  { sentence: "Das schaffst du ___.", partikel: "schon" },
+  { sentence: "Er wird ___ wissen, was er tut.", partikel: "schon" },
+  // wohl — Vermutung/Wahrscheinlichkeit.
+  { sentence: "Er ist ___ ziemlich müde.", partikel: "wohl" },
+  { sentence: "Das ist ___ das Beste für alle.", partikel: "wohl" },
+  { sentence: "Sie wird ___ recht haben.", partikel: "wohl" },
 ];
 
 const ALL_PARTIKELN = ["doch", "mal", "ja", "eben", "halt", "denn", "schon", "wohl"] as const;
@@ -954,44 +981,104 @@ export function buildKonjunktivEinsQuestion(
 // ---------------------------------------------------------------------------
 
 export type SubjektiveModalCertainty = "sicher" | "wahrscheinlich" | "möglich";
+type SubjektiveModalSubject = "er" | "sie" | "es";
 
-const SUBJEKTIVE_MODAL_TEMPLATES: {
+const SUBJECT_LABEL: Record<SubjektiveModalSubject, string> = { er: "Er", sie: "Sie", es: "Es" };
+
+interface SubjektiveModalTemplate {
   certainty: SubjektiveModalCertainty;
+  subject: SubjektiveModalSubject;
   context: string;
   modal: string;
-}[] = [
-  { certainty: "sicher", context: "Er ist seit Jahren Ärztin.", modal: "muss" },
-  { certainty: "wahrscheinlich", context: "Das Licht ist aus.", modal: "dürfte" },
-  { certainty: "möglich", context: "Vielleicht regnet es.", modal: "kann" },
+  /** Natural, scenario-specific continuations for "<Subject> <modal> ___." —
+   *  fixed and hand-picked per template (NOT drawn from the general
+   *  6659-verb pool), so context and answer always stay semantically
+   *  linked. Also each template's `subject` matches its own context's
+   *  grammatical subject, so no gender mismatch (the old bug had a fixed
+   *  "Er" regardless of context). */
+  verbs: string[];
+}
+
+/** 7 templates (was 3), each with its own bound scenario→verb pool — no
+ *  random-verb injection. NOT AI-generated. */
+const SUBJEKTIVE_MODAL_TEMPLATES: SubjektiveModalTemplate[] = [
+  {
+    certainty: "sicher",
+    subject: "er",
+    context: "Er trägt seit Jahren einen weißen Kittel und behandelt Patienten.",
+    modal: "muss",
+    verbs: ["Arzt sein", "im Krankenhaus arbeiten", "viel Erfahrung haben"],
+  },
+  {
+    certainty: "sicher",
+    subject: "sie",
+    context: "Sie arbeitet seit Jahren im Krankenhaus und behandelt Patienten.",
+    modal: "muss",
+    verbs: ["Ärztin sein", "viel Erfahrung haben", "einen Doktortitel haben"],
+  },
+  {
+    certainty: "wahrscheinlich",
+    subject: "er",
+    context: "Er hat das Licht ausgeschaltet und ist nicht mehr im Wohnzimmer.",
+    modal: "dürfte",
+    verbs: ["schlafen", "schon zu Hause sein", "müde sein"],
+  },
+  {
+    certainty: "wahrscheinlich",
+    subject: "es",
+    context: "Der Himmel ist grau und es wird kälter.",
+    modal: "dürfte",
+    verbs: ["bald regnen", "heute noch schneien", "windig werden"],
+  },
+  {
+    certainty: "wahrscheinlich",
+    subject: "sie",
+    context: "Sie trägt einen dicken Wintermantel, obwohl es erst Herbst ist.",
+    modal: "dürfte",
+    verbs: ["leicht frieren", "kälteempfindlich sein", "aus dem Süden kommen"],
+  },
+  {
+    certainty: "möglich",
+    subject: "sie",
+    context: "Sie hat ihr Handy nicht dabei.",
+    modal: "kann",
+    verbs: ["es vergessen haben", "zu Hause geblieben sein", "es im Auto liegen lassen haben"],
+  },
+  {
+    certainty: "möglich",
+    subject: "er",
+    context: "Er antwortet nicht auf die Nachricht.",
+    modal: "kann",
+    verbs: ["beschäftigt sein", "das Handy vergessen haben", "gerade unterwegs sein"],
+  },
 ];
 
+/** Closed 4-value distractor pool: the 3 real subjective modals here plus
+ *  "kann nicht" (subjektive Unmöglichkeit) — a real 4th option so every
+ *  question has 4 distinct real choices, not just the 2 unused modals from
+ *  a 3-value set the old version was limited to. */
+const ALL_SUBJEKTIVE_MODALS = ["muss", "dürfte", "kann", "kann nicht"];
+
 export interface SubjektiveModalverbenQuestion extends DrillQuestion {
-  infinitive: string;
+  verb: string;
   certainty: SubjektiveModalCertainty;
 }
 
-/**
- * `entry.infinitive` is used as the main verb the subjective modal
- * governs — any recognized verb works, no extended-data lookup needed for
- * the modal itself since müssen/dürfte/kann's subjective forms are fixed
- * (per the task's rule data), only their main-verb infinitive slot varies.
- * müssen = certain guess, dürfte = probable guess, kann = possible guess.
- * Distractors are the OTHER two modals from this same fixed 3-modal pool.
- */
+/** Set-independent (fixed template+verb pool) — see buildModalverbenQuestion's
+ *  doc comment on the same pattern. müssen = certain guess, dürfte =
+ *  probable guess, kann = possible guess. */
 export function buildSubjektiveModalverbenQuestion(
-  entry: VerbConjugationEntry,
   rng: Rng = Math.random,
 ): SubjektiveModalverbenQuestion {
   const template = pick(SUBJEKTIVE_MODAL_TEMPLATES, rng);
+  const verb = pick(template.verbs, rng);
   const correctAnswer = template.modal;
-  const distractors = SUBJEKTIVE_MODAL_TEMPLATES.filter((t) => t.modal !== correctAnswer).map(
-    (t) => t.modal,
-  );
+  const distractors = ALL_SUBJEKTIVE_MODALS.filter((m) => m !== correctAnswer);
   const options = shuffle([correctAnswer, ...distractors], rng);
   return {
-    infinitive: entry.infinitive,
+    verb,
     certainty: template.certainty,
-    prompt: `${template.context} → Er ___ ${entry.infinitive}. (Vermutung, ${template.certainty})`,
+    prompt: `${template.context} → ${SUBJECT_LABEL[template.subject]} ___ ${verb}. (Vermutung, ${template.certainty})`,
     options,
     correctAnswer,
   };

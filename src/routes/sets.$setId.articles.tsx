@@ -9,6 +9,7 @@ import { StudySessionShell } from "@/components/study-session-shell";
 import { Button } from "@/components/ui/button";
 import { a1NounTrEntry } from "@/content/a1-german-nouns-tr";
 import { getArticleDrillProgress, recordArticleDrillAttempt } from "@/lib/article-drill";
+import { recordGrammarRoundResult } from "@/lib/grammar-progress";
 import { profileFor } from "@/lib/lang/profiles";
 import { useReviewLogger } from "@/lib/review-log";
 import { useSet, useSetProgress, useStudyStore } from "@/lib/store";
@@ -202,6 +203,9 @@ function ArticleDrillPage() {
     setSelected(null);
     if (index + 1 >= order.length) {
       setDone(true);
+      void recordGrammarRoundResult({
+        data: { topicId: "articles", correctInRound: correctCount, totalInRound: order.length },
+      }).catch(() => {});
       return;
     }
     setIndex((i) => i + 1);

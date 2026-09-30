@@ -5,6 +5,7 @@ import { AnswerFeedbackSheet } from "@/components/answer-feedback-sheet";
 import { EmptyState } from "@/components/empty-state";
 import { StudySessionShell } from "@/components/study-session-shell";
 import { Button } from "@/components/ui/button";
+import { recordGrammarRoundResult } from "@/lib/grammar-progress";
 import { leitnerBoxOf } from "@/lib/quiz";
 import { queuedCards } from "@/lib/srs";
 import { useSessionPlan } from "@/lib/use-session";
@@ -144,6 +145,9 @@ function SatzbauPage() {
   function next() {
     if (index + 1 >= questions.length) {
       setDone(true);
+      void recordGrammarRoundResult({
+        data: { topicId: "satzbau", correctInRound: score, totalInRound: questions.length },
+      }).catch(() => {});
       return;
     }
     setIndex((i) => i + 1);
