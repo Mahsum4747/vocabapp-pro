@@ -192,10 +192,30 @@ describe("buildPassivQuestion", () => {
 });
 
 describe("buildKonjunktivQuestion", () => {
-  it("correct answer is würde + infinitive", () => {
-    const q = buildKonjunktivQuestion(MACHEN);
+  // buildKonjunktivQuestion has a real rng() < 0.5 branch (synthetic
+  // Konjunktiv II vs. würde-form) — calling it with the default
+  // Math.random(), as this test used to, made "correct answer is always
+  // würde + infinitive" true only ~50% of the time (confirmed flaky over
+  // repeated runs before this fix). Each variant is now tested with a
+  // fixed rng that forces it.
+  it("würde-form branch: correct answer is würde + infinitive", () => {
+    const q = buildKonjunktivQuestion(MACHEN, () => 0.9); // >= 0.5 -> würde branch
     assertValidQuestion(q);
+    assert.equal(q.variant, "würde");
     assert.equal(q.correctAnswer, "würde machen");
+  });
+
+  it("synthetic branch (when available): correct answer is the synthetic Konjunktiv II form", () => {
+    const q = buildKonjunktivQuestion(MACHEN, () => 0); // < 0.5 -> synthetic branch, if eligible
+    assertValidQuestion(q);
+    if (q.variant === "synthetic") {
+      assert.notEqual(q.correctAnswer, "würde machen");
+    } else {
+      // MACHEN's own synthetic form wasn't eligible (e.g. identical to
+      // "ich mache") - falling back to würde is the documented behavior,
+      // not a bug.
+      assert.equal(q.correctAnswer, "würde machen");
+    }
   });
 });
 
