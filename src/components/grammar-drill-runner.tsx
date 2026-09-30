@@ -52,6 +52,7 @@ export function GrammarDrillRunner<T = NounEntry>({
   userEntries,
   trackProgress = true,
   ruleOverride,
+  roundSize = ROUND_SIZE,
 }: {
   mode: string;
   /** One of the 26 fixed hub topics, used both as the `grammarProgress`
@@ -89,6 +90,15 @@ export function GrammarDrillRunner<T = NounEntry>({
    *  becomes this). When neither this nor a resolvable `topic` is given,
    *  the "See the rule" button itself is hidden rather than shown broken. */
   ruleOverride?: Omit<GrammarRule, "topic">;
+  /** Overrides the fixed `ROUND_SIZE` (10) every other drill uses — only
+   *  for Grammar Paste's own selectable question count (10/15/20, see
+   *  grammar.paste.tsx), where the round is already fully built up front
+   *  and must not be silently truncated back down to 10. Affects both how
+   *  many questions `buildRound`'s output is capped at AND (when
+   *  `userEntries` is used) how many of the learner's own cards are drawn
+   *  before falling back to the general pool — unused by Grammar Paste,
+   *  which never passes `userEntries`. */
+  roundSize?: number;
 }) {
   const [round, setRound] = useState(0);
   const [entries, setEntries] = useState<T[] | null>(null);
@@ -113,7 +123,7 @@ export function GrammarDrillRunner<T = NounEntry>({
             if (key) seen.add(key);
             deduped.push(entry);
           }
-          return { picks: deduped.slice(0, ROUND_SIZE), seen };
+          return { picks: deduped.slice(0, roundSize), seen };
         })()
       : null;
 
@@ -150,12 +160,12 @@ export function GrammarDrillRunner<T = NounEntry>({
 
   const questions = useMemo(() => {
     if (!entries) return [];
-    return buildRound(entries).slice(0, ROUND_SIZE);
+    return buildRound(entries).slice(0, roundSize);
     // buildRound is a fresh closure per render in the route files below,
     // so it is intentionally excluded from deps — only a new noun sample
     // (a new `entries` reference) should produce a new round.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [entries]);
+  }, [entries, roundSize]);
 
   // Offline "meaning" line under a question's German word — see
   // DrillQuestion.glossKey's own doc comment. One batch lookup per round

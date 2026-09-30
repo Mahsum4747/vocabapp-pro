@@ -29,7 +29,7 @@ export type GrammarPasteParseResult =
 
 const ROOT_KEYS = ["topic", "ruleExplanation", "questions", "error"];
 const QUESTION_KEYS = ["prompt", "options", "correctIndex", "explanation"];
-const QUESTION_COUNT = 10;
+const DEFAULT_QUESTION_COUNT = 10;
 const OPTION_COUNT = 4;
 const MAX_ERRORS = 20;
 const MAX_RULE_LENGTH = 1000;
@@ -43,7 +43,10 @@ function unknownKeys(obj: Record<string, unknown>, allowed: string[]): string[] 
   return Object.keys(obj).filter((k) => !allowed.includes(k));
 }
 
-export function parseGrammarPasteJson(raw: string): GrammarPasteParseResult {
+export function parseGrammarPasteJson(
+  raw: string,
+  expectedQuestionCount: number = DEFAULT_QUESTION_COUNT,
+): GrammarPasteParseResult {
   // Tolerate a fenced ```json block: chat models add it despite the prompt.
   const text = raw
     .trim()
@@ -87,10 +90,13 @@ export function parseGrammarPasteJson(raw: string): GrammarPasteParseResult {
   if (!Array.isArray(rawQuestions)) {
     return { ok: false, errors: [...errors, '"questions" must be an array.'] };
   }
-  if (rawQuestions.length !== QUESTION_COUNT) {
+  if (rawQuestions.length !== expectedQuestionCount) {
     return {
       ok: false,
-      errors: [...errors, `"questions" must have exactly ${QUESTION_COUNT} entries, got ${rawQuestions.length}.`],
+      errors: [
+        ...errors,
+        `"questions" must have exactly ${expectedQuestionCount} entries, got ${rawQuestions.length}.`,
+      ],
     };
   }
 

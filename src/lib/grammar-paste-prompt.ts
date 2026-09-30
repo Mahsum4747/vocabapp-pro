@@ -7,8 +7,17 @@
  * TOPIC is left for the learner to fill in.
  */
 
-export const GRAMMAR_PASTE_RULE =
-  "Karta grammar-practice JSON: a short rule explanation plus exactly 10 multiple-choice questions, 4 options each.";
+/** The only question counts the picker on the Grammar Paste screen offers
+ *  — kept small and fixed so the prompt/validator never have to handle an
+ *  arbitrary number. 10 is the default, matching every other drill's
+ *  `ROUND_SIZE`. */
+export const GRAMMAR_PASTE_QUESTION_COUNTS = [10, 15, 20] as const;
+export type GrammarPasteQuestionCount = (typeof GRAMMAR_PASTE_QUESTION_COUNTS)[number];
+export const DEFAULT_GRAMMAR_PASTE_QUESTION_COUNT: GrammarPasteQuestionCount = 10;
+
+export function grammarPasteRuleFor(questionCount: number): string {
+  return `Karta grammar-practice JSON: a short rule explanation plus exactly ${questionCount} multiple-choice questions, 4 options each.`;
+}
 
 /** Same en/tr/ku -> display-name mapping grammar-assessment.ts's own
  *  `responseLanguageName` uses, for the same reason: `explanationLanguage`
@@ -20,7 +29,8 @@ function explanationLanguageName(explanationLanguage: string | undefined): strin
   return "English";
 }
 
-const GRAMMAR_PASTE_PROMPT_HEAD = `You write a German grammar practice round for Karta, a language-learning app.
+function grammarPastePromptHead(questionCount: number): string {
+  return `You write a German grammar practice round for Karta, a language-learning app.
 
 Output ONLY valid JSON. No markdown. No commentary.
 
@@ -38,7 +48,7 @@ Output ONLY valid JSON. No markdown. No commentary.
 }
 
 Rules:
-- Exactly 10 questions in the array. Not 9, not 11.
+- Exactly ${questionCount} questions in the array. Not ${questionCount - 1}, not ${questionCount + 1}.
 - Each question's "prompt" must contain the blank marker ___ exactly once,
   inside a real, natural sentence or phrase — never an isolated word with
   no context.
@@ -49,19 +59,25 @@ Rules:
   "options" that actually belongs in the blank.
 - Every question must genuinely test TOPIC below, not unrelated grammar.
 - If TOPIC is not a real German grammar topic, or you cannot honestly
-  write 10 correct questions for it, output exactly {"error": "why not"}
+  write ${questionCount} correct questions for it, output exactly {"error": "why not"}
   instead of the schema above — never invent a fake topic to fill the
   shape.
 `;
+}
 
 /**
  * The full prompt text, with the learner's own `profile.explanationLanguage`
- * (en/tr/ku) filled into the language instruction line right before TOPIC —
- * everything else is the fixed, approved template above, unchanged.
+ * (en/tr/ku) filled into the language instruction line right before TOPIC,
+ * and `questionCount` (10/15/20, see GRAMMAR_PASTE_QUESTION_COUNTS) filled
+ * into the exact-count rule — everything else is the fixed, approved
+ * template above, unchanged.
  */
-export function grammarPastePromptFor(explanationLanguage: string | undefined): string {
+export function grammarPastePromptFor(
+  explanationLanguage: string | undefined,
+  questionCount: number = DEFAULT_GRAMMAR_PASTE_QUESTION_COUNT,
+): string {
   const languageName = explanationLanguageName(explanationLanguage);
-  return `${GRAMMAR_PASTE_PROMPT_HEAD}- Write ruleExplanation and every question's explanation in ${languageName}. Keep prompt/options in German (that's what's being tested), but explanations in ${languageName}.
+  return `${grammarPastePromptHead(questionCount)}- Write ruleExplanation and every question's explanation in ${languageName}. Keep prompt/options in German (that's what's being tested), but explanations in ${languageName}.
 
 TOPIC: `;
 }
