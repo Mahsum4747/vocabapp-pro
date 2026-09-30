@@ -28,6 +28,8 @@ import { DEFAULT_SOUND_SETTINGS, playSound, type SoundSettings } from "@/lib/sou
 import { getDailyStatsRange } from "@/lib/study-sets";
 import { deleteUserAccount } from "@/lib/delete-account";
 import { deleteAuthAccount } from "@/lib/delete-auth-account";
+import { getGrammarAssessment } from "@/lib/grammar-assessment";
+import { getGrammarProgress, type GrammarProgressDoc } from "@/lib/grammar-progress";
 import { useStudyStore } from "@/lib/store";
 import type { DailyStats } from "@/lib/types";
 import { cn, recentDateKeys } from "@/lib/utils";
@@ -48,6 +50,7 @@ const TABS = [
   { id: "achievements", label: "Achievements" },
   { id: "goal", label: "Daily goal" },
   { id: "feedback", label: "AI Feedback" },
+  { id: "grammar", label: "Grammar Review" },
   { id: "sound", label: "Sound" },
   { id: "account", label: "Account" },
 ] as const;
@@ -117,6 +120,7 @@ function AccountPage() {
         ) : null}
         {tab === "goal" ? <GoalTab timeZone={profile.timeZone} /> : null}
         {tab === "feedback" ? <AiFeedbackTab /> : null}
+        {tab === "grammar" ? <GrammarReviewTab explanationLanguage={profile.explanationLanguage} /> : null}
         {tab === "sound" ? <SoundTab /> : null}
         {tab === "account" ? <AccountTab /> : null}
       </div>
@@ -445,6 +449,94 @@ function AiFeedbackTab() {
           </div>
         </section>
       ))}
+    </div>
+  );
+}
+
+const MIN_GRAMMAR_ATTEMPTS = 5;
+
+type GrammarReviewState =
+  | { status: "idle" }
+  | { status: "loading" }
+  | { status: "ready"; assessment: string }
+  | { status: "error"; error: string };
+
+/**
+ * Optional, explicitly-triggered AI review of the learner's `grammarProgress`
+ * data (grammar-assessment.ts) — never automatic, never polled. Loads the
+ * progress doc once (same `getGrammarProgress` the grammar hub itself uses)
+ * purely to decide whether there's enough data to offer the button at all;
+ * the actual Gemini call only happens on click, and spends one action from
+ * the same shared AI budget pool every other Gemini feature uses.
+ */
+function GrammarReviewTab({ explanationLanguage }: { explanationLanguage?: string }) {
+  const [progress, setProgress] = useState<GrammarProgressDoc | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [state, setState] = useState<GrammarReviewState>({ status: "idle" });
+
+  useEffect(() => {
+    let cancelled = false;
+    getGrammarProgress()
+      .then((doc) => {
+        if (!cancelled) setProgress(doc);
+      })
+      .catch((err) => {
+        console.error("Failed to load grammar progress:", err);
+        if (!cancelled) setLoadError("Couldn't load your grammar practice data.");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  async function requestAssessment() {
+    setState({ status: "loading" });
+    try {
+      const result = await getGrammarAssessment({
+        data: explanationLanguage ? { explanationLanguage } : {},
+      });
+      if (result.status === "ok") {
+        setState({ status: "ready", assessment: result.assessment });
+      } else if (result.status === "insufficient") {
+        setState({ status: "error", error: "Not enough practice data yet — try a few more drills." });
+      } else {
+        setState({ status: "error", error: result.error });
+      }
+    } catch {
+      setState({ status: "error", error: "Couldn't get a review right now — try again." });
+    }
+  }
+
+  if (loadError) return <p className="text-sm text-danger">{loadError}</p>;
+  if (progress === null) return <p className="text-sm text-muted">Loading…</p>;
+
+  const totalAttempts = Object.values(progress).reduce((sum, t) => sum + t.totalAttempts, 0);
+
+  if (totalAttempts < MIN_GRAMMAR_ATTEMPTS) {
+    return (
+      <p className="text-sm text-muted">
+        Not enough grammar drill data yet — practice a few rounds under Grammar practice, then check
+        back here for an AI review of your weak spots.
+      </p>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-muted">
+        Get a short AI review of your grammar drill accuracy across every topic you&apos;ve practiced,
+        with a suggestion for what to focus on next.
+      </p>
+      <Button onClick={() => void requestAssessment()} disabled={state.status === "loading"}>
+        {state.status === "loading" ? "Analyzing…" : "Get grammar review"}
+      </Button>
+      {state.status === "ready" ? (
+        <div className="rounded-card bg-surface p-4 shadow-[var(--elevation-1)]">
+          <p className="text-xs font-medium tracking-wide text-muted uppercase">Grammar review</p>
+          <p className="mt-1 text-sm whitespace-pre-line text-fg">{state.assessment}</p>
+        </div>
+      ) : null}
+      {state.status === "error" ? <p className="text-sm text-danger">{state.error}</p> : null}
     </div>
   );
 }
