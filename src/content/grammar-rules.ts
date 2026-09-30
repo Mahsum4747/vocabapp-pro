@@ -194,8 +194,12 @@ export const GRAMMAR_RULES: Record<GrammarRuleTopic, GrammarRule> = {
     topic: "nominalisierung",
     title: "Nominalisierung",
     intro:
-      "A verb turned into a noun — either a real -ung noun (always feminine, 'die') or the bare infinitive capitalized and used as a noun (always neuter, 'das'). This drill mixes both kinds, drawn from a large real-word pool rather than a short fixed list.",
-    examples: ["entscheiden → die Entscheidung", "lesen → das Lesen", "schreiben → das Schreiben"],
+      "A verb or adjective turned into a noun — three kinds, mixed in this drill: a real -ung noun from a verb (always feminine, 'die'), the bare infinitive capitalized and used as a noun (always neuter, 'das'), or a -heit/-keit noun from an adjective (always feminine, 'die').",
+    examples: [
+      "entscheiden → die Entscheidung",
+      "lesen → das Lesen",
+      "schön → die Schönheit",
+    ],
   },
   funktionsverbgefuege: {
     topic: "funktionsverbgefuege",

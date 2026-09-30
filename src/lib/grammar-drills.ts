@@ -768,10 +768,14 @@ export function buildPartizipialQuestion(
 export interface NominalisierungQuestion extends DrillQuestion {
   base: string;
   /** "ung": a verb → its real -ung noun (e.g. entscheiden → die
-   *  Entscheidung). "infinitiv": the bare-infinitive-as-noun pattern (e.g.
-   *  lesen → das Lesen). See nominalisierung.server.ts's own doc comment
-   *  for how each pool is derived — never hand-written. */
-  kind: "ung" | "infinitiv";
+   *  Entscheidung), derived from data. "infinitiv": the
+   *  bare-infinitive-as-noun pattern (e.g. lesen → das Lesen), derived from
+   *  data. "heitKeit": an adjective → its -heit/-keit noun (e.g. schön →
+   *  die Schönheit) — a small, hand-picked fixed list (no adjective-root
+   *  data exists to derive this from, unlike the other two — see the
+   *  task's own research pass). See nominalisierung.server.ts's own doc
+   *  comment for where each pool comes from. */
+  kind: "ung" | "infinitiv" | "heitKeit";
 }
 
 /**
@@ -817,19 +821,39 @@ interface FunktionsverbgefuegeEntry {
 const FUNKTIONSVERBGEFUEGE_ENTRIES: FunktionsverbgefuegeEntry[] = [
   { phrase: "Rücksicht nehmen", simpleVerb: "berücksichtigen" },
   { phrase: "zum Ausdruck bringen", simpleVerb: "ausdrücken" },
+  { phrase: "in Anspruch nehmen", simpleVerb: "beanspruchen" },
+  { phrase: "zur Verfügung stehen", simpleVerb: "verfügbar sein" },
+  { phrase: "Einfluss nehmen", simpleVerb: "beeinflussen" },
   { phrase: "in Frage stellen", simpleVerb: "bezweifeln" },
-  { phrase: "zur Verfügung stellen", simpleVerb: "bereitstellen" },
-  { phrase: "Anwendung finden", simpleVerb: "angewendet werden" },
+  { phrase: "zum Abschluss bringen", simpleVerb: "abschließen" },
+  { phrase: "in Kraft treten", simpleVerb: "gültig werden" },
+  { phrase: "Anerkennung finden", simpleVerb: "anerkannt werden" },
+  { phrase: "zur Sprache bringen", simpleVerb: "ansprechen" },
   { phrase: "in Betracht ziehen", simpleVerb: "erwägen" },
   { phrase: "Kritik üben", simpleVerb: "kritisieren" },
-  { phrase: "Einfluss nehmen", simpleVerb: "beeinflussen" },
-  { phrase: "zur Sprache bringen", simpleVerb: "ansprechen" },
-  { phrase: "in Kraft treten", simpleVerb: "gültig werden" },
+  { phrase: "Anwendung finden", simpleVerb: "angewendet werden" },
+  { phrase: "in Erwägung ziehen", simpleVerb: "überlegen" },
+  { phrase: "zur Kenntnis nehmen", simpleVerb: "bemerken" },
+  { phrase: "Verantwortung tragen", simpleVerb: "verantwortlich sein" },
+  { phrase: "in Erfüllung gehen", simpleVerb: "sich erfüllen" },
+  { phrase: "Widerstand leisten", simpleVerb: "widerstehen" },
+  { phrase: "Abschied nehmen", simpleVerb: "sich verabschieden" },
   { phrase: "Stellung nehmen", simpleVerb: "sich äußern" },
-  { phrase: "eine Entscheidung treffen", simpleVerb: "entscheiden" },
-  { phrase: "zum Abschluss bringen", simpleVerb: "abschließen" },
-  { phrase: "in Erwägung ziehen", simpleVerb: "erwägen" },
-  { phrase: "zum Stillstand kommen", simpleVerb: "stillstehen" },
+  { phrase: "in Erscheinung treten", simpleVerb: "erscheinen" },
+  { phrase: "zur Diskussion stehen", simpleVerb: "diskutiert werden" },
+  { phrase: "Hilfe leisten", simpleVerb: "helfen" },
+  { phrase: "in Kontakt treten", simpleVerb: "kontaktieren" },
+  { phrase: "Schaden nehmen", simpleVerb: "beschädigt werden" },
+  { phrase: "zum Ziel haben", simpleVerb: "beabsichtigen" },
+  { phrase: "Beachtung finden", simpleVerb: "beachtet werden" },
+  { phrase: "Platz nehmen", simpleVerb: "sich setzen" },
+  { phrase: "zur Verfügung stellen", simpleVerb: "bereitstellen" },
+  { phrase: "Fortschritte machen", simpleVerb: "sich verbessern" },
+  { phrase: "Anstrengungen unternehmen", simpleVerb: "sich anstrengen" },
+  { phrase: "in Gefahr geraten", simpleVerb: "gefährdet sein" },
+  { phrase: "Abstand nehmen", simpleVerb: "verzichten" },
+  { phrase: "zur Folge haben", simpleVerb: "verursachen" },
+  { phrase: "Interesse zeigen", simpleVerb: "sich interessieren" },
 ];
 
 export interface FunktionsverbgefuegeQuestion extends DrillQuestion {

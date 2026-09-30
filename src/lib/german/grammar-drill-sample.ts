@@ -14,7 +14,8 @@ import type { NounEntry } from "./types.ts";
  */
 export type NominalisierungSampleEntry =
   | { kind: "ung"; base: string; correctAnswer: string; distractors: string[] }
-  | { kind: "infinitiv"; base: string; correctAnswer: string; distractors: string[] };
+  | { kind: "infinitiv"; base: string; correctAnswer: string; distractors: string[] }
+  | { kind: "heitKeit"; base: string; correctAnswer: string; distractors: string[] };
 
 /**
  * Client-callable wrapper around `nouns.server.ts`'s `randomNounSample` —
