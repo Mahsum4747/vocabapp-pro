@@ -62,15 +62,33 @@ export interface GrammarTopicSummary {
   totalAttempts: number;
 }
 
+/** A learner's own AI-generated Grammar Paste topic (grammar-paste-topics.ts)
+ *  — same accuracy/attempts shape as the fixed 26, but never one of them:
+ *  its `topic` is free text the learner typed, not a `topicId` slug. Kept
+ *  as a distinct type (not folded into `GrammarTopicSummary`) so the prompt
+ *  builder can never accidentally treat one as the other. */
+export interface GrammarPasteTopicForAssessment {
+  topic: string;
+  accuracy: number;
+  totalAttempts: number;
+}
+
+/** A paste topic needs at least this many attempts before it's worth
+ *  mentioning to Gemini at all — same idea as the "ignore a topic with
+ *  only 1-2 attempts" instruction below, just enforced up front so a
+ *  barely-tried custom topic never crowds out the fixed 26's own signal. */
+export const MIN_PASTE_TOPIC_ATTEMPTS_FOR_ASSESSMENT = 3;
+
 /** Exported for direct testing without a live Gemini call. */
 export function buildGrammarAssessmentPrompt(
   topics: GrammarTopicSummary[],
   explanationLanguage: string | undefined,
+  pasteTopics: GrammarPasteTopicForAssessment[] = [],
 ): string {
   const lines = topics
     .map((t) => `- ${humanizeTopicId(t.topicId)}: ${t.accuracy}% accuracy over ${t.totalAttempts} questions`)
     .join("\n");
-  return [
+  const parts = [
     "This is a German learner's grammar drill practice data, one line per topic practiced so far:",
     lines,
     "Identify the weakest 2-3 topics — lowest accuracy, and only topics with enough attempts to be " +
@@ -78,8 +96,25 @@ export function buildGrammarAssessmentPrompt(
       "and write ONE short, concrete sentence of advice for EACH, naming the topic and what to " +
       "review. Keep the tone short, non-judgmental and motivating, never clinical or harsh. Do not " +
       "add a general introduction or summary — just the 2-3 sentences, one per line.",
-    `The learner wants the response in ${responseLanguageName(explanationLanguage)}.`,
-  ].join("\n\n");
+  ];
+  if (pasteTopics.length > 0) {
+    const pasteLines = pasteTopics
+      .map((t) => `- ${t.topic}: ${t.accuracy}% accuracy over ${t.totalAttempts} questions`)
+      .join("\n");
+    parts.push(
+      "In addition, here are grammar topics the learner created THEMSELVES, using their own AI, " +
+        "through Karta's \"Practice your own topic\" feature — these are NOT part of Karta's official " +
+        "curriculum, just custom practice the learner set up on their own:",
+      pasteLines,
+      "Evaluate these the same way if one shows a real weakness worth mentioning, but when you do " +
+        "mention one, make clear in that sentence that it's one of the learner's own custom topics " +
+        "(e.g. \"in your custom topic '...'\"), not part of Karta's built-in curriculum. Do not force " +
+        "a mention if none of these show a genuine weakness — only the fixed curriculum topics above " +
+        "are guaranteed to be covered.",
+    );
+  }
+  parts.push(`The learner wants the response in ${responseLanguageName(explanationLanguage)}.`);
+  return parts.join("\n\n");
 }
 
 const inputSchema = z.object({
@@ -125,6 +160,27 @@ export const getGrammarAssessment = createServerFn({ method: "POST" })
       totalAttempts: t.totalAttempts,
     }));
 
+    // Read-only: grammar-assessment.ts never writes to grammarPasteTopics,
+    // only reads it to fold qualifying topics into the same prompt — see
+    // buildGrammarAssessmentPrompt's own doc comment on how they're labeled.
+    let pasteSummary: GrammarPasteTopicForAssessment[] = [];
+    try {
+      const pasteSnap = await db
+        .collection("users")
+        .doc(context.userId)
+        .collection("grammarPasteTopics")
+        .get();
+      pasteSummary = pasteSnap.docs
+        .map((d) => d.data() as { topic: string; accuracy: number | null; totalAttempts: number })
+        .filter(
+          (t): t is { topic: string; accuracy: number; totalAttempts: number } =>
+            t.accuracy !== null && t.totalAttempts >= MIN_PASTE_TOPIC_ATTEMPTS_FOR_ASSESSMENT,
+        )
+        .map((t) => ({ topic: t.topic, accuracy: t.accuracy, totalAttempts: t.totalAttempts }));
+    } catch (error) {
+      console.error("Failed to read grammarPasteTopics for assessment (continuing without them):", error);
+    }
+
     let res: Response;
     try {
       res = await fetch(
@@ -137,7 +193,14 @@ export const getGrammarAssessment = createServerFn({ method: "POST" })
           },
           body: JSON.stringify({
             contents: [
-              { role: "user", parts: [{ text: buildGrammarAssessmentPrompt(summary, data.explanationLanguage) }] },
+              {
+                role: "user",
+                parts: [
+                  {
+                    text: buildGrammarAssessmentPrompt(summary, data.explanationLanguage, pasteSummary),
+                  },
+                ],
+              },
             ],
             generationConfig: {
               responseMimeType: "application/json",

@@ -18,7 +18,29 @@ import { authMiddleware } from "./auth/middleware";
  * one call.
  */
 
-const RECENT_WINDOW = 20;
+export const RECENT_WINDOW = 20;
+
+/**
+ * Pure fold of one round's (correctInRound/totalInRound) result into an
+ * existing rolling bit window, trimmed to `window` — the exact math both
+ * `recordGrammarRoundResult` below and `grammar-paste-topics.ts`'s own
+ * per-topic accuracy use, factored out so the two stay identical rather
+ * than maintaining two copies of the same rounding/trimming logic.
+ */
+export function foldRoundIntoRollingAccuracy(
+  existingBits: number[],
+  correctInRound: number,
+  totalInRound: number,
+  window: number = RECENT_WINDOW,
+): { accuracy: number; recentResults: number[] } {
+  const wrongInRound = totalInRound - correctInRound;
+  const roundBits = [...Array<number>(correctInRound).fill(1), ...Array<number>(wrongInRound).fill(0)];
+  const recentResults = [...existingBits, ...roundBits].slice(-window);
+  const accuracy = Math.round(
+    (recentResults.reduce((sum, bit) => sum + bit, 0) / recentResults.length) * 100,
+  );
+  return { accuracy, recentResults };
+}
 
 const recordSchema = z.object({
   topicId: z.string().trim().min(1).max(64),
@@ -71,14 +93,10 @@ export const recordGrammarRoundResult = createServerFn({ method: "POST" })
     const doc = await ref.get();
     const existing = doc.data()?.[data.topicId] as StoredTopicProgress | undefined;
 
-    const wrongInRound = data.totalInRound - data.correctInRound;
-    const roundBits = [
-      ...Array<number>(data.correctInRound).fill(1),
-      ...Array<number>(wrongInRound).fill(0),
-    ];
-    const recentResults = [...(existing?.recentResults ?? []), ...roundBits].slice(-RECENT_WINDOW);
-    const accuracy = Math.round(
-      (recentResults.reduce((sum, bit) => sum + bit, 0) / recentResults.length) * 100,
+    const { accuracy, recentResults } = foldRoundIntoRollingAccuracy(
+      existing?.recentResults ?? [],
+      data.correctInRound,
+      data.totalInRound,
     );
     const totalAttempts = (existing?.totalAttempts ?? 0) + data.totalInRound;
     const lastPracticedAt = Date.now();

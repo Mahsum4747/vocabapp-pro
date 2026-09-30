@@ -53,6 +53,7 @@ export function GrammarDrillRunner<T = NounEntry>({
   trackProgress = true,
   ruleOverride,
   roundSize = ROUND_SIZE,
+  onRoundComplete,
 }: {
   mode: string;
   /** One of the 26 fixed hub topics, used both as the `grammarProgress`
@@ -99,6 +100,13 @@ export function GrammarDrillRunner<T = NounEntry>({
    *  before falling back to the general pool — unused by Grammar Paste,
    *  which never passes `userEntries`. */
   roundSize?: number;
+  /** Fires once per finished round, alongside (not instead of) the
+   *  `trackProgress`-gated `grammarProgress` write — for a caller that
+   *  needs its OWN, differently-keyed progress write (Grammar Paste's
+   *  per-saved-topic accuracy, in `grammarPasteTopics`, see
+   *  grammar.paste.tsx and grammar-paste-topics.ts). Most callers omit
+   *  this entirely. */
+  onRoundComplete?: (correctInRound: number, totalInRound: number) => void;
 }) {
   const [round, setRound] = useState(0);
   const [entries, setEntries] = useState<T[] | null>(null);
@@ -285,6 +293,7 @@ export function GrammarDrillRunner<T = NounEntry>({
           data: { topicId: topic, correctInRound: correctCount, totalInRound: questions.length },
         }).catch(() => {});
       }
+      onRoundComplete?.(correctCount, questions.length);
       return;
     }
     setIndex((i) => i + 1);

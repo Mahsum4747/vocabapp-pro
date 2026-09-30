@@ -1,6 +1,7 @@
-import { AlertTriangle, Copy, Download } from "lucide-react";
-import { useMemo, useState } from "react";
+import { AlertTriangle, Copy, Download, Trash2 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
+import { format } from "date-fns";
 import { toast } from "sonner";
 import { AppShell } from "@/components/app-shell";
 import { AuthGate } from "@/components/auth-gate";
@@ -15,6 +16,14 @@ import {
   grammarPasteRuleFor,
   type GrammarPasteQuestionCount,
 } from "@/lib/grammar-paste-prompt";
+import {
+  deleteGrammarPasteTopic,
+  getGrammarPasteTopic,
+  listGrammarPasteTopics,
+  recordGrammarPasteTopicRoundResult,
+  saveGrammarPasteTopic,
+  type GrammarPasteTopicSummary,
+} from "@/lib/grammar-paste-topics";
 import { numberSample } from "@/lib/german/grammar-drill-sample";
 import { useStudyStore } from "@/lib/store";
 import { cn, shuffle } from "@/lib/utils";
@@ -37,13 +46,21 @@ export const Route = createFileRoute("/grammar/paste")({
  *   AI-generated, learner-supplied content, not Karta's own reviewed
  *   material — `GrammarDrillRunner` is passed `trackProgress={false}` so
  *   no `grammarProgress` write happens, and there is no 27th hub tile or
- *   `ModeId` for it. The round exists only in this component's state and
- *   is gone the moment the learner navigates away.
+ *   `ModeId` for it. Its OWN progress (accuracy/attempts) is tracked in a
+ *   completely separate, per-topic collection instead — see
+ *   grammar-paste-topics.ts's own doc comment.
  * - Never silently presented as verified: the warning banner below is
  *   rendered OUTSIDE `GrammarDrillRunner`, as a sibling that stays on
  *   screen for the entire lifetime of this route component — through
  *   loading, every question, and the final score screen alike — not just
- *   on the input screen before the round starts.
+ *   on the input screen before the round starts. The same label is also
+ *   in front of every saved-topic row below, and in grammar-assessment.ts's
+ *   prompt wherever one of these topics is included.
+ *
+ * A round that starts from a fresh paste is saved once, automatically, the
+ * moment it parses successfully (`start()` below) — not on every question,
+ * not on every re-open. Re-opening a saved topic from the list re-fetches
+ * its full content (`getGrammarPasteTopic`) rather than storing it twice.
  */
 function GrammarPasteRoute() {
   return (
@@ -75,12 +92,21 @@ function GrammarPastePage() {
   const [text, setText] = useState("");
   const [errors, setErrors] = useState<string[]>([]);
   const [round, setRound] = useState<GrammarPasteRound | null>(null);
+  const [activeTopicId, setActiveTopicId] = useState<string | null>(null);
+  const [savedTopics, setSavedTopics] = useState<GrammarPasteTopicSummary[] | null>(null);
 
   const explanationLanguage = useStudyStore((s) => s.profile?.explanationLanguage);
   const prompt = useMemo(
     () => `${grammarPastePromptFor(explanationLanguage, questionCount)}${topic.trim()}`,
     [topic, explanationLanguage, questionCount],
   );
+
+  function refreshSavedTopics() {
+    listGrammarPasteTopics()
+      .then(setSavedTopics)
+      .catch(() => setSavedTopics((prev) => prev ?? []));
+  }
+  useEffect(refreshSavedTopics, []);
 
   function copyPrompt() {
     navigator.clipboard
@@ -97,12 +123,60 @@ function GrammarPastePage() {
       return;
     }
     setRound(result.value);
+    setActiveTopicId(null);
+    // Saved once, automatically, right here — never per question, never on
+    // re-opening an already-saved topic (see openSavedTopic below, which
+    // never calls this).
+    saveGrammarPasteTopic({ data: result.value })
+      .then(({ id }) => {
+        setActiveTopicId(id);
+        refreshSavedTopics();
+      })
+      .catch((err) => {
+        console.error("Failed to save Grammar Paste topic:", err);
+        toast.error("Couldn't save this topic to your history — the round still works.");
+      });
+  }
+
+  function openSavedTopic(id: string) {
+    getGrammarPasteTopic({ data: { id } })
+      .then((full) => {
+        if (!full) {
+          toast.error("This saved topic is gone — maybe it was deleted elsewhere.");
+          refreshSavedTopics();
+          return;
+        }
+        setRound({ topic: full.topic, ruleExplanation: full.ruleExplanation, questions: full.questions });
+        setActiveTopicId(full.id);
+      })
+      .catch(() => toast.error("Couldn't open this saved topic."));
+  }
+
+  function deleteSavedTopic(id: string) {
+    setSavedTopics((prev) => (prev ? prev.filter((t) => t.id !== id) : prev));
+    deleteGrammarPasteTopic({ data: { id } }).catch(() => {
+      toast.error("Couldn't delete this topic.");
+      refreshSavedTopics();
+    });
   }
 
   function reset() {
     setRound(null);
+    setActiveTopicId(null);
     setText("");
     setErrors([]);
+  }
+
+  function handleRoundComplete(correctInRound: number, totalInRound: number) {
+    if (!activeTopicId) return;
+    recordGrammarPasteTopicRoundResult({ data: { id: activeTopicId, correctInRound, totalInRound } })
+      .then((summary) => {
+        if (!summary) return;
+        setSavedTopics((prev) =>
+          prev ? prev.map((t) => (t.id === summary.id ? summary : t)) : prev,
+        );
+      })
+      .catch(() => {});
   }
 
   return (
@@ -111,7 +185,7 @@ function GrammarPastePage() {
         <AiGeneratedBadge />
 
         {round ? (
-          <GrammarPasteSession round={round} onRestart={reset} />
+          <GrammarPasteSession round={round} onRestart={reset} onRoundComplete={handleRoundComplete} />
         ) : (
           <>
             <h1 className="font-display text-2xl font-medium tracking-tight">
@@ -121,6 +195,41 @@ function GrammarPastePage() {
               Type any German grammar topic — not just the 26 built into Karta — copy the prompt
               into your own AI chat, then paste back the JSON it returns.
             </p>
+
+            {savedTopics && savedTopics.length > 0 ? (
+              <div className="mt-4">
+                <p className="text-sm font-medium">Your saved topics</p>
+                <ul className="mt-2 space-y-1.5">
+                  {savedTopics.map((t) => (
+                    <li
+                      key={t.id}
+                      className="flex items-center gap-2 rounded-card bg-surface p-3 shadow-[var(--elevation-1)]"
+                    >
+                      <button
+                        type="button"
+                        onClick={() => openSavedTopic(t.id)}
+                        className="min-w-0 flex-1 text-left"
+                      >
+                        <p className="truncate font-medium text-fg">{t.topic}</p>
+                        <p className="text-xs text-subtle">
+                          {format(t.createdAt, "d MMM yyyy")} · {t.questionCount} questions
+                          {t.accuracy !== null ? ` · ${t.accuracy}% accuracy` : ""}
+                        </p>
+                      </button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => deleteSavedTopic(t.id)}
+                        aria-label={`Delete ${t.topic}`}
+                      >
+                        <Trash2 className="text-danger" />
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
 
             <label htmlFor="grammar-paste-topic" className="mt-6 block text-sm font-medium">
               Topic
@@ -223,9 +332,11 @@ function exportableJson(round: GrammarPasteRound): string {
 function GrammarPasteSession({
   round,
   onRestart,
+  onRoundComplete,
 }: {
   round: GrammarPasteRound;
   onRestart: () => void;
+  onRoundComplete: (correctInRound: number, totalInRound: number) => void;
 }) {
   function buildRound(): DrillQuestion[] {
     return round.questions.map((q) => {
@@ -265,6 +376,7 @@ function GrammarPasteSession({
         fetchSample={() => Promise.resolve(numberSample(round.questions.length))}
         buildRound={buildRound}
         roundSize={round.questions.length}
+        onRoundComplete={onRoundComplete}
       />
       <div className="mx-auto mt-4 flex max-w-md items-center justify-center gap-2">
         <Button type="button" variant="ghost" size="sm" onClick={copyJson}>
