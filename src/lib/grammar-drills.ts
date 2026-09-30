@@ -46,6 +46,12 @@ export interface DrillQuestion {
   prompt: string;
   options: string[];
   correctAnswer: string;
+  /** The German word (verb infinitive, etc.) `GrammarDrillRunner` should
+   *  look up an offline gloss for and show under the prompt, in the
+   *  learner's `explanationLanguage` — see that component's own doc
+   *  comment. Omitted entirely for drills with no single clean word to
+   *  gloss (e.g. Subjektive Modalverben's multi-word answer phrases). */
+  glossKey?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -630,6 +636,7 @@ export function buildKonjunktivQuestion(
       prompt: `Konjunktiv II (synthetische Form): ich ___`,
       options,
       correctAnswer,
+      glossKey: entry.infinitive,
     };
   }
   const correctAnswer = wuerdeForm;
@@ -641,6 +648,7 @@ export function buildKonjunktivQuestion(
     prompt: `Konjunktiv II: ich ___`,
     options,
     correctAnswer,
+    glossKey: entry.infinitive,
   };
 }
 
@@ -732,6 +740,7 @@ export function buildPartizipialQuestion(
       prompt: `der Mann, der ${entry.er} → der ___ Mann`,
       options,
       correctAnswer,
+      glossKey: entry.infinitive,
     };
   }
   const correctAnswer = `${extended.pastParticiple}e`;
@@ -747,6 +756,7 @@ export function buildPartizipialQuestion(
     prompt: `das Buch, das ${entry.partizipII ?? extended.pastParticiple} wurde → das ___ Buch`,
     options,
     correctAnswer,
+    glossKey: entry.infinitive,
   };
 }
 
@@ -788,6 +798,7 @@ export function buildNominalisierungQuestion(
     prompt: `${entry.base} → ___`,
     options,
     correctAnswer: entry.correctAnswer,
+    glossKey: entry.base,
   };
 }
 
@@ -844,6 +855,7 @@ export function buildFunktionsverbgefuegeQuestion(
     prompt: `${entry.simpleVerb} → ___`,
     options,
     correctAnswer,
+    glossKey: entry.simpleVerb,
   };
 }
 
@@ -952,6 +964,7 @@ export function buildKonjunktivEinsQuestion(
     prompt: `Er sagt: "Ich ${entry.ich} morgen." → Er sagt, er ___ morgen. (indirekte Rede)`,
     options,
     correctAnswer,
+    glossKey: entry.infinitive,
   };
 }
 
@@ -1098,5 +1111,6 @@ export function buildPassiversatzformenQuestion(
     prompt: `Passiversatzform: Das ___. (${entry.infinitive})`,
     options,
     correctAnswer,
+    glossKey: entry.infinitive,
   };
 }

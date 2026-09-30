@@ -5,9 +5,11 @@ import { StudySessionShell } from "@/components/study-session-shell";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { EmptyState } from "@/components/empty-state";
-import { fetchRandomNounSample } from "@/lib/german/grammar-drill-sample";
+import { fetchGermanGlosses, fetchRandomNounSample, type GermanGloss } from "@/lib/german/grammar-drill-sample";
 import { recordGrammarRoundResult } from "@/lib/grammar-progress";
 import { GRAMMAR_RULES, type GrammarRuleTopic } from "@/content/grammar-rules";
+import { pickExplanation } from "@/lib/learning-prefs";
+import { useStudyStore } from "@/lib/store";
 import { cn, shuffle } from "@/lib/utils";
 import type { NounEntry } from "@/lib/german/types";
 import type { DrillQuestion } from "@/lib/grammar-drills";
@@ -136,6 +138,32 @@ export function GrammarDrillRunner<T = NounEntry>({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [entries]);
 
+  // Offline "meaning" line under a question's German word — see
+  // DrillQuestion.glossKey's own doc comment. One batch lookup per round
+  // (never per question), only for the distinct keys this round's
+  // questions actually carry; drills that never set `glossKey` (most of
+  // them) skip this entirely (empty `terms` -> no fetch).
+  const [glosses, setGlosses] = useState<Record<string, GermanGloss>>({});
+  useEffect(() => {
+    const terms = [...new Set(questions.map((q) => q.glossKey).filter((k): k is string => Boolean(k)))];
+    if (terms.length === 0) {
+      setGlosses({});
+      return;
+    }
+    let cancelled = false;
+    fetchGermanGlosses({ data: { terms } })
+      .then((result) => {
+        if (!cancelled) setGlosses(result);
+      })
+      .catch(() => {
+        if (!cancelled) setGlosses({});
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [questions]);
+  const explanationLanguage = useStudyStore((s) => s.profile?.explanationLanguage) ?? "en";
+
   const [index, setIndex] = useState(0);
   const [selected, setSelected] = useState<string | null>(null);
   const [correctCount, setCorrectCount] = useState(0);
@@ -252,6 +280,11 @@ export function GrammarDrillRunner<T = NounEntry>({
           </span>
           {after}
         </p>
+        {question.glossKey && glosses[question.glossKey] ? (
+          <p className="mt-1 text-sm text-subtle">
+            {pickExplanation(glosses[question.glossKey]!, explanationLanguage)}
+          </p>
+        ) : null}
         <div className="mt-8 grid grid-cols-2 gap-2">
           {question.options.map((option) => {
             const isCorrectOption = option === question.correctAnswer;

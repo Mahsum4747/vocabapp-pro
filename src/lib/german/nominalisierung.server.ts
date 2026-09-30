@@ -1,5 +1,6 @@
 import { NOUNS_TSV } from "./nouns-data.ts";
 import { VERB_CONJUGATION_DATA } from "./verb-conjugation-data.ts";
+import type { VerbConjugationEntry } from "./verb-conjugation-data.ts";
 import type { NominalisierungSampleEntry } from "./grammar-drill-sample.ts";
 
 export type { NominalisierungSampleEntry };
@@ -110,13 +111,66 @@ function capitalize(word: string): string {
 }
 
 /**
+ * -ung nouns and infinitives built with these Latinate/Greek suffixes
+ * (Acetylierung, Entmilitarisierung, Anthropomorphisierung, ...) are real,
+ * but overwhelmingly rare/technical compared to the rest of the pool — a
+ * wrong option that obviously doesn't belong makes a question easier to
+ * guess by elimination, not more instructive. Excluded from the DISTRACTOR
+ * pool only; a word in this pattern is still used normally whenever it is
+ * itself the correct answer (this never removes anything from what can be
+ * asked, only from what can be offered as a decoy).
+ */
+const TECHNICAL_UNG_PATTERN = /(isierung|ifizierung)$/i;
+const TECHNICAL_INFINITIV_PATTERN = /(isieren|ifizieren)$/i;
+
+/**
+ * `count` distractors for `correctNoun`, drawn from `pool` (every other
+ * -ung noun): the technical-suffix pattern above is filtered out first
+ * (falling back to the full pool only if that leaves too few candidates to
+ * pick from), then the result is narrowed to nouns closest in LENGTH to
+ * the correct one before sampling — a same-length real word tends to look
+ * and sound more like a plausible answer than an arbitrarily
+ * shorter/longer one, without needing any actual frequency data (which
+ * nouns-data.ts doesn't have — see the task's own research pass).
+ */
+function pickUngDistractors(pool: readonly UngPair[], correctNoun: string, count: number): string[] {
+  const candidates = pool.filter((p) => p.noun !== correctNoun);
+  const plain = candidates.filter((p) => !TECHNICAL_UNG_PATTERN.test(p.noun));
+  const usable = plain.length >= count * 4 ? plain : candidates;
+  const byCloseness = [...usable].sort(
+    (a, b) => Math.abs(a.noun.length - correctNoun.length) - Math.abs(b.noun.length - correctNoun.length),
+  );
+  const nearPool = byCloseness.slice(0, Math.max(count * 5, 15));
+  return sample(nearPool, count).map((p) => `die ${p.noun}`);
+}
+
+/** Same idea as `pickUngDistractors`, for the infinitiv-as-noun kind. */
+function pickInfinitivDistractors(
+  pool: readonly VerbConjugationEntry[],
+  correctInfinitive: string,
+  count: number,
+): string[] {
+  const candidates = pool.filter((v) => v.infinitive !== correctInfinitive);
+  const plain = candidates.filter((v) => !TECHNICAL_INFINITIV_PATTERN.test(v.infinitive));
+  const usable = plain.length >= count * 4 ? plain : candidates;
+  const byCloseness = [...usable].sort(
+    (a, b) =>
+      Math.abs(a.infinitive.length - correctInfinitive.length) -
+      Math.abs(b.infinitive.length - correctInfinitive.length),
+  );
+  const nearPool = byCloseness.slice(0, Math.max(count * 5, 15));
+  return sample(nearPool, count).map((v) => `das ${capitalize(v.infinitive)}`);
+}
+
+/**
  * A round's worth of Nominalisierung questions, roughly half "ung" and half
  * "infinitiv" (mixed within the same round — see grammar.nominalisierung.tsx's
  * own doc comment for why this drill mixes variants in one mode rather than
  * splitting into two routes, the same pattern `buildPassivQuestion`/
  * `buildKonjunktivQuestion` already use for their own tense/form variants).
  * Each entry already carries its own distractors (3 other real nouns/
- * infinitive-nouns from the same pool) — the client-side builder
+ * infinitive-nouns from the same pool, chosen by `pickUngDistractors`/
+ * `pickInfinitivDistractors` above) — the client-side builder
  * (`buildNominalisierungQuestion`) only ever shuffles them into options, it
  * never sees the full pool.
  */
@@ -126,8 +180,7 @@ export function randomNominalisierungSample(count: number): NominalisierungSampl
   const infinitivCount = count - ungCount;
 
   const ungPicks = sample(pairs, ungCount).map((pair): NominalisierungSampleEntry => {
-    const distractorPool = pairs.filter((p) => p.noun !== pair.noun);
-    const distractors = sample(distractorPool, 3).map((p) => `die ${p.noun}`);
+    const distractors = pickUngDistractors(pairs, pair.noun, 3);
     return {
       kind: "ung",
       base: pair.base,
@@ -138,8 +191,7 @@ export function randomNominalisierungSample(count: number): NominalisierungSampl
 
   const verbPicks = sample(VERB_CONJUGATION_DATA, infinitivCount).map(
     (verb): NominalisierungSampleEntry => {
-      const distractorPool = VERB_CONJUGATION_DATA.filter((v) => v.infinitive !== verb.infinitive);
-      const distractors = sample(distractorPool, 3).map((v) => `das ${capitalize(v.infinitive)}`);
+      const distractors = pickInfinitivDistractors(VERB_CONJUGATION_DATA, verb.infinitive, 3);
       return {
         kind: "infinitiv",
         base: verb.infinitive,

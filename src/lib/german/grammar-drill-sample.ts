@@ -81,3 +81,48 @@ export const fetchRandomNominalisierungSample = createServerFn({ method: "GET" }
     const { randomNominalisierungSample } = await import("./nominalisierung.server");
     return randomNominalisierungSample(data.count);
   });
+
+/** One term's offline gloss, one string per explanation language — `en` is
+ *  never empty when a gloss exists at all (`pickExplanation`'s own
+ *  contract); `tr`/`ku` fall back to `""` when `examples-data.ts` has no
+ *  translation for that language yet, same as the card editor's own
+ *  bundled-translation handling. */
+export interface GermanGloss {
+  en: string;
+  tr: string;
+  ku: string;
+}
+
+const glossInputSchema = z.object({
+  // Capped well above any one round's realistic distinct-term count —
+  // just a sane upper bound, not a real limit any caller approaches.
+  terms: z.array(z.string().trim().min(1)).min(1).max(100),
+});
+
+/**
+ * Batch offline-translation lookup for the grammar drills' optional
+ * "meaning" line under a prompt's German word (`DrillQuestion.glossKey` —
+ * see `GrammarDrillRunner`'s own doc comment). One request per round
+ * (never per question) for every distinct `glossKey` the round's questions
+ * carry. Terms with no bundled entry (or an ambiguous one — see
+ * `examples.server.ts`'s own doc comment) are simply absent from the
+ * returned map — the caller renders nothing for those, never a guess.
+ */
+export const fetchGermanGlosses = createServerFn({ method: "GET" })
+  .middleware([authMiddleware])
+  .validator((input: unknown) => glossInputSchema.parse(input))
+  .handler(async ({ data }): Promise<Record<string, GermanGloss>> => {
+    const { lookupBundled } = await import("./examples.server");
+    const result: Record<string, GermanGloss> = {};
+    for (const term of data.terms) {
+      const entry = lookupBundled(term);
+      const en = entry?.translations.en[0];
+      if (!entry || !en) continue; // no bundled entry, or no English sense to fall back to
+      result[term] = {
+        en,
+        tr: entry.translations.tr[0] ?? "",
+        ku: entry.translations.ku[0] ?? "",
+      };
+    }
+    return result;
+  });
