@@ -3,6 +3,7 @@ import { separablePrefixOf } from "./german/verb-conjugation-data.ts";
 import { lookupVerbConjugationExtended } from "./german/verb-conjugation-extended-data.ts";
 import type { Genus, NounEntry } from "./german/types.ts";
 import type { VerbConjugationEntry } from "./german/verb-conjugation-data.ts";
+import type { NominalisierungSampleEntry } from "./german/grammar-drill-sample.ts";
 
 /**
  * Pure, testable question generators for the three set-independent German
@@ -750,68 +751,39 @@ export function buildPartizipialQuestion(
 }
 
 // ---------------------------------------------------------------------------
-// Nominalisierung drill (B2/C1) — fixed verb/adjective → noun list
+// Nominalisierung drill (B2/C1) — derived from verb-conjugation-data.ts +
+// nouns-data.ts, server-side (see nominalisierung.server.ts)
 // ---------------------------------------------------------------------------
-
-interface NominalisierungEntry {
-  base: string;
-  article: "der" | "die" | "das";
-  noun: string;
-}
-
-/** Fixed, common A2–B1 vocabulary — per the task's own pre-decision (no
- *  fiil→isim türetme field in nouns-data.ts), NOT AI-generated, NOT derived
- *  from any data file. Real German words only. */
-const NOMINALISIERUNG_ENTRIES: NominalisierungEntry[] = [
-  { base: "entscheiden", article: "die", noun: "Entscheidung" },
-  { base: "schön", article: "die", noun: "Schönheit" },
-  { base: "lesen", article: "das", noun: "Lesen" },
-  { base: "ankommen", article: "die", noun: "Ankunft" },
-  { base: "beginnen", article: "der", noun: "Beginn" },
-  { base: "bewegen", article: "die", noun: "Bewegung" },
-  { base: "krank", article: "die", noun: "Krankheit" },
-  { base: "frei", article: "die", noun: "Freiheit" },
-  { base: "wichtig", article: "die", noun: "Wichtigkeit" },
-  { base: "möglich", article: "die", noun: "Möglichkeit" },
-  { base: "freundlich", article: "die", noun: "Freundlichkeit" },
-  { base: "sauber", article: "die", noun: "Sauberkeit" },
-  { base: "erklären", article: "die", noun: "Erklärung" },
-  { base: "verbessern", article: "die", noun: "Verbesserung" },
-  { base: "untersuchen", article: "die", noun: "Untersuchung" },
-  { base: "verändern", article: "die", noun: "Veränderung" },
-  { base: "prüfen", article: "die", noun: "Prüfung" },
-  { base: "lösen", article: "die", noun: "Lösung" },
-  { base: "warten", article: "die", noun: "Wartung" },
-  { base: "wohnen", article: "die", noun: "Wohnung" },
-  { base: "rechnen", article: "die", noun: "Rechnung" },
-  { base: "essen", article: "das", noun: "Essen" },
-  { base: "leben", article: "das", noun: "Leben" },
-  { base: "schwimmen", article: "das", noun: "Schwimmen" },
-  { base: "gesund", article: "die", noun: "Gesundheit" },
-  { base: "sicher", article: "die", noun: "Sicherheit" },
-  { base: "einsam", article: "die", noun: "Einsamkeit" },
-  { base: "abfahren", article: "die", noun: "Abfahrt" },
-];
 
 export interface NominalisierungQuestion extends DrillQuestion {
   base: string;
+  /** "ung": a verb → its real -ung noun (e.g. entscheiden → die
+   *  Entscheidung). "infinitiv": the bare-infinitive-as-noun pattern (e.g.
+   *  lesen → das Lesen). See nominalisierung.server.ts's own doc comment
+   *  for how each pool is derived — never hand-written. */
+  kind: "ung" | "infinitiv";
 }
 
-/** Set-independent (fixed list) — see buildModalverbenQuestion's doc
- *  comment on the same pattern. */
-export function buildNominalisierungQuestion(rng: Rng = Math.random): NominalisierungQuestion {
-  const entry = pick(NOMINALISIERUNG_ENTRIES, rng);
-  const correctAnswer = `${entry.article} ${entry.noun}`;
-  const pool = NOMINALISIERUNG_ENTRIES.map((e) => `${e.article} ${e.noun}`).filter(
-    (candidate) => candidate !== correctAnswer,
-  );
-  const distractors = shuffle(pool, rng).slice(0, 3);
-  const options = shuffle([correctAnswer, ...distractors], rng);
+/**
+ * `entry` is a pre-resolved sample from `fetchRandomNominalisierungSample`
+ * (nominalisierung.server.ts) — its `correctAnswer` and `distractors` are
+ * already real, pool-derived strings; this only ever shuffles them into
+ * options. Two kinds are mixed within the same round rather than split into
+ * two routes/hub tiles, the same pattern `buildPassivQuestion`/
+ * `buildKonjunktivQuestion` already use for their own tense/form variants
+ * (see grammar.nominalisierung.tsx's own doc comment for the reasoning).
+ */
+export function buildNominalisierungQuestion(
+  entry: NominalisierungSampleEntry,
+  rng: Rng = Math.random,
+): NominalisierungQuestion {
+  const options = shuffle([entry.correctAnswer, ...entry.distractors], rng);
   return {
     base: entry.base,
+    kind: entry.kind,
     prompt: `${entry.base} → ___ (Nominalisierung)`,
     options,
-    correctAnswer,
+    correctAnswer: entry.correctAnswer,
   };
 }
 

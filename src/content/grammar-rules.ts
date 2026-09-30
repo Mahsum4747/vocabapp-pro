@@ -194,8 +194,8 @@ export const GRAMMAR_RULES: Record<GrammarRuleTopic, GrammarRule> = {
     topic: "nominalisierung",
     title: "Nominalisierung",
     intro:
-      "A verb or adjective turned into a noun, usually with -ung/-heit/-keit, or by capitalizing the bare infinitive (always neuter with 'das').",
-    examples: ["entscheiden → die Entscheidung", "schön → die Schönheit", "lesen → das Lesen"],
+      "A verb turned into a noun — either a real -ung noun (always feminine, 'die') or the bare infinitive capitalized and used as a noun (always neuter, 'das'). This drill mixes both kinds, drawn from a large real-word pool rather than a short fixed list.",
+    examples: ["entscheiden → die Entscheidung", "lesen → das Lesen", "schreiben → das Schreiben"],
   },
   funktionsverbgefuege: {
     topic: "funktionsverbgefuege",

@@ -4,6 +4,19 @@ import { authMiddleware } from "@/lib/auth/middleware";
 import type { NounEntry } from "./types.ts";
 
 /**
+ * The Nominalisierung drill's two question kinds — declared here (a plain,
+ * client-safe module) rather than in `nominalisierung.server.ts`, so this
+ * file's `fetchRandomNominalisierungSample` can expose the type to client
+ * code without a client-side import of a `*.server.*` file (Vite's
+ * import-protection plugin denies those, type-only or not — see
+ * vite.config.ts). `nominalisierung.server.ts` imports this type back from
+ * here.
+ */
+export type NominalisierungSampleEntry =
+  | { kind: "ung"; base: string; correctAnswer: string; distractors: string[] }
+  | { kind: "infinitiv"; base: string; correctAnswer: string; distractors: string[] };
+
+/**
  * Client-callable wrapper around `nouns.server.ts`'s `randomNounSample` —
  * the set-independent grammar drills (plural, nicht/kein, mein/dein/sein)
  * pull their noun pool from the whole 102k-entry dictionary, not from any
@@ -50,4 +63,21 @@ export const fetchRandomExampleSentence = createServerFn({ method: "GET" })
   .handler(async (): Promise<string | null> => {
     const { randomExampleSentence } = await import("./examples.server");
     return randomExampleSentence();
+  });
+
+/**
+ * Client-callable wrapper around `nominalisierung.server.ts`'s
+ * `randomNominalisierungSample` — same thin-wrapper/auth-gated shape as
+ * `fetchRandomNounSample` above, and for the same reason: the -ung pool is
+ * derived from `nouns-data.ts` (2.9 MB), which must never reach the client
+ * bundle. Each returned entry already carries its own correct answer and
+ * distractors (see that module's doc comment) — nothing here re-derives
+ * anything.
+ */
+export const fetchRandomNominalisierungSample = createServerFn({ method: "GET" })
+  .middleware([authMiddleware])
+  .validator((input: unknown) => inputSchema.parse(input))
+  .handler(async ({ data }): Promise<NominalisierungSampleEntry[]> => {
+    const { randomNominalisierungSample } = await import("./nominalisierung.server");
+    return randomNominalisierungSample(data.count);
   });
