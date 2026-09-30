@@ -1,12 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo } from "react";
 import { AuthGate } from "@/components/auth-gate";
 import { GrammarDrillRunner } from "@/components/grammar-drill-runner";
 import { buildKonjunktivEinsQuestion } from "@/lib/grammar-drills";
-import { randomVerbSample } from "@/lib/german/verb-conjugation-data";
-import { userExtendedVerbEligibleCards } from "@/lib/german/grammar-hub";
-import { useStudyStore } from "@/lib/store";
-import type { VerbConjugationEntry } from "@/lib/german/verb-conjugation-data";
+import { numberSample } from "@/lib/german/grammar-drill-sample";
 
 export const Route = createFileRoute("/grammar/konjunktiv1")({
   component: KonjunktivEinsDrillRoute,
@@ -15,20 +11,24 @@ export const Route = createFileRoute("/grammar/konjunktiv1")({
 /**
  * Konjunktiv I (indirekte Rede) drill — a USAGE drill (reported speech),
  * deliberately separate from `/grammar/konjunktiv`'s FORM drill (würde vs.
- * synthetic Konjunktiv II). See `buildKonjunktivEinsQuestion`'s own doc
- * comment.
+ * synthetic Konjunktiv II). The whole question pool is now the fixed
+ * scenario/verb templates in `grammar-drills.ts` (context sentence and
+ * injected verb are bound together per template, never drawn independently
+ * from the general verb pool — see `buildKonjunktivEinsQuestion`'s own doc
+ * comment, the same fix already applied to Subjektive Modalverben), so
+ * this uses `numberSample` purely to size the round, same pattern as
+ * Modalverben/Pronomen/Subjektive Modalverben. No `userEntries`: there is
+ * no card property that identifies "this card fits one of these 7
+ * scenarios".
  */
 function KonjunktivEinsDrillRoute() {
-  const sets = useStudyStore((s) => s.sets);
-  const userEntries = useMemo(() => userExtendedVerbEligibleCards(sets), [sets]);
   return (
     <AuthGate>
-      <GrammarDrillRunner<VerbConjugationEntry>
+      <GrammarDrillRunner<number>
         mode="Konjunktiv I"
         topic="konjunktiv1"
-        userEntries={userEntries}
-        fetchSample={() => Promise.resolve(randomVerbSample(12, "any"))}
-        buildRound={(entries) => entries.map((entry) => buildKonjunktivEinsQuestion(entry))}
+        fetchSample={() => Promise.resolve(numberSample(12))}
+        buildRound={(entries) => entries.map(() => buildKonjunktivEinsQuestion())}
       />
     </AuthGate>
   );

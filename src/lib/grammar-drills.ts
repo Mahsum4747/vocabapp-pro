@@ -1,5 +1,5 @@
 import { shuffle } from "./utils.ts";
-import { separablePrefixOf } from "./german/verb-conjugation-data.ts";
+import { lookupVerbConjugation, separablePrefixOf } from "./german/verb-conjugation-data.ts";
 import { lookupVerbConjugationExtended } from "./german/verb-conjugation-extended-data.ts";
 import type { Genus, NounEntry } from "./german/types.ts";
 import type { VerbConjugationEntry } from "./german/verb-conjugation-data.ts";
@@ -940,31 +940,86 @@ export interface KonjunktivEinsQuestion extends DrillQuestion {
   infinitive: string;
 }
 
+interface KonjunktivEinsTemplate {
+  pronoun: "er" | "sie";
+  reportVerb: "sagt" | "behauptet" | "meint" | "erklärt";
+  /** The rest of the quoted sentence, after the verb — e.g. "bald" turns
+   *  into "Ich komme bald." / "Er sagt, er komme bald." Each template's
+   *  `verbs` are hand-picked to make a genuinely natural German sentence
+   *  with THIS specific adverbPhrase — never mixed across templates. */
+  adverbPhrase: string;
+  /** 3-5 infinitives that make a natural, meaningful quote with this
+   *  template's own `adverbPhrase` — fixed and hand-picked (NOT drawn from
+   *  the general 6659-verb pool), the same fix already applied to
+   *  Subjektive Modalverben's context/verb mismatch. */
+  verbs: string[];
+}
+
+/** 7 templates (was 1 fixed "morgen" frame) — each own reporting sentence +
+ *  a small, meaning-checked verb pool, so context and injected verb always
+ *  stay semantically linked. NOT AI-generated. */
+const KONJUNKTIV_EINS_TEMPLATES: KonjunktivEinsTemplate[] = [
+  { pronoun: "er", reportVerb: "sagt", adverbPhrase: "bald", verbs: ["kommen", "gehen", "schlafen", "essen"] },
+  { pronoun: "sie", reportVerb: "sagt", adverbPhrase: "heute Abend", verbs: ["kochen", "backen", "lesen", "tanzen"] },
+  {
+    pronoun: "er",
+    reportVerb: "behauptet",
+    adverbPhrase: "nächste Woche",
+    verbs: ["reisen", "heiraten", "beginnen", "starten"],
+  },
+  {
+    pronoun: "er",
+    reportVerb: "meint",
+    adverbPhrase: "das nicht",
+    verbs: ["wissen", "glauben", "verstehen", "mögen", "brauchen"],
+  },
+  { pronoun: "sie", reportVerb: "sagt", adverbPhrase: "gern Musik", verbs: ["hören", "machen", "spielen"] },
+  {
+    pronoun: "er",
+    reportVerb: "sagt",
+    adverbPhrase: "zu Hause",
+    verbs: ["bleiben", "wohnen", "sitzen", "frühstücken"],
+  },
+  {
+    pronoun: "sie",
+    reportVerb: "erklärt",
+    adverbPhrase: "jeden Tag",
+    verbs: ["duschen", "telefonieren", "singen", "fahren"],
+  },
+];
+
+const KONJUNKTIV_EINS_PRONOUN_LABEL: Record<"er" | "sie", string> = { er: "Er", sie: "Sie" };
+
 /**
- * `entry.infinitive` must resolve via `lookupVerbConjugationExtended`
- * (callers filter their pool to that — see grammar.konjunktiv1.tsx). This
- * is a DIFFERENT drill from `buildKonjunktivQuestion`'s "synthetic" variant
+ * A DIFFERENT drill from `buildKonjunktivQuestion`'s "synthetic" variant
  * above: that one drills FORM production (Konjunktiv I vs II form), this
  * one drills the USAGE rule — reported/indirect speech ("Er sagt, er
- * komme morgen"). Correct answer is the `konjunktiv1` er-form; distractors
- * are the plain indicative `er`-form (real, just direct-speech-only here),
- * the `konjunktiv2` er-form (real, but the wrong mood for indirekte Rede
- * of a present-tense statement), and the würde-construction.
+ * komme bald"). Set-independent (fixed template+verb pool, see
+ * `KONJUNKTIV_EINS_TEMPLATES` above) — no longer takes a
+ * `VerbConjugationEntry` from the general pool, the same fix already
+ * applied to `buildSubjektiveModalverbenQuestion`'s own context/verb
+ * mismatch. Correct answer is the `konjunktiv1` er/sie/es-form (identical
+ * regardless of which pronoun the template uses — German's 3rd-person
+ * singular Konjunktiv I doesn't distinguish gender); distractors are the
+ * plain indicative er-form (real, just direct-speech-only here), the
+ * `konjunktiv2` er-form (real, but the wrong mood for indirekte Rede of a
+ * present-tense statement), and the würde-construction.
  */
-export function buildKonjunktivEinsQuestion(
-  entry: VerbConjugationEntry,
-  rng: Rng = Math.random,
-): KonjunktivEinsQuestion {
-  const extended = lookupVerbConjugationExtended(entry.infinitive)!;
-  const correctAnswer = extended.konjunktiv1[2]!; // er
-  const distractors = [entry.er, extended.konjunktiv2[2]!, `würde ${entry.infinitive}`];
+export function buildKonjunktivEinsQuestion(rng: Rng = Math.random): KonjunktivEinsQuestion {
+  const template = pick(KONJUNKTIV_EINS_TEMPLATES, rng);
+  const infinitive = pick(template.verbs, rng);
+  const basic = lookupVerbConjugation(infinitive)!;
+  const extended = lookupVerbConjugationExtended(infinitive)!;
+  const correctAnswer = extended.konjunktiv1[2]!; // er/sie/es
+  const distractors = [basic.er, extended.konjunktiv2[2]!, `würde ${infinitive}`];
   const options = shuffle([correctAnswer, ...distractors], rng);
+  const pronounLabel = KONJUNKTIV_EINS_PRONOUN_LABEL[template.pronoun];
   return {
-    infinitive: entry.infinitive,
-    prompt: `Er sagt: "Ich ${entry.ich} morgen." → Er sagt, er ___ morgen. (indirekte Rede)`,
+    infinitive,
+    prompt: `${pronounLabel} ${template.reportVerb}: "Ich ${basic.ich} ${template.adverbPhrase}." → ${pronounLabel} ${template.reportVerb}, ${template.pronoun} ___ ${template.adverbPhrase}. (indirekte Rede)`,
     options,
     correctAnswer,
-    glossKey: entry.infinitive,
+    glossKey: infinitive,
   };
 }
 
