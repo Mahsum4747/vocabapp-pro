@@ -21,9 +21,14 @@
  *   passage text as "These: ...").
  * - "matching" — B1 zuordnung_anzeigen, B2 zuordnung_person,
  *   zuordnung_aeusserungen, zuordnung_ueberschriften. All four are the same
- *   underlying exercise (drag an option onto its matching target); only
- *   zuordnung_ueberschriften also carries a `referenceText` passage to
- *   read first.
+ *   underlying exercise (drag an option onto its matching target). An
+ *   option's draggable `shortLabel` is NEVER its full paragraph — the full
+ *   ad/person/quote text is `referenceItems` instead, read-only reference
+ *   material shown above the board (zuordnung_ueberschriften uses the
+ *   single shared `referenceText` instead, one document rather than one
+ *   block per option). zuordnung_person alone sets `allowMultiple: true`,
+ *   straight from its own instruction text ("Die Personen können mehrmals
+ *   gewählt werden") — see lesen-types.ts's own doc comment.
  * - "sentence-insertion" — B2 satz_einfuegen. The source embeds gap
  *   markers as literal `[10]`/`[11]`/... text inside the passage; this
  *   splits that into `segments` + `gaps` once at generation time so the
@@ -40,6 +45,7 @@ import type {
   LesenGap,
   LesenGapOption,
   LesenMatchOption,
+  LesenMatchReferenceItem,
   LesenMatchTarget,
   LesenMatchingPassage,
   LesenPassage,
@@ -1568,17 +1574,69 @@ const MATCHING_PASSAGES: LesenMatchingPassage[] = [
     title: "Anzeigen zuordnen",
     source: "Kleinanzeigen",
     instruction: `Lesen Sie die Situationen 13 bis 19 und die Anzeigen a bis j. Welche Anzeige passt zu welcher Situation? Sie können jede Anzeige nur einmal verwenden. Für eine Situation gibt es keine passende Anzeige. Schreiben Sie in diesem Fall 0.`,
+    referenceItems: [
+      {
+        id: "a",
+        label: "Sprachcafé Español",
+        text: `Jeden Dienstag ab 19 Uhr treffen wir uns in der Stadtbibliothek und unterhalten uns auf Spanisch – über Reisen, Filme, das Leben. Kein Unterricht, kein Lehrbuch, keine Anmeldung, keine Gebühr. Grundkenntnisse ab Niveau A2 sollten Sie mitbringen. Einfach vorbeikommen.`,
+      },
+      {
+        id: "b",
+        label: "Gitarrenunterricht für Erwachsene",
+        text: `Sie wollten schon immer Gitarre spielen? Einzelunterricht bei erfahrenem Musiklehrer, auch für absolute Anfänger. Termine flexibel nach Absprache, auf Wunsch auch bei Ihnen zu Hause. Erste Stunde kostenlos zum Kennenlernen. Leihinstrument vorhanden.`,
+      },
+      {
+        id: "c",
+        label: "Offene Nähwerkstatt",
+        text: `Samstags von 10 bis 16 Uhr steht unsere Werkstatt allen offen. Zehn Maschinen und Schnittmuster sind vorhanden, Stoffe bringen Sie bitte selbst mit. Materialkosten werden nach Verbrauch abgerechnet. Anmeldung bis Donnerstag erforderlich, da die Plätze begrenzt sind.`,
+      },
+      {
+        id: "d",
+        label: "Smartphone und Tablet – Kurs für Senioren",
+        text: `Schritt für Schritt und in aller Ruhe: Wir zeigen Ihnen, wie Sie Nachrichten schreiben, Fotos verschicken und Apps installieren. Acht Vormittagstermine, Gruppen mit höchstens sechs Personen. Bringen Sie Ihr eigenes Gerät mit. Kursgebühr 40 Euro.`,
+      },
+      {
+        id: "e",
+        label: "Laufgruppe Waldstadt",
+        text: `Jeden Sonntag um 9 Uhr, Treffpunkt Parkplatz am Waldrand. Wir laufen in zwei Gruppen, damit wirklich alle mitkommen – von Anfängern bis Fortgeschrittenen. Die Teilnahme ist kostenlos, eine Anmeldung ist nicht nötig. Bei Dauerregen fällt der Termin aus.`,
+      },
+      {
+        id: "f",
+        label: "Bewerbungstraining",
+        text: `Wie schreibe ich einen überzeugenden Lebenslauf? Wie verhalte ich mich im Vorstellungsgespräch? An zwei Tagen üben wir beides, mit Videoaufnahme und persönlicher Rückmeldung. Für Arbeitssuchende kostenlos. Anmeldung über die Agentur für Arbeit.`,
+      },
+      {
+        id: "g",
+        label: "Kochkurs Indische Küche",
+        text: `Vier Freitagabende lang kochen wir gemeinsam: Currys, Brot, Süßspeisen. Alle Zutaten sind im Preis enthalten, gegessen wird zusammen am großen Tisch. Höchstens zehn Personen. 95 Euro für alle vier Termine.`,
+      },
+      {
+        id: "h",
+        label: "Fahrradwerkstatt zum Selbermachen",
+        text: `Mittwochs von 16 bis 20 Uhr können Sie bei uns Ihr Rad selbst reparieren. Werkzeug leihen wir Ihnen, und wenn Sie nicht weiterwissen, helfen unsere Ehrenamtlichen. Ersatzteile gibt es günstig vor Ort. Wir bitten um eine kleine Spende.`,
+      },
+      {
+        id: "i",
+        label: "Yoga in der Mittagspause",
+        text: `30 Minuten Übungen für Rücken und Nacken, jeden Werktag von 12.00 bis 12.30 Uhr, mitten in der Innenstadt. Duschen sind vorhanden, Matten stellen wir. Zehnerkarte 75 Euro, Einzelstunde 9 Euro. Bitte bequeme Kleidung mitbringen.`,
+      },
+      {
+        id: "j",
+        label: "Hundebetreuung Sonnenhof",
+        text: `Sie müssen beruflich verreisen? Wir betreuen Ihren Hund tageweise oder über das ganze Wochenende, mit großem Auslauf und täglich zwei langen Spaziergängen. Auch kurzfristige Anfragen sind meist möglich. Preise auf Anfrage.`,
+      },
+    ],
     options: [
-      { id: "a", title: "Sprachcafé Español", text: `Jeden Dienstag ab 19 Uhr treffen wir uns in der Stadtbibliothek und unterhalten uns auf Spanisch – über Reisen, Filme, das Leben. Kein Unterricht, kein Lehrbuch, keine Anmeldung, keine Gebühr. Grundkenntnisse ab Niveau A2 sollten Sie mitbringen. Einfach vorbeikommen.` },
-      { id: "b", title: "Gitarrenunterricht für Erwachsene", text: `Sie wollten schon immer Gitarre spielen? Einzelunterricht bei erfahrenem Musiklehrer, auch für absolute Anfänger. Termine flexibel nach Absprache, auf Wunsch auch bei Ihnen zu Hause. Erste Stunde kostenlos zum Kennenlernen. Leihinstrument vorhanden.` },
-      { id: "c", title: "Offene Nähwerkstatt", text: `Samstags von 10 bis 16 Uhr steht unsere Werkstatt allen offen. Zehn Maschinen und Schnittmuster sind vorhanden, Stoffe bringen Sie bitte selbst mit. Materialkosten werden nach Verbrauch abgerechnet. Anmeldung bis Donnerstag erforderlich, da die Plätze begrenzt sind.` },
-      { id: "d", title: "Smartphone und Tablet – Kurs für Senioren", text: `Schritt für Schritt und in aller Ruhe: Wir zeigen Ihnen, wie Sie Nachrichten schreiben, Fotos verschicken und Apps installieren. Acht Vormittagstermine, Gruppen mit höchstens sechs Personen. Bringen Sie Ihr eigenes Gerät mit. Kursgebühr 40 Euro.` },
-      { id: "e", title: "Laufgruppe Waldstadt", text: `Jeden Sonntag um 9 Uhr, Treffpunkt Parkplatz am Waldrand. Wir laufen in zwei Gruppen, damit wirklich alle mitkommen – von Anfängern bis Fortgeschrittenen. Die Teilnahme ist kostenlos, eine Anmeldung ist nicht nötig. Bei Dauerregen fällt der Termin aus.` },
-      { id: "f", title: "Bewerbungstraining", text: `Wie schreibe ich einen überzeugenden Lebenslauf? Wie verhalte ich mich im Vorstellungsgespräch? An zwei Tagen üben wir beides, mit Videoaufnahme und persönlicher Rückmeldung. Für Arbeitssuchende kostenlos. Anmeldung über die Agentur für Arbeit.` },
-      { id: "g", title: "Kochkurs Indische Küche", text: `Vier Freitagabende lang kochen wir gemeinsam: Currys, Brot, Süßspeisen. Alle Zutaten sind im Preis enthalten, gegessen wird zusammen am großen Tisch. Höchstens zehn Personen. 95 Euro für alle vier Termine.` },
-      { id: "h", title: "Fahrradwerkstatt zum Selbermachen", text: `Mittwochs von 16 bis 20 Uhr können Sie bei uns Ihr Rad selbst reparieren. Werkzeug leihen wir Ihnen, und wenn Sie nicht weiterwissen, helfen unsere Ehrenamtlichen. Ersatzteile gibt es günstig vor Ort. Wir bitten um eine kleine Spende.` },
-      { id: "i", title: "Yoga in der Mittagspause", text: `30 Minuten Übungen für Rücken und Nacken, jeden Werktag von 12.00 bis 12.30 Uhr, mitten in der Innenstadt. Duschen sind vorhanden, Matten stellen wir. Zehnerkarte 75 Euro, Einzelstunde 9 Euro. Bitte bequeme Kleidung mitbringen.` },
-      { id: "j", title: "Hundebetreuung Sonnenhof", text: `Sie müssen beruflich verreisen? Wir betreuen Ihren Hund tageweise oder über das ganze Wochenende, mit großem Auslauf und täglich zwei langen Spaziergängen. Auch kurzfristige Anfragen sind meist möglich. Preise auf Anfrage.` },
+      { id: "a", shortLabel: "Sprachcafé Español" },
+      { id: "b", shortLabel: "Gitarrenunterricht für Erwachsene" },
+      { id: "c", shortLabel: "Offene Nähwerkstatt" },
+      { id: "d", shortLabel: "Smartphone und Tablet – Kurs für Senioren" },
+      { id: "e", shortLabel: "Laufgruppe Waldstadt" },
+      { id: "f", shortLabel: "Bewerbungstraining" },
+      { id: "g", shortLabel: "Kochkurs Indische Küche" },
+      { id: "h", shortLabel: "Fahrradwerkstatt zum Selbermachen" },
+      { id: "i", shortLabel: "Yoga in der Mittagspause" },
+      { id: "j", shortLabel: "Hundebetreuung Sonnenhof" },
     ],
     targets: [
       {
@@ -1632,17 +1690,69 @@ const MATCHING_PASSAGES: LesenMatchingPassage[] = [
     title: "Anzeigen zuordnen",
     source: "Kleinanzeigen",
     instruction: `Lesen Sie die Situationen 13 bis 19 und die Anzeigen a bis j. Welche Anzeige passt zu welcher Situation? Sie können jede Anzeige nur einmal verwenden. Für eine Situation gibt es keine passende Anzeige. Schreiben Sie in diesem Fall 0.`,
+    referenceItems: [
+      {
+        id: "a",
+        label: "Ferienwohnung am Bodensee",
+        text: `Helle Zweizimmerwohnung für zwei bis vier Personen, fünf Minuten zu Fuß zum Ufer. Küche, Balkon, Waschmaschine. In der Nebensaison deutlich günstiger. Nichtraucherwohnung; Haustiere können wir leider nicht aufnehmen. Mindestaufenthalt drei Nächte.`,
+      },
+      {
+        id: "b",
+        label: "Geführte Wanderwoche in den Alpen",
+        text: `Sieben Tage von Hütte zu Hütte, täglich vier bis fünf Stunden Gehzeit. Mittlere Kondition genügt, technische Erfahrung ist nicht nötig. Ihr großes Gepäck wird jeden Tag zur nächsten Unterkunft gebracht. Kleine Gruppen, deutschsprachige Leitung.`,
+      },
+      {
+        id: "c",
+        label: "Rückenschule für Erwachsene",
+        text: `Zehn Termine, dienstags und donnerstags abends, Übungen für Rücken und Nacken in kleinen Gruppen. Der Kurs ist von den Krankenkassen anerkannt: Die meisten erstatten achtzig Prozent der Gebühr. Bitte Sportkleidung und ein Handtuch mitbringen.`,
+      },
+      {
+        id: "d",
+        label: "Fahrradverleih und Werkstatt am Bahnhof",
+        text: `Räder für einen Tag, ein Wochenende oder eine ganze Woche, auch Kinderanhänger und E-Bikes. Kleine Reparaturen erledigen wir während Sie warten. Täglich von 7 bis 20 Uhr geöffnet, Abgabe außerhalb der Öffnungszeiten nach Absprache möglich.`,
+      },
+      {
+        id: "e",
+        label: "Sprachreise Italienisch",
+        text: `Zwei Wochen Unterricht am Vormittag, nachmittags Ausflüge und Kochkurse. Sie wohnen bei einer Gastfamilie und sprechen auch abends Italienisch. Für Erwachsene ab achtzehn Jahren, alle Niveaus von Anfängern bis Fortgeschrittenen.`,
+      },
+      {
+        id: "f",
+        label: "Stadtführung „Verborgenes Lindenau“",
+        text: `Jeden Sonntag um elf Uhr zeigen wir Ihnen Höfe, Treppen und Gassen, an denen Sie sonst vorbeigehen. Dauer etwa neunzig Minuten. Die Teilnahme kostet nichts; über eine Spende am Ende freuen wir uns. Treffpunkt ist der Brunnen am Marktplatz.`,
+      },
+      {
+        id: "g",
+        label: "Ernährungsberatung Grünewald",
+        text: `Einzeltermine zu Ernährung bei Allergien, hohem Blutdruck oder einfach zum Abnehmen. Auf Wunsch auch als Videogespräch von zu Hause aus. Mit ärztlicher Bescheinigung übernimmt Ihre Krankenkasse häufig einen Teil der Kosten.`,
+      },
+      {
+        id: "h",
+        label: "Campingplatz Seeblick",
+        text: `Stellplätze für Zelte, Wohnwagen und Wohnmobile, direkt am Wasser. Sanitärgebäude neu gebaut, Stromanschluss an jedem Platz. Hunde sind bei uns ausdrücklich willkommen und dürfen an der eigenen Wiese frei laufen. Von April bis Oktober geöffnet.`,
+      },
+      {
+        id: "i",
+        label: "Schwimmkurs für Erwachsene",
+        text: `Nie schwimmen gelernt oder viel zu lange nicht mehr im Wasser gewesen? In acht Abenden nehmen wir Ihnen in einer kleinen Gruppe die Angst. Dienstags ab neunzehn Uhr im Hallenbad. Höchstens sechs Personen pro Kurs.`,
+      },
+      {
+        id: "j",
+        label: "Reisemedizinische Beratung",
+        text: `Vor Fernreisen beraten wir Sie zu Impfungen, Malariaschutz und der richtigen Reiseapotheke. Bitte kommen Sie mindestens sechs Wochen vor der Abreise und bringen Sie Ihren Impfpass mit. Termine nur nach vorheriger Vereinbarung.`,
+      },
+    ],
     options: [
-      { id: "a", title: "Ferienwohnung am Bodensee", text: `Helle Zweizimmerwohnung für zwei bis vier Personen, fünf Minuten zu Fuß zum Ufer. Küche, Balkon, Waschmaschine. In der Nebensaison deutlich günstiger. Nichtraucherwohnung; Haustiere können wir leider nicht aufnehmen. Mindestaufenthalt drei Nächte.` },
-      { id: "b", title: "Geführte Wanderwoche in den Alpen", text: `Sieben Tage von Hütte zu Hütte, täglich vier bis fünf Stunden Gehzeit. Mittlere Kondition genügt, technische Erfahrung ist nicht nötig. Ihr großes Gepäck wird jeden Tag zur nächsten Unterkunft gebracht. Kleine Gruppen, deutschsprachige Leitung.` },
-      { id: "c", title: "Rückenschule für Erwachsene", text: `Zehn Termine, dienstags und donnerstags abends, Übungen für Rücken und Nacken in kleinen Gruppen. Der Kurs ist von den Krankenkassen anerkannt: Die meisten erstatten achtzig Prozent der Gebühr. Bitte Sportkleidung und ein Handtuch mitbringen.` },
-      { id: "d", title: "Fahrradverleih und Werkstatt am Bahnhof", text: `Räder für einen Tag, ein Wochenende oder eine ganze Woche, auch Kinderanhänger und E-Bikes. Kleine Reparaturen erledigen wir während Sie warten. Täglich von 7 bis 20 Uhr geöffnet, Abgabe außerhalb der Öffnungszeiten nach Absprache möglich.` },
-      { id: "e", title: "Sprachreise Italienisch", text: `Zwei Wochen Unterricht am Vormittag, nachmittags Ausflüge und Kochkurse. Sie wohnen bei einer Gastfamilie und sprechen auch abends Italienisch. Für Erwachsene ab achtzehn Jahren, alle Niveaus von Anfängern bis Fortgeschrittenen.` },
-      { id: "f", title: "Stadtführung „Verborgenes Lindenau“", text: `Jeden Sonntag um elf Uhr zeigen wir Ihnen Höfe, Treppen und Gassen, an denen Sie sonst vorbeigehen. Dauer etwa neunzig Minuten. Die Teilnahme kostet nichts; über eine Spende am Ende freuen wir uns. Treffpunkt ist der Brunnen am Marktplatz.` },
-      { id: "g", title: "Ernährungsberatung Grünewald", text: `Einzeltermine zu Ernährung bei Allergien, hohem Blutdruck oder einfach zum Abnehmen. Auf Wunsch auch als Videogespräch von zu Hause aus. Mit ärztlicher Bescheinigung übernimmt Ihre Krankenkasse häufig einen Teil der Kosten.` },
-      { id: "h", title: "Campingplatz Seeblick", text: `Stellplätze für Zelte, Wohnwagen und Wohnmobile, direkt am Wasser. Sanitärgebäude neu gebaut, Stromanschluss an jedem Platz. Hunde sind bei uns ausdrücklich willkommen und dürfen an der eigenen Wiese frei laufen. Von April bis Oktober geöffnet.` },
-      { id: "i", title: "Schwimmkurs für Erwachsene", text: `Nie schwimmen gelernt oder viel zu lange nicht mehr im Wasser gewesen? In acht Abenden nehmen wir Ihnen in einer kleinen Gruppe die Angst. Dienstags ab neunzehn Uhr im Hallenbad. Höchstens sechs Personen pro Kurs.` },
-      { id: "j", title: "Reisemedizinische Beratung", text: `Vor Fernreisen beraten wir Sie zu Impfungen, Malariaschutz und der richtigen Reiseapotheke. Bitte kommen Sie mindestens sechs Wochen vor der Abreise und bringen Sie Ihren Impfpass mit. Termine nur nach vorheriger Vereinbarung.` },
+      { id: "a", shortLabel: "Ferienwohnung am Bodensee" },
+      { id: "b", shortLabel: "Geführte Wanderwoche in den Alpen" },
+      { id: "c", shortLabel: "Rückenschule für Erwachsene" },
+      { id: "d", shortLabel: "Fahrradverleih und Werkstatt am Bahnhof" },
+      { id: "e", shortLabel: "Sprachreise Italienisch" },
+      { id: "f", shortLabel: "Stadtführung „Verborgenes Lindenau“" },
+      { id: "g", shortLabel: "Ernährungsberatung Grünewald" },
+      { id: "h", shortLabel: "Campingplatz Seeblick" },
+      { id: "i", shortLabel: "Schwimmkurs für Erwachsene" },
+      { id: "j", shortLabel: "Reisemedizinische Beratung" },
     ],
     targets: [
       {
@@ -1696,17 +1806,69 @@ const MATCHING_PASSAGES: LesenMatchingPassage[] = [
     title: "Anzeigen zuordnen",
     source: "Kleinanzeigen",
     instruction: `Lesen Sie die Situationen 13 bis 19 und die Anzeigen a bis j. Welche Anzeige passt zu welcher Situation? Sie können jede Anzeige nur einmal verwenden. Für eine Situation gibt es keine passende Anzeige. Schreiben Sie in diesem Fall 0.`,
+    referenceItems: [
+      {
+        id: "a",
+        label: "Klavierunterricht für Späteinsteiger",
+        text: `Sie wollten es immer schon, hatten aber nie Zeit? Einzelstunden von dreißig oder sechzig Minuten, Termine auch spät am Abend. Ein Instrument zum Üben ist nicht nötig: In den ersten Monaten dürfen Sie in unseren Räumen kostenlos üben. Erste Stunde unverbindlich.`,
+      },
+      {
+        id: "b",
+        label: "Handy-Reparatur Sofortdienst",
+        text: `Display gebrochen, Akku leer nach zwei Stunden? Die häufigsten Reparaturen erledigen wir in unter einer Stunde, während Sie warten. Auf jede Reparatur geben wir zwölf Monate Garantie. Kostenvoranschlag vorab und kostenlos, auch wenn Sie sich dagegen entscheiden.`,
+      },
+      {
+        id: "c",
+        label: "Computerhilfe bei Ihnen zu Hause",
+        text: `Drucker verbindet sich nicht, WLAN reicht nicht bis ins Schlafzimmer, das Update will nicht? Wir kommen zu Ihnen, erklären in Ruhe und ohne Fachwörter. Besonders geeignet für Menschen, die ungern telefonisch beraten werden. Abrechnung nach angefangenen halben Stunden.`,
+      },
+      {
+        id: "d",
+        label: "Kammerchor Lindenau sucht Stimmen",
+        text: `Wir proben mittwochs von neunzehn bis einundzwanzig Uhr und geben vier Konzerte im Jahr. Noten lesen müssen Sie nicht können, ein sicheres Gehör sollten Sie mitbringen. Vor der Aufnahme singen Sie kurz allein vor. Zwei Probeabende sind kostenlos.`,
+      },
+      {
+        id: "e",
+        label: "Volkslauf Ostheim",
+        text: `Fünf und zehn Kilometer, Start am Sportplatz um zehn Uhr. Anmeldung bis Freitag online oder am Morgen vor Ort. Startgebühr zwölf Euro, für Vereinsmitglieder acht. Jeder Teilnehmer bekommt Verpflegung unterwegs und ein Getränk im Ziel. Bei Gewitter fällt die Veranstaltung aus.`,
+      },
+      {
+        id: "f",
+        label: "Fotokurs: Mit dem Handy fotografieren",
+        text: `Sie brauchen keine teure Kamera. An drei Abenden zeigen wir Ihnen Bildaufbau, Licht und die wichtigsten Einstellungen, die jedes Telefon mitbringt. Bringen Sie einfach Ihr eigenes Gerät mit. Für alle Systeme geeignet, kleine Gruppen bis acht Personen.`,
+      },
+      {
+        id: "g",
+        label: "Theater am Markt — Abonnement",
+        text: `Sechs Vorstellungen pro Spielzeit, immer am selben Wochentag und auf demselben Platz. Sie sparen gegenüber Einzelkarten rund ein Drittel. Können Sie einmal nicht, tauschen wir den Termin kostenlos um. Für Menschen unter siebenundzwanzig zum halben Preis.`,
+      },
+      {
+        id: "h",
+        label: "Repair-Treff im Gemeindehaus",
+        text: `Jeden dritten Samstag reparieren wir gemeinsam, was noch zu retten ist: Toaster, Lampen, Radios. Wir helfen, machen es aber nicht für Sie. Ersatzteile müssen Sie selbst besorgen. Werkzeug ist vorhanden, die Teilnahme kostet nichts.`,
+      },
+      {
+        id: "i",
+        label: "TSV Ostheim — Probetraining",
+        text: `Volleyball, Basketball und Turnen für Erwachsene. Sie dürfen dreimal unverbindlich mittrainieren, bevor Sie sich entscheiden. Sportkleidung genügt, Hallenschuhe leihen wir. Trainingszeiten und Hallenplan finden Sie auf unserer Internetseite.`,
+      },
+      {
+        id: "j",
+        label: "Stadtarchiv — Beratung zur Familienforschung",
+        text: `Sie möchten wissen, woher Ihre Familie kommt? Wir zeigen Ihnen, welche Bücher und Register es gibt und wie man sie liest. Beratung donnerstags nach Anmeldung, jeweils eine Stunde. Bringen Sie mit, was Sie schon haben, auch alte Fotos.`,
+      },
+    ],
     options: [
-      { id: "a", title: "Klavierunterricht für Späteinsteiger", text: `Sie wollten es immer schon, hatten aber nie Zeit? Einzelstunden von dreißig oder sechzig Minuten, Termine auch spät am Abend. Ein Instrument zum Üben ist nicht nötig: In den ersten Monaten dürfen Sie in unseren Räumen kostenlos üben. Erste Stunde unverbindlich.` },
-      { id: "b", title: "Handy-Reparatur Sofortdienst", text: `Display gebrochen, Akku leer nach zwei Stunden? Die häufigsten Reparaturen erledigen wir in unter einer Stunde, während Sie warten. Auf jede Reparatur geben wir zwölf Monate Garantie. Kostenvoranschlag vorab und kostenlos, auch wenn Sie sich dagegen entscheiden.` },
-      { id: "c", title: "Computerhilfe bei Ihnen zu Hause", text: `Drucker verbindet sich nicht, WLAN reicht nicht bis ins Schlafzimmer, das Update will nicht? Wir kommen zu Ihnen, erklären in Ruhe und ohne Fachwörter. Besonders geeignet für Menschen, die ungern telefonisch beraten werden. Abrechnung nach angefangenen halben Stunden.` },
-      { id: "d", title: "Kammerchor Lindenau sucht Stimmen", text: `Wir proben mittwochs von neunzehn bis einundzwanzig Uhr und geben vier Konzerte im Jahr. Noten lesen müssen Sie nicht können, ein sicheres Gehör sollten Sie mitbringen. Vor der Aufnahme singen Sie kurz allein vor. Zwei Probeabende sind kostenlos.` },
-      { id: "e", title: "Volkslauf Ostheim", text: `Fünf und zehn Kilometer, Start am Sportplatz um zehn Uhr. Anmeldung bis Freitag online oder am Morgen vor Ort. Startgebühr zwölf Euro, für Vereinsmitglieder acht. Jeder Teilnehmer bekommt Verpflegung unterwegs und ein Getränk im Ziel. Bei Gewitter fällt die Veranstaltung aus.` },
-      { id: "f", title: "Fotokurs: Mit dem Handy fotografieren", text: `Sie brauchen keine teure Kamera. An drei Abenden zeigen wir Ihnen Bildaufbau, Licht und die wichtigsten Einstellungen, die jedes Telefon mitbringt. Bringen Sie einfach Ihr eigenes Gerät mit. Für alle Systeme geeignet, kleine Gruppen bis acht Personen.` },
-      { id: "g", title: "Theater am Markt — Abonnement", text: `Sechs Vorstellungen pro Spielzeit, immer am selben Wochentag und auf demselben Platz. Sie sparen gegenüber Einzelkarten rund ein Drittel. Können Sie einmal nicht, tauschen wir den Termin kostenlos um. Für Menschen unter siebenundzwanzig zum halben Preis.` },
-      { id: "h", title: "Repair-Treff im Gemeindehaus", text: `Jeden dritten Samstag reparieren wir gemeinsam, was noch zu retten ist: Toaster, Lampen, Radios. Wir helfen, machen es aber nicht für Sie. Ersatzteile müssen Sie selbst besorgen. Werkzeug ist vorhanden, die Teilnahme kostet nichts.` },
-      { id: "i", title: "TSV Ostheim — Probetraining", text: `Volleyball, Basketball und Turnen für Erwachsene. Sie dürfen dreimal unverbindlich mittrainieren, bevor Sie sich entscheiden. Sportkleidung genügt, Hallenschuhe leihen wir. Trainingszeiten und Hallenplan finden Sie auf unserer Internetseite.` },
-      { id: "j", title: "Stadtarchiv — Beratung zur Familienforschung", text: `Sie möchten wissen, woher Ihre Familie kommt? Wir zeigen Ihnen, welche Bücher und Register es gibt und wie man sie liest. Beratung donnerstags nach Anmeldung, jeweils eine Stunde. Bringen Sie mit, was Sie schon haben, auch alte Fotos.` },
+      { id: "a", shortLabel: "Klavierunterricht für Späteinsteiger" },
+      { id: "b", shortLabel: "Handy-Reparatur Sofortdienst" },
+      { id: "c", shortLabel: "Computerhilfe bei Ihnen zu Hause" },
+      { id: "d", shortLabel: "Kammerchor Lindenau sucht Stimmen" },
+      { id: "e", shortLabel: "Volkslauf Ostheim" },
+      { id: "f", shortLabel: "Fotokurs: Mit dem Handy fotografieren" },
+      { id: "g", shortLabel: "Theater am Markt — Abonnement" },
+      { id: "h", shortLabel: "Repair-Treff im Gemeindehaus" },
+      { id: "i", shortLabel: "TSV Ostheim — Probetraining" },
+      { id: "j", shortLabel: "Stadtarchiv — Beratung zur Familienforschung" },
     ],
     targets: [
       {
@@ -1760,17 +1922,69 @@ const MATCHING_PASSAGES: LesenMatchingPassage[] = [
     title: "Anzeigen zuordnen",
     source: "Kleinanzeigen",
     instruction: `Lesen Sie die Situationen 13 bis 19 und die Anzeigen a bis j. Welche Anzeige passt zu welcher Situation? Sie können jede Anzeige nur einmal verwenden. Für eine Situation gibt es keine passende Anzeige. Schreiben Sie in diesem Fall 0.`,
+    referenceItems: [
+      {
+        id: "a",
+        label: "Leihgroßeltern gesucht",
+        text: `Sie haben Zeit und Lust auf Kinder, aber keine eigenen Enkel in der Nähe? Wir bringen Familien und ältere Menschen zusammen. Ein Nachmittag pro Woche genügt. Wir begleiten das erste Kennenlernen und bleiben Ansprechpartner, falls es einmal nicht passt.`,
+      },
+      {
+        id: "b",
+        label: "Hundeschule Wiesengrund",
+        text: `Gruppenkurse für junge Hunde und Einzelstunden bei Problemen wie Ziehen an der Leine oder Bellen an der Tür. Wir arbeiten ohne Strafen. Das erste Gespräch führen wir am Telefon und kostenlos, damit Sie den passenden Kurs finden.`,
+      },
+      {
+        id: "c",
+        label: "Kleingartenverein Sonnenhang",
+        text: `Zwei Parzellen mit je dreihundert Quadratmetern werden frei. Laube und Wasseranschluss vorhanden. Vier Arbeitseinsätze im Jahr sind Pflicht. Bewerbungen bitte schriftlich; die Warteliste ist lang, kurzfristig können wir leider nichts anbieten.`,
+      },
+      {
+        id: "d",
+        label: "Ferienbetreuung in den Sommerferien",
+        text: `Zwei Wochen Programm für Kinder von sechs bis zwölf Jahren, täglich von acht bis sechzehn Uhr. Ausflüge, Werkstatt, viel draußen. Mittagessen inklusive. Anmeldung nur für ganze Wochen möglich, Ermäßigung für Geschwisterkinder.`,
+      },
+      {
+        id: "e",
+        label: "Tierpension Am Waldrand",
+        text: `Wir betreuen Katzen und Kleintiere, während Sie verreist sind. Jedes Tier hat einen eigenen Raum mit Fenster. Bitte bringen Sie das gewohnte Futter mit. Buchung in den Ferienmonaten möglichst drei Monate im Voraus.`,
+      },
+      {
+        id: "f",
+        label: "Nachbarschaftshilfe Lindenau",
+        text: `Einkaufen, ein Formular ausfüllen, eine Glühbirne wechseln: Für kleine Handgriffe vermitteln wir Freiwillige aus dem eigenen Viertel. Kostenlos, aber nur für Dinge, die höchstens eine Stunde dauern. Erreichbar montags bis freitags vormittags.`,
+      },
+      {
+        id: "g",
+        label: "Erste Hilfe am Kind",
+        text: `Ein Kurs für Eltern, Großeltern und alle, die regelmäßig auf Kinder aufpassen. An einem Samstag lernen Sie, was bei Fieberkrampf, Verschlucken und Stürzen zu tun ist. Keine Vorkenntnisse nötig, Wiederholung nach zwei Jahren empfohlen.`,
+      },
+      {
+        id: "h",
+        label: "Straßenfest Rehberg — Helfer gesucht",
+        text: `Am zweiten Septemberwochenende feiert unser Viertel. Wir suchen Leute für Aufbau, Kuchentheke und Abbau, jeweils in Schichten von zwei Stunden. Wer mitmacht, bekommt Essen und Getränke frei. Bitte melden Sie sich bis Ende Juli.`,
+      },
+      {
+        id: "i",
+        label: "Baumpatenschaft übernehmen",
+        text: `Übernehmen Sie einen jungen Straßenbaum vor Ihrer Tür. Sie gießen von Mai bis September etwa einmal pro Woche; Gießsäcke und eine kurze Einweisung stellen wir. Wer in Urlaub fährt, sucht sich bitte eine Vertretung in der Nachbarschaft.`,
+      },
+      {
+        id: "j",
+        label: "Repair-Werkstatt für Fahrräder und Kinderwagen",
+        text: `Jeden zweiten Donnerstag von sechzehn bis zwanzig Uhr. Werkzeug und Rat sind kostenlos, Ersatzteile berechnen wir zum Einkaufspreis. Auch Anhänger und Roller reparieren wir gern. Kommen Sie ohne Anmeldung vorbei.`,
+      },
+    ],
     options: [
-      { id: "a", title: "Leihgroßeltern gesucht", text: `Sie haben Zeit und Lust auf Kinder, aber keine eigenen Enkel in der Nähe? Wir bringen Familien und ältere Menschen zusammen. Ein Nachmittag pro Woche genügt. Wir begleiten das erste Kennenlernen und bleiben Ansprechpartner, falls es einmal nicht passt.` },
-      { id: "b", title: "Hundeschule Wiesengrund", text: `Gruppenkurse für junge Hunde und Einzelstunden bei Problemen wie Ziehen an der Leine oder Bellen an der Tür. Wir arbeiten ohne Strafen. Das erste Gespräch führen wir am Telefon und kostenlos, damit Sie den passenden Kurs finden.` },
-      { id: "c", title: "Kleingartenverein Sonnenhang", text: `Zwei Parzellen mit je dreihundert Quadratmetern werden frei. Laube und Wasseranschluss vorhanden. Vier Arbeitseinsätze im Jahr sind Pflicht. Bewerbungen bitte schriftlich; die Warteliste ist lang, kurzfristig können wir leider nichts anbieten.` },
-      { id: "d", title: "Ferienbetreuung in den Sommerferien", text: `Zwei Wochen Programm für Kinder von sechs bis zwölf Jahren, täglich von acht bis sechzehn Uhr. Ausflüge, Werkstatt, viel draußen. Mittagessen inklusive. Anmeldung nur für ganze Wochen möglich, Ermäßigung für Geschwisterkinder.` },
-      { id: "e", title: "Tierpension Am Waldrand", text: `Wir betreuen Katzen und Kleintiere, während Sie verreist sind. Jedes Tier hat einen eigenen Raum mit Fenster. Bitte bringen Sie das gewohnte Futter mit. Buchung in den Ferienmonaten möglichst drei Monate im Voraus.` },
-      { id: "f", title: "Nachbarschaftshilfe Lindenau", text: `Einkaufen, ein Formular ausfüllen, eine Glühbirne wechseln: Für kleine Handgriffe vermitteln wir Freiwillige aus dem eigenen Viertel. Kostenlos, aber nur für Dinge, die höchstens eine Stunde dauern. Erreichbar montags bis freitags vormittags.` },
-      { id: "g", title: "Erste Hilfe am Kind", text: `Ein Kurs für Eltern, Großeltern und alle, die regelmäßig auf Kinder aufpassen. An einem Samstag lernen Sie, was bei Fieberkrampf, Verschlucken und Stürzen zu tun ist. Keine Vorkenntnisse nötig, Wiederholung nach zwei Jahren empfohlen.` },
-      { id: "h", title: "Straßenfest Rehberg — Helfer gesucht", text: `Am zweiten Septemberwochenende feiert unser Viertel. Wir suchen Leute für Aufbau, Kuchentheke und Abbau, jeweils in Schichten von zwei Stunden. Wer mitmacht, bekommt Essen und Getränke frei. Bitte melden Sie sich bis Ende Juli.` },
-      { id: "i", title: "Baumpatenschaft übernehmen", text: `Übernehmen Sie einen jungen Straßenbaum vor Ihrer Tür. Sie gießen von Mai bis September etwa einmal pro Woche; Gießsäcke und eine kurze Einweisung stellen wir. Wer in Urlaub fährt, sucht sich bitte eine Vertretung in der Nachbarschaft.` },
-      { id: "j", title: "Repair-Werkstatt für Fahrräder und Kinderwagen", text: `Jeden zweiten Donnerstag von sechzehn bis zwanzig Uhr. Werkzeug und Rat sind kostenlos, Ersatzteile berechnen wir zum Einkaufspreis. Auch Anhänger und Roller reparieren wir gern. Kommen Sie ohne Anmeldung vorbei.` },
+      { id: "a", shortLabel: "Leihgroßeltern gesucht" },
+      { id: "b", shortLabel: "Hundeschule Wiesengrund" },
+      { id: "c", shortLabel: "Kleingartenverein Sonnenhang" },
+      { id: "d", shortLabel: "Ferienbetreuung in den Sommerferien" },
+      { id: "e", shortLabel: "Tierpension Am Waldrand" },
+      { id: "f", shortLabel: "Nachbarschaftshilfe Lindenau" },
+      { id: "g", shortLabel: "Erste Hilfe am Kind" },
+      { id: "h", shortLabel: "Straßenfest Rehberg — Helfer gesucht" },
+      { id: "i", shortLabel: "Baumpatenschaft übernehmen" },
+      { id: "j", shortLabel: "Repair-Werkstatt für Fahrräder und Kinderwagen" },
     ],
     targets: [
       {
@@ -1824,17 +2038,69 @@ const MATCHING_PASSAGES: LesenMatchingPassage[] = [
     title: "Anzeigen zuordnen",
     source: "Kleinanzeigen",
     instruction: `Lesen Sie die Situationen 13 bis 19 und die Anzeigen a bis j. Welche Anzeige passt zu welcher Situation? Sie können jede Anzeige nur einmal verwenden. Für eine Situation gibt es keine passende Anzeige. Schreiben Sie in diesem Fall 0.`,
+    referenceItems: [
+      {
+        id: "a",
+        label: "Sprachtandem der Stadtbibliothek",
+        text: `Wir bringen Menschen zusammen, die die Sprache des anderen lernen möchten. Sie treffen sich selbstständig, wann und wo Sie wollen. Voraussetzung sind Grundkenntnisse ab Niveau A2 — ganz ohne Vorkenntnisse funktioniert ein Tandem erfahrungsgemäß nicht. Die Vermittlung ist kostenlos.`,
+      },
+      {
+        id: "b",
+        label: "Änderungsschneiderei Kaya",
+        text: `Hosen kürzen, Reißverschlüsse erneuern, Jacken enger machen. Kleinere Arbeiten sind innerhalb von zwei Tagen fertig, bei Bedarf auch am selben Tag gegen Aufpreis. Wir ändern auch Kleidung, die Sie nicht bei uns gekauft haben. Kostenvoranschlag beim Anprobieren.`,
+      },
+      {
+        id: "c",
+        label: "Begleitung zu Ämtern",
+        text: `Sie haben einen Termin bei einer Behörde und sind unsicher, ob Sie alles verstehen? Ehrenamtliche begleiten Sie und erklären danach in Ruhe, was besprochen wurde. Wir übersetzen nicht, aber wir sprechen langsam und einfach. Anmeldung eine Woche vorher.`,
+      },
+      {
+        id: "d",
+        label: "Selbstbehauptungskurs für Frauen",
+        text: `An zwei Samstagen üben wir Stimme, Haltung und einfache Techniken. Kein Sport, keine Vorkenntnisse, jedes Alter. Die Gruppe ist auf zwölf Personen begrenzt. Der Kurs findet in der Sporthalle statt; bequeme Kleidung genügt, Schuhe mit heller Sohle bitte mitbringen.`,
+      },
+      {
+        id: "e",
+        label: "Schlüsseldienst Lindenau — Notdienst",
+        text: `Tür zugefallen, Schlüssel drinnen? Wir sind rund um die Uhr erreichbar und in der Regel innerhalb von dreißig Minuten da. Festpreis am Telefon, keine versteckten Zuschläge. Bitte halten Sie einen Ausweis bereit, wir öffnen nur, wenn Sie dort wohnen.`,
+      },
+      {
+        id: "f",
+        label: "Kleidertauschbörse Rehberg",
+        text: `Viermal im Jahr, samstags von zehn bis sechzehn Uhr in der Turnhalle. Bringen Sie mit, was Sie nicht mehr tragen, und nehmen Sie mit, was Ihnen gefällt. Höchstens zwei Taschen pro Person. Alles kostenlos, keine Anmeldung nötig.`,
+      },
+      {
+        id: "g",
+        label: "Seminar: Den Tag in den Griff bekommen",
+        text: `Ein Abend für alle, die abends das Gefühl haben, nichts geschafft zu haben. Wir arbeiten mit Ihrem eigenen Kalender und Ihren echten Aufgaben, nicht mit Beispielen. Bringen Sie also mit, womit Sie tatsächlich arbeiten. Höchstens fünfzehn Teilnehmende.`,
+      },
+      {
+        id: "h",
+        label: "Vorlesepaten gesucht",
+        text: `Einmal pro Woche eine Stunde in einer Kita oder Grundschule vorlesen. Wichtig ist nicht perfektes Deutsch, sondern Freude am Erzählen. Wir schulen Sie an einem Nachmittag und stellen die Bücher. Auch Menschen, die eine zweite Sprache mitbringen, sind ausdrücklich willkommen.`,
+      },
+      {
+        id: "i",
+        label: "Fahrsicherheitstraining",
+        text: `Bremsen auf nasser Fahrbahn, Ausweichen, Schleudern: Auf unserem Übungsplatz erleben Sie Situationen, die Sie im Straßenverkehr nie üben können. Mit dem eigenen Auto, ganzer Tag. Viele Versicherungen erstatten einen Teil der Gebühr.`,
+      },
+      {
+        id: "j",
+        label: "Passbilder sofort",
+        text: `Biometrische Fotos für Ausweis, Reisepass und Führerschein, fertig in fünf Minuten. Wir prüfen die Vorgaben und fotografieren notfalls kostenlos noch einmal, falls das Amt etwas beanstandet. Ohne Termin, montags bis samstags.`,
+      },
+    ],
     options: [
-      { id: "a", title: "Sprachtandem der Stadtbibliothek", text: `Wir bringen Menschen zusammen, die die Sprache des anderen lernen möchten. Sie treffen sich selbstständig, wann und wo Sie wollen. Voraussetzung sind Grundkenntnisse ab Niveau A2 — ganz ohne Vorkenntnisse funktioniert ein Tandem erfahrungsgemäß nicht. Die Vermittlung ist kostenlos.` },
-      { id: "b", title: "Änderungsschneiderei Kaya", text: `Hosen kürzen, Reißverschlüsse erneuern, Jacken enger machen. Kleinere Arbeiten sind innerhalb von zwei Tagen fertig, bei Bedarf auch am selben Tag gegen Aufpreis. Wir ändern auch Kleidung, die Sie nicht bei uns gekauft haben. Kostenvoranschlag beim Anprobieren.` },
-      { id: "c", title: "Begleitung zu Ämtern", text: `Sie haben einen Termin bei einer Behörde und sind unsicher, ob Sie alles verstehen? Ehrenamtliche begleiten Sie und erklären danach in Ruhe, was besprochen wurde. Wir übersetzen nicht, aber wir sprechen langsam und einfach. Anmeldung eine Woche vorher.` },
-      { id: "d", title: "Selbstbehauptungskurs für Frauen", text: `An zwei Samstagen üben wir Stimme, Haltung und einfache Techniken. Kein Sport, keine Vorkenntnisse, jedes Alter. Die Gruppe ist auf zwölf Personen begrenzt. Der Kurs findet in der Sporthalle statt; bequeme Kleidung genügt, Schuhe mit heller Sohle bitte mitbringen.` },
-      { id: "e", title: "Schlüsseldienst Lindenau — Notdienst", text: `Tür zugefallen, Schlüssel drinnen? Wir sind rund um die Uhr erreichbar und in der Regel innerhalb von dreißig Minuten da. Festpreis am Telefon, keine versteckten Zuschläge. Bitte halten Sie einen Ausweis bereit, wir öffnen nur, wenn Sie dort wohnen.` },
-      { id: "f", title: "Kleidertauschbörse Rehberg", text: `Viermal im Jahr, samstags von zehn bis sechzehn Uhr in der Turnhalle. Bringen Sie mit, was Sie nicht mehr tragen, und nehmen Sie mit, was Ihnen gefällt. Höchstens zwei Taschen pro Person. Alles kostenlos, keine Anmeldung nötig.` },
-      { id: "g", title: "Seminar: Den Tag in den Griff bekommen", text: `Ein Abend für alle, die abends das Gefühl haben, nichts geschafft zu haben. Wir arbeiten mit Ihrem eigenen Kalender und Ihren echten Aufgaben, nicht mit Beispielen. Bringen Sie also mit, womit Sie tatsächlich arbeiten. Höchstens fünfzehn Teilnehmende.` },
-      { id: "h", title: "Vorlesepaten gesucht", text: `Einmal pro Woche eine Stunde in einer Kita oder Grundschule vorlesen. Wichtig ist nicht perfektes Deutsch, sondern Freude am Erzählen. Wir schulen Sie an einem Nachmittag und stellen die Bücher. Auch Menschen, die eine zweite Sprache mitbringen, sind ausdrücklich willkommen.` },
-      { id: "i", title: "Fahrsicherheitstraining", text: `Bremsen auf nasser Fahrbahn, Ausweichen, Schleudern: Auf unserem Übungsplatz erleben Sie Situationen, die Sie im Straßenverkehr nie üben können. Mit dem eigenen Auto, ganzer Tag. Viele Versicherungen erstatten einen Teil der Gebühr.` },
-      { id: "j", title: "Passbilder sofort", text: `Biometrische Fotos für Ausweis, Reisepass und Führerschein, fertig in fünf Minuten. Wir prüfen die Vorgaben und fotografieren notfalls kostenlos noch einmal, falls das Amt etwas beanstandet. Ohne Termin, montags bis samstags.` },
+      { id: "a", shortLabel: "Sprachtandem der Stadtbibliothek" },
+      { id: "b", shortLabel: "Änderungsschneiderei Kaya" },
+      { id: "c", shortLabel: "Begleitung zu Ämtern" },
+      { id: "d", shortLabel: "Selbstbehauptungskurs für Frauen" },
+      { id: "e", shortLabel: "Schlüsseldienst Lindenau — Notdienst" },
+      { id: "f", shortLabel: "Kleidertauschbörse Rehberg" },
+      { id: "g", shortLabel: "Seminar: Den Tag in den Griff bekommen" },
+      { id: "h", shortLabel: "Vorlesepaten gesucht" },
+      { id: "i", shortLabel: "Fahrsicherheitstraining" },
+      { id: "j", shortLabel: "Passbilder sofort" },
     ],
     targets: [
       {
@@ -1888,27 +2154,50 @@ const MATCHING_PASSAGES: LesenMatchingPassage[] = [
     title: "Personen zuordnen",
     source: "Forenbeiträge",
     instruction: `Sie lesen in einem Forum, wie vier Menschen über die Vier-Tage-Woche denken. Auf welche der vier Personen treffen die Aussagen 1 bis 9 zu? Die Personen können mehrmals gewählt werden.`,
-    options: [
-      { id: "a", title: "Marlene Sturm, Pflegedienstleitung", text: `Bei uns lief ein Jahr lang ein Versuch mit vier Tagen, und ich würde ihn jederzeit wiederholen — aber nur unter einer Bedingung. Ohne zusätzliche Stellen ist das Modell in der Pflege schlicht nicht zu machen; wir haben drei Kolleginnen eingestellt, sonst wäre der Dienstplan zusammengebrochen.
+    allowMultiple: true,
+    referenceItems: [
+      {
+        id: "a",
+        label: "Marlene Sturm, Pflegedienstleitung",
+        text: `Bei uns lief ein Jahr lang ein Versuch mit vier Tagen, und ich würde ihn jederzeit wiederholen — aber nur unter einer Bedingung. Ohne zusätzliche Stellen ist das Modell in der Pflege schlicht nicht zu machen; wir haben drei Kolleginnen eingestellt, sonst wäre der Dienstplan zusammengebrochen.
 
 Genau davor hatte ich am Anfang Angst: dass am Ende dieselbe Arbeit einfach auf weniger Tage gedrückt wird und alle noch erschöpfter nach Hause gehen. Das ist zum Glück ausgeblieben.
 
-Was mich selbst überrascht hat: Der größte Gewinn war gar nicht der freie Tag. Es war die Tatsache, dass die Pläne endlich sechs Wochen im Voraus standen und nicht mehr ständig umgeworfen wurden. Meine Kolleginnen sagen fast alle dasselbe — sie konnten zum ersten Mal seit Jahren etwas verbindlich verabreden, ohne drei Tage vorher wieder absagen zu müssen.` },
-      { id: "b", title: "Tobias Reinhardt, Geschäftsführer einer Softwarefirma", text: `Wir haben die Vier-Tage-Woche vor zwei Jahren eingeführt, freiwillig und ohne Lohnkürzung, und ich habe es keine Woche bereut.
+Was mich selbst überrascht hat: Der größte Gewinn war gar nicht der freie Tag. Es war die Tatsache, dass die Pläne endlich sechs Wochen im Voraus standen und nicht mehr ständig umgeworfen wurden. Meine Kolleginnen sagen fast alle dasselbe — sie konnten zum ersten Mal seit Jahren etwas verbindlich verabreden, ohne drei Tage vorher wieder absagen zu müssen.`,
+      },
+      {
+        id: "b",
+        label: "Tobias Reinhardt, Geschäftsführer einer Softwarefirma",
+        text: `Wir haben die Vier-Tage-Woche vor zwei Jahren eingeführt, freiwillig und ohne Lohnkürzung, und ich habe es keine Woche bereut.
 
 Dass die Leistung nicht eingebrochen ist, liegt vor allem an einer unspektakulären Maßnahme: Wir haben die Hälfte unserer Besprechungen ersatzlos gestrichen, und genau diese gewonnene Zeit gleicht den fehlenden Tag aus. Es war also keine Frage von härterem Arbeiten, sondern von weniger Unsinn.
 
-Schwierig war etwas ganz anderes. Unsere Kunden gingen selbstverständlich davon aus, dass freitags jemand ans Telefon geht, und dieser Druck von außen war das eigentliche Hindernis — nicht die Technik und nicht die Organisation. Ein halbes Jahr hat es gedauert, bis wir das offen genug kommuniziert hatten. Heute nehmen es fast alle hin.` },
-      { id: "c", title: "Yvonne Kessler, Einzelhandel", text: `Ich lese diese Diskussion seit Monaten mit und ärgere mich zunehmend. Geführt wird sie von Leuten am Schreibtisch, über Modelle, die in einem Supermarkt nie funktionieren werden — der Laden muss geöffnet sein, ob wir nun vier oder fünf Tage arbeiten. Diese Einseitigkeit stört mich, weil dabei so getan wird, als spräche man für sämtliche Beschäftigten.
+Schwierig war etwas ganz anderes. Unsere Kunden gingen selbstverständlich davon aus, dass freitags jemand ans Telefon geht, und dieser Druck von außen war das eigentliche Hindernis — nicht die Technik und nicht die Organisation. Ein halbes Jahr hat es gedauert, bis wir das offen genug kommuniziert hatten. Heute nehmen es fast alle hin.`,
+      },
+      {
+        id: "c",
+        label: "Yvonne Kessler, Einzelhandel",
+        text: `Ich lese diese Diskussion seit Monaten mit und ärgere mich zunehmend. Geführt wird sie von Leuten am Schreibtisch, über Modelle, die in einem Supermarkt nie funktionieren werden — der Laden muss geöffnet sein, ob wir nun vier oder fünf Tage arbeiten. Diese Einseitigkeit stört mich, weil dabei so getan wird, als spräche man für sämtliche Beschäftigten.
 
 Bekämpfen will ich die Vier-Tage-Woche deswegen nicht. Nur stehen bei uns andere Dinge weiter oben auf der Liste: ein Dienstplan, der nicht drei Tage vorher kommt, und ein Lohn, von dem man in dieser Stadt eine Wohnung bezahlen kann.
 
-Solange das ungelöst bleibt, wirkt die Debatte über den freien Freitag auf mich seltsam abgehoben.` },
-      { id: "d", title: "Halil Ergün, Arbeitsmarktforscher", text: `Als jemand, der die Studienlage beruflich verfolgt, rate ich zu etwas mehr Nüchternheit. Die Datengrundlage ist deutlich dünner, als die Lautstärke der Debatte vermuten lässt: Die meisten Versuche liefen über sechs Monate, und zwar mit Betrieben, die sich freiwillig gemeldet hatten. Aus solchen Pilotprojekten Schlüsse für eine ganze Volkswirtschaft zu ziehen, halte ich für unseriös.
+Solange das ungelöst bleibt, wirkt die Debatte über den freien Freitag auf mich seltsam abgehoben.`,
+      },
+      {
+        id: "d",
+        label: "Halil Ergün, Arbeitsmarktforscher",
+        text: `Als jemand, der die Studienlage beruflich verfolgt, rate ich zu etwas mehr Nüchternheit. Die Datengrundlage ist deutlich dünner, als die Lautstärke der Debatte vermuten lässt: Die meisten Versuche liefen über sechs Monate, und zwar mit Betrieben, die sich freiwillig gemeldet hatten. Aus solchen Pilotprojekten Schlüsse für eine ganze Volkswirtschaft zu ziehen, halte ich für unseriös.
 
 Hinzu kommt, dass sich die Ergebnisse kaum vergleichen lassen, weil sie sehr stark davon abhängen, in welcher Branche gemessen wurde — in der Softwareentwicklung sieht die Rechnung anders aus als in einem Krankenhaus.
 
-Interessant finde ich das Modell trotzdem, allerdings aus einem anderen Grund: Wo Betriebe um Fachkräfte konkurrieren, ist eine kürzere Woche inzwischen ein Argument, das Bewerbungen bringt.` },
+Interessant finde ich das Modell trotzdem, allerdings aus einem anderen Grund: Wo Betriebe um Fachkräfte konkurrieren, ist eine kürzere Woche inzwischen ein Argument, das Bewerbungen bringt.`,
+      },
+    ],
+    options: [
+      { id: "a", shortLabel: "Marlene Sturm" },
+      { id: "b", shortLabel: "Tobias Reinhardt" },
+      { id: "c", shortLabel: "Yvonne Kessler" },
+      { id: "d", shortLabel: "Halil Ergün" },
     ],
     targets: [
       {
@@ -1969,137 +2258,55 @@ Interessant finde ich das Modell trotzdem, allerdings aus einem anderen Grund: W
   },
   {
     kind: "matching",
-    id: "b2-01-zuordnung-aeusserungen",
-    level: "B2",
-    title: "Aussagen zuordnen",
-    source: "Interviews",
-    instruction: `Sie lesen in einer Zeitschrift Meinungsäußerungen zum Thema Kleidung leihen statt kaufen. Welche Äußerung a bis h passt zu welcher Überschrift 22 bis 27? Eine Äußerung dient als Beispiel, eine weitere passt zu keiner Überschrift.`,
-    options: [
-      { id: "a", title: "Rieke Sandmann", text: `Ein Jahr lang habe ich alles geliehen, vom Mantel bis zur Bluse. Für den Alltag war mir das am Ende zu umständlich — was ich morgens brauchte, war oft noch nicht zurück. Aufgegeben habe ich es trotzdem nicht: Für Hochzeiten, Vorstellungsgespräche und Feiern nutze ich es weiter, und dort möchte ich es nicht mehr missen.` },
-      { id: "b", title: "Jonas Wehrle", text: `Alle rechnen den Verleih gegen Neuware, und dann sieht er natürlich gut aus. Ich habe ihn ein halbes Jahr lang gegen das gerechnet, was ich sonst tue, nämlich gebraucht kaufen. Das Ergebnis war eindeutig: Auf zwölf Monate gesehen zahle ich beim Leihen ungefähr das Doppelte. Für meinen Geldbeutel bleibt der Secondhandladen die bessere Wahl.` },
-      { id: "c", title: "Selma Aydın", text: `Ich habe eine kleine Änderungsschneiderei mit zwei Angestellten. Seit die Verleihdienste in der Stadt sind, hat sich meine Auftragslage spürbar verändert: Die Firmen schicken mir Stücke, die enger, kürzer oder wieder heil werden müssen, und zwar regelmäßig. Ich hatte diesen Trend nicht kommen sehen, aber er ernährt inzwischen eine halbe Stelle mit.` },
-      { id: "d", title: "Peter Nowotny", text: `Dass Leihen automatisch umweltfreundlich sei, glaube ich schlicht nicht. Jedes Stück fährt zwischen zwei Trägerinnen einmal quer durch das Land und wird dazwischen chemisch gereinigt. Ob das am Ende besser ist, als eine Jacke acht Jahre lang selbst zu tragen, hat mir noch niemand vorgerechnet. Ich hätte gern Zahlen, bevor ich mitmache.` },
-      { id: "e", title: "Marit Löwe", text: `Mit dem Klima hat meine Entscheidung wenig zu tun, das gebe ich offen zu. Ich wohne auf 38 Quadratmetern, und mein einziger Schrank ist einen Meter breit. Was ich nicht besitze, muss ich auch nicht unterbringen. Seit ich leihe, ist die Wohnung benutzbar — das war der ganze Grund, und er reicht mir völlig.` },
-      { id: "f", title: "Ingo Brehm", text: `Wir haben das Geschäftsmodell zwei Jahre lang getestet. Bei Abendgarderobe und teuren Jacken trägt es sich problemlos, weil eine einzelne Miete gleich einen erheblichen Teil des Einkaufspreises deckt. Bei T-Shirts und einfachen Hosen fressen Versand und Reinigung die Marge sofort auf. Wer damit in die Breite gehen will, rechnet sich das schön.` },
-      { id: "g", title: "Hannah Zeller", text: `Für mich ist es vor allem ein Spielplatz. Ich trage vier Wochen lang Farben und Schnitte, die ich mir nie gekauft hätte, und lerne dabei ziemlich viel darüber, was mir eigentlich steht. Zwei Sachen habe ich danach doch neu gekauft — aber diesmal wusste ich vorher, dass ich sie wirklich anziehe.` },
-      { id: "h", title: "Dr. Karin Mehnert", text: `Soziologisch ist daran interessant, dass sich der Begriff des Eigentums verschiebt: Zugang wird wichtiger als Besitz. Man sollte die Reichweite aber nüchtern sehen. Unsere Erhebungen zeigen eine gut ausgebildete, städtische Minderheit von wenigen Prozent. Für die große Mehrheit ändert sich vorläufig gar nichts, und daran wird auch die nächste Werbekampagne nichts ändern.` },
-    ],
-    targets: [
-      {
-        id: "t22",
-        prompt: `Ein Nebeneffekt, von dem mein Betrieb profitiert`,
-        correctOptionId: "c",
-        explanation: "f is also a business voice, but reports where the model fails, not what his firm gains from someone else's.",
-      },
-      {
-        id: "t23",
-        prompt: `Nur bei teuren Stücken geht die Rechnung auf`,
-        correctOptionId: "f",
-        explanation: "b also does arithmetic, but from a customer's budget, not from a margin — and his conclusion is about second-hand, not about price categories.",
-      },
-      {
-        id: "t24",
-        prompt: `Nicht die Umwelt hat mich überzeugt, sondern der Platz`,
-        correctOptionId: "e",
-        explanation: "d also detaches the practice from ecology, but by doubting the claim, not by naming a different motive of his own.",
-      },
-      {
-        id: "t25",
-        prompt: `Solange mir niemand Zahlen vorlegt, bleibe ich skeptisch`,
-        correctOptionId: "d",
-        explanation: "h is also cautious, but about how many people take part, not about the environmental balance.",
-      },
-      {
-        id: "t26",
-        prompt: `Gebraucht zu kaufen ist für mich günstiger geblieben`,
-        correctOptionId: "b",
-        explanation: "The comparison is the point: measured against new clothes renting looks good, and he says so before rejecting that yardstick.",
-      },
-      {
-        id: "t27",
-        prompt: `Eine kleine Gruppe verändert, was Besitz bedeutet`,
-        correctOptionId: "h",
-        explanation: "Only h speaks about society as a whole; every other voice reports a personal or a business case.",
-      },
-    ],
-  },
-  {
-    kind: "matching",
-    id: "b2-01-zuordnung-ueberschriften",
-    level: "B2",
-    title: "Benutzungsordnung der Offenen Werkstatt — Volkshochschule Weidenbach",
-    source: "Ordnung",
-    instruction: `Sie möchten die Offene Werkstatt der Volkshochschule nutzen und lesen die Benutzungsordnung. Welche der Überschriften a bis h aus dem Inhaltsverzeichnis passen zu den Paragraphen 28 bis 30? Vier Überschriften passen zu keinem der Paragraphen.`,
-    referenceText: `§ 1 Geltungsbereich
-Diese Ordnung gilt für sämtliche Räume der Offenen Werkstatt einschließlich Lager, Hof und Maschinenraum. Sie ist für alle verbindlich, die die Werkstatt betreten, unabhängig davon, ob sie an einem Kurs teilnehmen oder frei arbeiten.
-
-§ 2 [28]
-Wer die Maschinen benutzen will, muss zuvor an einer Sicherheitsunterweisung teilgenommen haben. Diese wird schriftlich bestätigt und behält 24 Monate ihre Gültigkeit; danach ist sie zu wiederholen. Der Schlüssel wird erst nach der Unterweisung ausgegeben und ist nicht übertragbar. Wer ohne gültige Bestätigung an einer Maschine angetroffen wird, muss die Werkstatt für den betreffenden Tag verlassen.
-
-§ 3 [29]
-Für mitgebrachtes Material und eigenes Werkzeug übernimmt die Volkshochschule keine Gewähr. Schäden an den Maschinen sind unverzüglich dem Werkstattteam zu melden, auch dann, wenn kein Fremdverschulden vorliegt. Angemeldete Nutzerinnen und Nutzer sind während der Öffnungszeiten über die Einrichtung unfallversichert; bei grober Fahrlässigkeit entfällt dieser Schutz.
-
-§ 4 [30]
-Jeder Arbeitsplatz ist besenrein zu hinterlassen; Werkzeug gehört an den dafür vorgesehenen Platz zurück. Holzreste kommen in den Behälter neben der Bandsäge, Metallspäne in die verschließbare Tonne im Hof. Lacke, Öle und Lösungsmittel dürfen keinesfalls über das Waschbecken entsorgt werden, sondern werden im Gefahrstoffschrank gesammelt.`,
-    options: [
-      { id: "a", text: `Geltungsbereich` },
-      { id: "b", text: `Zugang und Sicherheitsunterweisung` },
-      { id: "c", text: `Haftung und Versicherungsschutz` },
-      { id: "d", text: `Gebühren und Zahlungsweise` },
-      { id: "e", text: `Nutzung durch Minderjährige` },
-      { id: "f", text: `Sauberkeit und Entsorgung` },
-      { id: "g", text: `Beschwerden und Ansprechpartner` },
-      { id: "h", text: `Öffnungszeiten und Anmeldung` },
-    ],
-    targets: [
-      {
-        id: "t28",
-        prompt: `Welche Überschrift passt zu § 2?`,
-        correctOptionId: "b",
-        explanation: "The last sentence sends offenders home for the day, which tempts you towards a heading about exclusion — but that is one consequence inside the rule, not its subject.",
-      },
-      {
-        id: "t29",
-        prompt: `Welche Überschrift passt zu § 3?`,
-        correctOptionId: "c",
-        explanation: "The word Öffnungszeiten appears here, which is exactly the kind of hook that pulls you to h. It only fixes when the cover applies.",
-      },
-      {
-        id: "t30",
-        prompt: `Welche Überschrift passt zu § 4?`,
-        correctOptionId: "f",
-        explanation: "Two ideas, one heading: leaving the bench clean and sorting the waste are both covered by Sauberkeit und Entsorgung.",
-      },
-    ],
-  },
-  {
-    kind: "matching",
     id: "b2-02-zuordnung-person",
     level: "B2",
     title: "Personen zuordnen",
     source: "Forenbeiträge",
     instruction: `Sie lesen in einem Forum, wie vier Menschen über regionale Lebensmittel denken. Auf welche der vier Personen treffen die Aussagen 1 bis 9 zu? Die Personen können mehrmals gewählt werden.`,
-    options: [
-      { id: "a", title: "Ruth Salzmann, Marktbeschickerin", text: `Ich stehe seit achtzehn Jahren mit Gemüse aus dem Umland auf dem Wochenmarkt, und ich könnte ganze Abende damit füllen, was mir Leute an meinem Stand erzählen. Fast alle sagen, ihnen sei Herkunft wichtig. Was dann im Korb landet, sieht regelmäßig anders aus — spätestens im Februar, wenn es bei mir nur noch Kohl, Rüben und Äpfel gibt.
+    allowMultiple: true,
+    referenceItems: [
+      {
+        id: "a",
+        label: "Ruth Salzmann, Marktbeschickerin",
+        text: `Ich stehe seit achtzehn Jahren mit Gemüse aus dem Umland auf dem Wochenmarkt, und ich könnte ganze Abende damit füllen, was mir Leute an meinem Stand erzählen. Fast alle sagen, ihnen sei Herkunft wichtig. Was dann im Korb landet, sieht regelmäßig anders aus — spätestens im Februar, wenn es bei mir nur noch Kohl, Rüben und Äpfel gibt.
 
 Am Preis liegt das übrigens seltener, als alle glauben. Mein größtes Problem ist, dass ich dienstags und freitags bis vierzehn Uhr da bin und die meisten Berufstätigen genau dann arbeiten. Wer erst um achtzehn Uhr einkaufen kann, landet zwangsläufig im Supermarkt, ganz gleich, wie überzeugt er ist.
 
-Zwei Kolleginnen liefern inzwischen abends in Kisten aus. Das funktioniert erstaunlich gut, und ich überlege ernsthaft mitzumachen.` },
-      { id: "b", title: "Dr. Milan Prohaska, Agrarökonom", text: `Regional und klimafreundlich werden fast immer gleichgesetzt, und das ist in dieser Allgemeinheit falsch. Beim Transport entsteht bei den meisten Lebensmitteln nur ein kleiner Teil der gesamten Klimabelastung; entscheidend ist, wie und wo etwas angebaut wurde, nicht die Entfernung zum Teller.
+Zwei Kolleginnen liefern inzwischen abends in Kisten aus. Das funktioniert erstaunlich gut, und ich überlege ernsthaft mitzumachen.`,
+      },
+      {
+        id: "b",
+        label: "Dr. Milan Prohaska, Agrarökonom",
+        text: `Regional und klimafreundlich werden fast immer gleichgesetzt, und das ist in dieser Allgemeinheit falsch. Beim Transport entsteht bei den meisten Lebensmitteln nur ein kleiner Teil der gesamten Klimabelastung; entscheidend ist, wie und wo etwas angebaut wurde, nicht die Entfernung zum Teller.
 
 Das anschaulichste Beispiel sind Tomaten. Eine im beheizten Gewächshaus vor der Haustür gezogene Tomate schneidet in unseren Rechnungen schlechter ab als eine, die im Freiland gewachsen und anschließend mit dem Schiff transportiert worden ist. Bei Äpfeln aus dem Kühllager im Juni sieht es ähnlich aus.
 
-Missverstehen Sie mich nicht: Für kurze Wege sprechen gute Gründe — frische Ware, Geld, das in der Gegend bleibt, Höfe, die es sonst nicht mehr gäbe. Nur sollte man sie nennen, statt sich eine Klimabilanz herbeizureden, die die Zahlen nicht hergeben.` },
-      { id: "c", title: "Ines Botterweck, Kantinenleiterin", text: `Wir haben unsere Kantine mit sechshundert Essen am Tag vor drei Jahren umgestellt, und ich hatte mit ganz anderen Schwierigkeiten gerechnet als denen, die dann kamen. Teurer wurde es kaum — das hatte ich befürchtet und es traf nicht ein.
+Missverstehen Sie mich nicht: Für kurze Wege sprechen gute Gründe — frische Ware, Geld, das in der Gegend bleibt, Höfe, die es sonst nicht mehr gäbe. Nur sollte man sie nennen, statt sich eine Klimabilanz herbeizureden, die die Zahlen nicht hergeben.`,
+      },
+      {
+        id: "c",
+        label: "Ines Botterweck, Kantinenleiterin",
+        text: `Wir haben unsere Kantine mit sechshundert Essen am Tag vor drei Jahren umgestellt, und ich hatte mit ganz anderen Schwierigkeiten gerechnet als denen, die dann kamen. Teurer wurde es kaum — das hatte ich befürchtet und es traf nicht ein.
 
 Die eigentliche Schwierigkeit war die Verlässlichkeit. Ein Großhändler liefert, was auf der Bestellung steht, jeden Tag, in gleicher Qualität. Vier kleine Höfe liefern, was gewachsen ist, und melden sich am Vorabend, wenn der Hagel etwas anderes entschieden hat.
 
-Gelöst haben wir es, indem wir den Speiseplan nicht mehr im Voraus festlegen, sondern der Saison folgen und erst freitags für die kommende Woche entscheiden. Das war eine größere Umstellung für mein Team als jede Preisfrage.` },
-      { id: "d", title: "Tarek Ünal, Verbraucherschützer", text: `Der wichtigste Satz in dieser Debatte lautet: „Regional“ ist kein geschützter Begriff. Anders als bei „Bio“ steht dahinter keine Verordnung, keine Kontrolle und keine Mindestanforderung. Wer ein Glas Honig mit einem Fachwerkhaus beklebt und „aus der Region“ darauf schreibt, tut nichts Verbotenes, auch wenn der Honig aus drei Ländern stammt.
+Gelöst haben wir es, indem wir den Speiseplan nicht mehr im Voraus festlegen, sondern der Saison folgen und erst freitags für die kommende Woche entscheiden. Das war eine größere Umstellung für mein Team als jede Preisfrage.`,
+      },
+      {
+        id: "d",
+        label: "Tarek Ünal, Verbraucherschützer",
+        text: `Der wichtigste Satz in dieser Debatte lautet: „Regional“ ist kein geschützter Begriff. Anders als bei „Bio“ steht dahinter keine Verordnung, keine Kontrolle und keine Mindestanforderung. Wer ein Glas Honig mit einem Fachwerkhaus beklebt und „aus der Region“ darauf schreibt, tut nichts Verbotenes, auch wenn der Honig aus drei Ländern stammt.
 
 Deshalb dringen wir seit Jahren auf eine verbindliche Kennzeichnung: Wie weit ist die Ware gereist, und wo wurde sie verarbeitet? Beides gehört auf die Packung, in Kilometern und Ortsnamen, nicht in Bildern.
 
-Solange das fehlt, verkaufen viele Anbieter kein Lebensmittel, sondern ein Gefühl — und die ehrlichen Betriebe, die tatsächlich vor Ort produzieren, haben davon am wenigsten.` },
+Solange das fehlt, verkaufen viele Anbieter kein Lebensmittel, sondern ein Gefühl — und die ehrlichen Betriebe, die tatsächlich vor Ort produzieren, haben davon am wenigsten.`,
+      },
+    ],
+    options: [
+      { id: "a", shortLabel: "Ruth Salzmann" },
+      { id: "b", shortLabel: "Dr. Milan Prohaska" },
+      { id: "c", shortLabel: "Ines Botterweck" },
+      { id: "d", shortLabel: "Tarek Ünal" },
     ],
     targets: [
       {
@@ -2160,137 +2367,55 @@ Solange das fehlt, verkaufen viele Anbieter kein Lebensmittel, sondern ein Gefü
   },
   {
     kind: "matching",
-    id: "b2-02-zuordnung-aeusserungen",
-    level: "B2",
-    title: "Aussagen zuordnen",
-    source: "Interviews",
-    instruction: `Sie lesen in einer Zeitschrift Meinungsäußerungen zum Thema Urlaub ohne Flugzeug. Welche Äußerung a bis h passt zu welcher Überschrift 22 bis 27? Eine Äußerung dient als Beispiel, eine weitere passt zu keiner Überschrift.`,
-    options: [
-      { id: "a", title: "Gesa Wendtland", text: `Seit vier Jahren fliege ich nicht mehr in den Urlaub, und ich will ehrlich sein: Bequemer ist es nicht geworden. Nach Südfrankreich sitze ich vierzehn Stunden statt zwei. Dafür habe ich meine Reisen entschleunigt und komme deutlich erholter an, weil das Ankommen nicht mehr in einer Warteschlange beginnt.` },
-      { id: "b", title: "Rüdiger Kohlmey", text: `Ich vermittle seit zwanzig Jahren Reisen, und die Nachfrage ist eindeutig da — sie scheitert an der Technik. Für eine Bahnfahrt über drei Länder brauche ich vier Buchungssysteme, die sich gegenseitig nicht kennen. Bei einer Verspätung haftet dann niemand für den Anschluss. So lange das so bleibt, verkaufe ich Zugreisen nur an Überzeugte.` },
-      { id: "c", title: "Neele Barsig", text: `Ich habe es zweimal ausgerechnet, für dieselbe Strecke und dieselbe Woche: Der Nachtzug kostete für uns zu zweit knapp das Dreifache des Flugs. Ich verstehe jedes Argument für die Bahn, aber solange der Preisunterschied so aussieht, ist das keine Entscheidung zwischen Bequemlichkeit und Haltung, sondern eine zwischen Haltung und Haushaltsbuch.` },
-      { id: "d", title: "Familie Trautwein", text: `Mit zwei kleinen Kindern hatten wir das Schlimmste erwartet und das Gegenteil erlebt. Im Zug dürfen sie aufstehen, essen, wann sie wollen, und aus dem Fenster sehen. Inzwischen fragen sie nach der Fahrt, nicht nach dem Ziel. Die Anreise ist bei uns von einem notwendigen Übel zum besten Teil der Ferien geworden.` },
-      { id: "e", title: "Prof. Aylin Kestner", text: `Man sollte die Wirkung realistisch einordnen. Wer einmal im Jahr in den Urlaub fliegt und nun mit dem Zug fährt, spart weniger ein, als die meisten annehmen. Die wirklich großen Effekte liegen bei der kleinen Gruppe, die sechs- oder achtmal jährlich fliegt. Über die redet in dieser Debatte allerdings kaum jemand, weil es unangenehmer ist.` },
-      { id: "f", title: "Bernd Oswald", text: `Was mir an dieser Debatte gegen den Strich gehen kann, ist der Ton. Ich fahre selbst Zug, aber ich käme nicht auf die Idee, jemandem den Urlaub vorzurechnen. Meine Nachbarin fliegt einmal im Jahr zu ihrer Schwester nach Portugal, und niemand hat ihr dazu etwas zu sagen. Wer andere belehrt, gewinnt keine Verbündeten, sondern verliert sie.` },
-      { id: "g", title: "Milena Frowein", text: `Mein Kompromiss sieht so aus, dass ich das Land, in dem ich wohne, endlich kennenlerne. Ich hätte nie gedacht, wie wenig ich davon gesehen habe. Vier Tage im Harz, im Herbst eine Woche an der Ostsee — das ist erreichbar, bezahlbar und ich brauche dafür keine Diskussion über Flugscham.` },
-      { id: "h", title: "Jörn Aschenbrenner", text: `Beruflich geht es nicht, und ich sage das ohne schlechtes Gewissen. Ich betreue Kunden in Finnland und Portugal und habe montags in Helsinki und mittwochs in Lissabon zu sein. Privat fliege ich seit Jahren nicht mehr, und das fällt mir leicht. Aber die Debatte tut so, als sei jeder Flug dieselbe Entscheidung, und das ist sie nicht.` },
-    ],
-    targets: [
-      {
-        id: "t22",
-        prompt: `Nicht der Wille fehlt, sondern die Buchung`,
-        correctOptionId: "b",
-        explanation: "c also reports a practical obstacle, but hers is the price, not the booking.",
-      },
-      {
-        id: "t23",
-        prompt: `Am Ende entscheidet der Preis`,
-        correctOptionId: "c",
-        explanation: "She does not argue against the train — the sentence before concedes every argument for it.",
-      },
-      {
-        id: "t24",
-        prompt: `Die Anreise ist zum Ziel geworden`,
-        correctOptionId: "d",
-        explanation: "a values the arrival, not the journey — the distinction is what separates the two.",
-      },
-      {
-        id: "t25",
-        prompt: `Wer viel fliegt, fällt am meisten ins Gewicht`,
-        correctOptionId: "e",
-        explanation: "h also distinguishes between kinds of flight, but from his own situation rather than from a measured effect.",
-      },
-      {
-        id: "t26",
-        prompt: `Belehren bringt niemanden auf die eigene Seite`,
-        correctOptionId: "f",
-        explanation: "Reading him as an opponent of train travel inverts his second sentence.",
-      },
-      {
-        id: "t27",
-        prompt: `Urlaub vor der eigenen Haustür`,
-        correctOptionId: "g",
-        explanation: "Everyone else swaps the means of travel; only g swaps the destination.",
-      },
-    ],
-  },
-  {
-    kind: "matching",
-    id: "b2-02-zuordnung-ueberschriften",
-    level: "B2",
-    title: "Satzung des TSV Nordwiese — Auszug",
-    source: "Ordnung",
-    instruction: `Sie möchten einem Sportverein beitreten und lesen dessen Satzung. Welche der Überschriften a bis h aus dem Inhaltsverzeichnis passen zu den Paragraphen 28 bis 30? Vier Überschriften passen zu keinem der Paragraphen.`,
-    referenceText: `§ 1 Zweck des Vereins
-Der Verein verfolgt ausschließlich gemeinnützige Zwecke. Er fördert den Breitensport, insbesondere für Kinder, Jugendliche und ältere Menschen, und unterhält zu diesem Zweck Übungsgruppen, Sportstätten und Geräte. Ein wirtschaftlicher Geschäftsbetrieb ist ausgeschlossen.
-
-§ 2 [28]
-Mitglied kann jede natürliche Person werden. Der Antrag ist schriftlich zu stellen; über die Aufnahme entscheidet der Vorstand innerhalb von vier Wochen. Bei Minderjährigen ist die Unterschrift einer sorgeberechtigten Person erforderlich. Ein Anspruch auf Aufnahme besteht nicht; eine Ablehnung muss nicht begründet werden.
-
-§ 3 [29]
-Der Beitrag wird jährlich im Voraus erhoben und zum 15. Januar abgebucht. Die Höhe setzt die Mitgliederversammlung fest. Wer im laufenden Jahr eintritt, zahlt für jeden angefangenen Monat ein Zwölftel. In begründeten Fällen — insbesondere bei Arbeitslosigkeit — kann der Vorstand auf Antrag stunden oder ermäßigen.
-
-§ 4 [30]
-Die Mitgliedschaft endet durch Austritt, Ausschluss oder Tod. Der Austritt ist schriftlich zu erklären und nur zum Ende eines Kalenderjahres möglich; die Erklärung muss bis zum 30. September vorliegen. Ein Ausschluss ist nur bei grobem Verstoß gegen die Satzung möglich und setzt eine vorherige Anhörung voraus.`,
-    options: [
-      { id: "a", text: `Zweck des Vereins` },
-      { id: "b", text: `Erwerb der Mitgliedschaft` },
-      { id: "c", text: `Beiträge` },
-      { id: "d", text: `Beendigung der Mitgliedschaft` },
-      { id: "e", text: `Vorstand und Wahlen` },
-      { id: "f", text: `Mitgliederversammlung` },
-      { id: "g", text: `Haftung und Versicherung` },
-      { id: "h", text: `Benutzung der Sportstätten` },
-    ],
-    targets: [
-      {
-        id: "t28",
-        prompt: `Welche Überschrift passt zu § 2?`,
-        correctOptionId: "b",
-        explanation: "The Vorstand appears here, which pulls towards e — but it is the body deciding, not the subject of the rule.",
-      },
-      {
-        id: "t29",
-        prompt: `Welche Überschrift passt zu § 3?`,
-        correctOptionId: "c",
-        explanation: "The Mitgliederversammlung is named as the body that sets the amount, which is the hook towards f.",
-      },
-      {
-        id: "t30",
-        prompt: `Welche Überschrift passt zu § 4?`,
-        correctOptionId: "d",
-        explanation: "Symmetrical with § 2: one paragraph for joining, one for leaving.",
-      },
-    ],
-  },
-  {
-    kind: "matching",
     id: "b2-03-zuordnung-person",
     level: "B2",
     title: "Personen zuordnen",
     source: "Forenbeiträge",
     instruction: `Sie lesen in einem Forum, wie vier Menschen über Dialekt denken. Auf welche der vier Personen treffen die Aussagen 1 bis 9 zu? Die Personen können mehrmals gewählt werden.`,
-    options: [
-      { id: "a", title: "Hannes Grubmüller, Grundschullehrer", text: `Ich unterrichte seit vierzehn Jahren in einem Dorf, in dem zu Hause fast ausschließlich Dialekt gesprochen wird, und ich habe irgendwann aufgehört, meine Kinder beim Sprechen zu verbessern. Das war keine bequeme Entscheidung, sondern eine, die mir zwei Kolleginnen jahrelang übel genommen haben.
+    allowMultiple: true,
+    referenceItems: [
+      {
+        id: "a",
+        label: "Hannes Grubmüller, Grundschullehrer",
+        text: `Ich unterrichte seit vierzehn Jahren in einem Dorf, in dem zu Hause fast ausschließlich Dialekt gesprochen wird, und ich habe irgendwann aufgehört, meine Kinder beim Sprechen zu verbessern. Das war keine bequeme Entscheidung, sondern eine, die mir zwei Kolleginnen jahrelang übel genommen haben.
 
 Das Ergebnis hat mich selbst überrascht: Seit ich das Reden in Ruhe lasse, sind die Aufsätze besser geworden, nicht schlechter. Meine Erklärung ist einfach. Wer beim Sprechen ständig unterbrochen wird, meldet sich seltener, und wer sich seltener meldet, übt weniger.
 
-Worauf ich streng achte, ist das Schreiben. Im Heft gilt Standarddeutsch, ohne Ausnahme, und die Kinder verstehen das sofort, wenn man es ihnen als zwei verschiedene Werkzeuge erklärt. Reden und Schreiben sind bei uns getrennte Baustellen, und genau deshalb funktionieren beide.` },
-      { id: "b", title: "Dr. Silke Ottmann, Soziolinguistin", text: `Wir haben vor zwei Jahren untersucht, wie Dialekt in Bewerbungsgesprächen wirkt. Dieselben Bewerbungen, dieselben Texte, einmal in Standardsprache eingesprochen und einmal gefärbt — bewertet von vierhundert Personalverantwortlichen.
+Worauf ich streng achte, ist das Schreiben. Im Heft gilt Standarddeutsch, ohne Ausnahme, und die Kinder verstehen das sofort, wenn man es ihnen als zwei verschiedene Werkzeuge erklärt. Reden und Schreiben sind bei uns getrennte Baustellen, und genau deshalb funktionieren beide.`,
+      },
+      {
+        id: "b",
+        label: "Dr. Silke Ottmann, Soziolinguistin",
+        text: `Wir haben vor zwei Jahren untersucht, wie Dialekt in Bewerbungsgesprächen wirkt. Dieselben Bewerbungen, dieselben Texte, einmal in Standardsprache eingesprochen und einmal gefärbt — bewertet von vierhundert Personalverantwortlichen.
 
 Ich hatte vorher erwartet, dass wir einen kleinen, aber einheitlichen Nachteil finden würden. Herausgekommen ist etwas anderes: Der Effekt hängt fast vollständig davon ab, um welchen Dialekt es geht. Manche werden als warm und vertrauenswürdig gehört, andere kosten den Bewerber messbar Punkte bei der fachlichen Einschätzung. Meine eigene Vermutung war damit widerlegt, und das gehört zu diesem Beruf.
 
-Daraus einen Rat abzuleiten, fällt mir schwer. Ich sage den Leuten nur: Es ist keine Frage von richtig und falsch, sondern eine von Erwartungen, die andere mitbringen und die Sie nicht ändern können.` },
-      { id: "c", title: "Ayla Demirtaş, Personalleiterin", text: `Bei uns im Betrieb ist das schlicht kein Thema, und ich sage das ohne jede Schönfärberei. Wir stellen jedes Jahr rund achtzig Leute ein, und ich kann mich an keinen einzigen Fall erinnern, in dem die Aussprache eine Rolle gespielt hätte.
+Daraus einen Rat abzuleiten, fällt mir schwer. Ich sage den Leuten nur: Es ist keine Frage von richtig und falsch, sondern eine von Erwartungen, die andere mitbringen und die Sie nicht ändern können.`,
+      },
+      {
+        id: "c",
+        label: "Ayla Demirtaş, Personalleiterin",
+        text: `Bei uns im Betrieb ist das schlicht kein Thema, und ich sage das ohne jede Schönfärberei. Wir stellen jedes Jahr rund achtzig Leute ein, und ich kann mich an keinen einzigen Fall erinnern, in dem die Aussprache eine Rolle gespielt hätte.
 
 Worauf ich achte, ist etwas anderes: Unsere Teams sitzen in vier Städten, und die Hälfte der Kollegschaft ist nicht hier aufgewachsen. Wenn in einer Besprechung die eine Hälfte die andere nicht versteht, ist das ein Problem — unabhängig davon, ob es an Dialekt, an Fachbegriffen oder am Tempo liegt.
 
-Verständlich zu sein ist das einzige Kriterium, das ich anlege. Wer das schafft, darf von mir aus klingen, wie er will. Und ehrlich gesagt klingt in unserer Kantine sowieso längst niemand mehr wie das Lehrbuch.` },
-      { id: "d", title: "Gero Wiechert, Sprachverein Nordwiese", text: `Was hier verloren geht, merkt man erst, wenn es weg ist. In meinem Heimatort habe ich als Kind Wörter gehört, die heute kein Kind mehr kennt, und mit jedem dieser Wörter verschwindet ein Stück Wissen über die Gegend — über Wetter, Handwerk, Landschaft.
+Verständlich zu sein ist das einzige Kriterium, das ich anlege. Wer das schafft, darf von mir aus klingen, wie er will. Und ehrlich gesagt klingt in unserer Kantine sowieso längst niemand mehr wie das Lehrbuch.`,
+      },
+      {
+        id: "d",
+        label: "Gero Wiechert, Sprachverein Nordwiese",
+        text: `Was hier verloren geht, merkt man erst, wenn es weg ist. In meinem Heimatort habe ich als Kind Wörter gehört, die heute kein Kind mehr kennt, und mit jedem dieser Wörter verschwindet ein Stück Wissen über die Gegend — über Wetter, Handwerk, Landschaft.
 
 Schuld daran ist meiner Überzeugung nach vor allem das Fernsehen. Seit in jedem Wohnzimmer den ganzen Tag Standarddeutsch läuft, hören Kinder ihre eigene Sprache nur noch von den Großeltern, und das reicht nicht. Der Rückgang ist keine Naturgewalt, er hat eine Ursache.
 
-Deshalb fordere ich seit Jahren, dass Dialekt in der Schule seinen Platz bekommt — nicht als Freizeitangebot, sondern als Fach mit Stunden im Plan. Andere Länder machen das längst, und niemand hat dort schlechter Deutsch gelernt.` },
+Deshalb fordere ich seit Jahren, dass Dialekt in der Schule seinen Platz bekommt — nicht als Freizeitangebot, sondern als Fach mit Stunden im Plan. Andere Länder machen das längst, und niemand hat dort schlechter Deutsch gelernt.`,
+      },
+    ],
+    options: [
+      { id: "a", shortLabel: "Hannes Grubmüller" },
+      { id: "b", shortLabel: "Dr. Silke Ottmann" },
+      { id: "c", shortLabel: "Ayla Demirtaş" },
+      { id: "d", shortLabel: "Gero Wiechert" },
     ],
     targets: [
       {
@@ -2351,137 +2476,55 @@ Deshalb fordere ich seit Jahren, dass Dialekt in der Schule seinen Platz bekommt
   },
   {
     kind: "matching",
-    id: "b2-03-zuordnung-aeusserungen",
-    level: "B2",
-    title: "Aussagen zuordnen",
-    source: "Interviews",
-    instruction: `Sie lesen in einer Zeitschrift Meinungsäußerungen zum Thema mieten oder kaufen. Welche Äußerung a bis h passt zu welcher Überschrift 22 bis 27? Eine Äußerung dient als Beispiel, eine weitere passt zu keiner Überschrift.`,
-    options: [
-      { id: "a", title: "Kerstin Lubowitz", text: `Wir haben vor zwölf Jahren gekauft, und ich würde es wieder tun — allerdings nicht wegen des Geldes. Ob sich das gerechnet hat, weiß ich bis heute nicht genau. Was ich weiß: Uns kann niemand kündigen, und wir mussten in zwölf Jahren nicht ein einziges Mal über einen Umzug nachdenken.` },
-      { id: "b", title: "Dr. Amir Solouki", text: `In den Rechnungen, die man überall liest, fehlt fast immer derselbe Posten. Verglichen wird die Miete mit der Rate — aber Instandhaltung, Rücklagen und Kaufnebenkosten tauchen nicht auf. Rechnet man sie mit, verschiebt sich der Punkt, ab dem sich Kaufen lohnt, je nach Stadt um sieben bis fünfzehn Jahre nach hinten.` },
-      { id: "c", title: "Jonna Wieprecht", text: `Mich hat der Kauf beweglich gemacht — allerdings anders herum, als alle denken. Ich habe eine kleine Wohnung in meiner Heimatstadt gekauft und vermiete sie. Damit kann ich hinziehen, wohin ich will, und habe trotzdem etwas, worauf ich zurückfallen kann. Besitz und Beweglichkeit schließen sich für mich nicht aus.` },
-      { id: "d", title: "Ehepaar Kastner", text: `Wir haben gekauft, weil wir Angst vor der Miete im Alter hatten. Heute sind wir siebzig, das Haus ist abbezahlt, und wir merken, dass wir das falsche Problem gelöst haben. Zwei Etagen, ein Garten, eine Treppe ohne Geländer — pflegeleicht ist etwas anderes. Wir hätten früher über das Danach nachdenken sollen.` },
-      { id: "e", title: "Timo Grasnick", text: `Für mich war es schlicht keine Entscheidung. Ich verdiene ordentlich, aber das Eigenkapital, das die Bank sehen will, hat in meiner Familie nie jemand gehabt. Wer erbt, kauft; wer nicht erbt, mietet. Das ist die ehrlichste Zusammenfassung dieses Themas, und mit persönlicher Leistung hat sie wenig zu tun.` },
-      { id: "f", title: "Marlis Steenbeck", text: `Ich miete seit dreißig Jahren dieselbe Wohnung und habe nie bereut, nicht gekauft zu haben. Wenn die Heizung ausfällt, rufe ich an. Was ich dadurch nicht ausgegeben habe, liegt angelegt und arbeitet für mich — ohne dass ich am Wochenende auf einer Leiter stehe.` },
-      { id: "g", title: "Nuri Baltacı", text: `Was mich an der Debatte stört, ist, dass immer nur über Zahlen geredet wird. In meiner Straße kenne ich die Leute, die seit Jahrzehnten mieten, deutlich besser als die, die gekauft haben und nach fünf Jahren weiterziehen. Eine Nachbarschaft entsteht nicht durch Grundbucheinträge.` },
-      { id: "h", title: "Prof. Renate Kilb", text: `Man muss das Bild vom sicheren Eigentum etwas relativieren. Eine Immobilie ist ein Klumpenrisiko: Das gesamte Vermögen hängt an einem einzigen Objekt an einem einzigen Ort. Zieht die Arbeit weg oder verliert die Gegend an Wert, trifft beides dieselbe Familie gleichzeitig. Streuung sieht anders aus.` },
-    ],
-    targets: [
-      {
-        id: "t22",
-        prompt: `In den üblichen Rechnungen fehlen wichtige Posten`,
-        correctOptionId: "b",
-        explanation: "h also warns about buying, but about concentration of risk, not about arithmetic.",
-      },
-      {
-        id: "t23",
-        prompt: `Gekauft — und trotzdem frei umzuziehen`,
-        correctOptionId: "c",
-        explanation: "„allerdings anders herum, als alle denken“ signals the reversal the heading names.",
-      },
-      {
-        id: "t24",
-        prompt: `Im Alter passt das Haus nicht mehr`,
-        correctOptionId: "d",
-        explanation: "The house is paid off, so this is not about money — which is what separates it from b.",
-      },
-      {
-        id: "t25",
-        prompt: `Ob man kauft, entscheidet sich in der Familie`,
-        correctOptionId: "e",
-        explanation: "He earns well — the sentence before rules out income as the explanation.",
-      },
-      {
-        id: "t26",
-        prompt: `Beim Mieten bleibt Geld und Zeit übrig`,
-        correctOptionId: "f",
-        explanation: "b makes a similar arithmetic point in the abstract; she reports having lived it for thirty years.",
-      },
-      {
-        id: "t27",
-        prompt: `Das ganze Vermögen hängt an einem einzigen Ort`,
-        correctOptionId: "h",
-        explanation: "Only h talks about risk in the financial sense; the others talk about cost, freedom or community.",
-      },
-    ],
-  },
-  {
-    kind: "matching",
-    id: "b2-03-zuordnung-ueberschriften",
-    level: "B2",
-    title: "Praktikumsordnung der Hochschule Nordwiese — Auszug",
-    source: "Ordnung",
-    instruction: `Sie möchten ein Praktikum machen und lesen die Praktikumsordnung Ihrer Hochschule. Welche der Überschriften a bis h aus dem Inhaltsverzeichnis passen zu den Paragraphen 28 bis 30? Vier Überschriften passen zu keinem der Paragraphen.`,
-    referenceText: `§ 1 Ziel des Praktikums
-Das Praktikum soll die im Studium erworbenen Kenntnisse in der beruflichen Praxis erproben und die Berufsorientierung unterstützen. Es ist Bestandteil des Studiums und wird mit fünfzehn Leistungspunkten angerechnet.
-
-§ 2 [28]
-Das Praktikum kann erst nach bestandener Zwischenprüfung angetreten werden. Es umfasst mindestens zwölf zusammenhängende Wochen in Vollzeit; eine Aufteilung auf zwei Abschnitte ist zulässig, wenn kein Abschnitt kürzer als sechs Wochen ist. Tätigkeiten im eigenen Familienbetrieb werden nicht anerkannt.
-
-§ 3 [29]
-Die Praktikumsstelle ist vor Antritt beim Praktikumsbüro anzuzeigen. Der Anzeige sind die Stellenbeschreibung und der Name der betreuenden Person im Betrieb beizufügen. Über die Eignung entscheidet das Praktikumsbüro innerhalb von drei Wochen; eine nachträgliche Anerkennung ist ausgeschlossen.
-
-§ 4 [30]
-Nach Abschluss ist innerhalb von acht Wochen ein Bericht von mindestens zwanzig Seiten einzureichen, der Tätigkeiten, Arbeitsabläufe und eigene Erfahrungen darstellt. Der Bericht ist von der betreuenden Person im Betrieb gegenzuzeichnen. Wer die Frist ohne wichtigen Grund versäumt, muss das Praktikum wiederholen.`,
-    options: [
-      { id: "a", text: `Ziel des Praktikums` },
-      { id: "b", text: `Voraussetzungen und Dauer` },
-      { id: "c", text: `Anmeldung und Genehmigung` },
-      { id: "d", text: `Bericht und Nachweis` },
-      { id: "e", text: `Vergütung und Versicherung` },
-      { id: "f", text: `Praktikum im Ausland` },
-      { id: "g", text: `Betreuung durch die Hochschule` },
-      { id: "h", text: `Widerspruch und Beschwerde` },
-    ],
-    targets: [
-      {
-        id: "t28",
-        prompt: `Welche Überschrift passt zu § 2?`,
-        correctOptionId: "b",
-        explanation: "The family business is excluded here, which tempts towards a heading about what counts — but that is one condition inside the rule, not its subject.",
-      },
-      {
-        id: "t29",
-        prompt: `Welche Überschrift passt zu § 3?`,
-        correctOptionId: "c",
-        explanation: "„Über die Eignung entscheidet …“ is the approval half; the notification is the registration half.",
-      },
-      {
-        id: "t30",
-        prompt: `Welche Überschrift passt zu § 4?`,
-        correctOptionId: "d",
-        explanation: "The countersignature by the company mentor makes it a Nachweis as well as a Bericht — which is why the heading names both.",
-      },
-    ],
-  },
-  {
-    kind: "matching",
     id: "b2-04-zuordnung-person",
     level: "B2",
     title: "Personen zuordnen",
     source: "Forenbeiträge",
     instruction: `Sie lesen in einem Forum, wie vier Menschen über Fitness-Apps und das Messen der eigenen Gesundheit denken. Auf welche der vier Personen treffen die Aussagen 1 bis 9 zu? Die Personen können mehrmals gewählt werden.`,
-    options: [
-      { id: "a", title: "Britta Hoheisel, Physiotherapeutin", text: `In meiner Praxis sehe ich täglich, was diese Apps bewirken, und mein Urteil fällt zwiespältig aus. Für Menschen, die sich zu wenig bewegen, sind sie oft der Anstoß, der jahrelang gefehlt hat. Zehntausend Schritte sind eine willkürliche Zahl, aber sie ist eine Zahl, und das hilft vielen mehr als jeder gut gemeinte Rat von mir.
+    allowMultiple: true,
+    referenceItems: [
+      {
+        id: "a",
+        label: "Britta Hoheisel, Physiotherapeutin",
+        text: `In meiner Praxis sehe ich täglich, was diese Apps bewirken, und mein Urteil fällt zwiespältig aus. Für Menschen, die sich zu wenig bewegen, sind sie oft der Anstoß, der jahrelang gefehlt hat. Zehntausend Schritte sind eine willkürliche Zahl, aber sie ist eine Zahl, und das hilft vielen mehr als jeder gut gemeinte Rat von mir.
 
 Problematisch wird es bei einer kleinen Gruppe, die ich inzwischen sofort erkenne. Diese Patientinnen und Patienten trainieren weiter, obwohl der Körper längst Pause verlangt, weil die App sonst eine Lücke anzeigt. Zwei von ihnen sind mit Ermüdungsbrüchen zu mir gekommen.
 
-Ich verbiete niemandem das Gerät. Ich bitte nur darum, es an Tagen mit Schmerzen abzulegen, und ehrlich gesagt fällt das erstaunlich vielen schwer.` },
-      { id: "b", title: "Ortwin Zeisig, Rentner", text: `Meine Tochter hat mir zum siebzigsten Geburtstag so eine Uhr geschenkt, und ich habe sie ein halbes Jahr in der Schublade liegen lassen. Heute trage ich sie jeden Tag.
+Ich verbiete niemandem das Gerät. Ich bitte nur darum, es an Tagen mit Schmerzen abzulegen, und ehrlich gesagt fällt das erstaunlich vielen schwer.`,
+      },
+      {
+        id: "b",
+        label: "Ortwin Zeisig, Rentner",
+        text: `Meine Tochter hat mir zum siebzigsten Geburtstag so eine Uhr geschenkt, und ich habe sie ein halbes Jahr in der Schublade liegen lassen. Heute trage ich sie jeden Tag.
 
 Der Grund ist nicht die Gesundheit, sondern die Gewohnheit. Früher bin ich gelaufen, wenn das Wetter schön war, also selten. Jetzt laufe ich, weil abends eine Zahl dasteht, und das ist offenbar Motivation genug für einen erwachsenen Mann. Ein bisschen albern finde ich das schon.
 
-Was mich stört, ist etwas anderes: Die Uhr misst angeblich meinen Schlaf und behauptet regelmäßig, ich hätte schlecht geschlafen, obwohl ich mich ausgeruht fühle. Inzwischen schaue ich morgens absichtlich nicht mehr hin. Ein Gerät soll mir nicht erzählen, wie ich mich fühle.` },
-      { id: "c", title: "Dr. Sanela Mirković, Sportmedizinerin", text: `Über die Messgenauigkeit dieser Geräte wird viel geschrieben, meist ungenau. Schritte zählen sie zuverlässig, das ist unstrittig. Beim Puls hängt es stark von der Bewegung ab, und beim Schlaf werden Werte ausgegeben, die im Vergleich zur Messung im Labor bestenfalls grob zutreffen.
+Was mich stört, ist etwas anderes: Die Uhr misst angeblich meinen Schlaf und behauptet regelmäßig, ich hätte schlecht geschlafen, obwohl ich mich ausgeruht fühle. Inzwischen schaue ich morgens absichtlich nicht mehr hin. Ein Gerät soll mir nicht erzählen, wie ich mich fühle.`,
+      },
+      {
+        id: "c",
+        label: "Dr. Sanela Mirković, Sportmedizinerin",
+        text: `Über die Messgenauigkeit dieser Geräte wird viel geschrieben, meist ungenau. Schritte zählen sie zuverlässig, das ist unstrittig. Beim Puls hängt es stark von der Bewegung ab, und beim Schlaf werden Werte ausgegeben, die im Vergleich zur Messung im Labor bestenfalls grob zutreffen.
 
 Das dürfte für den Alltag kein Beinbruch sein, solange man weiß, welche Zahl was wert ist. Kritisch wird es dort, wo Menschen aus solchen Werten medizinische Schlüsse ziehen und mit einem ausgedruckten Diagramm in die Sprechstunde kommen.
 
-Mein Rat lautet deshalb nicht, die Geräte wegzulegen, sondern sie als das zu nehmen, was sie sind: Anzeigen für Trends über Wochen, nicht Messwerte für einen einzelnen Tag.` },
-      { id: "d", title: "Levent Akbulut, Softwareentwickler", text: `Mich interessiert weniger, ob die Zahlen stimmen, als wer sie bekommt. Ich habe mir die Bedingungen von drei bekannten Anbietern durchgelesen — das dauert länger, als man denkt — und bei zweien steht ausdrücklich, dass Daten an Partnerunternehmen weitergegeben werden dürfen.
+Mein Rat lautet deshalb nicht, die Geräte wegzulegen, sondern sie als das zu nehmen, was sie sind: Anzeigen für Trends über Wochen, nicht Messwerte für einen einzelnen Tag.`,
+      },
+      {
+        id: "d",
+        label: "Levent Akbulut, Softwareentwickler",
+        text: `Mich interessiert weniger, ob die Zahlen stimmen, als wer sie bekommt. Ich habe mir die Bedingungen von drei bekannten Anbietern durchgelesen — das dauert länger, als man denkt — und bei zweien steht ausdrücklich, dass Daten an Partnerunternehmen weitergegeben werden dürfen.
 
 Wo ich schlafe, wie oft mein Herz schlägt und wann ich das Haus verlasse: Das sind für mich keine Fitnessdaten, das sind Gesundheitsdaten. Wer sie einmal abgibt, bekommt sie nicht zurück.
 
-Benutzen tue ich trotzdem eine App, allerdings eine, die alles auf dem Gerät behält und nichts überträgt. Sie kann weniger und sieht schlechter aus. Damit kann ich gut leben.` },
+Benutzen tue ich trotzdem eine App, allerdings eine, die alles auf dem Gerät behält und nichts überträgt. Sie kann weniger und sieht schlechter aus. Damit kann ich gut leben.`,
+      },
+    ],
+    options: [
+      { id: "a", shortLabel: "Britta Hoheisel" },
+      { id: "b", shortLabel: "Ortwin Zeisig" },
+      { id: "c", shortLabel: "Dr. Sanela Mirković" },
+      { id: "d", shortLabel: "Levent Akbulut" },
     ],
     targets: [
       {
@@ -2542,137 +2585,55 @@ Benutzen tue ich trotzdem eine App, allerdings eine, die alles auf dem Gerät be
   },
   {
     kind: "matching",
-    id: "b2-04-zuordnung-aeusserungen",
-    level: "B2",
-    title: "Aussagen zuordnen",
-    source: "Interviews",
-    instruction: `Sie lesen in einer Zeitschrift Meinungsäußerungen zum Thema Erreichbarkeit nach Feierabend. Welche Äußerung a bis h passt zu welcher Überschrift 22 bis 27? Eine Äußerung dient als Beispiel, eine weitere passt zu keiner Überschrift.`,
-    options: [
-      { id: "a", title: "Doris Wallenhorst", text: `Bei uns gilt seit zwei Jahren, dass zwischen zwanzig und sieben Uhr keine Mails zugestellt werden. Sie werden nicht gelöscht, nur gehalten. Ich hatte mit Protest gerechnet und stattdessen Erleichterung erlebt: Viele hatten abends nur geschrieben, weil andere abends schrieben.` },
-      { id: "b", title: "Emre Yildirim", text: `Für mich wäre so eine Regel eine Zumutung. Ich hole meine Kinder um halb vier ab, bin von vier bis acht nicht ansprechbar und arbeite dafür später am Abend weiter. Wer mir das verbietet, nimmt mir nicht Arbeit ab, sondern die einzige Einteilung, mit der mein Tag funktioniert.` },
-      { id: "c", title: "Prof. Ruth Simoneit", text: `Unsere Messungen zeigen etwas, das die meisten unterschätzen. Nicht das Beantworten der Nachricht kostet die Erholung, sondern die Erwartung, dass eine kommen könnte. Wer den ganzen Abend damit rechnet, erholt sich messbar schlechter — auch an Abenden, an denen gar nichts eintrifft.` },
-      { id: "d", title: "Jannis Prellwitz", text: `Wir haben es mit einer Betriebsvereinbarung versucht und sind daran gescheitert, dass niemand sie durchsetzen wollte. Auf dem Papier steht seitdem alles richtig. In der Praxis schreibt die Geschäftsführung weiter um zweiundzwanzig Uhr, und solange das so ist, liest jeder mit, ganz gleich, was in der Vereinbarung steht.` },
-      { id: "e", title: "Familie Osterkamp", text: `Wir haben uns zu Hause auf etwas geeinigt, das kein Unternehmen verordnen kann: Das Diensthandy liegt ab dem Abendessen in einer Schublade im Flur. Anfangs war das schwer, inzwischen fragt niemand mehr danach. Manche Regeln muss man eben selbst machen, weil sie sonst niemand macht.` },
-      { id: "f", title: "Wiebke Thalmann", text: `Ich arbeite mit Kolleginnen in drei Zeitzonen, und wer da eine feste Sperre einführt, legt die Zusammenarbeit lahm. Was bei uns funktioniert, ist eine andere Vereinbarung: Man darf jederzeit schreiben, aber niemand muss außerhalb seiner Arbeitszeit antworten. Die Trennung von Senden und Antworten hat mehr gebracht als jedes Verbot.` },
-      { id: "g", title: "Dr. Malte Sonnborn", text: `Rechtlich ist die Lage klarer, als viele glauben. Wer außerhalb der vereinbarten Arbeitszeit tätig wird, leistet Arbeitszeit, und die ist zu erfassen und zu vergüten. Das gilt auch für die Mail, die man kurz vor dem Einschlafen beantwortet. Dass dieses Recht selten in Anspruch genommen wird, ändert daran nichts.` },
-      { id: "h", title: "Nora Bechtluft", text: `Mich stört, dass immer über Mails geredet wird und nie über die Ursache. In meiner Abteilung sind zwei Stellen seit einem Jahr unbesetzt. Die Arbeit verschwindet dadurch nicht, sie wandert in den Abend. Eine Sperre um zwanzig Uhr würde daran genau nichts ändern, sie würde es nur unsichtbar machen.` },
-    ],
-    targets: [
-      {
-        id: "t22",
-        prompt: `Eine feste Sperre würde meinen Tag zerstören`,
-        correctOptionId: "b",
-        explanation: "f also rejects a blanket block, but because of time zones at work rather than because of her own day.",
-      },
-      {
-        id: "t23",
-        prompt: `Schon das Warten auf eine Nachricht kostet Erholung`,
-        correctOptionId: "c",
-        explanation: "The „nicht … sondern“ is the whole finding, and the closing clause proves it is not about the messages at all.",
-      },
-      {
-        id: "t24",
-        prompt: `Eine Regel nützt nichts, wenn die Leitung sie selbst bricht`,
-        correctOptionId: "d",
-        explanation: "The agreement exists and is correct — his point is about who ignores it, not about how it is worded.",
-      },
-      {
-        id: "t25",
-        prompt: `Wir haben die Grenze zu Hause selbst gezogen`,
-        correctOptionId: "e",
-        explanation: "Everyone else describes what an employer, a law or a study says; only e describes a household rule.",
-      },
-      {
-        id: "t26",
-        prompt: `Schreiben ja, antworten müssen nein`,
-        correctOptionId: "f",
-        explanation: "b also opposes a block, but proposes nothing in its place — f is the one with an alternative rule.",
-      },
-      {
-        id: "t27",
-        prompt: `Das eigentliche Problem sind die fehlenden Stellen`,
-        correctOptionId: "h",
-        explanation: "d also reports a rule that fails, but blames the people ignoring it; h says the rule addresses the wrong thing entirely.",
-      },
-    ],
-  },
-  {
-    kind: "matching",
-    id: "b2-04-zuordnung-ueberschriften",
-    level: "B2",
-    title: "Benutzungsordnung der Stadtbibliothek Hohenrode — Auszug",
-    source: "Ordnung",
-    instruction: `Sie möchten die Stadtbibliothek nutzen und lesen die Benutzungsordnung. Welche der Überschriften a bis h aus dem Inhaltsverzeichnis passen zu den Paragraphen 28 bis 30? Vier Überschriften passen zu keinem der Paragraphen.`,
-    referenceText: `§ 1 Öffnungszeiten
-Die Bibliothek ist dienstags bis freitags von zehn bis neunzehn Uhr und samstags von zehn bis vierzehn Uhr geöffnet. An gesetzlichen Feiertagen bleibt sie geschlossen. Abweichungen werden am Haupteingang und auf der Internetseite bekannt gegeben.
-
-§ 2 [28]
-Zur Benutzung ist ein Ausweis erforderlich. Er wird auf Antrag gegen Vorlage eines amtlichen Lichtbildausweises ausgestellt und gilt zwölf Monate. Für Personen unter achtzehn Jahren ist die Unterschrift einer sorgeberechtigten Person erforderlich. Der Ausweis ist nicht übertragbar; bei Verlust ist die Bibliothek unverzüglich zu benachrichtigen.
-
-§ 3 [29]
-Bücher werden für vier Wochen ausgeliehen, Zeitschriften und Filme für eine Woche. Zweimal kann verlängert werden, sofern keine Vormerkung vorliegt; die Verlängerung ist auch telefonisch möglich. Wer die Frist überschreitet, zahlt je Medium und angefangener Woche fünfzig Cent, höchstens jedoch zehn Euro.
-
-§ 4 [30]
-Medien sind pfleglich zu behandeln. Bereits vorhandene Beschädigungen sind vor der Ausleihe anzuzeigen, andernfalls haftet die entleihende Person. Bei Verlust oder starker Beschädigung ist Ersatz in Höhe des Wiederbeschaffungswertes zu leisten; die Bibliothek entscheidet, ob stattdessen ein gleichwertiges Exemplar angenommen wird.`,
-    options: [
-      { id: "a", text: `Öffnungszeiten` },
-      { id: "b", text: `Anmeldung und Ausweis` },
-      { id: "c", text: `Leihfristen und Gebühren` },
-      { id: "d", text: `Behandlung der Medien und Ersatz` },
-      { id: "e", text: `Internetplätze und WLAN` },
-      { id: "f", text: `Veranstaltungen und Führungen` },
-      { id: "g", text: `Verhalten in den Räumen` },
-      { id: "h", text: `Hausrecht und Ausschluss` },
-    ],
-    targets: [
-      {
-        id: "t28",
-        prompt: `Welche Überschrift passt zu § 2?`,
-        correctOptionId: "b",
-        explanation: "The paragraph ends with what to do if you lose it, which tempts towards a heading about exclusion — that is one consequence inside the rule, not its subject.",
-      },
-      {
-        id: "t29",
-        prompt: `Welche Überschrift passt zu § 3?`,
-        correctOptionId: "c",
-        explanation: "Two ideas, one heading: how long you may keep it, and what it costs if you keep it longer.",
-      },
-      {
-        id: "t30",
-        prompt: `Welche Überschrift passt zu § 4?`,
-        correctOptionId: "d",
-        explanation: "The word „haftet“ points towards a liability heading, but the paragraph is about the media themselves, not about who is liable in general.",
-      },
-    ],
-  },
-  {
-    kind: "matching",
     id: "b2-05-zuordnung-person",
     level: "B2",
     title: "Personen zuordnen",
     source: "Forenbeiträge",
     instruction: `Sie lesen in einem Forum, wie vier Menschen über Reparieren statt Wegwerfen denken. Auf welche der vier Personen treffen die Aussagen 1 bis 9 zu? Die Personen können mehrmals gewählt werden.`,
-    options: [
-      { id: "a", title: "Kunigunde Perlbach, Elektrikermeisterin", text: `Ich repariere seit dreißig Jahren Haushaltsgeräte und höre seit dreißig Jahren denselben Satz: Das lohnt sich nicht mehr. Meistens stimmt er sogar, nur liegt es nicht an mir. Eine Stunde Arbeit kostet bei mir sechzig Euro, und viele Geräte kosten neu hundertzwanzig.
+    allowMultiple: true,
+    referenceItems: [
+      {
+        id: "a",
+        label: "Kunigunde Perlbach, Elektrikermeisterin",
+        text: `Ich repariere seit dreißig Jahren Haushaltsgeräte und höre seit dreißig Jahren denselben Satz: Das lohnt sich nicht mehr. Meistens stimmt er sogar, nur liegt es nicht an mir. Eine Stunde Arbeit kostet bei mir sechzig Euro, und viele Geräte kosten neu hundertzwanzig.
 
 Woran es tatsächlich hakt, sind die Ersatzteile. Für eine Waschmaschine von zweitausendzehn bekomme ich meist noch alles. Bei einem Gerät von vor drei Jahren stehe ich regelmäßig vor der Auskunft, das Teil werde nicht mehr geführt — bei einer Maschine, die technisch tadellos ist bis auf ein Kunststoffteil für vier Euro.
 
-Das ärgert mich mehr als die Kundschaft, die neu kauft. Die entscheidet ja vernünftig. Unvernünftig ist, dass ich ihr nichts anderes anbieten kann.` },
-      { id: "b", title: "Dr. Ansgar Wollenweber, Ökonom", text: `Die Diskussion wird fast immer moralisch geführt, und das halte ich für einen Fehler. Wer neu kauft, handelt nicht gedankenlos, sondern reagiert auf Preise, die genau so gesetzt sind. Reparieren ist teuer, weil Arbeit hier teuer ist; Neuware ist billig, weil Arbeit anderswo billig ist.
+Das ärgert mich mehr als die Kundschaft, die neu kauft. Die entscheidet ja vernünftig. Unvernünftig ist, dass ich ihr nichts anderes anbieten kann.`,
+      },
+      {
+        id: "b",
+        label: "Dr. Ansgar Wollenweber, Ökonom",
+        text: `Die Diskussion wird fast immer moralisch geführt, und das halte ich für einen Fehler. Wer neu kauft, handelt nicht gedankenlos, sondern reagiert auf Preise, die genau so gesetzt sind. Reparieren ist teuer, weil Arbeit hier teuer ist; Neuware ist billig, weil Arbeit anderswo billig ist.
 
 Wollte man das ändern, müsste man an den Preisen ansetzen, nicht an der Einstellung. Ein niedrigerer Steuersatz auf Reparaturleistungen ist in mehreren Ländern erprobt, und die Wirkung ist bescheiden, aber messbar.
 
-Eines sollte man dabei allerdings nicht verschweigen: Auch die längere Nutzung hat Grenzen. Ein zwanzig Jahre alter Kühlschrank verbraucht so viel Strom, dass ein neuer ökologisch die bessere Wahl ist. Pauschale Regeln taugen hier nichts.` },
-      { id: "c", title: "Mareike Lohsträter, Repair-Café", text: `Bei uns kommen samstags zwischen dreißig und fünfzig Leute vorbei, und wir bekommen ungefähr die Hälfte der Geräte wieder zum Laufen. Was mich nach vier Jahren immer noch überrascht: Die meisten kommen gar nicht wegen des Geldes.
+Eines sollte man dabei allerdings nicht verschweigen: Auch die längere Nutzung hat Grenzen. Ein zwanzig Jahre alter Kühlschrank verbraucht so viel Strom, dass ein neuer ökologisch die bessere Wahl ist. Pauschale Regeln taugen hier nichts.`,
+      },
+      {
+        id: "c",
+        label: "Mareike Lohsträter, Repair-Café",
+        text: `Bei uns kommen samstags zwischen dreißig und fünfzig Leute vorbei, und wir bekommen ungefähr die Hälfte der Geräte wieder zum Laufen. Was mich nach vier Jahren immer noch überrascht: Die meisten kommen gar nicht wegen des Geldes.
 
 Sie kommen mit Dingen, die kaputt sind und an denen etwas hängt — die Lampe der Großmutter, das erste eigene Radio. Und sie bleiben oft zwei Stunden, obwohl die Reparatur zwanzig Minuten dauert.
 
-Was mir Sorgen macht, ist unser Nachwuchs. Unsere Reparierenden sind im Schnitt über sechzig. Sie haben ihr Wissen in Berufen erworben, die es so nicht mehr gibt. Wenn wir in zehn Jahren niemanden nachgezogen haben, nützt uns das beste Recht auf Reparatur nichts.` },
-      { id: "d", title: "Ferdi Osterloh, Student", text: `Ich habe mein Handy letztes Jahr selbst repariert, mit einer Anleitung aus dem Netz und einem Werkzeugsatz für neun Euro. Der Akku hat achtzehn gekostet, ein neues Gerät hätte sechshundert gekostet. Gedauert hat es vierzig Minuten und ich habe zweimal geflucht.
+Was mir Sorgen macht, ist unser Nachwuchs. Unsere Reparierenden sind im Schnitt über sechzig. Sie haben ihr Wissen in Berufen erworben, die es so nicht mehr gibt. Wenn wir in zehn Jahren niemanden nachgezogen haben, nützt uns das beste Recht auf Reparatur nichts.`,
+      },
+      {
+        id: "d",
+        label: "Ferdi Osterloh, Student",
+        text: `Ich habe mein Handy letztes Jahr selbst repariert, mit einer Anleitung aus dem Netz und einem Werkzeugsatz für neun Euro. Der Akku hat achtzehn gekostet, ein neues Gerät hätte sechshundert gekostet. Gedauert hat es vierzig Minuten und ich habe zweimal geflucht.
 
 Was mich daran am meisten geärgert hat, war nicht die Technik, sondern der Klebstoff. Man merkt beim Öffnen genau, dass niemand wollte, dass ich da hineinschaue. Das ist eine Entscheidung, die jemand am Reißbrett getroffen hat.
 
-Seitdem schaue ich vor jedem Kauf nach, wie leicht sich ein Gerät öffnen lässt. Das ist mir inzwischen wichtiger als die Bildschirmgröße, und ich bin damit unter meinen Freunden ziemlich allein.` },
+Seitdem schaue ich vor jedem Kauf nach, wie leicht sich ein Gerät öffnen lässt. Das ist mir inzwischen wichtiger als die Bildschirmgröße, und ich bin damit unter meinen Freunden ziemlich allein.`,
+      },
+    ],
+    options: [
+      { id: "a", shortLabel: "Kunigunde Perlbach" },
+      { id: "b", shortLabel: "Dr. Ansgar Wollenweber" },
+      { id: "c", shortLabel: "Mareike Lohsträter" },
+      { id: "d", shortLabel: "Ferdi Osterloh" },
     ],
     targets: [
       {
@@ -2733,20 +2694,454 @@ Seitdem schaue ich vor jedem Kauf nach, wie leicht sich ein Gerät öffnen läss
   },
   {
     kind: "matching",
+    id: "b2-01-zuordnung-aeusserungen",
+    level: "B2",
+    title: "Aussagen zuordnen",
+    source: "Interviews",
+    instruction: `Sie lesen in einer Zeitschrift Meinungsäußerungen zum Thema Kleidung leihen statt kaufen. Welche Äußerung a bis h passt zu welcher Überschrift 22 bis 27? Eine Äußerung dient als Beispiel, eine weitere passt zu keiner Überschrift.`,
+    referenceItems: [
+      {
+        id: "a",
+        label: "Rieke Sandmann",
+        text: `Ein Jahr lang habe ich alles geliehen, vom Mantel bis zur Bluse. Für den Alltag war mir das am Ende zu umständlich — was ich morgens brauchte, war oft noch nicht zurück. Aufgegeben habe ich es trotzdem nicht: Für Hochzeiten, Vorstellungsgespräche und Feiern nutze ich es weiter, und dort möchte ich es nicht mehr missen.`,
+      },
+      {
+        id: "b",
+        label: "Jonas Wehrle",
+        text: `Alle rechnen den Verleih gegen Neuware, und dann sieht er natürlich gut aus. Ich habe ihn ein halbes Jahr lang gegen das gerechnet, was ich sonst tue, nämlich gebraucht kaufen. Das Ergebnis war eindeutig: Auf zwölf Monate gesehen zahle ich beim Leihen ungefähr das Doppelte. Für meinen Geldbeutel bleibt der Secondhandladen die bessere Wahl.`,
+      },
+      {
+        id: "c",
+        label: "Selma Aydın",
+        text: `Ich habe eine kleine Änderungsschneiderei mit zwei Angestellten. Seit die Verleihdienste in der Stadt sind, hat sich meine Auftragslage spürbar verändert: Die Firmen schicken mir Stücke, die enger, kürzer oder wieder heil werden müssen, und zwar regelmäßig. Ich hatte diesen Trend nicht kommen sehen, aber er ernährt inzwischen eine halbe Stelle mit.`,
+      },
+      {
+        id: "d",
+        label: "Peter Nowotny",
+        text: `Dass Leihen automatisch umweltfreundlich sei, glaube ich schlicht nicht. Jedes Stück fährt zwischen zwei Trägerinnen einmal quer durch das Land und wird dazwischen chemisch gereinigt. Ob das am Ende besser ist, als eine Jacke acht Jahre lang selbst zu tragen, hat mir noch niemand vorgerechnet. Ich hätte gern Zahlen, bevor ich mitmache.`,
+      },
+      {
+        id: "e",
+        label: "Marit Löwe",
+        text: `Mit dem Klima hat meine Entscheidung wenig zu tun, das gebe ich offen zu. Ich wohne auf 38 Quadratmetern, und mein einziger Schrank ist einen Meter breit. Was ich nicht besitze, muss ich auch nicht unterbringen. Seit ich leihe, ist die Wohnung benutzbar — das war der ganze Grund, und er reicht mir völlig.`,
+      },
+      {
+        id: "f",
+        label: "Ingo Brehm",
+        text: `Wir haben das Geschäftsmodell zwei Jahre lang getestet. Bei Abendgarderobe und teuren Jacken trägt es sich problemlos, weil eine einzelne Miete gleich einen erheblichen Teil des Einkaufspreises deckt. Bei T-Shirts und einfachen Hosen fressen Versand und Reinigung die Marge sofort auf. Wer damit in die Breite gehen will, rechnet sich das schön.`,
+      },
+      {
+        id: "g",
+        label: "Hannah Zeller",
+        text: `Für mich ist es vor allem ein Spielplatz. Ich trage vier Wochen lang Farben und Schnitte, die ich mir nie gekauft hätte, und lerne dabei ziemlich viel darüber, was mir eigentlich steht. Zwei Sachen habe ich danach doch neu gekauft — aber diesmal wusste ich vorher, dass ich sie wirklich anziehe.`,
+      },
+      {
+        id: "h",
+        label: "Dr. Karin Mehnert",
+        text: `Soziologisch ist daran interessant, dass sich der Begriff des Eigentums verschiebt: Zugang wird wichtiger als Besitz. Man sollte die Reichweite aber nüchtern sehen. Unsere Erhebungen zeigen eine gut ausgebildete, städtische Minderheit von wenigen Prozent. Für die große Mehrheit ändert sich vorläufig gar nichts, und daran wird auch die nächste Werbekampagne nichts ändern.`,
+      },
+    ],
+    options: [
+      { id: "a", shortLabel: "Rieke Sandmann" },
+      { id: "b", shortLabel: "Jonas Wehrle" },
+      { id: "c", shortLabel: "Selma Aydın" },
+      { id: "d", shortLabel: "Peter Nowotny" },
+      { id: "e", shortLabel: "Marit Löwe" },
+      { id: "f", shortLabel: "Ingo Brehm" },
+      { id: "g", shortLabel: "Hannah Zeller" },
+      { id: "h", shortLabel: "Dr. Karin Mehnert" },
+    ],
+    targets: [
+      {
+        id: "t22",
+        prompt: `Ein Nebeneffekt, von dem mein Betrieb profitiert`,
+        correctOptionId: "c",
+        explanation: "f is also a business voice, but reports where the model fails, not what his firm gains from someone else's.",
+      },
+      {
+        id: "t23",
+        prompt: `Nur bei teuren Stücken geht die Rechnung auf`,
+        correctOptionId: "f",
+        explanation: "b also does arithmetic, but from a customer's budget, not from a margin — and his conclusion is about second-hand, not about price categories.",
+      },
+      {
+        id: "t24",
+        prompt: `Nicht die Umwelt hat mich überzeugt, sondern der Platz`,
+        correctOptionId: "e",
+        explanation: "d also detaches the practice from ecology, but by doubting the claim, not by naming a different motive of his own.",
+      },
+      {
+        id: "t25",
+        prompt: `Solange mir niemand Zahlen vorlegt, bleibe ich skeptisch`,
+        correctOptionId: "d",
+        explanation: "h is also cautious, but about how many people take part, not about the environmental balance.",
+      },
+      {
+        id: "t26",
+        prompt: `Gebraucht zu kaufen ist für mich günstiger geblieben`,
+        correctOptionId: "b",
+        explanation: "The comparison is the point: measured against new clothes renting looks good, and he says so before rejecting that yardstick.",
+      },
+      {
+        id: "t27",
+        prompt: `Eine kleine Gruppe verändert, was Besitz bedeutet`,
+        correctOptionId: "h",
+        explanation: "Only h speaks about society as a whole; every other voice reports a personal or a business case.",
+      },
+    ],
+  },
+  {
+    kind: "matching",
+    id: "b2-02-zuordnung-aeusserungen",
+    level: "B2",
+    title: "Aussagen zuordnen",
+    source: "Interviews",
+    instruction: `Sie lesen in einer Zeitschrift Meinungsäußerungen zum Thema Urlaub ohne Flugzeug. Welche Äußerung a bis h passt zu welcher Überschrift 22 bis 27? Eine Äußerung dient als Beispiel, eine weitere passt zu keiner Überschrift.`,
+    referenceItems: [
+      {
+        id: "a",
+        label: "Gesa Wendtland",
+        text: `Seit vier Jahren fliege ich nicht mehr in den Urlaub, und ich will ehrlich sein: Bequemer ist es nicht geworden. Nach Südfrankreich sitze ich vierzehn Stunden statt zwei. Dafür habe ich meine Reisen entschleunigt und komme deutlich erholter an, weil das Ankommen nicht mehr in einer Warteschlange beginnt.`,
+      },
+      {
+        id: "b",
+        label: "Rüdiger Kohlmey",
+        text: `Ich vermittle seit zwanzig Jahren Reisen, und die Nachfrage ist eindeutig da — sie scheitert an der Technik. Für eine Bahnfahrt über drei Länder brauche ich vier Buchungssysteme, die sich gegenseitig nicht kennen. Bei einer Verspätung haftet dann niemand für den Anschluss. So lange das so bleibt, verkaufe ich Zugreisen nur an Überzeugte.`,
+      },
+      {
+        id: "c",
+        label: "Neele Barsig",
+        text: `Ich habe es zweimal ausgerechnet, für dieselbe Strecke und dieselbe Woche: Der Nachtzug kostete für uns zu zweit knapp das Dreifache des Flugs. Ich verstehe jedes Argument für die Bahn, aber solange der Preisunterschied so aussieht, ist das keine Entscheidung zwischen Bequemlichkeit und Haltung, sondern eine zwischen Haltung und Haushaltsbuch.`,
+      },
+      {
+        id: "d",
+        label: "Familie Trautwein",
+        text: `Mit zwei kleinen Kindern hatten wir das Schlimmste erwartet und das Gegenteil erlebt. Im Zug dürfen sie aufstehen, essen, wann sie wollen, und aus dem Fenster sehen. Inzwischen fragen sie nach der Fahrt, nicht nach dem Ziel. Die Anreise ist bei uns von einem notwendigen Übel zum besten Teil der Ferien geworden.`,
+      },
+      {
+        id: "e",
+        label: "Prof. Aylin Kestner",
+        text: `Man sollte die Wirkung realistisch einordnen. Wer einmal im Jahr in den Urlaub fliegt und nun mit dem Zug fährt, spart weniger ein, als die meisten annehmen. Die wirklich großen Effekte liegen bei der kleinen Gruppe, die sechs- oder achtmal jährlich fliegt. Über die redet in dieser Debatte allerdings kaum jemand, weil es unangenehmer ist.`,
+      },
+      {
+        id: "f",
+        label: "Bernd Oswald",
+        text: `Was mir an dieser Debatte gegen den Strich gehen kann, ist der Ton. Ich fahre selbst Zug, aber ich käme nicht auf die Idee, jemandem den Urlaub vorzurechnen. Meine Nachbarin fliegt einmal im Jahr zu ihrer Schwester nach Portugal, und niemand hat ihr dazu etwas zu sagen. Wer andere belehrt, gewinnt keine Verbündeten, sondern verliert sie.`,
+      },
+      {
+        id: "g",
+        label: "Milena Frowein",
+        text: `Mein Kompromiss sieht so aus, dass ich das Land, in dem ich wohne, endlich kennenlerne. Ich hätte nie gedacht, wie wenig ich davon gesehen habe. Vier Tage im Harz, im Herbst eine Woche an der Ostsee — das ist erreichbar, bezahlbar und ich brauche dafür keine Diskussion über Flugscham.`,
+      },
+      {
+        id: "h",
+        label: "Jörn Aschenbrenner",
+        text: `Beruflich geht es nicht, und ich sage das ohne schlechtes Gewissen. Ich betreue Kunden in Finnland und Portugal und habe montags in Helsinki und mittwochs in Lissabon zu sein. Privat fliege ich seit Jahren nicht mehr, und das fällt mir leicht. Aber die Debatte tut so, als sei jeder Flug dieselbe Entscheidung, und das ist sie nicht.`,
+      },
+    ],
+    options: [
+      { id: "a", shortLabel: "Gesa Wendtland" },
+      { id: "b", shortLabel: "Rüdiger Kohlmey" },
+      { id: "c", shortLabel: "Neele Barsig" },
+      { id: "d", shortLabel: "Familie Trautwein" },
+      { id: "e", shortLabel: "Prof. Aylin Kestner" },
+      { id: "f", shortLabel: "Bernd Oswald" },
+      { id: "g", shortLabel: "Milena Frowein" },
+      { id: "h", shortLabel: "Jörn Aschenbrenner" },
+    ],
+    targets: [
+      {
+        id: "t22",
+        prompt: `Nicht der Wille fehlt, sondern die Buchung`,
+        correctOptionId: "b",
+        explanation: "c also reports a practical obstacle, but hers is the price, not the booking.",
+      },
+      {
+        id: "t23",
+        prompt: `Am Ende entscheidet der Preis`,
+        correctOptionId: "c",
+        explanation: "She does not argue against the train — the sentence before concedes every argument for it.",
+      },
+      {
+        id: "t24",
+        prompt: `Die Anreise ist zum Ziel geworden`,
+        correctOptionId: "d",
+        explanation: "a values the arrival, not the journey — the distinction is what separates the two.",
+      },
+      {
+        id: "t25",
+        prompt: `Wer viel fliegt, fällt am meisten ins Gewicht`,
+        correctOptionId: "e",
+        explanation: "h also distinguishes between kinds of flight, but from his own situation rather than from a measured effect.",
+      },
+      {
+        id: "t26",
+        prompt: `Belehren bringt niemanden auf die eigene Seite`,
+        correctOptionId: "f",
+        explanation: "Reading him as an opponent of train travel inverts his second sentence.",
+      },
+      {
+        id: "t27",
+        prompt: `Urlaub vor der eigenen Haustür`,
+        correctOptionId: "g",
+        explanation: "Everyone else swaps the means of travel; only g swaps the destination.",
+      },
+    ],
+  },
+  {
+    kind: "matching",
+    id: "b2-03-zuordnung-aeusserungen",
+    level: "B2",
+    title: "Aussagen zuordnen",
+    source: "Interviews",
+    instruction: `Sie lesen in einer Zeitschrift Meinungsäußerungen zum Thema mieten oder kaufen. Welche Äußerung a bis h passt zu welcher Überschrift 22 bis 27? Eine Äußerung dient als Beispiel, eine weitere passt zu keiner Überschrift.`,
+    referenceItems: [
+      {
+        id: "a",
+        label: "Kerstin Lubowitz",
+        text: `Wir haben vor zwölf Jahren gekauft, und ich würde es wieder tun — allerdings nicht wegen des Geldes. Ob sich das gerechnet hat, weiß ich bis heute nicht genau. Was ich weiß: Uns kann niemand kündigen, und wir mussten in zwölf Jahren nicht ein einziges Mal über einen Umzug nachdenken.`,
+      },
+      {
+        id: "b",
+        label: "Dr. Amir Solouki",
+        text: `In den Rechnungen, die man überall liest, fehlt fast immer derselbe Posten. Verglichen wird die Miete mit der Rate — aber Instandhaltung, Rücklagen und Kaufnebenkosten tauchen nicht auf. Rechnet man sie mit, verschiebt sich der Punkt, ab dem sich Kaufen lohnt, je nach Stadt um sieben bis fünfzehn Jahre nach hinten.`,
+      },
+      {
+        id: "c",
+        label: "Jonna Wieprecht",
+        text: `Mich hat der Kauf beweglich gemacht — allerdings anders herum, als alle denken. Ich habe eine kleine Wohnung in meiner Heimatstadt gekauft und vermiete sie. Damit kann ich hinziehen, wohin ich will, und habe trotzdem etwas, worauf ich zurückfallen kann. Besitz und Beweglichkeit schließen sich für mich nicht aus.`,
+      },
+      {
+        id: "d",
+        label: "Ehepaar Kastner",
+        text: `Wir haben gekauft, weil wir Angst vor der Miete im Alter hatten. Heute sind wir siebzig, das Haus ist abbezahlt, und wir merken, dass wir das falsche Problem gelöst haben. Zwei Etagen, ein Garten, eine Treppe ohne Geländer — pflegeleicht ist etwas anderes. Wir hätten früher über das Danach nachdenken sollen.`,
+      },
+      {
+        id: "e",
+        label: "Timo Grasnick",
+        text: `Für mich war es schlicht keine Entscheidung. Ich verdiene ordentlich, aber das Eigenkapital, das die Bank sehen will, hat in meiner Familie nie jemand gehabt. Wer erbt, kauft; wer nicht erbt, mietet. Das ist die ehrlichste Zusammenfassung dieses Themas, und mit persönlicher Leistung hat sie wenig zu tun.`,
+      },
+      {
+        id: "f",
+        label: "Marlis Steenbeck",
+        text: `Ich miete seit dreißig Jahren dieselbe Wohnung und habe nie bereut, nicht gekauft zu haben. Wenn die Heizung ausfällt, rufe ich an. Was ich dadurch nicht ausgegeben habe, liegt angelegt und arbeitet für mich — ohne dass ich am Wochenende auf einer Leiter stehe.`,
+      },
+      {
+        id: "g",
+        label: "Nuri Baltacı",
+        text: `Was mich an der Debatte stört, ist, dass immer nur über Zahlen geredet wird. In meiner Straße kenne ich die Leute, die seit Jahrzehnten mieten, deutlich besser als die, die gekauft haben und nach fünf Jahren weiterziehen. Eine Nachbarschaft entsteht nicht durch Grundbucheinträge.`,
+      },
+      {
+        id: "h",
+        label: "Prof. Renate Kilb",
+        text: `Man muss das Bild vom sicheren Eigentum etwas relativieren. Eine Immobilie ist ein Klumpenrisiko: Das gesamte Vermögen hängt an einem einzigen Objekt an einem einzigen Ort. Zieht die Arbeit weg oder verliert die Gegend an Wert, trifft beides dieselbe Familie gleichzeitig. Streuung sieht anders aus.`,
+      },
+    ],
+    options: [
+      { id: "a", shortLabel: "Kerstin Lubowitz" },
+      { id: "b", shortLabel: "Dr. Amir Solouki" },
+      { id: "c", shortLabel: "Jonna Wieprecht" },
+      { id: "d", shortLabel: "Ehepaar Kastner" },
+      { id: "e", shortLabel: "Timo Grasnick" },
+      { id: "f", shortLabel: "Marlis Steenbeck" },
+      { id: "g", shortLabel: "Nuri Baltacı" },
+      { id: "h", shortLabel: "Prof. Renate Kilb" },
+    ],
+    targets: [
+      {
+        id: "t22",
+        prompt: `In den üblichen Rechnungen fehlen wichtige Posten`,
+        correctOptionId: "b",
+        explanation: "h also warns about buying, but about concentration of risk, not about arithmetic.",
+      },
+      {
+        id: "t23",
+        prompt: `Gekauft — und trotzdem frei umzuziehen`,
+        correctOptionId: "c",
+        explanation: "„allerdings anders herum, als alle denken“ signals the reversal the heading names.",
+      },
+      {
+        id: "t24",
+        prompt: `Im Alter passt das Haus nicht mehr`,
+        correctOptionId: "d",
+        explanation: "The house is paid off, so this is not about money — which is what separates it from b.",
+      },
+      {
+        id: "t25",
+        prompt: `Ob man kauft, entscheidet sich in der Familie`,
+        correctOptionId: "e",
+        explanation: "He earns well — the sentence before rules out income as the explanation.",
+      },
+      {
+        id: "t26",
+        prompt: `Beim Mieten bleibt Geld und Zeit übrig`,
+        correctOptionId: "f",
+        explanation: "b makes a similar arithmetic point in the abstract; she reports having lived it for thirty years.",
+      },
+      {
+        id: "t27",
+        prompt: `Das ganze Vermögen hängt an einem einzigen Ort`,
+        correctOptionId: "h",
+        explanation: "Only h talks about risk in the financial sense; the others talk about cost, freedom or community.",
+      },
+    ],
+  },
+  {
+    kind: "matching",
+    id: "b2-04-zuordnung-aeusserungen",
+    level: "B2",
+    title: "Aussagen zuordnen",
+    source: "Interviews",
+    instruction: `Sie lesen in einer Zeitschrift Meinungsäußerungen zum Thema Erreichbarkeit nach Feierabend. Welche Äußerung a bis h passt zu welcher Überschrift 22 bis 27? Eine Äußerung dient als Beispiel, eine weitere passt zu keiner Überschrift.`,
+    referenceItems: [
+      {
+        id: "a",
+        label: "Doris Wallenhorst",
+        text: `Bei uns gilt seit zwei Jahren, dass zwischen zwanzig und sieben Uhr keine Mails zugestellt werden. Sie werden nicht gelöscht, nur gehalten. Ich hatte mit Protest gerechnet und stattdessen Erleichterung erlebt: Viele hatten abends nur geschrieben, weil andere abends schrieben.`,
+      },
+      {
+        id: "b",
+        label: "Emre Yildirim",
+        text: `Für mich wäre so eine Regel eine Zumutung. Ich hole meine Kinder um halb vier ab, bin von vier bis acht nicht ansprechbar und arbeite dafür später am Abend weiter. Wer mir das verbietet, nimmt mir nicht Arbeit ab, sondern die einzige Einteilung, mit der mein Tag funktioniert.`,
+      },
+      {
+        id: "c",
+        label: "Prof. Ruth Simoneit",
+        text: `Unsere Messungen zeigen etwas, das die meisten unterschätzen. Nicht das Beantworten der Nachricht kostet die Erholung, sondern die Erwartung, dass eine kommen könnte. Wer den ganzen Abend damit rechnet, erholt sich messbar schlechter — auch an Abenden, an denen gar nichts eintrifft.`,
+      },
+      {
+        id: "d",
+        label: "Jannis Prellwitz",
+        text: `Wir haben es mit einer Betriebsvereinbarung versucht und sind daran gescheitert, dass niemand sie durchsetzen wollte. Auf dem Papier steht seitdem alles richtig. In der Praxis schreibt die Geschäftsführung weiter um zweiundzwanzig Uhr, und solange das so ist, liest jeder mit, ganz gleich, was in der Vereinbarung steht.`,
+      },
+      {
+        id: "e",
+        label: "Familie Osterkamp",
+        text: `Wir haben uns zu Hause auf etwas geeinigt, das kein Unternehmen verordnen kann: Das Diensthandy liegt ab dem Abendessen in einer Schublade im Flur. Anfangs war das schwer, inzwischen fragt niemand mehr danach. Manche Regeln muss man eben selbst machen, weil sie sonst niemand macht.`,
+      },
+      {
+        id: "f",
+        label: "Wiebke Thalmann",
+        text: `Ich arbeite mit Kolleginnen in drei Zeitzonen, und wer da eine feste Sperre einführt, legt die Zusammenarbeit lahm. Was bei uns funktioniert, ist eine andere Vereinbarung: Man darf jederzeit schreiben, aber niemand muss außerhalb seiner Arbeitszeit antworten. Die Trennung von Senden und Antworten hat mehr gebracht als jedes Verbot.`,
+      },
+      {
+        id: "g",
+        label: "Dr. Malte Sonnborn",
+        text: `Rechtlich ist die Lage klarer, als viele glauben. Wer außerhalb der vereinbarten Arbeitszeit tätig wird, leistet Arbeitszeit, und die ist zu erfassen und zu vergüten. Das gilt auch für die Mail, die man kurz vor dem Einschlafen beantwortet. Dass dieses Recht selten in Anspruch genommen wird, ändert daran nichts.`,
+      },
+      {
+        id: "h",
+        label: "Nora Bechtluft",
+        text: `Mich stört, dass immer über Mails geredet wird und nie über die Ursache. In meiner Abteilung sind zwei Stellen seit einem Jahr unbesetzt. Die Arbeit verschwindet dadurch nicht, sie wandert in den Abend. Eine Sperre um zwanzig Uhr würde daran genau nichts ändern, sie würde es nur unsichtbar machen.`,
+      },
+    ],
+    options: [
+      { id: "a", shortLabel: "Doris Wallenhorst" },
+      { id: "b", shortLabel: "Emre Yildirim" },
+      { id: "c", shortLabel: "Prof. Ruth Simoneit" },
+      { id: "d", shortLabel: "Jannis Prellwitz" },
+      { id: "e", shortLabel: "Familie Osterkamp" },
+      { id: "f", shortLabel: "Wiebke Thalmann" },
+      { id: "g", shortLabel: "Dr. Malte Sonnborn" },
+      { id: "h", shortLabel: "Nora Bechtluft" },
+    ],
+    targets: [
+      {
+        id: "t22",
+        prompt: `Eine feste Sperre würde meinen Tag zerstören`,
+        correctOptionId: "b",
+        explanation: "f also rejects a blanket block, but because of time zones at work rather than because of her own day.",
+      },
+      {
+        id: "t23",
+        prompt: `Schon das Warten auf eine Nachricht kostet Erholung`,
+        correctOptionId: "c",
+        explanation: "The „nicht … sondern“ is the whole finding, and the closing clause proves it is not about the messages at all.",
+      },
+      {
+        id: "t24",
+        prompt: `Eine Regel nützt nichts, wenn die Leitung sie selbst bricht`,
+        correctOptionId: "d",
+        explanation: "The agreement exists and is correct — his point is about who ignores it, not about how it is worded.",
+      },
+      {
+        id: "t25",
+        prompt: `Wir haben die Grenze zu Hause selbst gezogen`,
+        correctOptionId: "e",
+        explanation: "Everyone else describes what an employer, a law or a study says; only e describes a household rule.",
+      },
+      {
+        id: "t26",
+        prompt: `Schreiben ja, antworten müssen nein`,
+        correctOptionId: "f",
+        explanation: "b also opposes a block, but proposes nothing in its place — f is the one with an alternative rule.",
+      },
+      {
+        id: "t27",
+        prompt: `Das eigentliche Problem sind die fehlenden Stellen`,
+        correctOptionId: "h",
+        explanation: "d also reports a rule that fails, but blames the people ignoring it; h says the rule addresses the wrong thing entirely.",
+      },
+    ],
+  },
+  {
+    kind: "matching",
     id: "b2-05-zuordnung-aeusserungen",
     level: "B2",
     title: "Aussagen zuordnen",
     source: "Interviews",
     instruction: `Sie lesen in einer Zeitschrift Meinungsäußerungen zum Thema Bargeld oder Karte. Welche Äußerung a bis h passt zu welcher Überschrift 22 bis 27? Eine Äußerung dient als Beispiel, eine weitere passt zu keiner Überschrift.`,
+    referenceItems: [
+      {
+        id: "a",
+        label: "Sigrun Delfs",
+        text: `Ich zahle seit vier Jahren fast alles mit Karte und wollte das eigentlich nicht. Angefangen hat es damit, dass ich im Ausland war und es dort nicht anders ging. Zurück in Deutschland habe ich gemerkt, dass ich die Umstellung gar nicht rückgängig machen möchte — obwohl ich vorher ziemlich laut gegen das bargeldlose Bezahlen gewettert hatte.`,
+      },
+      {
+        id: "b",
+        label: "Hussein Kassab",
+        text: `In meinem Imbiss kostet mich jede Kartenzahlung eine Gebühr, und bei einem Kaffee für zwei Euro fünfzig ist das spürbar. Ich biete Karte trotzdem an, weil ich sonst Gäste verliere. Ich sage aber jedem, der es hören will: Wer bar zahlt, will dem kleinen Laden einen Gefallen tun, und dem Konzern ist es egal.`,
+      },
+      {
+        id: "c",
+        label: "Prof. Ilona Wrasmann",
+        text: `In unseren Versuchen geben dieselben Menschen mit Karte durchschnittlich zwischen zehn und zwanzig Prozent mehr aus als mit Bargeld — bei gleichem Einkommen und gleichem Einkaufszettel. Der Grund ist vermutlich, dass das Weggeben von Scheinen körperlich spürbar ist und das Auflegen einer Karte nicht.`,
+      },
+      {
+        id: "d",
+        label: "Reinhold Achterberg",
+        text: `Meine Mutter ist siebenundachtzig und kommt mit dem Kartenlesegerät nicht zurecht. Sie hat es zweimal versucht, sich beide Male vor einer Schlange geschämt und benutzt seitdem nur noch Bargeld. Wenn der Bäcker im Ort irgendwann keins mehr nimmt, kauft sie dort nicht mehr ein. So einfach ist das, und so wenig kommt es in dieser Debatte vor.`,
+      },
+      {
+        id: "e",
+        label: "Yannic Störmer",
+        text: `Mich stört an dieser Diskussion die Übertreibung auf beiden Seiten. Die einen tun so, als stünde die Überwachung vor der Tür, die anderen, als sei ein Geldschein ein Zeichen von Rückständigkeit. Tatsächlich benutzen die meisten Menschen längst beides, je nach Betrag und Situation, und kommen damit gut zurecht.`,
+      },
+      {
+        id: "f",
+        label: "Dr. Beate Kienzler",
+        text: `Was in einer solchen Debatte leicht zu kurz kommen kann, ist die Frage nach dem Ausfall. Ein Kartensystem hängt an Strom und Netz. Als bei uns im Winter für neun Stunden der Strom weg war, konnte in der ganzen Innenstadt niemand mehr etwas kaufen — außer in zwei Läden, die Bargeld nahmen und Wechselgeld in der Schublade hatten.`,
+      },
+      {
+        id: "g",
+        label: "Malte Grönebaum",
+        text: `Für mich ist es eine reine Frage der Übersicht. Seit ich alles mit Karte zahle, sehe ich am Monatsende, wohin das Geld geht — vorher war das Bargeld einfach weg und ich wusste nicht, wofür. Dass ich dabei angeblich mehr ausgebe, glaube ich nicht; bei mir ist es seitdem eher weniger geworden.`,
+      },
+      {
+        id: "h",
+        label: "Tanja Ruppersberg",
+        text: `Ich arbeite in der Schuldnerberatung, und ich sehe die andere Seite. Wer den Überblick verloren hat, dem empfehlen wir als Erstes, für vier Wochen nur mit Bargeld zu zahlen und sich das Wochenbudget abzuheben. Das klingt altmodisch und wirkt zuverlässiger als jede App, die ich bisher gesehen habe.`,
+      },
+    ],
     options: [
-      { id: "a", title: "Sigrun Delfs", text: `Ich zahle seit vier Jahren fast alles mit Karte und wollte das eigentlich nicht. Angefangen hat es damit, dass ich im Ausland war und es dort nicht anders ging. Zurück in Deutschland habe ich gemerkt, dass ich die Umstellung gar nicht rückgängig machen möchte — obwohl ich vorher ziemlich laut gegen das bargeldlose Bezahlen gewettert hatte.` },
-      { id: "b", title: "Hussein Kassab", text: `In meinem Imbiss kostet mich jede Kartenzahlung eine Gebühr, und bei einem Kaffee für zwei Euro fünfzig ist das spürbar. Ich biete Karte trotzdem an, weil ich sonst Gäste verliere. Ich sage aber jedem, der es hören will: Wer bar zahlt, will dem kleinen Laden einen Gefallen tun, und dem Konzern ist es egal.` },
-      { id: "c", title: "Prof. Ilona Wrasmann", text: `In unseren Versuchen geben dieselben Menschen mit Karte durchschnittlich zwischen zehn und zwanzig Prozent mehr aus als mit Bargeld — bei gleichem Einkommen und gleichem Einkaufszettel. Der Grund ist vermutlich, dass das Weggeben von Scheinen körperlich spürbar ist und das Auflegen einer Karte nicht.` },
-      { id: "d", title: "Reinhold Achterberg", text: `Meine Mutter ist siebenundachtzig und kommt mit dem Kartenlesegerät nicht zurecht. Sie hat es zweimal versucht, sich beide Male vor einer Schlange geschämt und benutzt seitdem nur noch Bargeld. Wenn der Bäcker im Ort irgendwann keins mehr nimmt, kauft sie dort nicht mehr ein. So einfach ist das, und so wenig kommt es in dieser Debatte vor.` },
-      { id: "e", title: "Yannic Störmer", text: `Mich stört an dieser Diskussion die Übertreibung auf beiden Seiten. Die einen tun so, als stünde die Überwachung vor der Tür, die anderen, als sei ein Geldschein ein Zeichen von Rückständigkeit. Tatsächlich benutzen die meisten Menschen längst beides, je nach Betrag und Situation, und kommen damit gut zurecht.` },
-      { id: "f", title: "Dr. Beate Kienzler", text: `Was in einer solchen Debatte leicht zu kurz kommen kann, ist die Frage nach dem Ausfall. Ein Kartensystem hängt an Strom und Netz. Als bei uns im Winter für neun Stunden der Strom weg war, konnte in der ganzen Innenstadt niemand mehr etwas kaufen — außer in zwei Läden, die Bargeld nahmen und Wechselgeld in der Schublade hatten.` },
-      { id: "g", title: "Malte Grönebaum", text: `Für mich ist es eine reine Frage der Übersicht. Seit ich alles mit Karte zahle, sehe ich am Monatsende, wohin das Geld geht — vorher war das Bargeld einfach weg und ich wusste nicht, wofür. Dass ich dabei angeblich mehr ausgebe, glaube ich nicht; bei mir ist es seitdem eher weniger geworden.` },
-      { id: "h", title: "Tanja Ruppersberg", text: `Ich arbeite in der Schuldnerberatung, und ich sehe die andere Seite. Wer den Überblick verloren hat, dem empfehlen wir als Erstes, für vier Wochen nur mit Bargeld zu zahlen und sich das Wochenbudget abzuheben. Das klingt altmodisch und wirkt zuverlässiger als jede App, die ich bisher gesehen habe.` },
+      { id: "a", shortLabel: "Sigrun Delfs" },
+      { id: "b", shortLabel: "Hussein Kassab" },
+      { id: "c", shortLabel: "Prof. Ilona Wrasmann" },
+      { id: "d", shortLabel: "Reinhold Achterberg" },
+      { id: "e", shortLabel: "Yannic Störmer" },
+      { id: "f", shortLabel: "Dr. Beate Kienzler" },
+      { id: "g", shortLabel: "Malte Grönebaum" },
+      { id: "h", shortLabel: "Tanja Ruppersberg" },
     ],
     targets: [
       {
@@ -2789,6 +3184,202 @@ Seitdem schaue ich vor jedem Kauf nach, wie leicht sich ein Gerät öffnen läss
   },
   {
     kind: "matching",
+    id: "b2-01-zuordnung-ueberschriften",
+    level: "B2",
+    title: "Benutzungsordnung der Offenen Werkstatt — Volkshochschule Weidenbach",
+    source: "Ordnung",
+    instruction: `Sie möchten die Offene Werkstatt der Volkshochschule nutzen und lesen die Benutzungsordnung. Welche der Überschriften a bis h aus dem Inhaltsverzeichnis passen zu den Paragraphen 28 bis 30? Vier Überschriften passen zu keinem der Paragraphen.`,
+    referenceText: `§ 1 Geltungsbereich
+Diese Ordnung gilt für sämtliche Räume der Offenen Werkstatt einschließlich Lager, Hof und Maschinenraum. Sie ist für alle verbindlich, die die Werkstatt betreten, unabhängig davon, ob sie an einem Kurs teilnehmen oder frei arbeiten.
+
+§ 2 [28]
+Wer die Maschinen benutzen will, muss zuvor an einer Sicherheitsunterweisung teilgenommen haben. Diese wird schriftlich bestätigt und behält 24 Monate ihre Gültigkeit; danach ist sie zu wiederholen. Der Schlüssel wird erst nach der Unterweisung ausgegeben und ist nicht übertragbar. Wer ohne gültige Bestätigung an einer Maschine angetroffen wird, muss die Werkstatt für den betreffenden Tag verlassen.
+
+§ 3 [29]
+Für mitgebrachtes Material und eigenes Werkzeug übernimmt die Volkshochschule keine Gewähr. Schäden an den Maschinen sind unverzüglich dem Werkstattteam zu melden, auch dann, wenn kein Fremdverschulden vorliegt. Angemeldete Nutzerinnen und Nutzer sind während der Öffnungszeiten über die Einrichtung unfallversichert; bei grober Fahrlässigkeit entfällt dieser Schutz.
+
+§ 4 [30]
+Jeder Arbeitsplatz ist besenrein zu hinterlassen; Werkzeug gehört an den dafür vorgesehenen Platz zurück. Holzreste kommen in den Behälter neben der Bandsäge, Metallspäne in die verschließbare Tonne im Hof. Lacke, Öle und Lösungsmittel dürfen keinesfalls über das Waschbecken entsorgt werden, sondern werden im Gefahrstoffschrank gesammelt.`,
+    options: [
+      { id: "a", shortLabel: "Geltungsbereich" },
+      { id: "b", shortLabel: "Zugang und Sicherheitsunterweisung" },
+      { id: "c", shortLabel: "Haftung und Versicherungsschutz" },
+      { id: "d", shortLabel: "Gebühren und Zahlungsweise" },
+      { id: "e", shortLabel: "Nutzung durch Minderjährige" },
+      { id: "f", shortLabel: "Sauberkeit und Entsorgung" },
+      { id: "g", shortLabel: "Beschwerden und Ansprechpartner" },
+      { id: "h", shortLabel: "Öffnungszeiten und Anmeldung" },
+    ],
+    targets: [
+      {
+        id: "t28",
+        prompt: `Welche Überschrift passt zu § 2?`,
+        correctOptionId: "b",
+        explanation: "The last sentence sends offenders home for the day, which tempts you towards a heading about exclusion — but that is one consequence inside the rule, not its subject.",
+      },
+      {
+        id: "t29",
+        prompt: `Welche Überschrift passt zu § 3?`,
+        correctOptionId: "c",
+        explanation: "The word Öffnungszeiten appears here, which is exactly the kind of hook that pulls you to h. It only fixes when the cover applies.",
+      },
+      {
+        id: "t30",
+        prompt: `Welche Überschrift passt zu § 4?`,
+        correctOptionId: "f",
+        explanation: "Two ideas, one heading: leaving the bench clean and sorting the waste are both covered by Sauberkeit und Entsorgung.",
+      },
+    ],
+  },
+  {
+    kind: "matching",
+    id: "b2-02-zuordnung-ueberschriften",
+    level: "B2",
+    title: "Satzung des TSV Nordwiese — Auszug",
+    source: "Ordnung",
+    instruction: `Sie möchten einem Sportverein beitreten und lesen dessen Satzung. Welche der Überschriften a bis h aus dem Inhaltsverzeichnis passen zu den Paragraphen 28 bis 30? Vier Überschriften passen zu keinem der Paragraphen.`,
+    referenceText: `§ 1 Zweck des Vereins
+Der Verein verfolgt ausschließlich gemeinnützige Zwecke. Er fördert den Breitensport, insbesondere für Kinder, Jugendliche und ältere Menschen, und unterhält zu diesem Zweck Übungsgruppen, Sportstätten und Geräte. Ein wirtschaftlicher Geschäftsbetrieb ist ausgeschlossen.
+
+§ 2 [28]
+Mitglied kann jede natürliche Person werden. Der Antrag ist schriftlich zu stellen; über die Aufnahme entscheidet der Vorstand innerhalb von vier Wochen. Bei Minderjährigen ist die Unterschrift einer sorgeberechtigten Person erforderlich. Ein Anspruch auf Aufnahme besteht nicht; eine Ablehnung muss nicht begründet werden.
+
+§ 3 [29]
+Der Beitrag wird jährlich im Voraus erhoben und zum 15. Januar abgebucht. Die Höhe setzt die Mitgliederversammlung fest. Wer im laufenden Jahr eintritt, zahlt für jeden angefangenen Monat ein Zwölftel. In begründeten Fällen — insbesondere bei Arbeitslosigkeit — kann der Vorstand auf Antrag stunden oder ermäßigen.
+
+§ 4 [30]
+Die Mitgliedschaft endet durch Austritt, Ausschluss oder Tod. Der Austritt ist schriftlich zu erklären und nur zum Ende eines Kalenderjahres möglich; die Erklärung muss bis zum 30. September vorliegen. Ein Ausschluss ist nur bei grobem Verstoß gegen die Satzung möglich und setzt eine vorherige Anhörung voraus.`,
+    options: [
+      { id: "a", shortLabel: "Zweck des Vereins" },
+      { id: "b", shortLabel: "Erwerb der Mitgliedschaft" },
+      { id: "c", shortLabel: "Beiträge" },
+      { id: "d", shortLabel: "Beendigung der Mitgliedschaft" },
+      { id: "e", shortLabel: "Vorstand und Wahlen" },
+      { id: "f", shortLabel: "Mitgliederversammlung" },
+      { id: "g", shortLabel: "Haftung und Versicherung" },
+      { id: "h", shortLabel: "Benutzung der Sportstätten" },
+    ],
+    targets: [
+      {
+        id: "t28",
+        prompt: `Welche Überschrift passt zu § 2?`,
+        correctOptionId: "b",
+        explanation: "The Vorstand appears here, which pulls towards e — but it is the body deciding, not the subject of the rule.",
+      },
+      {
+        id: "t29",
+        prompt: `Welche Überschrift passt zu § 3?`,
+        correctOptionId: "c",
+        explanation: "The Mitgliederversammlung is named as the body that sets the amount, which is the hook towards f.",
+      },
+      {
+        id: "t30",
+        prompt: `Welche Überschrift passt zu § 4?`,
+        correctOptionId: "d",
+        explanation: "Symmetrical with § 2: one paragraph for joining, one for leaving.",
+      },
+    ],
+  },
+  {
+    kind: "matching",
+    id: "b2-03-zuordnung-ueberschriften",
+    level: "B2",
+    title: "Praktikumsordnung der Hochschule Nordwiese — Auszug",
+    source: "Ordnung",
+    instruction: `Sie möchten ein Praktikum machen und lesen die Praktikumsordnung Ihrer Hochschule. Welche der Überschriften a bis h aus dem Inhaltsverzeichnis passen zu den Paragraphen 28 bis 30? Vier Überschriften passen zu keinem der Paragraphen.`,
+    referenceText: `§ 1 Ziel des Praktikums
+Das Praktikum soll die im Studium erworbenen Kenntnisse in der beruflichen Praxis erproben und die Berufsorientierung unterstützen. Es ist Bestandteil des Studiums und wird mit fünfzehn Leistungspunkten angerechnet.
+
+§ 2 [28]
+Das Praktikum kann erst nach bestandener Zwischenprüfung angetreten werden. Es umfasst mindestens zwölf zusammenhängende Wochen in Vollzeit; eine Aufteilung auf zwei Abschnitte ist zulässig, wenn kein Abschnitt kürzer als sechs Wochen ist. Tätigkeiten im eigenen Familienbetrieb werden nicht anerkannt.
+
+§ 3 [29]
+Die Praktikumsstelle ist vor Antritt beim Praktikumsbüro anzuzeigen. Der Anzeige sind die Stellenbeschreibung und der Name der betreuenden Person im Betrieb beizufügen. Über die Eignung entscheidet das Praktikumsbüro innerhalb von drei Wochen; eine nachträgliche Anerkennung ist ausgeschlossen.
+
+§ 4 [30]
+Nach Abschluss ist innerhalb von acht Wochen ein Bericht von mindestens zwanzig Seiten einzureichen, der Tätigkeiten, Arbeitsabläufe und eigene Erfahrungen darstellt. Der Bericht ist von der betreuenden Person im Betrieb gegenzuzeichnen. Wer die Frist ohne wichtigen Grund versäumt, muss das Praktikum wiederholen.`,
+    options: [
+      { id: "a", shortLabel: "Ziel des Praktikums" },
+      { id: "b", shortLabel: "Voraussetzungen und Dauer" },
+      { id: "c", shortLabel: "Anmeldung und Genehmigung" },
+      { id: "d", shortLabel: "Bericht und Nachweis" },
+      { id: "e", shortLabel: "Vergütung und Versicherung" },
+      { id: "f", shortLabel: "Praktikum im Ausland" },
+      { id: "g", shortLabel: "Betreuung durch die Hochschule" },
+      { id: "h", shortLabel: "Widerspruch und Beschwerde" },
+    ],
+    targets: [
+      {
+        id: "t28",
+        prompt: `Welche Überschrift passt zu § 2?`,
+        correctOptionId: "b",
+        explanation: "The family business is excluded here, which tempts towards a heading about what counts — but that is one condition inside the rule, not its subject.",
+      },
+      {
+        id: "t29",
+        prompt: `Welche Überschrift passt zu § 3?`,
+        correctOptionId: "c",
+        explanation: "„Über die Eignung entscheidet …“ is the approval half; the notification is the registration half.",
+      },
+      {
+        id: "t30",
+        prompt: `Welche Überschrift passt zu § 4?`,
+        correctOptionId: "d",
+        explanation: "The countersignature by the company mentor makes it a Nachweis as well as a Bericht — which is why the heading names both.",
+      },
+    ],
+  },
+  {
+    kind: "matching",
+    id: "b2-04-zuordnung-ueberschriften",
+    level: "B2",
+    title: "Benutzungsordnung der Stadtbibliothek Hohenrode — Auszug",
+    source: "Ordnung",
+    instruction: `Sie möchten die Stadtbibliothek nutzen und lesen die Benutzungsordnung. Welche der Überschriften a bis h aus dem Inhaltsverzeichnis passen zu den Paragraphen 28 bis 30? Vier Überschriften passen zu keinem der Paragraphen.`,
+    referenceText: `§ 1 Öffnungszeiten
+Die Bibliothek ist dienstags bis freitags von zehn bis neunzehn Uhr und samstags von zehn bis vierzehn Uhr geöffnet. An gesetzlichen Feiertagen bleibt sie geschlossen. Abweichungen werden am Haupteingang und auf der Internetseite bekannt gegeben.
+
+§ 2 [28]
+Zur Benutzung ist ein Ausweis erforderlich. Er wird auf Antrag gegen Vorlage eines amtlichen Lichtbildausweises ausgestellt und gilt zwölf Monate. Für Personen unter achtzehn Jahren ist die Unterschrift einer sorgeberechtigten Person erforderlich. Der Ausweis ist nicht übertragbar; bei Verlust ist die Bibliothek unverzüglich zu benachrichtigen.
+
+§ 3 [29]
+Bücher werden für vier Wochen ausgeliehen, Zeitschriften und Filme für eine Woche. Zweimal kann verlängert werden, sofern keine Vormerkung vorliegt; die Verlängerung ist auch telefonisch möglich. Wer die Frist überschreitet, zahlt je Medium und angefangener Woche fünfzig Cent, höchstens jedoch zehn Euro.
+
+§ 4 [30]
+Medien sind pfleglich zu behandeln. Bereits vorhandene Beschädigungen sind vor der Ausleihe anzuzeigen, andernfalls haftet die entleihende Person. Bei Verlust oder starker Beschädigung ist Ersatz in Höhe des Wiederbeschaffungswertes zu leisten; die Bibliothek entscheidet, ob stattdessen ein gleichwertiges Exemplar angenommen wird.`,
+    options: [
+      { id: "a", shortLabel: "Öffnungszeiten" },
+      { id: "b", shortLabel: "Anmeldung und Ausweis" },
+      { id: "c", shortLabel: "Leihfristen und Gebühren" },
+      { id: "d", shortLabel: "Behandlung der Medien und Ersatz" },
+      { id: "e", shortLabel: "Internetplätze und WLAN" },
+      { id: "f", shortLabel: "Veranstaltungen und Führungen" },
+      { id: "g", shortLabel: "Verhalten in den Räumen" },
+      { id: "h", shortLabel: "Hausrecht und Ausschluss" },
+    ],
+    targets: [
+      {
+        id: "t28",
+        prompt: `Welche Überschrift passt zu § 2?`,
+        correctOptionId: "b",
+        explanation: "The paragraph ends with what to do if you lose it, which tempts towards a heading about exclusion — that is one consequence inside the rule, not its subject.",
+      },
+      {
+        id: "t29",
+        prompt: `Welche Überschrift passt zu § 3?`,
+        correctOptionId: "c",
+        explanation: "Two ideas, one heading: how long you may keep it, and what it costs if you keep it longer.",
+      },
+      {
+        id: "t30",
+        prompt: `Welche Überschrift passt zu § 4?`,
+        correctOptionId: "d",
+        explanation: "The word „haftet“ points towards a liability heading, but the paragraph is about the media themselves, not about who is liable in general.",
+      },
+    ],
+  },
+  {
+    kind: "matching",
     id: "b2-05-zuordnung-ueberschriften",
     level: "B2",
     title: "Hausordnung des Studentenwohnheims Weidenbach — Auszug",
@@ -2806,14 +3397,14 @@ Küche, Bad und Aufenthaltsraum sind nach der Benutzung gereinigt zu hinterlasse
 § 4 [30]
 Besuch ist willkommen und bis zu drei Nächte im Monat ohne Anmeldung möglich. Wer länger bleibt, ist der Verwaltung zu melden; eine dauerhafte Aufnahme weiterer Personen ist ausgeschlossen. Für das Verhalten der Gäste haftet die einladende Person.`,
     options: [
-      { id: "a", text: `Geltung` },
-      { id: "b", text: `Ruhezeiten und Musik` },
-      { id: "c", text: `Gemeinschaftsräume und Reinigung` },
-      { id: "d", text: `Besuch und Übernachtungen` },
-      { id: "e", text: `Miete und Kaution` },
-      { id: "f", text: `Fahrräder und Keller` },
-      { id: "g", text: `Kündigung und Auszug` },
-      { id: "h", text: `Internet und Fernsehen` },
+      { id: "a", shortLabel: "Geltung" },
+      { id: "b", shortLabel: "Ruhezeiten und Musik" },
+      { id: "c", shortLabel: "Gemeinschaftsräume und Reinigung" },
+      { id: "d", shortLabel: "Besuch und Übernachtungen" },
+      { id: "e", shortLabel: "Miete und Kaution" },
+      { id: "f", shortLabel: "Fahrräder und Keller" },
+      { id: "g", shortLabel: "Kündigung und Auszug" },
+      { id: "h", shortLabel: "Internet und Fernsehen" },
     ],
     targets: [
       {

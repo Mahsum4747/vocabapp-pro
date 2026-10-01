@@ -13,11 +13,7 @@ import {
 } from "@dnd-kit/core";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import type {
-  LesenMatchOption,
-  LesenMatchingPassage,
-  LesenSentenceInsertionPassage,
-} from "@/lib/german/lesen-types";
+import type { LesenMatchingPassage, LesenSentenceInsertionPassage } from "@/lib/german/lesen-types";
 
 /**
  * Real drag-and-drop for Lesen's B1/B2 matching (zuordnung_*) and
@@ -130,10 +126,6 @@ function DropTarget({
   );
 }
 
-function optionLabel(option: LesenMatchOption | { id: string; text: string; title?: string }): string {
-  return option.title ? `${option.title}: ${option.text}` : option.text;
-}
-
 export function LesenMatchBoard({
   passage,
   onComplete,
@@ -148,21 +140,30 @@ export function LesenMatchBoard({
   const [checked, setChecked] = useState(false);
   const sensors = useDndSensors();
 
+  const allowMultiple = passage.allowMultiple ?? false;
   const placedOptionIds = new Set(Object.values(placements).filter((v): v is string => v !== null));
-  const pool = passage.options.filter((o) => !placedOptionIds.has(o.id));
+  // Single-use (the default): an option disappears from the pool once
+  // placed, same as a real exam letter being "used up". Multi-use
+  // (zuordnung_person's "mehrmals gewählt werden" only): the pool never
+  // shrinks — the same person can be the right answer for several targets.
+  const pool = allowMultiple ? passage.options : passage.options.filter((o) => !placedOptionIds.has(o.id));
   const allFilled = passage.targets.every((t) => placements[t.id] !== null);
 
   function place(targetId: string, optionId: string) {
     if (checked) return;
     setPlacements((prev) => {
       const next = { ...prev };
-      for (const tid of Object.keys(next)) {
-        if (next[tid] === optionId) next[tid] = null;
+      if (!allowMultiple) {
+        for (const tid of Object.keys(next)) {
+          if (next[tid] === optionId) next[tid] = null;
+        }
       }
       next[targetId] = optionId;
       return next;
     });
-    setSelected(null);
+    // Multi-use: keep the option selected so placing it into several
+    // targets in a row (click-to-place) doesn't need re-selecting each time.
+    if (!allowMultiple) setSelected(null);
   }
 
   function clear(targetId: string) {
@@ -188,70 +189,102 @@ export function LesenMatchBoard({
   return (
     <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
       {passage.referenceText ? (
-        <div className="rounded-card bg-surface-2 p-4">
-          <p className="whitespace-pre-line text-sm text-fg">{passage.referenceText}</p>
+        <div className="rounded-card border border-border bg-surface p-5 shadow-[var(--elevation-1)]">
+          <p className="whitespace-pre-line font-serif text-sm leading-relaxed text-fg">{passage.referenceText}</p>
         </div>
       ) : null}
-      <p className={cn("text-sm text-muted", passage.referenceText && "mt-4")}>{passage.instruction}</p>
-
-      <div className="mt-4 grid grid-cols-1 gap-6 sm:grid-cols-2">
-        <div>
-          <p className="text-xs font-medium tracking-wide text-subtle uppercase">Options</p>
-          <div className="mt-2 space-y-2" data-testid="lesen-match-pool">
-            {pool.map((o) => (
-              <OptionChip
-                key={o.id}
-                id={o.id}
-                disabled={checked}
-                selected={selected === o.id}
-                onToggleSelect={() => setSelected((cur) => (cur === o.id ? null : o.id))}
-              >
-                {optionLabel(o)}
-              </OptionChip>
-            ))}
-            {pool.length === 0 ? <p className="text-sm text-subtle">All options placed.</p> : null}
-          </div>
+      {passage.referenceItems ? (
+        <div className="space-y-3 rounded-card border border-border bg-surface p-5 shadow-[var(--elevation-1)]">
+          {passage.referenceItems.map((r) => (
+            <div key={r.id}>
+              <p className="text-sm font-semibold text-fg">
+                {r.id.toUpperCase()} — {r.label}
+              </p>
+              <p className="mt-1 font-serif text-sm leading-relaxed text-muted">{r.text}</p>
+            </div>
+          ))}
         </div>
+      ) : null}
+      <p className={cn("text-sm text-muted", (passage.referenceText || passage.referenceItems) && "mt-4")}>
+        {passage.instruction}
+      </p>
 
-        <div>
-          <p className="text-xs font-medium tracking-wide text-subtle uppercase">Targets</p>
-          <div className="mt-2 space-y-3" data-testid="lesen-match-targets">
-            {passage.targets.map((t) => {
-              const placedId = placements[t.id];
-              const placedOption = placedId ? passage.options.find((o) => o.id === placedId) : undefined;
-              const state: SlotState = !checked
-                ? placedId
-                  ? "filled"
-                  : "empty"
-                : placedId === t.correctOptionId
-                  ? "correct"
-                  : "wrong";
-              return (
-                <div key={t.id}>
-                  <p className="text-sm text-fg">{t.prompt}</p>
-                  <DropTarget
-                    id={t.id}
-                    state={state}
+      <div className="mt-4 rounded-card border border-border bg-surface-2 p-4">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+          <div>
+            <p className="text-xs font-medium tracking-wide text-subtle uppercase">Options</p>
+            <div className="mt-2 space-y-2" data-testid="lesen-match-pool">
+              {pool.map((o) => {
+                const useCount = allowMultiple
+                  ? Object.values(placements).filter((v) => v === o.id).length
+                  : 0;
+                return (
+                  <OptionChip
+                    key={o.id}
+                    id={o.id}
                     disabled={checked}
-                    onClick={() => (placedOption ? clear(t.id) : selected && place(t.id, selected))}
+                    selected={selected === o.id}
+                    onToggleSelect={() => setSelected((cur) => (cur === o.id ? null : o.id))}
                   >
-                    <span className="flex items-center justify-between gap-2">
-                      <span>{placedOption ? optionLabel(placedOption) : selected ? "Tap to place here" : "Drag an option here"}</span>
-                      {checked ? (
-                        placedId === t.correctOptionId ? (
-                          <Check className="size-4 shrink-0 text-success" />
-                        ) : (
-                          <X className="size-4 shrink-0 text-danger" />
-                        )
-                      ) : null}
-                    </span>
-                  </DropTarget>
-                  {checked && placedId !== t.correctOptionId ? (
-                    <p className="mt-1 text-xs text-subtle">{t.explanation}</p>
-                  ) : null}
-                </div>
-              );
-            })}
+                    {o.shortLabel}
+                    {useCount > 0 ? <span className="ml-1.5 text-xs text-subtle">({useCount}×)</span> : null}
+                  </OptionChip>
+                );
+              })}
+              {pool.length === 0 ? <p className="text-sm text-subtle">All options placed.</p> : null}
+            </div>
+          </div>
+
+          <div>
+            <p className="text-xs font-medium tracking-wide text-subtle uppercase">Targets</p>
+            <div className="mt-2 space-y-3" data-testid="lesen-match-targets">
+              {passage.targets.map((t) => {
+                const placedId = placements[t.id];
+                const placedOption = placedId ? passage.options.find((o) => o.id === placedId) : undefined;
+                const state: SlotState = !checked
+                  ? placedId
+                    ? "filled"
+                    : "empty"
+                  : placedId === t.correctOptionId
+                    ? "correct"
+                    : "wrong";
+                return (
+                  <div key={t.id}>
+                    <p className="text-sm text-fg">{t.prompt}</p>
+                    <DropTarget
+                      id={t.id}
+                      state={state}
+                      disabled={checked}
+                      onClick={() => {
+                        // A pending selection always wins — clicking any
+                        // target (empty or already filled) places it there,
+                        // overwriting a previous placement. With nothing
+                        // selected, clicking a filled target clears it.
+                        if (selected) {
+                          place(t.id, selected);
+                        } else if (placedOption) {
+                          clear(t.id);
+                        }
+                      }}
+                    >
+                      <span className="flex items-center justify-between gap-2">
+                        <span>{placedOption ? placedOption.shortLabel : selected ? "Tap to place here" : "Drag an option here"}</span>
+                        {checked ? (
+                          placedId === t.correctOptionId ? (
+                            <Check className="size-4 shrink-0 text-success" />
+                          ) : (
+                            <X className="size-4 shrink-0 text-danger" />
+                          )
+                        ) : null}
+                      </span>
+                    </DropTarget>
+                    {checked && placedId !== t.correctOptionId ? (
+                      <p className="mt-1 text-xs text-subtle">{t.explanation}</p>
+                    ) : null}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>
@@ -356,7 +389,7 @@ export function LesenSentenceInsertionBoard({
   return (
     <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
       <p className="text-sm text-muted">{passage.instruction}</p>
-      <div className="mt-4 rounded-card bg-surface-2 p-4 text-sm leading-relaxed text-fg">
+      <div className="mt-4 rounded-card border border-border bg-surface p-5 font-serif text-sm leading-relaxed text-fg shadow-[var(--elevation-1)]">
         {passage.segments.map((segment, i) => {
           const gap = passage.gaps[i];
           const placedId = gap ? placements[gap.id] : undefined;
@@ -387,20 +420,22 @@ export function LesenSentenceInsertionBoard({
         })}
       </div>
 
-      <p className="mt-4 text-xs font-medium tracking-wide text-subtle uppercase">Sentences</p>
-      <div className="mt-2 grid gap-2 sm:grid-cols-2" data-testid="lesen-insertion-pool">
-        {pool.map((o) => (
-          <OptionChip
-            key={o.id}
-            id={o.id}
-            disabled={checked}
-            selected={selected === o.id}
-            onToggleSelect={() => setSelected((cur) => (cur === o.id ? null : o.id))}
-          >
-            {o.text}
-          </OptionChip>
-        ))}
-        {pool.length === 0 ? <p className="text-sm text-subtle sm:col-span-2">All sentences placed.</p> : null}
+      <div className="mt-4 rounded-card border border-border bg-surface-2 p-4">
+        <p className="text-xs font-medium tracking-wide text-subtle uppercase">Sentences</p>
+        <div className="mt-2 grid gap-2 sm:grid-cols-2" data-testid="lesen-insertion-pool">
+          {pool.map((o) => (
+            <OptionChip
+              key={o.id}
+              id={o.id}
+              disabled={checked}
+              selected={selected === o.id}
+              onToggleSelect={() => setSelected((cur) => (cur === o.id ? null : o.id))}
+            >
+              {o.text}
+            </OptionChip>
+          ))}
+          {pool.length === 0 ? <p className="text-sm text-subtle sm:col-span-2">All sentences placed.</p> : null}
+        </div>
       </div>
 
       {checked ? (

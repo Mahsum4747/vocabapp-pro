@@ -36,6 +36,7 @@ export function StudySessionShell({
   total,
   filterLabel,
   headerRight,
+  onBack,
   primaryAction,
   children,
 }: {
@@ -46,6 +47,10 @@ export function StudySessionShell({
   total: number;
   filterLabel?: string;
   headerRight?: ReactNode;
+  /** See `StudyChrome`'s own doc comment — overrides the default back
+   *  destination with a click handler. Omitted by every caller except
+   *  routes with their own internal "step back" state. */
+  onBack?: () => void;
   primaryAction?: StudyPrimaryAction;
   children: ReactNode;
 }) {
@@ -58,6 +63,7 @@ export function StudySessionShell({
       total={total}
       filterLabel={filterLabel}
       headerRight={headerRight}
+      onBack={onBack}
     >
       {children}
       {primaryAction ? (

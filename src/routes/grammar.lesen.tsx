@@ -1,6 +1,6 @@
 import { Check, Info } from "lucide-react";
 import { useState } from "react";
-import { Link, createFileRoute } from "@tanstack/react-router";
+import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { AuthGate } from "@/components/auth-gate";
 import { LesenMatchBoard, LesenSentenceInsertionBoard } from "@/components/lesen-match";
 import { StudySessionShell } from "@/components/study-session-shell";
@@ -52,6 +52,7 @@ function pickPassage(level: LesenLevel): LesenPassage {
 }
 
 function LesenPage() {
+  const navigate = useNavigate();
   const [level, setLevel] = useState<LesenLevel | null>(null);
   const [passage, setPassage] = useState<LesenPassage | null>(null);
 
@@ -65,6 +66,24 @@ function LesenPage() {
   const [done, setDone] = useState(false);
   const [resultCorrect, setResultCorrect] = useState(0);
   const [resultTotal, setResultTotal] = useState(0);
+
+  // The level-picker screen and an active round/result both render via
+  // `StudyChrome` (through `StudySessionShell`), which by default always
+  // points its back arrow at "/" (library home) — correct for a mode tied
+  // to one set, wrong here: Lesen has its OWN internal "step back" (an
+  // active passage -> the level picker), and skipping straight to app Home
+  // from either state was reported as a bug. One step at a time instead:
+  // mid-round (or on the result screen) back to the level picker; from the
+  // level picker itself, back to the Grammar hub it was opened from.
+  function backOneStep() {
+    if (level) {
+      setLevel(null);
+      setPassage(null);
+      setDone(false);
+    } else {
+      void navigate({ to: "/grammar" });
+    }
+  }
 
   function start(chosenLevel: LesenLevel) {
     setLevel(chosenLevel);
@@ -109,7 +128,7 @@ function LesenPage() {
 
   if (!level || !passage) {
     return (
-      <StudySessionShell title="Lesen" mode="Lesen" index={0} total={0}>
+      <StudySessionShell title="Lesen" mode="Lesen" index={0} total={0} onBack={backOneStep}>
         <p className="text-sm text-muted">
           Short German reading passages with real comprehension questions — pick a level to start.
         </p>
@@ -127,7 +146,7 @@ function LesenPage() {
   if (done) {
     const pct = Math.round((resultCorrect / resultTotal) * 100);
     return (
-      <StudySessionShell title="Lesen" mode="Lesen" index={resultTotal} total={resultTotal}>
+      <StudySessionShell title="Lesen" mode="Lesen" index={resultTotal} total={resultTotal} onBack={backOneStep}>
         <div className="mx-auto max-w-md rounded-card bg-surface p-8 text-center shadow-[var(--elevation-1)]">
           <p className="text-sm text-muted">Round result</p>
           <p className="mt-2 font-display text-5xl font-medium tracking-tight tabular-nums">{pct}%</p>
@@ -147,7 +166,7 @@ function LesenPage() {
 
   if (passage.kind === "matching") {
     return (
-      <StudySessionShell title="Lesen" mode="Lesen" index={0} total={1}>
+      <StudySessionShell title="Lesen" mode="Lesen" index={0} total={1} onBack={backOneStep}>
         <div className="mx-auto max-w-2xl">
           <p className="text-xs font-medium text-subtle">
             {passage.title} · {passage.source}
@@ -160,7 +179,7 @@ function LesenPage() {
 
   if (passage.kind === "sentence-insertion") {
     return (
-      <StudySessionShell title="Lesen" mode="Lesen" index={0} total={1}>
+      <StudySessionShell title="Lesen" mode="Lesen" index={0} total={1} onBack={backOneStep}>
         <div className="mx-auto max-w-2xl">
           <p className="text-xs font-medium text-subtle">
             {passage.title} · {passage.source}
@@ -180,20 +199,22 @@ function LesenPage() {
       mode="Lesen"
       index={index}
       total={passage.questions.length}
+      onBack={backOneStep}
       primaryAction={revealed ? { label: "Continue", onClick: nextChoiceQuestion } : undefined}
     >
       <div className="mx-auto max-w-md">
-        <div className="rounded-card bg-surface-2 p-4">
+        <div className="rounded-card border border-border bg-surface p-5 shadow-[var(--elevation-1)]">
           <p className="text-xs font-medium text-subtle">
             {passage.title} · {passage.source}
           </p>
-          <p className="mt-2 whitespace-pre-line text-sm text-fg">{passage.text}</p>
+          <p className="mt-2 whitespace-pre-line font-serif text-sm leading-relaxed text-fg">{passage.text}</p>
         </div>
 
-        <p className="mt-6 font-serif text-xl font-semibold tracking-tight text-headword text-balance">
-          {question.prompt}
-        </p>
-        <div className="mt-4 flex flex-col gap-2">
+        <div className="mt-6 rounded-card border border-border bg-surface-2 p-5">
+          <p className="font-sans text-lg font-semibold tracking-tight text-fg text-balance">
+            {question.prompt}
+          </p>
+          <div className="mt-4 flex flex-col gap-2">
           {question.options.map((option, optionIndex) => {
             const isCorrectOption = optionIndex === question.correctIndex;
             const isChosen = selected === optionIndex;
@@ -220,13 +241,14 @@ function LesenPage() {
               </button>
             );
           })}
+          </div>
+          {revealed ? (
+            <p className="mt-3 flex items-start gap-1.5 text-sm text-subtle">
+              <Info className="mt-0.5 size-4 shrink-0" />
+              {question.explanation}
+            </p>
+          ) : null}
         </div>
-        {revealed ? (
-          <p className="mt-3 flex items-start gap-1.5 text-sm text-subtle">
-            <Info className="mt-0.5 size-4 shrink-0" />
-            {question.explanation}
-          </p>
-        ) : null}
       </div>
     </StudySessionShell>
   );

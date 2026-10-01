@@ -15,6 +15,7 @@ export function StudyChrome({
   total,
   filterLabel,
   headerRight,
+  onBack,
   children,
 }: {
   /** The set being studied. Omitted for a round that spans the library, which
@@ -27,6 +28,12 @@ export function StudyChrome({
   /** Extra context shown next to the mode name, e.g. "Box 2 · 8 cards". */
   filterLabel?: string;
   headerRight?: ReactNode;
+  /** Overrides the default back destination (the set, or "/" when there's
+   *  no `setId`) with a click handler instead — for a route with its own
+   *  internal "step back" notion (Lesen's level-picker vs. an active
+   *  passage) where a fixed Link to "/" would skip straight past it. Every
+   *  other caller omits this and keeps the unchanged Link behavior. */
+  onBack?: () => void;
   children: ReactNode;
 }) {
   const pct = total === 0 ? 0 : Math.round((index / total) * 100);
@@ -34,7 +41,11 @@ export function StudyChrome({
     <div className="min-h-dvh bg-bg text-fg">
       <header className="border-b border-border/80 pt-safe-top">
         <div className="mx-auto flex h-16 max-w-4xl items-center gap-3 px-page-safe">
-          {setId ? (
+          {onBack ? (
+            <button type="button" onClick={onBack} className={BACK_LINK} aria-label="Back">
+              <ArrowLeft className="size-5" />
+            </button>
+          ) : setId ? (
             <Link
               to="/sets/$setId"
               params={{ setId }}

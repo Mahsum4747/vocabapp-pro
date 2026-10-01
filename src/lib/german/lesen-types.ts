@@ -24,12 +24,27 @@ export interface LesenChoicePassage {
   questions: LesenQuestion[];
 }
 
-/** One draggable option in a matching exercise — an ad, a person's
- *  statement, a quoted opinion, or (for zuordnung_ueberschriften) a bare
- *  heading with no `title`. */
+/** One draggable option in a matching exercise — just the short thing a
+ *  learner drags (an ad's title, a person's name, a heading) and NEVER its
+ *  full body text: dragging a whole paragraph around as a "chip" is both
+ *  unusable and not how the source exam itself presents the task (you
+ *  write a single letter as your answer; the full text is reference
+ *  material, read once, not re-read on every chip). See
+ *  `LesenMatchReferenceItem` for where the body text actually lives. */
 export interface LesenMatchOption {
   id: string;
-  title?: string;
+  shortLabel: string;
+}
+
+/** One read-only reference block shown above the board — the ad, person's
+ *  statement, or quoted opinion a matching exercise's options are short
+ *  names FOR. Present for zuordnung_anzeigen/zuordnung_person/
+ *  zuordnung_aeusserungen (each option has its own paragraph); absent for
+ *  zuordnung_ueberschriften, which uses the single shared `referenceText`
+ *  instead (one document, not one block per option). */
+export interface LesenMatchReferenceItem {
+  id: string;
+  label: string;
   text: string;
 }
 
@@ -45,9 +60,17 @@ export interface LesenMatchTarget {
 /** The source's four zuordnung_* exercise types (B1 zuordnung_anzeigen; B2
  *  zuordnung_person, zuordnung_aeusserungen, zuordnung_ueberschriften) are
  *  all the same shape once reshaped: drag each option onto its matching
- *  target. Only zuordnung_ueberschriften also carries `referenceText` — a
- *  passage to read before matching headings to its paragraphs; the other
- *  three have no passage, just the options and targets themselves. */
+ *  target. zuordnung_ueberschriften carries `referenceText` (a passage to
+ *  read before matching headings to its paragraphs); the other three
+ *  carry `referenceItems` instead (their options' own full text, read-only
+ *  — see that type's doc comment). `allowMultiple` is true ONLY for
+ *  zuordnung_person: its own instruction text says so explicitly ("Die
+ *  Personen können mehrmals gewählt werden") — the same person can be the
+ *  right answer for more than one target, so placing them in one target
+ *  must not remove them from the pool. Every other zuordnung_* type's own
+ *  instruction says the opposite ("nur einmal verwenden") or simply
+ *  provides more options than targets with no reuse, so this defaults to
+ *  single-use when absent. */
 export interface LesenMatchingPassage {
   kind: "matching";
   id: string;
@@ -56,6 +79,8 @@ export interface LesenMatchingPassage {
   source: string;
   instruction: string;
   referenceText?: string;
+  referenceItems?: LesenMatchReferenceItem[];
+  allowMultiple?: boolean;
   options: LesenMatchOption[];
   targets: LesenMatchTarget[];
 }
