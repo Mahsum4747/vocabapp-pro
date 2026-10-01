@@ -5,10 +5,13 @@ import {
   KeyboardSensor,
   PointerSensor,
   TouchSensor,
+  pointerWithin,
+  rectIntersection,
   useDraggable,
   useDroppable,
   useSensor,
   useSensors,
+  type CollisionDetection,
   type DragEndEvent,
 } from "@dnd-kit/core";
 import { Button } from "@/components/ui/button";
@@ -39,10 +42,40 @@ import type { LesenMatchingPassage, LesenSentenceInsertionPassage } from "@/lib/
 function useDndSensors() {
   return useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
-    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 6 } }),
+    // delay/tolerance (not distance) so a touch can still scroll the page
+    // normally — only a touch that HOLDS roughly still for `delay` ms
+    // commits to a drag. A real finger isn't as steady as a mouse, so
+    // tolerance is noticeably looser than it needs to be for synthetic
+    // test input: too tight and ordinary hand tremor during the hold
+    // cancels the drag before it ever starts (root cause of "picks up but
+    // never actually drags" on a real phone).
+    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 12 } }),
     useSensor(KeyboardSensor),
   );
 }
+
+/**
+ * dnd-kit's default (no `collisionDetection` prop = `rectIntersection`)
+ * requires the DRAGGED element's own rect to overlap a droppable's rect —
+ * fragile here because the draggable "chip" and the `DropTarget`/`GapSlot`
+ * it's dropped on are very different sizes, and because a mobile layout
+ * stacks the option pool and its targets in one column (`grid-cols-1`
+ * below `sm:`), so a real drag travels much further than it does on a wide
+ * desktop viewport. `pointerWithin` checks whether the POINTER itself
+ * (finger/cursor) is over a droppable, which is what a user actually
+ * perceives as "I dropped it on that box" — this is what fixed a real
+ * report of "drag starts but never lands" on an actual phone, not just in
+ * a synthetic/desktop-sized test. `rectIntersection` stays as a fallback
+ * for the rare case `pointerWithin` finds nothing (e.g. the pointer is a
+ * pixel outside every droppable's padding box, even though the chip's
+ * rect still visibly overlaps one) — the standard dnd-kit recipe for this,
+ * not a guess.
+ */
+const collisionDetection: CollisionDetection = (args) => {
+  const pointerCollisions = pointerWithin(args);
+  if (pointerCollisions.length > 0) return pointerCollisions;
+  return rectIntersection(args);
+};
 
 function OptionChip({
   id,
@@ -117,7 +150,14 @@ function DropTarget({
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        "min-h-14 w-full rounded-card border-2 p-2 text-left text-sm transition-colors",
+        // touch-none: without it, a touchmove that lands ON this target
+        // while a drag is in progress can be reinterpreted by the browser
+        // as a page scroll instead of a drop — the draggable chip already
+        // had this, but the drop target itself needs it too, since the
+        // finger ends its gesture here, not on the chip. min-h-20/p-4
+        // (up from 14/2) so a real fingertip has more margin for error
+        // than a mouse pointer does.
+        "min-h-20 w-full touch-none rounded-card border-2 p-4 text-left text-sm transition-colors",
         slotToneClasses(state, isOver),
       )}
     >
@@ -187,7 +227,7 @@ export function LesenMatchBoard({
   }
 
   return (
-    <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+    <DndContext sensors={sensors} collisionDetection={collisionDetection} onDragEnd={handleDragEnd}>
       {passage.referenceText ? (
         <div className="rounded-card border border-border bg-surface p-5 shadow-[var(--elevation-1)]">
           <p className="whitespace-pre-line font-serif text-sm leading-relaxed text-fg">{passage.referenceText}</p>
@@ -324,7 +364,11 @@ function GapSlot({
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        "mx-1 inline-flex min-w-16 items-center gap-1 rounded-control border-2 px-2 py-0.5 align-middle text-xs font-medium",
+        // Same touch-action fix as DropTarget — a touchend landing on an
+        // inline gap must not be swallowed by page-scroll handling.
+        // Padding bumped slightly (py-0.5 -> py-1.5) for a bit more
+        // fingertip margin without breaking the inline reading flow.
+        "mx-1 inline-flex min-w-16 touch-none items-center gap-1 rounded-control border-2 px-2 py-1.5 align-middle text-xs font-medium",
         slotToneClasses(state, isOver),
       )}
     >
@@ -387,7 +431,7 @@ export function LesenSentenceInsertionBoard({
   }
 
   return (
-    <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+    <DndContext sensors={sensors} collisionDetection={collisionDetection} onDragEnd={handleDragEnd}>
       <p className="text-sm text-muted">{passage.instruction}</p>
       <div className="mt-4 rounded-card border border-border bg-surface p-5 font-serif text-sm leading-relaxed text-fg shadow-[var(--elevation-1)]">
         {passage.segments.map((segment, i) => {
