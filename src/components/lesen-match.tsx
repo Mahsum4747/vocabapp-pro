@@ -94,9 +94,10 @@ function OptionChip({
     id,
     disabled,
   });
-  const style = transform
-    ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`, zIndex: 10 }
-    : undefined;
+  const style = {
+    touchAction: "none" as const,
+    ...(transform ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`, zIndex: 10 } : {}),
+  };
   return (
     <button
       ref={setNodeRef}
@@ -107,6 +108,17 @@ function OptionChip({
       disabled={disabled}
       onClick={onToggleSelect}
       className={cn(
+        // touch-none (the Tailwind class) sets the SAME touch-action:none,
+        // but styles.css has `button { touch-action: manipulation }`
+        // deliberately placed outside any @layer specifically so it beats
+        // Tailwind utilities on every <button> in the app — including this
+        // one. That rule only governs the browser's own native gesture
+        // recognizer, which a synthetic/dispatched TouchEvent in a test
+        // never goes through (dispatchEvent bypasses it entirely), so this
+        // silently broke real-finger vertical dragging on a real phone
+        // while every Playwright touch test kept passing. The inline
+        // `style` above is what actually wins that cascade; the class
+        // stays for readability.
         "w-full touch-none rounded-card border-2 bg-surface px-3 py-2 text-left text-sm shadow-[var(--elevation-1)] transition-[border-color,opacity]",
         selected ? "border-primary" : "border-border",
         isDragging && "opacity-50",
@@ -146,17 +158,18 @@ function DropTarget({
   return (
     <button
       ref={setNodeRef}
+      // See OptionChip's own comment: styles.css's global
+      // `button { touch-action: manipulation }` (deliberately outside
+      // @layer) beats the `touch-none` Tailwind class below, so the inline
+      // style is what actually stops a touchend here from being read as a
+      // page scroll instead of a drop.
+      style={{ touchAction: "none" }}
       type="button"
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        // touch-none: without it, a touchmove that lands ON this target
-        // while a drag is in progress can be reinterpreted by the browser
-        // as a page scroll instead of a drop — the draggable chip already
-        // had this, but the drop target itself needs it too, since the
-        // finger ends its gesture here, not on the chip. min-h-20/p-4
-        // (up from 14/2) so a real fingertip has more margin for error
-        // than a mouse pointer does.
+        // min-h-20/p-4 (up from 14/2) so a real fingertip has more margin
+        // for error than a mouse pointer does.
         "min-h-20 w-full touch-none rounded-card border-2 p-4 text-left text-sm transition-colors",
         slotToneClasses(state, isOver),
       )}
@@ -360,12 +373,14 @@ function GapSlot({
   return (
     <button
       ref={setNodeRef}
+      // Same cascade issue as OptionChip/DropTarget — see OptionChip's own
+      // comment for why this has to be an inline style, not just the
+      // `touch-none` class.
+      style={{ touchAction: "none" }}
       type="button"
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        // Same touch-action fix as DropTarget — a touchend landing on an
-        // inline gap must not be swallowed by page-scroll handling.
         // Padding bumped slightly (py-0.5 -> py-1.5) for a bit more
         // fingertip margin without breaking the inline reading flow.
         "mx-1 inline-flex min-w-16 touch-none items-center gap-1 rounded-control border-2 px-2 py-1.5 align-middle text-xs font-medium",

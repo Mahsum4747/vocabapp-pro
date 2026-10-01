@@ -54,7 +54,13 @@ person name (`frage: "Tanja, 34"`), reworded into a full question
 ("Stimmt diese Person der These zu? „Tanja, 34“") with the shared forum
 thesis prepended to the passage text, so the question is self-contained
 rather than only making sense next to the original exam's printed
-instructions.
+instructions. Every zuordnung_*/satz_einfuegen `instruction` also had the
+original exam paper's own question-number range stripped out (e.g.
+"Überschrift 22 bis 27?" -> "Überschrift?") — those numbers refer to that
+paper's own item numbering, with no counterpart in Karta's own UI, so left
+in they just confused rather than informed; the one exception is
+satz_einfuegen's own gap numbers ("Lücken 10 bis 15"), kept because Karta's
+UI really does label each gap "[10]" through "[15]".
 
 ## Originality — not independently verified
 

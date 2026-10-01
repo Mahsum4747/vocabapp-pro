@@ -32,7 +32,21 @@
  * - "sentence-insertion" — B2 satz_einfuegen. The source embeds gap
  *   markers as literal `[10]`/`[11]`/... text inside the passage; this
  *   splits that into `segments` + `gaps` once at generation time so the
- *   route never has to parse markers at render time.
+ *   route never has to parse markers at render time. These numbers stay
+ *   (Karta's own GapSlot renders them as "[10]" etc. — the instruction's
+ *   "Lücken 10 bis 15" is describing something the learner can actually
+ *   see), unlike the source's OTHER numbering below.
+ *
+ * Every `instruction` had its source exam's own question-number range
+ * stripped (e.g. "...Überschrift 22 bis 27?" -> "...Überschrift?",
+ * "Situationen 13 bis 19" -> "Situationen") — those numbers were the
+ * original exam paper's own item numbering, with no counterpart anywhere
+ * in Karta's UI (targets here render as plain prompt text, never a
+ * number), so left in they were just confusing. zuordnung_ueberschriften's
+ * `referenceText` had the same leak one level deeper: the source embeds
+ * the exam item number right into each heading ("§ 2 [28]"), which is
+ * exactly the sentence-insertion gap-marker SYNTAX but with no matching
+ * gap/drop-target here — stripped down to "§ 2".
  *
  * 30 B1 papers-worth of passages (25 choice + 5 matching) and 30 B2 (5
  * choice + 15 matching + 5 sentence-insertion) = 55 passages total, 300
@@ -1573,7 +1587,7 @@ const MATCHING_PASSAGES: LesenMatchingPassage[] = [
     level: "B1",
     title: "Anzeigen zuordnen",
     source: "Kleinanzeigen",
-    instruction: `Lesen Sie die Situationen 13 bis 19 und die Anzeigen a bis j. Welche Anzeige passt zu welcher Situation? Sie können jede Anzeige nur einmal verwenden. Für eine Situation gibt es keine passende Anzeige. Schreiben Sie in diesem Fall 0.`,
+    instruction: `Lesen Sie die Situationen und die Anzeigen a bis j. Welche Anzeige passt zu welcher Situation? Sie können jede Anzeige nur einmal verwenden. Für eine Situation gibt es keine passende Anzeige. Schreiben Sie in diesem Fall 0.`,
     referenceItems: [
       {
         id: "a",
@@ -1689,7 +1703,7 @@ const MATCHING_PASSAGES: LesenMatchingPassage[] = [
     level: "B1",
     title: "Anzeigen zuordnen",
     source: "Kleinanzeigen",
-    instruction: `Lesen Sie die Situationen 13 bis 19 und die Anzeigen a bis j. Welche Anzeige passt zu welcher Situation? Sie können jede Anzeige nur einmal verwenden. Für eine Situation gibt es keine passende Anzeige. Schreiben Sie in diesem Fall 0.`,
+    instruction: `Lesen Sie die Situationen und die Anzeigen a bis j. Welche Anzeige passt zu welcher Situation? Sie können jede Anzeige nur einmal verwenden. Für eine Situation gibt es keine passende Anzeige. Schreiben Sie in diesem Fall 0.`,
     referenceItems: [
       {
         id: "a",
@@ -1805,7 +1819,7 @@ const MATCHING_PASSAGES: LesenMatchingPassage[] = [
     level: "B1",
     title: "Anzeigen zuordnen",
     source: "Kleinanzeigen",
-    instruction: `Lesen Sie die Situationen 13 bis 19 und die Anzeigen a bis j. Welche Anzeige passt zu welcher Situation? Sie können jede Anzeige nur einmal verwenden. Für eine Situation gibt es keine passende Anzeige. Schreiben Sie in diesem Fall 0.`,
+    instruction: `Lesen Sie die Situationen und die Anzeigen a bis j. Welche Anzeige passt zu welcher Situation? Sie können jede Anzeige nur einmal verwenden. Für eine Situation gibt es keine passende Anzeige. Schreiben Sie in diesem Fall 0.`,
     referenceItems: [
       {
         id: "a",
@@ -1921,7 +1935,7 @@ const MATCHING_PASSAGES: LesenMatchingPassage[] = [
     level: "B1",
     title: "Anzeigen zuordnen",
     source: "Kleinanzeigen",
-    instruction: `Lesen Sie die Situationen 13 bis 19 und die Anzeigen a bis j. Welche Anzeige passt zu welcher Situation? Sie können jede Anzeige nur einmal verwenden. Für eine Situation gibt es keine passende Anzeige. Schreiben Sie in diesem Fall 0.`,
+    instruction: `Lesen Sie die Situationen und die Anzeigen a bis j. Welche Anzeige passt zu welcher Situation? Sie können jede Anzeige nur einmal verwenden. Für eine Situation gibt es keine passende Anzeige. Schreiben Sie in diesem Fall 0.`,
     referenceItems: [
       {
         id: "a",
@@ -2037,7 +2051,7 @@ const MATCHING_PASSAGES: LesenMatchingPassage[] = [
     level: "B1",
     title: "Anzeigen zuordnen",
     source: "Kleinanzeigen",
-    instruction: `Lesen Sie die Situationen 13 bis 19 und die Anzeigen a bis j. Welche Anzeige passt zu welcher Situation? Sie können jede Anzeige nur einmal verwenden. Für eine Situation gibt es keine passende Anzeige. Schreiben Sie in diesem Fall 0.`,
+    instruction: `Lesen Sie die Situationen und die Anzeigen a bis j. Welche Anzeige passt zu welcher Situation? Sie können jede Anzeige nur einmal verwenden. Für eine Situation gibt es keine passende Anzeige. Schreiben Sie in diesem Fall 0.`,
     referenceItems: [
       {
         id: "a",
@@ -2153,7 +2167,7 @@ const MATCHING_PASSAGES: LesenMatchingPassage[] = [
     level: "B2",
     title: "Personen zuordnen",
     source: "Forenbeiträge",
-    instruction: `Sie lesen in einem Forum, wie vier Menschen über die Vier-Tage-Woche denken. Auf welche der vier Personen treffen die Aussagen 1 bis 9 zu? Die Personen können mehrmals gewählt werden.`,
+    instruction: `Sie lesen in einem Forum, wie vier Menschen über die Vier-Tage-Woche denken. Auf welche der vier Personen treffen die Aussagen zu? Die Personen können mehrmals gewählt werden.`,
     allowMultiple: true,
     referenceItems: [
       {
@@ -2262,7 +2276,7 @@ Interessant finde ich das Modell trotzdem, allerdings aus einem anderen Grund: W
     level: "B2",
     title: "Personen zuordnen",
     source: "Forenbeiträge",
-    instruction: `Sie lesen in einem Forum, wie vier Menschen über regionale Lebensmittel denken. Auf welche der vier Personen treffen die Aussagen 1 bis 9 zu? Die Personen können mehrmals gewählt werden.`,
+    instruction: `Sie lesen in einem Forum, wie vier Menschen über regionale Lebensmittel denken. Auf welche der vier Personen treffen die Aussagen zu? Die Personen können mehrmals gewählt werden.`,
     allowMultiple: true,
     referenceItems: [
       {
@@ -2371,7 +2385,7 @@ Solange das fehlt, verkaufen viele Anbieter kein Lebensmittel, sondern ein Gefü
     level: "B2",
     title: "Personen zuordnen",
     source: "Forenbeiträge",
-    instruction: `Sie lesen in einem Forum, wie vier Menschen über Dialekt denken. Auf welche der vier Personen treffen die Aussagen 1 bis 9 zu? Die Personen können mehrmals gewählt werden.`,
+    instruction: `Sie lesen in einem Forum, wie vier Menschen über Dialekt denken. Auf welche der vier Personen treffen die Aussagen zu? Die Personen können mehrmals gewählt werden.`,
     allowMultiple: true,
     referenceItems: [
       {
@@ -2480,7 +2494,7 @@ Deshalb fordere ich seit Jahren, dass Dialekt in der Schule seinen Platz bekommt
     level: "B2",
     title: "Personen zuordnen",
     source: "Forenbeiträge",
-    instruction: `Sie lesen in einem Forum, wie vier Menschen über Fitness-Apps und das Messen der eigenen Gesundheit denken. Auf welche der vier Personen treffen die Aussagen 1 bis 9 zu? Die Personen können mehrmals gewählt werden.`,
+    instruction: `Sie lesen in einem Forum, wie vier Menschen über Fitness-Apps und das Messen der eigenen Gesundheit denken. Auf welche der vier Personen treffen die Aussagen zu? Die Personen können mehrmals gewählt werden.`,
     allowMultiple: true,
     referenceItems: [
       {
@@ -2589,7 +2603,7 @@ Benutzen tue ich trotzdem eine App, allerdings eine, die alles auf dem Gerät be
     level: "B2",
     title: "Personen zuordnen",
     source: "Forenbeiträge",
-    instruction: `Sie lesen in einem Forum, wie vier Menschen über Reparieren statt Wegwerfen denken. Auf welche der vier Personen treffen die Aussagen 1 bis 9 zu? Die Personen können mehrmals gewählt werden.`,
+    instruction: `Sie lesen in einem Forum, wie vier Menschen über Reparieren statt Wegwerfen denken. Auf welche der vier Personen treffen die Aussagen zu? Die Personen können mehrmals gewählt werden.`,
     allowMultiple: true,
     referenceItems: [
       {
@@ -2698,7 +2712,7 @@ Seitdem schaue ich vor jedem Kauf nach, wie leicht sich ein Gerät öffnen läss
     level: "B2",
     title: "Aussagen zuordnen",
     source: "Interviews",
-    instruction: `Sie lesen in einer Zeitschrift Meinungsäußerungen zum Thema Kleidung leihen statt kaufen. Welche Äußerung a bis h passt zu welcher Überschrift 22 bis 27? Eine Äußerung dient als Beispiel, eine weitere passt zu keiner Überschrift.`,
+    instruction: `Sie lesen in einer Zeitschrift Meinungsäußerungen zum Thema Kleidung leihen statt kaufen. Welche Äußerung a bis h passt zu welcher Überschrift? Eine Äußerung dient als Beispiel, eine weitere passt zu keiner Überschrift.`,
     referenceItems: [
       {
         id: "a",
@@ -2796,7 +2810,7 @@ Seitdem schaue ich vor jedem Kauf nach, wie leicht sich ein Gerät öffnen läss
     level: "B2",
     title: "Aussagen zuordnen",
     source: "Interviews",
-    instruction: `Sie lesen in einer Zeitschrift Meinungsäußerungen zum Thema Urlaub ohne Flugzeug. Welche Äußerung a bis h passt zu welcher Überschrift 22 bis 27? Eine Äußerung dient als Beispiel, eine weitere passt zu keiner Überschrift.`,
+    instruction: `Sie lesen in einer Zeitschrift Meinungsäußerungen zum Thema Urlaub ohne Flugzeug. Welche Äußerung a bis h passt zu welcher Überschrift? Eine Äußerung dient als Beispiel, eine weitere passt zu keiner Überschrift.`,
     referenceItems: [
       {
         id: "a",
@@ -2894,7 +2908,7 @@ Seitdem schaue ich vor jedem Kauf nach, wie leicht sich ein Gerät öffnen läss
     level: "B2",
     title: "Aussagen zuordnen",
     source: "Interviews",
-    instruction: `Sie lesen in einer Zeitschrift Meinungsäußerungen zum Thema mieten oder kaufen. Welche Äußerung a bis h passt zu welcher Überschrift 22 bis 27? Eine Äußerung dient als Beispiel, eine weitere passt zu keiner Überschrift.`,
+    instruction: `Sie lesen in einer Zeitschrift Meinungsäußerungen zum Thema mieten oder kaufen. Welche Äußerung a bis h passt zu welcher Überschrift? Eine Äußerung dient als Beispiel, eine weitere passt zu keiner Überschrift.`,
     referenceItems: [
       {
         id: "a",
@@ -2992,7 +3006,7 @@ Seitdem schaue ich vor jedem Kauf nach, wie leicht sich ein Gerät öffnen läss
     level: "B2",
     title: "Aussagen zuordnen",
     source: "Interviews",
-    instruction: `Sie lesen in einer Zeitschrift Meinungsäußerungen zum Thema Erreichbarkeit nach Feierabend. Welche Äußerung a bis h passt zu welcher Überschrift 22 bis 27? Eine Äußerung dient als Beispiel, eine weitere passt zu keiner Überschrift.`,
+    instruction: `Sie lesen in einer Zeitschrift Meinungsäußerungen zum Thema Erreichbarkeit nach Feierabend. Welche Äußerung a bis h passt zu welcher Überschrift? Eine Äußerung dient als Beispiel, eine weitere passt zu keiner Überschrift.`,
     referenceItems: [
       {
         id: "a",
@@ -3090,7 +3104,7 @@ Seitdem schaue ich vor jedem Kauf nach, wie leicht sich ein Gerät öffnen läss
     level: "B2",
     title: "Aussagen zuordnen",
     source: "Interviews",
-    instruction: `Sie lesen in einer Zeitschrift Meinungsäußerungen zum Thema Bargeld oder Karte. Welche Äußerung a bis h passt zu welcher Überschrift 22 bis 27? Eine Äußerung dient als Beispiel, eine weitere passt zu keiner Überschrift.`,
+    instruction: `Sie lesen in einer Zeitschrift Meinungsäußerungen zum Thema Bargeld oder Karte. Welche Äußerung a bis h passt zu welcher Überschrift? Eine Äußerung dient als Beispiel, eine weitere passt zu keiner Überschrift.`,
     referenceItems: [
       {
         id: "a",
@@ -3188,17 +3202,17 @@ Seitdem schaue ich vor jedem Kauf nach, wie leicht sich ein Gerät öffnen läss
     level: "B2",
     title: "Benutzungsordnung der Offenen Werkstatt — Volkshochschule Weidenbach",
     source: "Ordnung",
-    instruction: `Sie möchten die Offene Werkstatt der Volkshochschule nutzen und lesen die Benutzungsordnung. Welche der Überschriften a bis h aus dem Inhaltsverzeichnis passen zu den Paragraphen 28 bis 30? Vier Überschriften passen zu keinem der Paragraphen.`,
+    instruction: `Sie möchten die Offene Werkstatt der Volkshochschule nutzen und lesen die Benutzungsordnung. Welche der Überschriften a bis h aus dem Inhaltsverzeichnis passen zu den Paragraphen? Vier Überschriften passen zu keinem der Paragraphen.`,
     referenceText: `§ 1 Geltungsbereich
 Diese Ordnung gilt für sämtliche Räume der Offenen Werkstatt einschließlich Lager, Hof und Maschinenraum. Sie ist für alle verbindlich, die die Werkstatt betreten, unabhängig davon, ob sie an einem Kurs teilnehmen oder frei arbeiten.
 
-§ 2 [28]
+§ 2
 Wer die Maschinen benutzen will, muss zuvor an einer Sicherheitsunterweisung teilgenommen haben. Diese wird schriftlich bestätigt und behält 24 Monate ihre Gültigkeit; danach ist sie zu wiederholen. Der Schlüssel wird erst nach der Unterweisung ausgegeben und ist nicht übertragbar. Wer ohne gültige Bestätigung an einer Maschine angetroffen wird, muss die Werkstatt für den betreffenden Tag verlassen.
 
-§ 3 [29]
+§ 3
 Für mitgebrachtes Material und eigenes Werkzeug übernimmt die Volkshochschule keine Gewähr. Schäden an den Maschinen sind unverzüglich dem Werkstattteam zu melden, auch dann, wenn kein Fremdverschulden vorliegt. Angemeldete Nutzerinnen und Nutzer sind während der Öffnungszeiten über die Einrichtung unfallversichert; bei grober Fahrlässigkeit entfällt dieser Schutz.
 
-§ 4 [30]
+§ 4
 Jeder Arbeitsplatz ist besenrein zu hinterlassen; Werkzeug gehört an den dafür vorgesehenen Platz zurück. Holzreste kommen in den Behälter neben der Bandsäge, Metallspäne in die verschließbare Tonne im Hof. Lacke, Öle und Lösungsmittel dürfen keinesfalls über das Waschbecken entsorgt werden, sondern werden im Gefahrstoffschrank gesammelt.`,
     options: [
       { id: "a", shortLabel: "Geltungsbereich" },
@@ -3237,17 +3251,17 @@ Jeder Arbeitsplatz ist besenrein zu hinterlassen; Werkzeug gehört an den dafür
     level: "B2",
     title: "Satzung des TSV Nordwiese — Auszug",
     source: "Ordnung",
-    instruction: `Sie möchten einem Sportverein beitreten und lesen dessen Satzung. Welche der Überschriften a bis h aus dem Inhaltsverzeichnis passen zu den Paragraphen 28 bis 30? Vier Überschriften passen zu keinem der Paragraphen.`,
+    instruction: `Sie möchten einem Sportverein beitreten und lesen dessen Satzung. Welche der Überschriften a bis h aus dem Inhaltsverzeichnis passen zu den Paragraphen? Vier Überschriften passen zu keinem der Paragraphen.`,
     referenceText: `§ 1 Zweck des Vereins
 Der Verein verfolgt ausschließlich gemeinnützige Zwecke. Er fördert den Breitensport, insbesondere für Kinder, Jugendliche und ältere Menschen, und unterhält zu diesem Zweck Übungsgruppen, Sportstätten und Geräte. Ein wirtschaftlicher Geschäftsbetrieb ist ausgeschlossen.
 
-§ 2 [28]
+§ 2
 Mitglied kann jede natürliche Person werden. Der Antrag ist schriftlich zu stellen; über die Aufnahme entscheidet der Vorstand innerhalb von vier Wochen. Bei Minderjährigen ist die Unterschrift einer sorgeberechtigten Person erforderlich. Ein Anspruch auf Aufnahme besteht nicht; eine Ablehnung muss nicht begründet werden.
 
-§ 3 [29]
+§ 3
 Der Beitrag wird jährlich im Voraus erhoben und zum 15. Januar abgebucht. Die Höhe setzt die Mitgliederversammlung fest. Wer im laufenden Jahr eintritt, zahlt für jeden angefangenen Monat ein Zwölftel. In begründeten Fällen — insbesondere bei Arbeitslosigkeit — kann der Vorstand auf Antrag stunden oder ermäßigen.
 
-§ 4 [30]
+§ 4
 Die Mitgliedschaft endet durch Austritt, Ausschluss oder Tod. Der Austritt ist schriftlich zu erklären und nur zum Ende eines Kalenderjahres möglich; die Erklärung muss bis zum 30. September vorliegen. Ein Ausschluss ist nur bei grobem Verstoß gegen die Satzung möglich und setzt eine vorherige Anhörung voraus.`,
     options: [
       { id: "a", shortLabel: "Zweck des Vereins" },
@@ -3286,17 +3300,17 @@ Die Mitgliedschaft endet durch Austritt, Ausschluss oder Tod. Der Austritt ist s
     level: "B2",
     title: "Praktikumsordnung der Hochschule Nordwiese — Auszug",
     source: "Ordnung",
-    instruction: `Sie möchten ein Praktikum machen und lesen die Praktikumsordnung Ihrer Hochschule. Welche der Überschriften a bis h aus dem Inhaltsverzeichnis passen zu den Paragraphen 28 bis 30? Vier Überschriften passen zu keinem der Paragraphen.`,
+    instruction: `Sie möchten ein Praktikum machen und lesen die Praktikumsordnung Ihrer Hochschule. Welche der Überschriften a bis h aus dem Inhaltsverzeichnis passen zu den Paragraphen? Vier Überschriften passen zu keinem der Paragraphen.`,
     referenceText: `§ 1 Ziel des Praktikums
 Das Praktikum soll die im Studium erworbenen Kenntnisse in der beruflichen Praxis erproben und die Berufsorientierung unterstützen. Es ist Bestandteil des Studiums und wird mit fünfzehn Leistungspunkten angerechnet.
 
-§ 2 [28]
+§ 2
 Das Praktikum kann erst nach bestandener Zwischenprüfung angetreten werden. Es umfasst mindestens zwölf zusammenhängende Wochen in Vollzeit; eine Aufteilung auf zwei Abschnitte ist zulässig, wenn kein Abschnitt kürzer als sechs Wochen ist. Tätigkeiten im eigenen Familienbetrieb werden nicht anerkannt.
 
-§ 3 [29]
+§ 3
 Die Praktikumsstelle ist vor Antritt beim Praktikumsbüro anzuzeigen. Der Anzeige sind die Stellenbeschreibung und der Name der betreuenden Person im Betrieb beizufügen. Über die Eignung entscheidet das Praktikumsbüro innerhalb von drei Wochen; eine nachträgliche Anerkennung ist ausgeschlossen.
 
-§ 4 [30]
+§ 4
 Nach Abschluss ist innerhalb von acht Wochen ein Bericht von mindestens zwanzig Seiten einzureichen, der Tätigkeiten, Arbeitsabläufe und eigene Erfahrungen darstellt. Der Bericht ist von der betreuenden Person im Betrieb gegenzuzeichnen. Wer die Frist ohne wichtigen Grund versäumt, muss das Praktikum wiederholen.`,
     options: [
       { id: "a", shortLabel: "Ziel des Praktikums" },
@@ -3335,17 +3349,17 @@ Nach Abschluss ist innerhalb von acht Wochen ein Bericht von mindestens zwanzig 
     level: "B2",
     title: "Benutzungsordnung der Stadtbibliothek Hohenrode — Auszug",
     source: "Ordnung",
-    instruction: `Sie möchten die Stadtbibliothek nutzen und lesen die Benutzungsordnung. Welche der Überschriften a bis h aus dem Inhaltsverzeichnis passen zu den Paragraphen 28 bis 30? Vier Überschriften passen zu keinem der Paragraphen.`,
+    instruction: `Sie möchten die Stadtbibliothek nutzen und lesen die Benutzungsordnung. Welche der Überschriften a bis h aus dem Inhaltsverzeichnis passen zu den Paragraphen? Vier Überschriften passen zu keinem der Paragraphen.`,
     referenceText: `§ 1 Öffnungszeiten
 Die Bibliothek ist dienstags bis freitags von zehn bis neunzehn Uhr und samstags von zehn bis vierzehn Uhr geöffnet. An gesetzlichen Feiertagen bleibt sie geschlossen. Abweichungen werden am Haupteingang und auf der Internetseite bekannt gegeben.
 
-§ 2 [28]
+§ 2
 Zur Benutzung ist ein Ausweis erforderlich. Er wird auf Antrag gegen Vorlage eines amtlichen Lichtbildausweises ausgestellt und gilt zwölf Monate. Für Personen unter achtzehn Jahren ist die Unterschrift einer sorgeberechtigten Person erforderlich. Der Ausweis ist nicht übertragbar; bei Verlust ist die Bibliothek unverzüglich zu benachrichtigen.
 
-§ 3 [29]
+§ 3
 Bücher werden für vier Wochen ausgeliehen, Zeitschriften und Filme für eine Woche. Zweimal kann verlängert werden, sofern keine Vormerkung vorliegt; die Verlängerung ist auch telefonisch möglich. Wer die Frist überschreitet, zahlt je Medium und angefangener Woche fünfzig Cent, höchstens jedoch zehn Euro.
 
-§ 4 [30]
+§ 4
 Medien sind pfleglich zu behandeln. Bereits vorhandene Beschädigungen sind vor der Ausleihe anzuzeigen, andernfalls haftet die entleihende Person. Bei Verlust oder starker Beschädigung ist Ersatz in Höhe des Wiederbeschaffungswertes zu leisten; die Bibliothek entscheidet, ob stattdessen ein gleichwertiges Exemplar angenommen wird.`,
     options: [
       { id: "a", shortLabel: "Öffnungszeiten" },
@@ -3384,17 +3398,17 @@ Medien sind pfleglich zu behandeln. Bereits vorhandene Beschädigungen sind vor 
     level: "B2",
     title: "Hausordnung des Studentenwohnheims Weidenbach — Auszug",
     source: "Ordnung",
-    instruction: `Sie ziehen in ein Studentenwohnheim und lesen die Hausordnung. Welche der Überschriften a bis h aus dem Inhaltsverzeichnis passen zu den Paragraphen 28 bis 30? Vier Überschriften passen zu keinem der Paragraphen.`,
+    instruction: `Sie ziehen in ein Studentenwohnheim und lesen die Hausordnung. Welche der Überschriften a bis h aus dem Inhaltsverzeichnis passen zu den Paragraphen? Vier Überschriften passen zu keinem der Paragraphen.`,
     referenceText: `§ 1 Geltung
 Diese Hausordnung gilt für alle Bewohnerinnen und Bewohner sowie für deren Gäste. Sie ist Bestandteil des Mietvertrages; mit dem Einzug wird sie anerkannt.
 
-§ 2 [28]
+§ 2
 In der Zeit von zweiundzwanzig bis sieben Uhr sowie sonntags ganztägig ist Lärm zu vermeiden, der außerhalb des eigenen Zimmers zu hören ist. Musikinstrumente dürfen werktags zwischen zehn und zwanzig Uhr höchstens zwei Stunden gespielt werden. Feiern in den Gemeinschaftsräumen sind bis Mitternacht möglich und drei Tage vorher der Verwaltung anzuzeigen.
 
-§ 3 [29]
+§ 3
 Küche, Bad und Aufenthaltsraum sind nach der Benutzung gereinigt zu hinterlassen. Geschirr ist unverzüglich zu spülen und wegzuräumen; stehen gelassenes Geschirr wird nach achtundvierzig Stunden entfernt. Der Reinigungsplan im Flur ist verbindlich, die Verteilung regelt die Etage selbst.
 
-§ 4 [30]
+§ 4
 Besuch ist willkommen und bis zu drei Nächte im Monat ohne Anmeldung möglich. Wer länger bleibt, ist der Verwaltung zu melden; eine dauerhafte Aufnahme weiterer Personen ist ausgeschlossen. Für das Verhalten der Gäste haftet die einladende Person.`,
     options: [
       { id: "a", shortLabel: "Geltung" },
