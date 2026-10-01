@@ -24,6 +24,7 @@ import { Route as GrammarImperativRouteImport } from './routes/grammar.imperativ
 import { Route as GrammarKonjunktivRouteImport } from './routes/grammar.konjunktiv'
 import { Route as GrammarKonjunktiv1RouteImport } from './routes/grammar.konjunktiv1'
 import { Route as GrammarLesenRouteImport } from './routes/grammar.lesen'
+import { Route as GrammarLesenPasteRouteImport } from './routes/grammar.lesen-paste'
 import { Route as GrammarModalpartikelnRouteImport } from './routes/grammar.modalpartikeln'
 import { Route as GrammarModalverbenRouteImport } from './routes/grammar.modalverben'
 import { Route as GrammarNichtKeinRouteImport } from './routes/grammar.nicht-kein'
@@ -128,6 +129,11 @@ const GrammarKonjunktiv1Route = GrammarKonjunktiv1RouteImport.update({
 const GrammarLesenRoute = GrammarLesenRouteImport.update({
   id: '/lesen',
   path: '/lesen',
+  getParentRoute: () => GrammarRoute,
+} as any)
+const GrammarLesenPasteRoute = GrammarLesenPasteRouteImport.update({
+  id: '/lesen-paste',
+  path: '/lesen-paste',
   getParentRoute: () => GrammarRoute,
 } as any)
 const GrammarModalpartikelnRoute = GrammarModalpartikelnRouteImport.update({
@@ -293,6 +299,7 @@ export interface FileRoutesByFullPath {
   '/grammar/konjunktiv': typeof GrammarKonjunktivRoute
   '/grammar/konjunktiv1': typeof GrammarKonjunktiv1Route
   '/grammar/lesen': typeof GrammarLesenRoute
+  '/grammar/lesen-paste': typeof GrammarLesenPasteRoute
   '/grammar/modalpartikeln': typeof GrammarModalpartikelnRoute
   '/grammar/modalverben': typeof GrammarModalverbenRoute
   '/grammar/nicht-kein': typeof GrammarNichtKeinRoute
@@ -338,6 +345,7 @@ export interface FileRoutesByTo {
   '/grammar/konjunktiv': typeof GrammarKonjunktivRoute
   '/grammar/konjunktiv1': typeof GrammarKonjunktiv1Route
   '/grammar/lesen': typeof GrammarLesenRoute
+  '/grammar/lesen-paste': typeof GrammarLesenPasteRoute
   '/grammar/modalpartikeln': typeof GrammarModalpartikelnRoute
   '/grammar/modalverben': typeof GrammarModalverbenRoute
   '/grammar/nicht-kein': typeof GrammarNichtKeinRoute
@@ -384,6 +392,7 @@ export interface FileRoutesById {
   '/grammar/konjunktiv': typeof GrammarKonjunktivRoute
   '/grammar/konjunktiv1': typeof GrammarKonjunktiv1Route
   '/grammar/lesen': typeof GrammarLesenRoute
+  '/grammar/lesen-paste': typeof GrammarLesenPasteRoute
   '/grammar/modalpartikeln': typeof GrammarModalpartikelnRoute
   '/grammar/modalverben': typeof GrammarModalverbenRoute
   '/grammar/nicht-kein': typeof GrammarNichtKeinRoute
@@ -432,6 +441,7 @@ export interface FileRouteTypes {
     | '/grammar/konjunktiv'
     | '/grammar/konjunktiv1'
     | '/grammar/lesen'
+    | '/grammar/lesen-paste'
     | '/grammar/modalpartikeln'
     | '/grammar/modalverben'
     | '/grammar/nicht-kein'
@@ -477,6 +487,7 @@ export interface FileRouteTypes {
     | '/grammar/konjunktiv'
     | '/grammar/konjunktiv1'
     | '/grammar/lesen'
+    | '/grammar/lesen-paste'
     | '/grammar/modalpartikeln'
     | '/grammar/modalverben'
     | '/grammar/nicht-kein'
@@ -522,6 +533,7 @@ export interface FileRouteTypes {
     | '/grammar/konjunktiv'
     | '/grammar/konjunktiv1'
     | '/grammar/lesen'
+    | '/grammar/lesen-paste'
     | '/grammar/modalpartikeln'
     | '/grammar/modalverben'
     | '/grammar/nicht-kein'
@@ -671,6 +683,13 @@ declare module '@tanstack/react-router' {
       path: '/lesen'
       fullPath: '/grammar/lesen'
       preLoaderRoute: typeof GrammarLesenRouteImport
+      parentRoute: typeof GrammarRoute
+    }
+    '/grammar/lesen-paste': {
+      id: '/grammar/lesen-paste'
+      path: '/lesen-paste'
+      fullPath: '/grammar/lesen-paste'
+      preLoaderRoute: typeof GrammarLesenPasteRouteImport
       parentRoute: typeof GrammarRoute
     }
     '/grammar/modalpartikeln': {
@@ -887,6 +906,7 @@ interface GrammarRouteChildren {
   GrammarKonjunktivRoute: typeof GrammarKonjunktivRoute
   GrammarKonjunktiv1Route: typeof GrammarKonjunktiv1Route
   GrammarLesenRoute: typeof GrammarLesenRoute
+  GrammarLesenPasteRoute: typeof GrammarLesenPasteRoute
   GrammarModalpartikelnRoute: typeof GrammarModalpartikelnRoute
   GrammarModalverbenRoute: typeof GrammarModalverbenRoute
   GrammarNichtKeinRoute: typeof GrammarNichtKeinRoute
@@ -913,6 +933,7 @@ const GrammarRouteChildren: GrammarRouteChildren = {
   GrammarKonjunktivRoute: GrammarKonjunktivRoute,
   GrammarKonjunktiv1Route: GrammarKonjunktiv1Route,
   GrammarLesenRoute: GrammarLesenRoute,
+  GrammarLesenPasteRoute: GrammarLesenPasteRoute,
   GrammarModalpartikelnRoute: GrammarModalpartikelnRoute,
   GrammarModalverbenRoute: GrammarModalverbenRoute,
   GrammarNichtKeinRoute: GrammarNichtKeinRoute,

@@ -1,14 +1,15 @@
-import { Check, Info } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { AuthGate } from "@/components/auth-gate";
+import { LesenChoiceBoard } from "@/components/lesen-choice";
 import { LesenMatchBoard, LesenSentenceInsertionBoard } from "@/components/lesen-match";
 import { StudySessionShell } from "@/components/study-session-shell";
 import { Button } from "@/components/ui/button";
 import { LESEN_PASSAGES } from "@/lib/german/lesen-data";
 import type { LesenLevel, LesenPassage } from "@/lib/german/lesen-types";
 import { recordGrammarRoundResult } from "@/lib/grammar-progress";
-import { cn } from "@/lib/utils";
+import { getLesenPassageProgress, recordLesenPassageCompletion } from "@/lib/lesen-passage-progress";
+import type { LesenPassageProgressDoc } from "@/lib/lesen-passage-progress";
 
 export const Route = createFileRoute("/grammar/lesen")({
   component: LesenRoute,
@@ -16,27 +17,37 @@ export const Route = createFileRoute("/grammar/lesen")({
 
 const LEVELS: LesenLevel[] = ["A1", "A2", "B1", "B2"];
 
+const TOTAL_PER_LEVEL: Record<LesenLevel, number> = {
+  A1: LESEN_PASSAGES.filter((p) => p.level === "A1").length,
+  A2: LESEN_PASSAGES.filter((p) => p.level === "A2").length,
+  B1: LESEN_PASSAGES.filter((p) => p.level === "B1").length,
+  B2: LESEN_PASSAGES.filter((p) => p.level === "B2").length,
+};
+
 /**
  * Reading comprehension: one bundled passage per round (lesen-data.ts +
  * lesen-data-b1-b2.ts — real exam content, CC BY 4.0, see
  * LESEN-ATTRIBUTION.md), covering all four levels and the source's three
  * underlying exercise shapes:
  * - "choice": A1/A2 richtig-falsch/multiple-choice, B1's three close-ended
- *   types — tap an option, same UI this route has always used.
+ *   types — `LesenChoiceBoard` (also reused, unchanged, by
+ *   grammar.lesen-paste.tsx's AI-generated passages).
  * - "matching" / "sentence-insertion" (B1/B2 only): real drag-and-drop via
- *   dnd-kit — see lesen-match.tsx for the shared board components.
+ *   dnd-kit — see lesen-match.tsx.
  *
  * `grammarProgress` topicId: everything here, at every level, still writes
- * under the single fixed "lesen" topicId (unchanged from the A1/A2-only
- * version) — NOT split per level. Reasoning: grammarProgress is one
- * accuracy/totalAttempts scalar per topicId, and the grammar hub
- * (grammar.index.tsx) has exactly one "Lesen" tile, not one per level —
- * there is nowhere in the UI a per-level field would ever be read. Adding
- * "lesen-b1"/"lesen-b2" topicIds would silently orphan that data (never
- * shown anywhere) and would need new hub tiles to ever surface, which is
- * out of this task's scope. One topicId across all four levels is also
- * consistent with how every other drill in this hub works: none of them
- * split progress by difficulty tier either.
+ * under the single fixed "lesen" topicId — NOT split per level. Reasoning:
+ * grammarProgress is one accuracy/totalAttempts scalar per topicId, and
+ * the grammar hub has exactly one "Lesen" tile, not one per level.
+ *
+ * Per-level PASSAGE completion (which of this level's bundled passages has
+ * the learner already finished) is a separate concern, tracked in its own
+ * `lesenProgress/{uid}` doc (lesen-passage-progress.ts) — written
+ * alongside, never instead of, the `grammarProgress` write. `pickPassage`
+ * reads it back to lightly prefer not-yet-completed passages over an
+ * already-seen one, without ever fully excluding the completed pool (once
+ * everything is done, or by chance before then, a repeat is still fine —
+ * see `pickPassage`'s own comment).
  */
 function LesenRoute() {
   return (
@@ -46,26 +57,34 @@ function LesenRoute() {
   );
 }
 
-function pickPassage(level: LesenLevel): LesenPassage {
+/** Light preference for a not-yet-completed passage (tends to surface
+ *  every passage in the pool at least once before repeating), but never a
+ *  hard guarantee — occasionally still draws from the whole pool even
+ *  when uncompleted ones remain, both for natural variety and so this
+ *  never turns into a deterministic "exactly in this order" checklist. */
+function pickPassage(level: LesenLevel, completedIds: string[]): LesenPassage {
   const pool = LESEN_PASSAGES.filter((p) => p.level === level);
-  return pool[Math.floor(Math.random() * pool.length)]!;
+  const completedSet = new Set(completedIds);
+  const uncompleted = pool.filter((p) => !completedSet.has(p.id));
+  const source = uncompleted.length > 0 && Math.random() < 0.85 ? uncompleted : pool;
+  return source[Math.floor(Math.random() * source.length)]!;
 }
 
 function LesenPage() {
   const navigate = useNavigate();
   const [level, setLevel] = useState<LesenLevel | null>(null);
   const [passage, setPassage] = useState<LesenPassage | null>(null);
-
-  // Choice-passage-only session state (unused by matching/sentence-insertion,
-  // which run their own internal state in lesen-match.tsx and only report
-  // back through `finishRound`).
-  const [index, setIndex] = useState(0);
-  const [selected, setSelected] = useState<number | null>(null);
-  const [choiceCorrectCount, setChoiceCorrectCount] = useState(0);
+  const [progressDoc, setProgressDoc] = useState<LesenPassageProgressDoc>({});
 
   const [done, setDone] = useState(false);
   const [resultCorrect, setResultCorrect] = useState(0);
   const [resultTotal, setResultTotal] = useState(0);
+
+  useEffect(() => {
+    getLesenPassageProgress()
+      .then(setProgressDoc)
+      .catch(() => {});
+  }, []);
 
   // The level-picker screen and an active round/result both render via
   // `StudyChrome` (through `StudySessionShell`), which by default always
@@ -87,10 +106,7 @@ function LesenPage() {
 
   function start(chosenLevel: LesenLevel) {
     setLevel(chosenLevel);
-    setPassage(pickPassage(chosenLevel));
-    setIndex(0);
-    setSelected(null);
-    setChoiceCorrectCount(0);
+    setPassage(pickPassage(chosenLevel, progressDoc[chosenLevel]?.completedPassageIds ?? []));
     setDone(false);
   }
 
@@ -98,32 +114,23 @@ function LesenPage() {
     setResultCorrect(correctCount);
     setResultTotal(total);
     setDone(true);
-    // One write per finished round (never per question/target/gap) — see
-    // grammar-progress.ts's own doc comment on the write-budget constraint.
-    // Fire-and-forget: a failed write must never block or degrade the
-    // (purely session-local) score screen.
+    // Two independent writes, both fire-and-forget, both one-per-round
+    // (never per question) — see each helper's own doc comment. A failed
+    // write here must never block or degrade the (purely session-local)
+    // score screen.
     void recordGrammarRoundResult({
       data: { topicId: "lesen", correctInRound: correctCount, totalInRound: total },
     }).catch(() => {});
-  }
-
-  function chooseOption(optionIndex: number) {
-    if (!passage || passage.kind !== "choice" || selected !== null) return;
-    setSelected(optionIndex);
-    if (optionIndex === passage.questions[index]!.correctIndex) {
-      setChoiceCorrectCount((n) => n + 1);
+    if (passage && level) {
+      recordLesenPassageCompletion({ data: { level, passageId: passage.id } })
+        .then(({ completedPassageIds }) => {
+          setProgressDoc((prev) => ({
+            ...prev,
+            [level]: { completedPassageIds, lastPracticedAt: Date.now() },
+          }));
+        })
+        .catch(() => {});
     }
-  }
-
-  function nextChoiceQuestion() {
-    if (!passage || passage.kind !== "choice") return;
-    const isLast = index + 1 >= passage.questions.length;
-    if (isLast) {
-      finishRound(choiceCorrectCount, passage.questions.length);
-      return;
-    }
-    setSelected(null);
-    setIndex((i) => i + 1);
   }
 
   if (!level || !passage) {
@@ -132,13 +139,28 @@ function LesenPage() {
         <p className="text-sm text-muted">
           Short German reading passages with real comprehension questions — pick a level to start.
         </p>
-        <div className="mt-4 flex flex-wrap gap-2">
-          {LEVELS.map((lvl) => (
-            <Button key={lvl} onClick={() => start(lvl)} variant={lvl === "A1" ? "default" : "outline"}>
-              Start {lvl}
-            </Button>
-          ))}
+        <div className="mt-4 flex flex-col gap-2">
+          {LEVELS.map((lvl) => {
+            const completedCount = progressDoc[lvl]?.completedPassageIds.length ?? 0;
+            const total = TOTAL_PER_LEVEL[lvl];
+            return (
+              <Button
+                key={lvl}
+                onClick={() => start(lvl)}
+                variant={lvl === "A1" ? "default" : "outline"}
+                className="justify-between"
+              >
+                <span>Start {lvl}</span>
+                <span className="text-xs font-normal tabular-nums opacity-80">
+                  {completedCount}/{total} completed
+                </span>
+              </Button>
+            );
+          })}
         </div>
+        <Button asChild variant="ghost" className="mt-4 w-full">
+          <Link to="/grammar/lesen-paste">Practice your own topic (AI-generated)</Link>
+        </Button>
       </StudySessionShell>
     );
   }
@@ -190,66 +212,9 @@ function LesenPage() {
     );
   }
 
-  const question = passage.questions[index]!;
-  const revealed = selected !== null;
-
   return (
-    <StudySessionShell
-      title="Lesen"
-      mode="Lesen"
-      index={index}
-      total={passage.questions.length}
-      onBack={backOneStep}
-      primaryAction={revealed ? { label: "Continue", onClick: nextChoiceQuestion } : undefined}
-    >
-      <div className="mx-auto max-w-md">
-        <div className="rounded-card border border-border bg-surface p-5 shadow-[var(--elevation-1)]">
-          <p className="text-xs font-medium text-subtle">
-            {passage.title} · {passage.source}
-          </p>
-          <p className="mt-2 whitespace-pre-line font-serif text-sm leading-relaxed text-fg">{passage.text}</p>
-        </div>
-
-        <div className="mt-6 rounded-card border border-border bg-surface-2 p-5">
-          <p className="font-sans text-lg font-semibold tracking-tight text-fg text-balance">
-            {question.prompt}
-          </p>
-          <div className="mt-4 flex flex-col gap-2">
-          {question.options.map((option, optionIndex) => {
-            const isCorrectOption = optionIndex === question.correctIndex;
-            const isChosen = selected === optionIndex;
-            const isWrongPick = revealed && isChosen && !isCorrectOption;
-            const isAnswer = revealed && isCorrectOption;
-            const dim = revealed && !isChosen && !isCorrectOption;
-            return (
-              <button
-                key={option}
-                type="button"
-                disabled={revealed}
-                onClick={() => chooseOption(optionIndex)}
-                className={cn(
-                  "w-full rounded-card border-2 bg-surface px-4 py-3 text-left text-sm font-medium text-fg shadow-[var(--elevation-1)] transition-[box-shadow,opacity,border-color] duration-[var(--duration-fast)] ease-[var(--ease-out)]",
-                  isAnswer ? "border-success" : isWrongPick ? "border-danger" : "border-border",
-                  !revealed && "hover:shadow-[var(--elevation-2)]",
-                  dim && "opacity-30",
-                )}
-              >
-                <span className="inline-flex items-center gap-1.5">
-                  {option}
-                  {isAnswer ? <Check className="size-4 shrink-0 text-success" aria-hidden="true" /> : null}
-                </span>
-              </button>
-            );
-          })}
-          </div>
-          {revealed ? (
-            <p className="mt-3 flex items-start gap-1.5 text-sm text-subtle">
-              <Info className="mt-0.5 size-4 shrink-0" />
-              {question.explanation}
-            </p>
-          ) : null}
-        </div>
-      </div>
+    <StudySessionShell title="Lesen" mode="Lesen" index={0} total={1} onBack={backOneStep}>
+      <LesenChoiceBoard key={passage.id} passage={passage} onComplete={finishRound} />
     </StudySessionShell>
   );
 }
