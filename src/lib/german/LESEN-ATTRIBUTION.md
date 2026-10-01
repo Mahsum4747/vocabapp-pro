@@ -1,15 +1,17 @@
 # Lesen reading passages — attribution
 
-`lesen-data.ts` in this directory is a third-party dataset, not original
-work of this project. It carries license obligations that survive being
-bundled into the application.
+`lesen-data.ts` (A1/A2) and `lesen-data-b1-b2.ts` (B1/B2) in this directory
+are a third-party dataset, not original work of this project. They carry
+license obligations that survive being bundled into the application.
 
 ## Source
 
 | | |
 |---|---|
 | Project | [diprajkadlag/german-exam-trainer](https://github.com/diprajkadlag/german-exam-trainer) by Dipraj Kadlag |
-| Files used | `content/exams/{a1,a2}-pruefung-01` through `-05`, the `lesen` section of each `exam.json` |
+| Files used (A1/A2) | `content/exams/{a1,a2}-pruefung-01` through `-05`, the `lesen` section of each `exam.json` |
+| Files used (B1) | `content/exams/pruefung-01` through `-05` — unprefixed in the source repo, B1 being its "default" level |
+| Files used (B2) | `content/exams/b2-pruefung-01` through `-05` |
 | License (content) | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) — see that repo's own `LICENSE-CONTENT` file |
 | License (code, not used here) | MIT — see that repo's own `LICENSE` |
 
@@ -40,10 +42,19 @@ sometimes spanning two texts (A1 "kurzmitteilungen") or five texts (A1
 own matching items, so every record here is one passage with its own
 question set, independent of its original siblings.
 
-Not everything in the source's `lesen` section was carried over — see
-`lesen-data.ts`'s own header comment for exactly which two item types
-(A1 "wo_finde_ich", A2 "zuordnung_anzeigen") were left out and why
-(matching/ad-pairing exercises, not single-passage comprehension).
+Not everything in the source's `lesen` section was carried over for A1/A2
+— see `lesen-data.ts`'s own header comment for exactly which two item
+types (A1 "wo_finde_ich", A2 "zuordnung_anzeigen") were left out and why
+(matching/ad-pairing exercises, not single-passage comprehension). B1/B2
+carry over ALL six of their own `lesen` item types — see
+`lesen-data-b1-b2.ts`'s own header comment for how each was reshaped into
+this app's three passage kinds (choice / matching / sentence-insertion),
+including the one real content change: B1's `ja_nein` items are a bare
+person name (`frage: "Tanja, 34"`), reworded into a full question
+("Stimmt diese Person der These zu? „Tanja, 34“") with the shared forum
+thesis prepended to the passage text, so the question is self-contained
+rather than only making sense next to the original exam's printed
+instructions.
 
 ## Originality — not independently verified
 
