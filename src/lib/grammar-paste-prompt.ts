@@ -58,6 +58,9 @@ Rules:
 - "correctIndex" is 0-based (0, 1, 2 or 3) and must point at the option in
   "options" that actually belongs in the blank.
 - Every question must genuinely test TOPIC below, not unrelated grammar.
+- Use a variety of different example sentences, contexts, and (where
+  relevant to the topic) different valid connectors/structures — do not
+  repeat the same pattern across all ${questionCount} questions.
 - If TOPIC is not a real German grammar topic, or you cannot honestly
   write ${questionCount} correct questions for it, output exactly {"error": "why not"}
   instead of the schema above — never invent a fake topic to fill the

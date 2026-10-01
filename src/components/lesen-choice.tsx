@@ -1,7 +1,7 @@
 import { Check, Info } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { cn, shuffle } from "@/lib/utils";
 
 /**
  * Shared "choice" Lesen session — one passage, its own short list of
@@ -40,10 +40,25 @@ export function LesenChoiceBoard({
   const question = passage.questions[index]!;
   const revealed = selected !== null;
 
+  // Bug fix: the raw `options` array (as the AI/source gave it) was being
+  // rendered in its original order — an AI tends to put the correct answer
+  // at index 0 far more often than chance, and nothing here ever shuffled
+  // it, so a Lesen Paste round could come out "correct answer is always
+  // the first option" every single question. Reshuffled once per question
+  // (memoized on `index` — a fresh shuffle on every render would visibly
+  // reorder the options out from under a learner mid-question, including
+  // right after they've answered and are looking at the reveal).
+  const { options: shuffledOptions, correctIndex: shuffledCorrectIndex } = useMemo(() => {
+    const correctOption = question.options[question.correctIndex];
+    const options = shuffle(question.options);
+    return { options, correctIndex: options.indexOf(correctOption) };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [index]);
+
   function choose(optionIndex: number) {
     if (revealed) return;
     setSelected(optionIndex);
-    if (optionIndex === question.correctIndex) setCorrectCount((n) => n + 1);
+    if (optionIndex === shuffledCorrectIndex) setCorrectCount((n) => n + 1);
   }
 
   function next() {
@@ -71,8 +86,8 @@ export function LesenChoiceBoard({
         </p>
         <p className="mt-1 font-sans text-lg font-semibold tracking-tight text-fg text-balance">{question.prompt}</p>
         <div className="mt-4 flex flex-col gap-2">
-          {question.options.map((option, optionIndex) => {
-            const isCorrectOption = optionIndex === question.correctIndex;
+          {shuffledOptions.map((option, optionIndex) => {
+            const isCorrectOption = optionIndex === shuffledCorrectIndex;
             const isChosen = selected === optionIndex;
             const isWrongPick = revealed && isChosen && !isCorrectOption;
             const isAnswer = revealed && isCorrectOption;

@@ -80,6 +80,18 @@ function LesenPastePage() {
   const [activeTopicId, setActiveTopicId] = useState<string | null>(null);
   const [savedTopics, setSavedTopics] = useState<LesenPasteTopicSummary[] | null>(null);
 
+  // `LesenChoiceBoard` calls `onComplete` after the LAST question's
+  // Continue and then stops managing anything itself (see its own doc
+  // comment) — it expects the caller to leave the question view. Bug fix:
+  // this state didn't exist before, so `handleRoundComplete` only ever
+  // fired the Firestore write and nothing else changed on screen — the
+  // last question just sat there with Continue visibly doing nothing.
+  // grammar.lesen.tsx's bundled sessions already had this same done/
+  // result-screen state; Lesen Paste never got it when it was built.
+  const [done, setDone] = useState(false);
+  const [resultCorrect, setResultCorrect] = useState(0);
+  const [resultTotal, setResultTotal] = useState(0);
+
   const explanationLanguage = useStudyStore((s) => s.profile?.explanationLanguage);
   const prompt = useMemo(
     () => `${lesenPastePromptFor(level, explanationLanguage)}${topic.trim()}`,
@@ -109,6 +121,7 @@ function LesenPastePage() {
     }
     setRound(result.value);
     setActiveTopicId(null);
+    setDone(false);
     // Saved once, automatically, right here — never per question, never on
     // re-opening an already-saved passage (see openSavedTopic below).
     saveLesenPasteTopic({
@@ -134,6 +147,7 @@ function LesenPastePage() {
         }
         setRound({ title: full.title, text: full.text, questions: full.questions });
         setActiveTopicId(full.id);
+        setDone(false);
       })
       .catch(() => toast.error("Couldn't open this saved passage."));
   }
@@ -149,11 +163,15 @@ function LesenPastePage() {
   function reset() {
     setRound(null);
     setActiveTopicId(null);
+    setDone(false);
     setText("");
     setErrors([]);
   }
 
   function handleRoundComplete(correctInRound: number, totalInRound: number) {
+    setResultCorrect(correctInRound);
+    setResultTotal(totalInRound);
+    setDone(true);
     if (!activeTopicId) return;
     recordLesenPasteTopicRoundResult({ data: { id: activeTopicId, correctInRound, totalInRound } })
       .then((summary) => {
@@ -168,7 +186,20 @@ function LesenPastePage() {
       <div className="mx-auto max-w-md">
         <AiGeneratedBadge />
 
-        {round ? (
+        {round && done ? (
+          <div className="mx-auto max-w-md rounded-card bg-surface p-8 text-center shadow-[var(--elevation-1)]">
+            <p className="text-sm text-muted">Round result</p>
+            <p className="mt-2 font-display text-5xl font-medium tracking-tight tabular-nums">
+              {Math.round((resultCorrect / resultTotal) * 100)}%
+            </p>
+            <p className="mt-2 text-sm text-muted">
+              {resultCorrect} / {resultTotal} correct
+            </p>
+            <div className="mt-6 flex flex-col gap-2">
+              <Button onClick={reset}>Try a different passage</Button>
+            </div>
+          </div>
+        ) : round ? (
           <>
             <LesenChoiceBoard
               key={activeTopicId ?? round.title}
