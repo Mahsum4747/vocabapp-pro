@@ -34,6 +34,7 @@ import { useStudyStore } from "@/lib/store";
 import type { DailyStats } from "@/lib/types";
 import { cn, recentDateKeys } from "@/lib/utils";
 import { getWriteItFeedbackLog, type WriteItFeedbackLogEntry } from "@/lib/write-it-feedback";
+import type { ErrorCategory } from "@/lib/write-feedback-types";
 
 export const Route = createFileRoute("/account")({ component: AccountRoute });
 
@@ -379,8 +380,13 @@ function GoalTab({ timeZone }: { timeZone: string }) {
 /**
  * Read-only log of every WriteIt AI feedback the learner has ever requested
  * — grouped by set, newest set-group order determined by that group's own
- * most recent entry, newest first within each group. Purely a lookup list:
- * no analysis, no "most common mistake" summary, out of scope by design.
+ * most recent entry, newest first within each group. Mostly a lookup list,
+ * plus one small top-of-page summary (`ErrorTagSummary` below) of the
+ * structured `errorTags` write-sentence-feedback.ts already logs alongside
+ * the free-text feedback (Dilim 3) — until now written but never read back
+ * anywhere. Purely a client-side tally over the same rows this tab already
+ * fetches: no new Gemini call, no new server function, no deep-link into a
+ * drill from a weak category (left for a later, separate decision).
  */
 function AiFeedbackTab() {
   const [entries, setEntries] = useState<WriteItFeedbackLogEntry[] | null>(null);
@@ -425,6 +431,7 @@ function AiFeedbackTab() {
 
   return (
     <div className="space-y-6">
+      <ErrorTagSummary entries={entries} />
       {orderedGroups.map((group) => (
         <section key={group.entries[0].setId}>
           <h2 className="text-sm font-medium">{group.setTitle}</h2>
@@ -449,6 +456,86 @@ function AiFeedbackTab() {
           </div>
         </section>
       ))}
+    </div>
+  );
+}
+
+/** Human-readable label per `ErrorCategory` — the raw enum value
+ *  (`article_gender`, `word_order_other`, ...) is Gemini's own vocabulary,
+ *  not something to show a learner as-is. */
+const ERROR_CATEGORY_LABELS: Record<ErrorCategory, string> = {
+  article_gender: "Article gender (der/die/das)",
+  case: "Case (Akkusativ/Dativ/...)",
+  verb_position: "Verb position",
+  verb_conjugation: "Verb conjugation",
+  register: "Register (du/Sie)",
+  missing_leitpunkt: "Missing a required point",
+  word_choice: "Word choice",
+  spelling: "Spelling",
+  word_order_other: "Word order",
+};
+
+/** Minimum total feedback rows before the summary below replaces its own
+ *  gentle empty state — a handful of sentences isn't enough to call
+ *  anything a "pattern" yet, and a 1-of-1 category would just be noise. */
+const MIN_FEEDBACK_FOR_SUMMARY = 5;
+
+/**
+ * "Your most common mistakes" — a plain tally over `errorTags` across every
+ * row already fetched by `AiFeedbackTab` above it, not a new query or a new
+ * Gemini call. Same simplicity as `WeakWordsCard` (goal-and-xp.tsx): one
+ * line per category, no chart, no dashboard. Read-only — tapping a
+ * category doesn't go anywhere (a "practice this weak spot" deep-link is a
+ * separate decision, left for later).
+ */
+function ErrorTagSummary({ entries }: { entries: WriteItFeedbackLogEntry[] }) {
+  if (entries.length < MIN_FEEDBACK_FOR_SUMMARY) {
+    return (
+      <div className="rounded-card bg-surface p-4 shadow-[var(--elevation-1)]">
+        <p className="text-xs font-medium tracking-wide text-muted uppercase">Most common mistakes</p>
+        <p className="mt-1 text-sm text-muted">
+          Not enough feedback yet to spot a pattern — write a few more sentences and check back here.
+        </p>
+      </div>
+    );
+  }
+
+  const counts = new Map<ErrorCategory, number>();
+  for (const entry of entries) {
+    for (const tag of entry.errorTags ?? []) {
+      counts.set(tag.category, (counts.get(tag.category) ?? 0) + 1);
+    }
+  }
+  const top = [...counts.entries()]
+    .map(([category, count]) => ({ category, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 3);
+
+  // `errorTags` is additive (see write-it-feedback.ts's own doc comment) —
+  // older rows, or ones Gemini returned without any tags, simply have
+  // none. With `entries.length` already past the threshold above but
+  // nothing tagged at all, the honest state is still "no pattern yet",
+  // not a misleading empty list.
+  if (top.length === 0) {
+    return (
+      <div className="rounded-card bg-surface p-4 shadow-[var(--elevation-1)]">
+        <p className="text-xs font-medium tracking-wide text-muted uppercase">Most common mistakes</p>
+        <p className="mt-1 text-sm text-muted">No categorized mistakes in your feedback yet.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-card bg-surface p-4 shadow-[var(--elevation-1)]">
+      <p className="text-xs font-medium tracking-wide text-muted uppercase">Most common mistakes</p>
+      <ul className="mt-1 space-y-0.5">
+        {top.map(({ category, count }) => (
+          <li key={category} className="text-sm text-fg">
+            {ERROR_CATEGORY_LABELS[category]}
+            <span className="text-muted"> — {count} time{count === 1 ? "" : "s"}</span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

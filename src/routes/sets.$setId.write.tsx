@@ -169,6 +169,11 @@ function WritePage() {
           </button>
         ))}
       </div>
+      <p className="mb-4 text-xs text-muted">
+        {tab === "task"
+          ? "CEFR-level scenario practice — respond to a realistic situation, Leitpunkte included."
+          : "Practice with your own vocabulary — write a sentence using words from this set."}
+      </p>
 
       {tab === "task" ? (
         <>
