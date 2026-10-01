@@ -138,10 +138,11 @@ const CATEGORIES: {
       | "/grammar/subjektive-modalverben"
       | "/grammar/passiversatzformen"
       | "/grammar/paste";
-    /** Lesen only: the destination is a real route, but it's a "coming
-     *  soon" skeleton with no content yet (see grammar.lesen.tsx's own
-     *  doc comment) — renders the card dimmed with a "Coming soon" label
-     *  instead of pretending there's a real drill to jump into. */
+    /** For a mode whose destination is a real route but has no content
+     *  yet — renders the card dimmed with a "Coming soon" label instead of
+     *  pretending there's a real drill to jump into. Unused today (Lesen,
+     *  the one mode that used this, now has real content — see
+     *  grammar.lesen.tsx), kept for the next such skeleton. */
     comingSoon?: boolean;
     eligible: (set: StudySet) => boolean;
     /** Articles/Cases: `masteryScore` is never written by these two drills
@@ -340,10 +341,9 @@ const CATEGORIES: {
       {
         id: "lesen",
         title: "Lesen",
-        description: "Reading passages — coming soon",
+        description: "Short reading passages with comprehension questions",
         icon: BookOpen,
         standaloneTo: "/grammar/lesen",
-        comingSoon: true,
         eligible: alwaysEligible,
         progressKind: "none",
       },
