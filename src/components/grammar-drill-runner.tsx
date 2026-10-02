@@ -8,6 +8,7 @@ import { EmptyState } from "@/components/empty-state";
 import { fetchGermanGlosses, fetchRandomNounSample, type GermanGloss } from "@/lib/german/grammar-drill-sample";
 import { recordGrammarRoundResult } from "@/lib/grammar-progress";
 import { GRAMMAR_RULES, type GrammarRule, type GrammarRuleTopic } from "@/content/grammar-rules";
+import { GrammarRuleContent } from "@/components/grammar-rule-content";
 import { pickExplanation } from "@/lib/learning-prefs";
 import { useStudyStore } from "@/lib/store";
 import { cn, shuffle } from "@/lib/utils";
@@ -359,39 +360,10 @@ export function GrammarDrillRunner<T = NounEntry>({
       </StudySessionShell>
       <Dialog open={ruleOpen} onOpenChange={setRuleOpen}>
         <DialogContent title={rule?.title ?? ""}>
-          <p className="mt-2 text-sm text-muted">{rule?.intro}</p>
-          {rule?.table ? (
-            <div className="mt-4 overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border">
-                    {rule.table.headers.map((header) => (
-                      <th key={header} className="p-2 text-left font-medium text-muted">
-                        {header}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {rule.table.rows.map((row) => (
-                    <tr key={row.join("|")} className="border-b border-border/60">
-                      {row.map((cell, i) => (
-                        <td key={i} className="p-2 text-fg">
-                          {cell}
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          {rule ? (
+            <div className="mt-2">
+              <GrammarRuleContent rule={rule} />
             </div>
-          ) : null}
-          {rule?.examples ? (
-            <ul className="mt-4 space-y-1 text-sm text-fg">
-              {rule.examples.map((example) => (
-                <li key={example}>{example}</li>
-              ))}
-            </ul>
           ) : null}
         </DialogContent>
       </Dialog>

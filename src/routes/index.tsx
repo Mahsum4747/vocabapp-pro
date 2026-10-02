@@ -350,15 +350,34 @@ function Home() {
           </div>
           {view === "mine" ? (
             <AuthGate>
-              <div className="relative w-full md:max-w-xs">
-                <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-subtle" />
-                <Input
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Search sets or cards"
-                  className="pl-10"
-                  aria-label="Search"
-                />
+              <div className="flex items-center gap-2">
+                <div className="relative w-full md:max-w-xs">
+                  <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-subtle" />
+                  <Input
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder="Search sets or cards"
+                    className="pl-10"
+                    aria-label="Search"
+                  />
+                </div>
+                {/* Always-available entry into bulk-move mode — the
+                  uncategorizedRatio banner below is an extra nudge for a
+                  mostly-unsorted library, not the only way in: a library
+                  that's already organized (so the banner never shows) still
+                  needs a way to move several already-foldered sets at once,
+                  e.g. merging two folders. */}
+                {!selectMode && sets.length > 0 ? (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="shrink-0"
+                    onClick={() => toggleSelectMode(true)}
+                  >
+                    Organize
+                  </Button>
+                ) : null}
               </div>
             </AuthGate>
           ) : null}

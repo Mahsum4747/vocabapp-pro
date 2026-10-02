@@ -37,6 +37,7 @@ import { Route as GrammarPluralRouteImport } from './routes/grammar.plural'
 import { Route as GrammarPossessiveRouteImport } from './routes/grammar.possessive'
 import { Route as GrammarPronomenRouteImport } from './routes/grammar.pronomen'
 import { Route as GrammarRelativsaetzeRouteImport } from './routes/grammar.relativsaetze'
+import { Route as GrammarRulesRouteImport } from './routes/grammar.rules'
 import { Route as GrammarSteigerungRouteImport } from './routes/grammar.steigerung'
 import { Route as GrammarSubjektiveModalverbenRouteImport } from './routes/grammar.subjektive-modalverben'
 import { Route as GrammarTrennbareVerbenRouteImport } from './routes/grammar.trennbare-verben'
@@ -197,6 +198,11 @@ const GrammarRelativsaetzeRoute = GrammarRelativsaetzeRouteImport.update({
   path: '/relativsaetze',
   getParentRoute: () => GrammarRoute,
 } as any)
+const GrammarRulesRoute = GrammarRulesRouteImport.update({
+  id: '/rules',
+  path: '/rules',
+  getParentRoute: () => GrammarRoute,
+} as any)
 const GrammarSteigerungRoute = GrammarSteigerungRouteImport.update({
   id: '/steigerung',
   path: '/steigerung',
@@ -312,6 +318,7 @@ export interface FileRoutesByFullPath {
   '/grammar/possessive': typeof GrammarPossessiveRoute
   '/grammar/pronomen': typeof GrammarPronomenRoute
   '/grammar/relativsaetze': typeof GrammarRelativsaetzeRoute
+  '/grammar/rules': typeof GrammarRulesRoute
   '/grammar/steigerung': typeof GrammarSteigerungRoute
   '/grammar/subjektive-modalverben': typeof GrammarSubjektiveModalverbenRoute
   '/grammar/trennbare-verben': typeof GrammarTrennbareVerbenRoute
@@ -358,6 +365,7 @@ export interface FileRoutesByTo {
   '/grammar/possessive': typeof GrammarPossessiveRoute
   '/grammar/pronomen': typeof GrammarPronomenRoute
   '/grammar/relativsaetze': typeof GrammarRelativsaetzeRoute
+  '/grammar/rules': typeof GrammarRulesRoute
   '/grammar/steigerung': typeof GrammarSteigerungRoute
   '/grammar/subjektive-modalverben': typeof GrammarSubjektiveModalverbenRoute
   '/grammar/trennbare-verben': typeof GrammarTrennbareVerbenRoute
@@ -405,6 +413,7 @@ export interface FileRoutesById {
   '/grammar/possessive': typeof GrammarPossessiveRoute
   '/grammar/pronomen': typeof GrammarPronomenRoute
   '/grammar/relativsaetze': typeof GrammarRelativsaetzeRoute
+  '/grammar/rules': typeof GrammarRulesRoute
   '/grammar/steigerung': typeof GrammarSteigerungRoute
   '/grammar/subjektive-modalverben': typeof GrammarSubjektiveModalverbenRoute
   '/grammar/trennbare-verben': typeof GrammarTrennbareVerbenRoute
@@ -454,6 +463,7 @@ export interface FileRouteTypes {
     | '/grammar/possessive'
     | '/grammar/pronomen'
     | '/grammar/relativsaetze'
+    | '/grammar/rules'
     | '/grammar/steigerung'
     | '/grammar/subjektive-modalverben'
     | '/grammar/trennbare-verben'
@@ -500,6 +510,7 @@ export interface FileRouteTypes {
     | '/grammar/possessive'
     | '/grammar/pronomen'
     | '/grammar/relativsaetze'
+    | '/grammar/rules'
     | '/grammar/steigerung'
     | '/grammar/subjektive-modalverben'
     | '/grammar/trennbare-verben'
@@ -546,6 +557,7 @@ export interface FileRouteTypes {
     | '/grammar/possessive'
     | '/grammar/pronomen'
     | '/grammar/relativsaetze'
+    | '/grammar/rules'
     | '/grammar/steigerung'
     | '/grammar/subjektive-modalverben'
     | '/grammar/trennbare-verben'
@@ -776,6 +788,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GrammarRelativsaetzeRouteImport
       parentRoute: typeof GrammarRoute
     }
+    '/grammar/rules': {
+      id: '/grammar/rules'
+      path: '/rules'
+      fullPath: '/grammar/rules'
+      preLoaderRoute: typeof GrammarRulesRouteImport
+      parentRoute: typeof GrammarRoute
+    }
     '/grammar/steigerung': {
       id: '/grammar/steigerung'
       path: '/steigerung'
@@ -919,6 +938,7 @@ interface GrammarRouteChildren {
   GrammarPossessiveRoute: typeof GrammarPossessiveRoute
   GrammarPronomenRoute: typeof GrammarPronomenRoute
   GrammarRelativsaetzeRoute: typeof GrammarRelativsaetzeRoute
+  GrammarRulesRoute: typeof GrammarRulesRoute
   GrammarSteigerungRoute: typeof GrammarSteigerungRoute
   GrammarSubjektiveModalverbenRoute: typeof GrammarSubjektiveModalverbenRoute
   GrammarTrennbareVerbenRoute: typeof GrammarTrennbareVerbenRoute
@@ -946,6 +966,7 @@ const GrammarRouteChildren: GrammarRouteChildren = {
   GrammarPossessiveRoute: GrammarPossessiveRoute,
   GrammarPronomenRoute: GrammarPronomenRoute,
   GrammarRelativsaetzeRoute: GrammarRelativsaetzeRoute,
+  GrammarRulesRoute: GrammarRulesRoute,
   GrammarSteigerungRoute: GrammarSteigerungRoute,
   GrammarSubjektiveModalverbenRoute: GrammarSubjektiveModalverbenRoute,
   GrammarTrennbareVerbenRoute: GrammarTrennbareVerbenRoute,

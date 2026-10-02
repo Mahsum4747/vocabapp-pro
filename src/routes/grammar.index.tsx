@@ -548,10 +548,21 @@ function GrammarPage() {
   // needed, scoped per tile instead of hiding the whole page.
   return (
     <AppShell>
-      <h1 className="font-display text-3xl font-medium tracking-tight">Grammar practice</h1>
-      <p className="mt-2 text-muted">
-        The same five drills from each set's own mode grid, grouped by what they practice.
-      </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="font-display text-3xl font-medium tracking-tight">Grammar practice</h1>
+          <p className="mt-2 text-muted">
+            The same five drills from each set's own mode grid, grouped by what they practice.
+          </p>
+        </div>
+        <Link
+          to="/grammar/rules"
+          className="tap-target inline-flex items-center gap-1.5 rounded-control bg-surface-2 px-3 py-2 text-sm font-medium text-fg shadow-[var(--elevation-1)] transition-colors hover:bg-surface-3"
+        >
+          <BookOpen className="size-4" />
+          Browse all rules
+        </Link>
+      </div>
 
       <div className="mt-section space-y-section">
         {CATEGORIES.map((category) => (
