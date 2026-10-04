@@ -3,6 +3,9 @@
 Date: 2026-10-04. Base: `2f3e680e438626e7759162c79f1afeafad229d16`.
 Branch: `codex/preprod-foundation-hardening`. Review before merging.
 
+Pre-merge review supersedes the transfer/deletion/UI caveats below. See
+`PREPROD_HARDENING_REVIEW.md` for the final contracts and fresh validation.
+
 ## 1. Scope and outcome
 
 This phase fixes evidenced identity, concurrency, Paste lifecycle, deletion,
@@ -56,13 +59,18 @@ send IDs. Omitted imageUrl now retains the prior image, matching note/example
 preservation. Create/edit reject IDs already present in the caller's other sets.
 Edits detect a concurrently changed set rather than silently overwriting it.
 Transfers enforce access/membership, target capacity, unique IDs and distinct sets.
-The 100-card transfer cap keeps the transaction below the write limit when both
-drill counters and vocabulary progress exist.
+Transfers now accept up to the same 2,000 cards as a valid set; target capacity
+stays 2,000. Firestore removed its old 500-write ceiling in 2023. Selected
+progress/drill documents are read in groups of 300; all writes remain one atomic
+transaction, subject to Firestore document/request byte and time limits.
 
 TodaySummary remains a derived cache. Create/edit/transfer invalidate it inside
 the content transaction; the next read rebuilds it. It is never identity or
-learning truth. Transfer removes the moved IDs from the source session pass;
-the target pass may serve them normally. Historical event `setId` is provenance,
+learning truth. Transfer removes moved IDs and stale membership from both session passes;
+the target pass may serve them normally. Late session writes validate current
+set membership inside a transaction. The client applies returned memory/session
+state, updates library/public content caches and refreshes Today. Historical
+event `setId` is provenance,
 not rewritten when a card moves.
 
 ## 4. Persistence and schema changes
@@ -83,9 +91,11 @@ order. `totalAttempts` remains lifetime questions, not number of rounds.
 Timestamps are epoch milliseconds; local daily review keys and UTC streak keys
 retain their existing distinct semantics. No timezone/SRS redesign is included.
 
-Old synthetic bit histories cannot be reconstructed. Reset the disposable test
-learning data before a rollout of this branch for a clean metric baseline. The
-new code does not attempt a guessed chronological migration. Older counters may
+Old synthetic bit histories cannot be reconstructed. Resetting disposable test
+learning data is recommended for a clean metric baseline, not required to run.
+Old history is ignored; the next write starts the new round window. Missing
+lifetime counters initialize to zero. No guessed chronological migration runs.
+Older counters may
 continue until reset, but that mixed metric state is not the recommended rollout.
 
 ## 5. Transactions and retry behavior
@@ -135,7 +145,8 @@ Account deletion removes owned study_sets (public included), and recursively:
 - lesenProgress/{uid}.
 
 The existing separate Postgres endpoint deletes Better Auth user identity and
-its cascading sessions/accounts. Neither endpoint deletes other users' independent
+its cascading sessions/accounts, after repeating Firestore cleanup server-side.
+A direct final-endpoint request cannot skip learning cleanup. Neither endpoint deletes other users' independent
 copies. Global `ai_usage`, generated-set/card/example caches and bundled content
 are retained. Firestore and Postgres deletion remain two operations, not a claimed
 cross-database transaction. The UI must report partial deletion failures.
@@ -189,9 +200,11 @@ failed progress/retry, completion, history reopen and deletion, and isolation.
 Tests found and fixed a real B1 omission: target answer `0` had no selectable option.
 `matchingOptions()` supplies “0 — No matching option” only when needed. Matching
 chips expose aria-pressed; insertion gaps have stable accessible labels. Review's
-outer flip control is a keyboard-accessible div rather than nesting speech buttons
-inside a button. The mobile editor diacritic buttons and no-plural checkbox label
-now meet the existing 44px test contract. Desktop/mobile screenshots were visually inspected.
+flip button and speech buttons are separate native controls. The deck's keyboard
+shortcut yields Enter/Space to focused controls, so speaking does not flip. The mobile editor diacritic buttons and no-plural checkbox label
+now meet the existing 44px test contract. Session length presets/slider also have
+44px coarse-pointer targets; the test waits for profile-dependent controls before
+measuring. Desktop/mobile screenshots were visually inspected.
 
 ## 10. Future LearningSignals read model
 
@@ -274,12 +287,12 @@ ignored under `screenshots/`. No credentials or real Firebase data are in fixtur
 - Native CDP touch regression exercises Chromium's touch pipeline; physical iOS
   Safari behavior is not inferred from that result.
 - Review the changed round accuracy meaning, move-preserved learning state, tighter
-  Paste server payloads, 100-card transfer bound and scoped reset plan before merge.
+  Paste server payloads, full-set atomic transfers and scoped reset plan before merge.
 
 ## 14. Git/review status
 
 Work is committed only on `codex/preprod-foundation-hardening`. The branch is not
-pushed, and main is not merged or modified. Six logical commits cover validation,
+pushed, and main is not merged or modified. The original six logical commits cover validation,
 identity/validation, progress/Paste, deletion/diagnostics, browser/unit regressions
 and documentation. Existing `.agents`, `.codegraph`, `.firebaserc`, `.vercelignore`
 and local credentials are preserved; they were not staged. `.env.local` is ignored.

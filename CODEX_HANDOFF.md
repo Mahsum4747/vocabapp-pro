@@ -19,9 +19,12 @@ Deletion includes all four user roots. Runtime schemas and privacy-safe diagnost
 are strengthened. Default TS tests discover omitted Kurdish/drill tests; desktop
 and mobile learning regressions execute hermetically. No SRS semantics changed.
 No production data reset, migration, deployment, push to main or merge occurred.
-Current validation: zero type diagnostics, 210 script tests + 819 TS tests pass,
-production compile passes; Playwright 30 desktop + 41 mobile pass, 11 mobile-only
-desktop skips. See PREPROD_HARDENING.md for exact commands and remaining limits.
+The pre-merge review further corrects the full-set transfer bound/current caches,
+late session writes, server-enforced deletion ordering, native review controls,
+profile-dependent touch targets and legacy missing counters. Accuracy evidence
+separates its rolling denominator from lifetime attempts.
+See PREPROD_HARDENING_REVIEW.md for fresh validation and the merge decision;
+the original hardening validation remains recorded in PREPROD_HARDENING.md.
 
 ## 1. Executive Summary
 
