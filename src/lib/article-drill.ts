@@ -1,3 +1,4 @@
+import { assertCardMembership, documentIdSchema } from "./input-schemas";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { authMiddleware } from "./auth/middleware";
@@ -15,7 +16,7 @@ import type { ArticleDrillProgress, StudySet } from "./types";
  * see article-drill.test.ts, which greps this file for exactly that.
  */
 
-const idSchema = z.string().trim().min(1).max(200);
+const idSchema = documentIdSchema;
 const articleSchema = z.string().trim().min(1).max(50);
 
 /**
@@ -55,32 +56,36 @@ export const recordArticleDrillAttempt = createServerFn({ method: "POST" })
     const { getAdminFirestore, FieldValue } = await import("./firebase-admin.server");
     const db = getAdminFirestore();
 
-    const setDoc = await db.collection("study_sets").doc(data.setId).get();
-    if (!setDoc.exists) throw new Error("That set no longer exists.");
-    const studySet = setDoc.data() as StudySet;
-    if (studySet.ownerId !== context.userId && !studySet.isPublic) {
-      throw new Error("You don't have permission to study that set.");
-    }
-
     const userRef = db.collection("users").doc(context.userId);
     const docId = data.kind === "case" ? `${data.cardId}:case` : data.cardId;
     const ref = userRef.collection("articleDrillProgress").doc(docId);
 
     const now = Date.now();
-    await ref.set(
-      {
-        cardId: data.cardId,
-        setId: data.setId,
-        // Only stamped for "case" — an "article" write stays byte-identical
-        // to before this field existed, so old rows and new ones are the
-        // same shape and neither needs a backfill.
-        ...(data.kind === "case" ? { kind: "case" as const } : {}),
-        attempts: FieldValue.increment(1),
-        correct: FieldValue.increment(data.correct ? 1 : 0),
-        lastAttemptAt: now,
-      },
-      { merge: true },
-    );
+    await db.runTransaction(async (tx) => {
+      const setDoc = await tx.get(db.collection("study_sets").doc(data.setId));
+      if (!setDoc.exists) throw new Error("That set no longer exists.");
+      const studySet = setDoc.data() as StudySet;
+      if (studySet.ownerId !== context.userId && !studySet.isPublic) {
+        throw new Error("You don't have permission to study that set.");
+      }
+
+      assertCardMembership(studySet.cards, data.cardId);
+      tx.set(
+        ref,
+        {
+          cardId: data.cardId,
+          setId: data.setId,
+          // Only stamped for "case" — an "article" write stays byte-identical
+          // to before this field existed, so old rows and new ones are the
+          // same shape and neither needs a backfill.
+          ...(data.kind === "case" ? { kind: "case" as const } : {}),
+          attempts: FieldValue.increment(1),
+          correct: FieldValue.increment(data.correct ? 1 : 0),
+          lastAttemptAt: now,
+        },
+        { merge: true },
+      );
+    });
 
     // Append-only error log, wrong attempts only — pure data collection for
     // future error-type analysis, no scheduler/mastery implications. A

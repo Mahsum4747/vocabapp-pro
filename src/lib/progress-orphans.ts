@@ -6,7 +6,7 @@ import type { CardProgress, StudySet } from "./types.ts";
  *
  * A row is an orphan when either:
  *   - its `setId` is one of the owner's sets, and that set no longer has a card
- *     with this row's id (card removed, or a term edit that minted a new id); or
+ *     with this row's id (card removed; renaming keeps its id); or
  *   - its `setId` is not the owner's, and that set no longer exists at all
  *     (a set deleted before row cleanup existed).
  *

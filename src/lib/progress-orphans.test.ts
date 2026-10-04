@@ -18,7 +18,7 @@ describe("findOrphanProgressIds", () => {
       [],
     );
   });
-  it("drops a row whose card left its set (removed or renamed)", () => {
+  it("drops a row whose card left its set (removed)", () => {
     assert.deepEqual(
       findOrphanProgressIds({
         ownerSets,

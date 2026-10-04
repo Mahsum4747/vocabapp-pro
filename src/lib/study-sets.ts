@@ -1,3 +1,7 @@
+import { logOperationFailure, observeOperation } from "./diagnostics";
+import { LANGUAGES } from "./lang/languages";
+import { documentIdSchema, assertCardMembership } from "./input-schemas";
+import { indexCardDrafts, removedCardIds, planCardTransfer } from "./card-identity";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 // Type-only, so no firebase-admin code reaches the client bundle.
@@ -68,7 +72,7 @@ import type {
 } from "./types";
 
 /** Firestore ids and the date key are path segments — keep them tight. */
-const idSchema = z.string().trim().min(1).max(200);
+const idSchema = documentIdSchema;
 
 /**
  * A local calendar day, "YYYY-MM-DD". Also a document id, and Firestore reads
@@ -109,6 +113,7 @@ const cardProgressQuerySchema = z.object({ cardId: idSchema });
 const setProgressQuerySchema = z.object({ setId: idSchema });
 
 type DraftCard = {
+  id?: string;
   term: string;
   definition: string;
   imageUrl?: string | null;
@@ -132,6 +137,64 @@ type DraftCardWithProgress = DraftCard & {
   status?: Card["status"];
 };
 
+const draftCardSchema = z.object({
+  id: idSchema.optional(),
+  term: z.string().trim().max(500),
+  definition: z.string().trim().max(4000),
+  imageUrl: z.string().max(2000).nullable().optional(),
+  example: z.string().max(2000).nullable().optional(),
+  examples: z
+    .object({
+      nom: z.string().max(2000).nullable().optional(),
+      akk: z.string().max(2000).nullable().optional(),
+      dat: z.string().max(2000).nullable().optional(),
+    })
+    .nullable()
+    .optional(),
+  definition2: z.string().max(4000).nullable().optional(),
+  note: z.string().max(2000).nullable().optional(),
+  enrichment: z
+    .object({
+      gender: z.enum(["m", "f", "n"]).optional(),
+      plural: z.string().max(500).optional(),
+      noPlural: z.literal(true).optional(),
+      governs: z
+        .array(z.object({ preposition: z.string().max(80), case: z.enum(["akkusativ", "dativ"]) }))
+        .max(20)
+        .optional(),
+      directCase: z.literal("dativ").optional(),
+      source: z.enum(["dict", "ai", "user"]),
+      inferred: z.literal(true).optional(),
+      sourceNote: z.string().max(2000).nullable().optional(),
+    })
+    .strict()
+    .nullable()
+    .optional(),
+  starred: z.boolean().optional(),
+  status: z.enum(["active", "excluded", "archived"]).optional(),
+});
+const cardsSchema = z
+  .array(draftCardSchema)
+  .max(2000)
+  .refine((cards) => {
+    const ids = cards.flatMap((c) => (c.id ? [c.id] : []));
+    return new Set(ids).size === ids.length;
+  }, "Duplicate card ID");
+const createSetSchema = z.object({
+  title: z.string().trim().max(200),
+  description: z.string().max(10000),
+  subject: z.string().max(100),
+  cards: cardsSchema,
+  isReference: z.boolean().optional(),
+  termLanguage: z.string().max(80).optional(),
+  termLangCode: z.enum(LANGUAGES.map((language) => language.code)).optional(),
+  defLangCode: z.enum(LANGUAGES.map((language) => language.code)).optional(),
+  definitionLanguage2: z.string().max(80).optional(),
+  defLang2Code: z.enum(LANGUAGES.map((language) => language.code)).optional(),
+  folder: z.string().max(200).optional(),
+  aiGenerated: z.boolean().optional(),
+});
+
 /** Trim each case sentence; null when there is nothing left at all. */
 function sanitizeExamples(value: CaseExamples | null | undefined): CaseExamples | null {
   if (!value) return null;
@@ -144,7 +207,7 @@ function sanitizeExamples(value: CaseExamples | null | undefined): CaseExamples 
 }
 
 function uidServer(): string {
-  return Math.random().toString(36).slice(2) + Date.now().toString(36);
+  return crypto.randomUUID();
 }
 
 /**
@@ -189,11 +252,11 @@ function toCards(
   drafts: DraftCard[],
   context: { isGermanTermLanguage: boolean; dictLookup: (term: string) => CardEnrichment | null },
 ): Card[] {
-  return drafts
+  return indexCardDrafts(drafts, uidServer)
     .map((d) => {
       const term = d.term.trim();
       return {
-        id: uidServer(),
+        id: d.id,
         term,
         definition: d.definition.trim(),
         starred: false,
@@ -244,17 +307,12 @@ async function syncSummaryForSetChange(change: {
     const deleteIds = change.deleteIds ?? [];
     if (entered.length === 0 && left.length === 0 && deleteIds.length === 0) return;
 
-    const existingIds = new Set(before?.cards.map((c) => c.id));
-    const brandNew = new Set(entered.filter((id) => !existingIds.has(id)));
-
     const { getAdminFirestore } = await import("./firebase-admin.server");
     const db = getAdminFirestore();
     const progressCol = db.collection("users").doc(userId).collection("cardProgress");
 
     const rows = new Map(change.knownRows ?? []);
-    const toRead = [
-      ...new Set([...left, ...entered.filter((id) => !brandNew.has(id)), ...deleteIds]),
-    ].filter((id) => !rows.has(id));
+    const toRead = [...new Set([...left, ...entered, ...deleteIds])].filter((id) => !rows.has(id));
     for (let i = 0; i < toRead.length; i += 300) {
       const docs = await db.getAll(...toRead.slice(i, i + 300).map((id) => progressCol.doc(id)));
       for (const doc of docs) if (doc.exists) rows.set(doc.id, doc.data() as CardProgress);
@@ -263,7 +321,7 @@ async function syncSummaryForSetChange(change: {
     const now = Date.now();
     await applySummaryDelta(userId, {
       added: sumCounts(
-        entered.map((id) => (brandNew.has(id) ? undefined : rows.get(id))),
+        entered.map((id) => rows.get(id)),
         now,
       ),
       removed: sumCounts(
@@ -279,8 +337,45 @@ async function syncSummaryForSetChange(change: {
       await batch.commit();
     }
   } catch (error) {
-    console.error("Failed to sync today summary:", error);
+    logOperationFailure("summary.sync", error);
   }
+}
+
+/** Current progress/session references are removed; append-only events remain historical. */
+async function removeCardReferences(
+  db: import("firebase-admin/firestore").Firestore,
+  userId: string,
+  setId: string,
+  ids: string[],
+) {
+  if (!ids.length) return;
+  const userRef = db.collection("users").doc(userId);
+  for (let i = 0; i < ids.length; i += 100) {
+    const batch = db.batch();
+    for (const id of ids.slice(i, i + 100)) {
+      batch.delete(userRef.collection("cardProgress").doc(id));
+      batch.delete(userRef.collection("articleDrillProgress").doc(id));
+      batch.delete(userRef.collection("articleDrillProgress").doc(`${id}:case`));
+    }
+    await batch.commit();
+  }
+  await db.runTransaction(async (tx) => {
+    const doc = await tx.get(userRef);
+    const session = doc.data()?.setSessions?.[setId];
+    if (session)
+      tx.set(
+        userRef,
+        {
+          setSessions: {
+            [setId]: {
+              ...session,
+              served: (session.served ?? []).filter((id: string) => !ids.includes(id)),
+            },
+          },
+        },
+        { merge: true },
+      );
+  });
 }
 
 /** Apply a counter delta to the stored summary in a transaction (no-op if none is stored). */
@@ -319,7 +414,7 @@ export const getMySets = createServerFn({ method: "GET" })
  */
 export const getSetById = createServerFn({ method: "GET" })
   .middleware([optionalAuthMiddleware])
-  .validator((input: { id: string }) => input)
+  .validator((input: unknown) => z.object({ id: idSchema }).parse(input))
   .handler(async ({ context, data }) => {
     const { getAdminFirestore } = await import("./firebase-admin.server");
     const db = getAdminFirestore();
@@ -346,25 +441,9 @@ export const getPublicSets = createServerFn({ method: "GET" }).handler(async () 
 
 export const createSet = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
-  .validator(
-    (input: {
-      title: string;
-      description: string;
-      subject: string;
-      cards: DraftCard[];
-      isReference?: boolean;
-      termLanguage?: string;
-      termLangCode?: LanguageCode;
-      defLangCode?: LanguageCode;
-      definitionLanguage2?: string;
-      defLang2Code?: LanguageCode;
-      folder?: string;
-      /** The cards came from AI generation: incomplete nouns are refused. */
-      aiGenerated?: boolean;
-    }) => input,
-  )
+  .validator((input: unknown) => createSetSchema.parse(input))
   .handler(async ({ context, data }) => {
-    const { getAdminFirestore } = await import("./firebase-admin.server");
+    const { getAdminFirestore, FieldValue } = await import("./firebase-admin.server");
     const db = getAdminFirestore();
     const id = uidServer();
     const now = Date.now();
@@ -378,8 +457,10 @@ export const createSet = createServerFn({ method: "POST" })
     // Resolved from this same request's own language fields — a set being
     // created has no prior document to read them back from.
     const isGermanTermLanguage =
-      resolveSetLanguages({ termLanguage: data.termLanguage, termLangCode: termLangCode ?? undefined })
-        .term === "de";
+      resolveSetLanguages({
+        termLanguage: data.termLanguage,
+        termLangCode: termLangCode ?? undefined,
+      }).term === "de";
     const dictLookup = await germanDictLookup(isGermanTermLanguage);
     const cards = toCards(data.cards, { isGermanTermLanguage, dictLookup });
     // AI output never lands as a thin noun card: a noun needs gender, plural and
@@ -420,7 +501,22 @@ export const createSet = createServerFn({ method: "POST" })
       ...(defLang2Code ? { defLang2Code } : {}),
       ...(folder ? { folder } : {}),
     };
-    await db.collection("study_sets").doc(id).set(next);
+    await db.runTransaction(async (tx) => {
+      const owned = await tx.get(
+        db.collection("study_sets").where("ownerId", "==", context.userId),
+      );
+      const used = new Set(
+        owned.docs.flatMap((doc) => (doc.data() as StudySet).cards.map((card) => card.id)),
+      );
+      if (cards.some((card) => used.has(card.id)))
+        throw new Error("Card ID already exists in another set.");
+      tx.set(db.collection("study_sets").doc(id), next);
+      tx.set(
+        db.collection("users").doc(context.userId),
+        { todaySummary: FieldValue.delete() },
+        { merge: true },
+      );
+    });
     await syncSummaryForSetChange({ userId: context.userId, before: null, after: next });
     return next;
   });
@@ -456,7 +552,31 @@ export type SetMetaPatch = Partial<
 
 export const updateSetMeta = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
-  .validator((input: { id: string; patch: SetMetaPatch }) => input)
+  .validator((input: unknown) =>
+    z
+      .object({
+        id: idSchema,
+        patch: createSetSchema
+          .omit({ cards: true, aiGenerated: true })
+          .partial()
+          .extend({
+            termLangCode: z
+              .enum(LANGUAGES.map((l) => l.code))
+              .nullable()
+              .optional(),
+            defLangCode: z
+              .enum(LANGUAGES.map((l) => l.code))
+              .nullable()
+              .optional(),
+            defLang2Code: z
+              .enum(LANGUAGES.map((l) => l.code))
+              .nullable()
+              .optional(),
+          })
+          .strict(),
+      })
+      .parse(input),
+  )
   .handler(async ({ context, data }) => {
     const { getAdminFirestore, FieldValue } = await import("./firebase-admin.server");
     const db = getAdminFirestore();
@@ -496,9 +616,9 @@ export const updateSetMeta = createServerFn({ method: "POST" })
 
 export const replaceCards = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
-  .validator((input: { id: string; cards: DraftCardWithProgress[] }) => input)
+  .validator((input: unknown) => z.object({ id: idSchema, cards: cardsSchema }).parse(input))
   .handler(async ({ context, data }) => {
-    const { getAdminFirestore } = await import("./firebase-admin.server");
+    const { getAdminFirestore, FieldValue } = await import("./firebase-admin.server");
     const db = getAdminFirestore();
     const ref = db.collection("study_sets").doc(data.id);
     const doc = await ref.get();
@@ -506,7 +626,7 @@ export const replaceCards = createServerFn({ method: "POST" })
       throw new Error("You don't have permission to edit this set.");
     }
     const existing = doc.data() as StudySet;
-    const previous = new Map(existing.cards.map((c) => [c.term.trim().toLowerCase(), c]));
+    const previous = new Map(existing.cards.map((c) => [c.id, c]));
     // Read from the existing document, not from `data` — replaceCards never
     // touches a set's language fields, so its own language is the only
     // thing that can decide whether enrichment applies here.
@@ -515,17 +635,15 @@ export const replaceCards = createServerFn({ method: "POST" })
     // Learning progress is keyed by card id, so a card that survives an edit
     // has to keep its id — minting a new one on every save would orphan the
     // user's whole review history for that card.
-    const usedIds = new Set<string>();
-    const nextCards = data.cards
+    const nextCards = indexCardDrafts(data.cards, uidServer)
       .map((d): Card | null => {
         const term = d.term.trim();
         const definition = d.definition.trim();
         if (!term && !definition) return null;
-        const prior = previous.get(term.toLowerCase());
+        const prior = previous.get(d.id);
         const status = d.status ?? prior?.status;
-        // Two cards can share a term; only the first inherits the id.
-        const keptId = prior && !usedIds.has(prior.id) ? prior.id : uidServer();
-        usedIds.add(keptId);
+        // Duplicate terms are independent cards; identity comes from the draft ID.
+        const keptId = d.id;
         // An editor that knows about examples always sends the field (empty
         // string = cleared); one that doesn't omits it, so keep what's there.
         const example =
@@ -548,7 +666,7 @@ export const replaceCards = createServerFn({ method: "POST" })
           term,
           definition,
           starred: d.starred ?? prior?.starred ?? false,
-          imageUrl: d.imageUrl || null,
+          imageUrl: d.imageUrl !== undefined ? d.imageUrl || null : (prior?.imageUrl ?? null),
           example,
           examples,
           definition2,
@@ -559,20 +677,49 @@ export const replaceCards = createServerFn({ method: "POST" })
       })
       .filter((c): c is Card => c !== null);
     const now = Date.now();
-    await ref.update({ cards: nextCards, updatedAt: now });
-    // No row deletion here: a removed card — or a term edit, which mints a new
-    // id — leaves its old progress row in place. Only `deleteSet` deletes rows.
+    await db.runTransaction(async (tx) => {
+      const current = await tx.get(ref);
+      if (
+        current.data()?.ownerId !== context.userId ||
+        !current.updateTime?.isEqual(doc.updateTime!)
+      )
+        throw new Error("Set changed. Reload before saving.");
+      const owned = await tx.get(
+        db.collection("study_sets").where("ownerId", "==", context.userId),
+      );
+      const otherIds = new Set(
+        owned.docs
+          .filter((doc) => doc.id !== data.id)
+          .flatMap((doc) => (doc.data() as StudySet).cards.map((card) => card.id)),
+      );
+      if (nextCards.some((card) => otherIds.has(card.id)))
+        throw new Error("Card ID belongs to another set.");
+      tx.update(ref, { cards: nextCards, updatedAt: now });
+      tx.set(
+        db.collection("users").doc(context.userId),
+        { todaySummary: FieldValue.delete() },
+        { merge: true },
+      );
+    });
+    // Renames retain progress; removing an ID removes its current progress row.
     await syncSummaryForSetChange({
       userId: context.userId,
       before: existing,
       after: { ...existing, cards: nextCards },
+      deleteIds: removedCardIds(existing.cards, nextCards),
     });
+    await removeCardReferences(
+      db,
+      context.userId,
+      data.id,
+      removedCardIds(existing.cards, nextCards),
+    );
     return nextCards;
   });
 
 export const deleteSet = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
-  .validator((input: { id: string }) => input)
+  .validator((input: unknown) => z.object({ id: idSchema }).parse(input))
   .handler(async ({ context, data }) => {
     const { getAdminFirestore } = await import("./firebase-admin.server");
     const db = getAdminFirestore();
@@ -599,12 +746,15 @@ export const deleteSet = createServerFn({ method: "POST" })
       knownRows,
       deleteIds: [...knownRows.keys()],
     });
+    await removeCardReferences(db, context.userId, data.id, [
+      ...new Set([...before.cards.map((card) => card.id), ...knownRows.keys()]),
+    ]);
     return { ok: true };
   });
 
 export const togglePublic = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
-  .validator((input: { id: string }) => input)
+  .validator((input: unknown) => z.object({ id: idSchema }).parse(input))
   .handler(async ({ context, data }) => {
     const { getAdminFirestore } = await import("./firebase-admin.server");
     const db = getAdminFirestore();
@@ -620,7 +770,7 @@ export const togglePublic = createServerFn({ method: "POST" })
 
 export const copyPublicSet = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
-  .validator((input: { id: string }) => input)
+  .validator((input: unknown) => z.object({ id: idSchema }).parse(input))
   .handler(async ({ context, data }) => {
     const { getAdminFirestore } = await import("./firebase-admin.server");
     const db = getAdminFirestore();
@@ -661,13 +811,23 @@ export const copyPublicSet = createServerFn({ method: "POST" })
       const { FieldValue } = await import("./firebase-admin.server");
       await sourceDoc.ref.update({ copyCount: FieldValue.increment(1) });
     } catch (error) {
-      console.error("Failed to bump copyCount:", error);
+      logOperationFailure("set.copy-count", error);
     }
 
     return cloned;
   });
 
-type TransferCardsInput = { sourceSetId: string; targetSetId: string; cardIds: string[] };
+const transferSchema = z
+  .object({
+    sourceSetId: idSchema,
+    targetSetId: idSchema,
+    cardIds: z.array(idSchema).min(1).max(100),
+  })
+  .refine(
+    (v) => v.sourceSetId !== v.targetSetId && new Set(v.cardIds).size === v.cardIds.length,
+    "Invalid transfer",
+  );
+type TransferCardsInput = z.infer<typeof transferSchema>;
 
 /**
  * Shared by `copyCardsToSet` and `moveCardsToSet`: add the selected cards
@@ -678,68 +838,104 @@ type TransferCardsInput = { sourceSetId: string; targetSetId: string; cardIds: s
  * same rule as `getSetById`).
  */
 async function transferCards(userId: string, data: TransferCardsInput, removeFromSource: boolean) {
-  const { getAdminFirestore } = await import("./firebase-admin.server");
+  const { getAdminFirestore, FieldValue } = await import("./firebase-admin.server");
   const db = getAdminFirestore();
   const sourceRef = db.collection("study_sets").doc(data.sourceSetId);
   const targetRef = db.collection("study_sets").doc(data.targetSetId);
-  const [sourceDoc, targetDoc] = await Promise.all([sourceRef.get(), targetRef.get()]);
-
-  if (!targetDoc.exists || targetDoc.data()?.ownerId !== userId) {
-    throw new Error("You don't have permission to add cards to that set.");
-  }
-  if (!sourceDoc.exists) {
-    throw new Error("The source set no longer exists.");
-  }
-  const source = sourceDoc.data() as StudySet;
-  if (removeFromSource && source.ownerId !== userId) {
-    throw new Error("You don't have permission to remove cards from that set.");
-  }
-  if (!removeFromSource && source.ownerId !== userId && !source.isPublic) {
-    throw new Error("You don't have permission to read that set.");
-  }
-
-  const idSet = new Set(data.cardIds);
-  const selected = source.cards.filter((c) => idSet.has(c.id));
-  if (selected.length === 0) {
-    throw new Error("No matching cards found.");
-  }
-
-  const target = targetDoc.data() as StudySet;
-  const addedCards: Card[] = selected.map((c) => freshCardCopy(c, uidServer()));
-  const now = Date.now();
-  const targetCards = [...target.cards, ...addedCards];
-  await targetRef.update({ cards: targetCards, updatedAt: now });
+  const outcome = await db.runTransaction(async (tx) => {
+    const sourceDoc = await tx.get(sourceRef);
+    const targetDoc = await tx.get(targetRef);
+    if (!sourceDoc.exists || !targetDoc.exists) throw new Error("Set not found.");
+    const source = sourceDoc.data() as StudySet;
+    const target = targetDoc.data() as StudySet;
+    if (
+      target.ownerId !== userId ||
+      (removeFromSource ? source.ownerId !== userId : source.ownerId !== userId && !source.isPublic)
+    )
+      throw new Error("Transfer not permitted.");
+    const { sourceCards, targetCards, addedCount } = planCardTransfer(
+      source.cards,
+      target.cards,
+      data.cardIds,
+      removeFromSource,
+      uidServer,
+      freshCardCopy,
+    );
+    const rows = removeFromSource
+      ? await tx.get(
+          db
+            .collection("users")
+            .doc(userId)
+            .collection("cardProgress")
+            .where("setId", "==", data.sourceSetId),
+        )
+      : null;
+    const drillRows = removeFromSource
+      ? await tx.get(
+          db
+            .collection("users")
+            .doc(userId)
+            .collection("articleDrillProgress")
+            .where("setId", "==", data.sourceSetId),
+        )
+      : null;
+    const userRef = db.collection("users").doc(userId);
+    const userDoc = removeFromSource ? await tx.get(userRef) : null;
+    const now = Date.now();
+    tx.update(targetRef, { cards: targetCards, updatedAt: now });
+    tx.set(userRef, { todaySummary: FieldValue.delete() }, { merge: true });
+    if (removeFromSource) {
+      tx.update(sourceRef, { cards: sourceCards, updatedAt: now });
+      for (const row of rows?.docs ?? [])
+        if (data.cardIds.includes(row.id)) tx.update(row.ref, { setId: data.targetSetId });
+      for (const row of drillRows?.docs ?? [])
+        if (data.cardIds.includes(row.data().cardId))
+          tx.update(row.ref, { setId: data.targetSetId });
+      const sessions = userDoc?.data()?.setSessions;
+      if (sessions?.[data.sourceSetId])
+        tx.set(
+          userRef,
+          {
+            setSessions: {
+              [data.sourceSetId]: {
+                ...sessions[data.sourceSetId],
+                served: (sessions[data.sourceSetId].served ?? []).filter(
+                  (id: string) => !data.cardIds.includes(id),
+                ),
+              },
+            },
+          },
+          { merge: true },
+        );
+    }
+    return { source, target, sourceCards, targetCards, addedCount };
+  });
   await syncSummaryForSetChange({
     userId,
-    before: target,
-    after: { ...target, cards: targetCards },
+    before: outcome.target,
+    after: { ...outcome.target, cards: outcome.targetCards },
   });
-
-  let sourceCards = source.cards;
-  if (removeFromSource) {
-    sourceCards = source.cards.filter((c) => !idSet.has(c.id));
-    await sourceRef.update({ cards: sourceCards, updatedAt: now });
-    // No `deleteIds`: a move mints new card ids in the target and leaves the
-    // old progress row where it is. Whether a move should carry progress over
-    // is its own decision, not part of the due-count fix.
+  if (removeFromSource)
     await syncSummaryForSetChange({
       userId,
-      before: source,
-      after: { ...source, cards: sourceCards },
+      before: outcome.source,
+      after: { ...outcome.source, cards: outcome.sourceCards },
     });
-  }
-
-  return { addedCount: addedCards.length, targetCards, sourceCards };
+  return {
+    addedCount: outcome.addedCount,
+    sourceCards: outcome.sourceCards,
+    targetCards: outcome.targetCards,
+  };
 }
 
 export const copyCardsToSet = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
-  .validator((input: TransferCardsInput) => input)
+  .validator((input: unknown) => transferSchema.parse(input))
   .handler(({ context, data }) => transferCards(context.userId, data, false));
 
 export const moveCardsToSet = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
-  .validator((input: TransferCardsInput) => input)
+  .validator((input: unknown) => transferSchema.parse(input))
   .handler(({ context, data }) => transferCards(context.userId, data, true));
 
 /**
@@ -767,13 +963,6 @@ export const recordReview = createServerFn({ method: "POST" })
     // same rule as `getSetById`. Without this, any card/set id pair would be
     // accepted and quietly fill the history with rows for sets that the
     // caller can't see, or that don't exist at all.
-    const setDoc = await db.collection("study_sets").doc(data.setId).get();
-    if (!setDoc.exists) throw new Error("That set no longer exists.");
-    const studySet = setDoc.data() as StudySet;
-    if (studySet.ownerId !== context.userId && !studySet.isPublic) {
-      throw new Error("You don't have permission to study that set.");
-    }
-
     const now = Date.now();
     const correct = isCorrectRating(data.rating);
     const userRef = db.collection("users").doc(context.userId);
@@ -781,154 +970,168 @@ export const recordReview = createServerFn({ method: "POST" })
     const eventRef = userRef.collection("reviewEvents").doc();
     const dailyRef = userRef.collection("dailyStats").doc(data.date);
 
-    const outcome = await db.runTransaction(async (tx) => {
-      // Both reads first: a Firestore transaction refuses a read after a write.
-      // The scheduler needs the state it is advancing from, and a streak of
-      // correct answers has to be read before it can be extended or broken.
-      const previous = (await tx.get(progressRef)).data() as CardProgress | undefined;
-      const user = (await tx.get(userRef)).data() as Partial<UserDoc> | undefined;
+    const outcome = await observeOperation("review.persist", () =>
+      db.runTransaction(async (tx) => {
+        const setDoc = await tx.get(db.collection("study_sets").doc(data.setId));
+        if (!setDoc.exists) throw new Error("That set no longer exists.");
+        const studySet = setDoc.data() as StudySet;
+        if (studySet.ownerId !== context.userId && !studySet.isPublic) {
+          throw new Error("You don't have permission to study that set.");
+        }
 
-      const plan = planReview({
-        userId: context.userId,
-        cardId: data.cardId,
-        setId: data.setId,
-        eventId: eventRef.id,
-        rating: data.rating,
-        date: data.date,
-        responseTimeMs: data.responseTimeMs,
-        previous: previous ?? null,
-        now,
-        scheduler,
-      });
+        assertCardMembership(studySet.cards, data.cardId);
 
-      // Paid only on a card's first review of the day — the same day-key
-      // decision that drives `uniqueWordsReviewed`, so the cap and the counter
-      // can never disagree about what "today" means.
-      const xpDelta = xpForReview(data.rating, plan.daily.uniqueWordsReviewed > 0);
+        // Both reads first: a Firestore transaction refuses a read after a write.
+        // The scheduler needs the state it is advancing from, and a streak of
+        // correct answers has to be read before it can be extended or broken.
+        const previous = (await tx.get(progressRef)).data() as CardProgress | undefined;
+        const user = (await tx.get(userRef)).data() as Partial<UserDoc> | undefined;
 
-      /**
-       * Did this review just finish the set?
-       *
-       * Settled inside the transaction, before any write, so the bonus and the
-       * "already paid" list move together and a set can never pay twice. The
-       * read only happens when this card has itself just reached mastery and
-       * the set has not been completed before — on an ordinary review it costs
-       * nothing.
-       */
-      const completedSets = Array.isArray(user?.completedSets) ? user.completedSets : [];
-      const activeIds = new Set(studySet.cards.filter(isCardActive).map((card) => card.id));
-      let setJustCompleted = false;
+        const plan = planReview({
+          userId: context.userId,
+          cardId: data.cardId,
+          setId: data.setId,
+          eventId: eventRef.id,
+          rating: data.rating,
+          date: data.date,
+          responseTimeMs: data.responseTimeMs,
+          previous: previous ?? null,
+          now,
+          scheduler,
+        });
 
-      if (
-        plan.progress.masteryScore >= MASTERED_SCORE &&
-        activeIds.size > 0 &&
-        !completedSets.includes(data.setId)
-      ) {
-        const mastered = await tx.get(
-          userRef
-            .collection("cardProgress")
-            .where("setId", "==", data.setId)
-            .where("masteryScore", ">=", MASTERED_SCORE),
-        );
-        // This card's new score is not stored yet — it is being written by
-        // this very transaction — so count it here. Cards no longer in the set
-        // are ignored, or a deleted card could "complete" a set on its own.
-        const masteredIds = new Set(mastered.docs.map((doc) => doc.id));
-        masteredIds.add(data.cardId);
-        setJustCompleted = [...activeIds].every((id) => masteredIds.has(id));
-      }
+        // Paid only on a card's first review of the day — the same day-key
+        // decision that drives `uniqueWordsReviewed`, so the cap and the counter
+        // can never disagree about what "today" means.
+        const xpDelta = xpForReview(data.rating, plan.daily.uniqueWordsReviewed > 0);
 
-      const completionBonus = setJustCompleted ? SET_COMPLETION_XP : 0;
+        /**
+         * Did this review just finish the set?
+         *
+         * Settled inside the transaction, before any write, so the bonus and the
+         * "already paid" list move together and a set can never pay twice. The
+         * read only happens when this card has itself just reached mastery and
+         * the set has not been completed before — on an ordinary review it costs
+         * nothing.
+         */
+        const completedSets = Array.isArray(user?.completedSets) ? user.completedSets : [];
+        const activeIds = new Set(studySet.cards.filter(isCardActive).map((card) => card.id));
+        let setJustCompleted = false;
 
-      // The counters are stored as increments so concurrent reviews of
-      // different cards can't clobber each other's totals; the resolved values
-      // in `plan.progress` are what gets returned to the client.
-      const update: PartialWithFieldValue<CardProgress> = {
-        ...plan.progress,
-        totalReviews: FieldValue.increment(1),
-        correctReviews: FieldValue.increment(correct ? 1 : 0),
-        // Raw miss-type counters (Adım 5) — written only on an actual miss
-        // from the matching drill, never read back by scheduling/mastery/
-        // Today/weak. `plan.progress` above is what those all read; these
-        // two fields are deliberately outside it.
-        ...(data.missKind === "article" && !correct
-          ? { articleMissCount: FieldValue.increment(1) }
-          : {}),
-        ...(data.missKind === "case" && !correct ? { caseMissCount: FieldValue.increment(1) } : {}),
-      };
-      const daily: PartialWithFieldValue<DailyStats> = {
-        date: plan.daily.date,
-        reviews: FieldValue.increment(plan.daily.reviews),
-        correctReviews: FieldValue.increment(plan.daily.correctReviews),
-        studySeconds: FieldValue.increment(plan.daily.studySeconds),
-        // 0 for a card already counted today, so grading the same word three
-        // times moves `reviews` by 3 and this by 1. The dedup decision is made
-        // in `planReview` from the progress row this transaction already read —
-        // no extra read, and it is testable without a database.
-        uniqueWordsReviewed: FieldValue.increment(plan.daily.uniqueWordsReviewed),
-        xpEarned: FieldValue.increment(xpDelta + completionBonus),
-      };
+        if (
+          plan.progress.masteryScore >= MASTERED_SCORE &&
+          activeIds.size > 0 &&
+          !completedSets.includes(data.setId)
+        ) {
+          const mastered = await tx.get(
+            userRef
+              .collection("cardProgress")
+              .where("setId", "==", data.setId)
+              .where("masteryScore", ">=", MASTERED_SCORE),
+          );
+          // This card's new score is not stored yet — it is being written by
+          // this very transaction — so count it here. Cards no longer in the set
+          // are ignored, or a deleted card could "complete" a set on its own.
+          const masteredIds = new Set(mastered.docs.map((doc) => doc.id));
+          masteredIds.add(data.cardId);
+          setJustCompleted = [...activeIds].every((id) => masteredIds.has(id));
+        }
 
-      // XP and the lifetime counters are written as resolved values rather
-      // than increments: the transaction has just read them, and the total has
-      // to be clamped at zero, which `FieldValue.increment` cannot do.
-      // Keep the Home summary in step inside the same transaction. Only for
-      // cards the summary actually counts (own, studiable set, active card);
-      // anything else — or a summary that is stale — is left for the next Home
-      // read to rebuild.
-      const countsForToday =
-        studySet.ownerId === context.userId &&
-        isStudiableSet(studySet) &&
-        activeIds.has(data.cardId);
-      const todaySummary = countsForToday
-        ? applyReviewToSummary(readTodaySummary(user?.todaySummary), {
-            previous: previous ?? null,
-            next: plan.progress as CardProgress,
-            now,
-          })
-        : null;
+        const completionBonus = setJustCompleted ? SET_COMPLETION_XP : 0;
 
-      const profile: Partial<UserDoc> = {
-        id: context.userId,
-        totalXP: applyXp(user?.totalXP ?? 0, xpDelta + completionBonus),
-        totalReviews: (user?.totalReviews ?? 0) + 1,
-        perfectRun: nextPerfectRun(user?.perfectRun ?? 0, data.rating),
-        updatedAt: now,
-        ...(setJustCompleted ? { completedSets: [...completedSets, data.setId] } : {}),
-        ...(todaySummary ? { todaySummary } : {}),
-        ...(user === undefined ? { createdAt: now } : {}),
-      };
+        // The counters are stored as increments so concurrent reviews of
+        // different cards can't clobber each other's totals; the resolved values
+        // in `plan.progress` are what gets returned to the client.
+        const update: PartialWithFieldValue<CardProgress> = {
+          ...plan.progress,
+          totalReviews: FieldValue.increment(1),
+          correctReviews: FieldValue.increment(correct ? 1 : 0),
+          // Raw miss-type counters (Adım 5) — written only on an actual miss
+          // from the matching drill, never read back by scheduling/mastery/
+          // Today/weak. `plan.progress` above is what those all read; these
+          // two fields are deliberately outside it.
+          ...(data.missKind === "article" && !correct
+            ? { articleMissCount: FieldValue.increment(1) }
+            : {}),
+          ...(data.missKind === "case" && !correct
+            ? { caseMissCount: FieldValue.increment(1) }
+            : {}),
+        };
+        const daily: PartialWithFieldValue<DailyStats> = {
+          date: plan.daily.date,
+          reviews: FieldValue.increment(plan.daily.reviews),
+          correctReviews: FieldValue.increment(plan.daily.correctReviews),
+          studySeconds: FieldValue.increment(plan.daily.studySeconds),
+          // 0 for a card already counted today, so grading the same word three
+          // times moves `reviews` by 3 and this by 1. The dedup decision is made
+          // in `planReview` from the progress row this transaction already read —
+          // no extra read, and it is testable without a database.
+          uniqueWordsReviewed: FieldValue.increment(plan.daily.uniqueWordsReviewed),
+          xpEarned: FieldValue.increment(xpDelta + completionBonus),
+        };
 
-      tx.set(progressRef, update, { merge: true });
-      // A fresh document id every time: the log is append-only, never updated.
-      tx.set(eventRef, plan.event);
-      tx.set(dailyRef, daily, { merge: true });
-      tx.set(userRef, profile, { merge: true });
+        // XP and the lifetime counters are written as resolved values rather
+        // than increments: the transaction has just read them, and the total has
+        // to be clamped at zero, which `FieldValue.increment` cannot do.
+        // Keep the Home summary in step inside the same transaction. Only for
+        // cards the summary actually counts (own, studiable set, active card);
+        // anything else — or a summary that is stale — is left for the next Home
+        // read to rebuild.
+        const countsForToday =
+          studySet.ownerId === context.userId &&
+          isStudiableSet(studySet) &&
+          activeIds.has(data.cardId);
+        const todaySummary = countsForToday
+          ? applyReviewToSummary(readTodaySummary(user?.todaySummary), {
+              previous: previous ?? null,
+              next: plan.progress as CardProgress,
+              now,
+            })
+          : null;
 
-      return {
-        progress: plan.progress,
-        // The day's deltas, so the client can update the goal ring and the XP
-        // bar without re-reading the day — and without re-deriving the
-        // first-review-today rule for itself.
-        dailyDelta: { ...plan.daily, xpEarned: xpDelta + completionBonus },
-        xpDelta: xpDelta + completionBonus,
-        setJustCompleted,
-        completedSets: profile.completedSets ?? completedSets,
-        totalXP: profile.totalXP ?? 0,
-        totalReviews: profile.totalReviews ?? 0,
-        perfectRun: profile.perfectRun ?? 0,
-        achievements: user?.achievements,
-        // Already computed (applyReviewToSummary, bandOf-based delta) and
-        // already written above — handing it back is free. Without this the
-        // client's own todaySummary/`due` only updates on the next explicit
-        // fetchTodaySummary() call, which a same-session return to Home does
-        // not trigger, so "N due" stayed stale until then. `null` when this
-        // review isn't the owner's own studiable/active card (countsForToday
-        // false) or there was no prior summary to patch — the client leaves
-        // its state alone in that case, same as today.
-        todaySummary,
-      };
-    });
+        const profile: Partial<UserDoc> = {
+          id: context.userId,
+          totalXP: applyXp(user?.totalXP ?? 0, xpDelta + completionBonus),
+          totalReviews: (user?.totalReviews ?? 0) + 1,
+          perfectRun: nextPerfectRun(user?.perfectRun ?? 0, data.rating),
+          updatedAt: now,
+          ...(setJustCompleted ? { completedSets: [...completedSets, data.setId] } : {}),
+          ...(todaySummary ? { todaySummary } : {}),
+          ...(user === undefined ? { createdAt: now } : {}),
+        };
+
+        tx.set(progressRef, update, { merge: true });
+        // A fresh document id every time: the log is append-only, never updated.
+        tx.set(eventRef, plan.event);
+        tx.set(dailyRef, daily, { merge: true });
+        tx.set(userRef, profile, { merge: true });
+
+        return {
+          progress: plan.progress,
+          // The day's deltas, so the client can update the goal ring and the XP
+          // bar without re-reading the day — and without re-deriving the
+          // first-review-today rule for itself.
+          dailyDelta: { ...plan.daily, xpEarned: xpDelta + completionBonus },
+          xpDelta: xpDelta + completionBonus,
+          setJustCompleted,
+          completedSets: profile.completedSets ?? completedSets,
+          totalXP: profile.totalXP ?? 0,
+          totalReviews: profile.totalReviews ?? 0,
+          setTitle: studySet.title,
+          perfectRun: profile.perfectRun ?? 0,
+          achievements: user?.achievements,
+          // Already computed (applyReviewToSummary, bandOf-based delta) and
+          // already written above — handing it back is free. Without this the
+          // client's own todaySummary/`due` only updates on the next explicit
+          // fetchTodaySummary() call, which a same-session return to Home does
+          // not trigger, so "N due" stayed stale until then. `null` when this
+          // review isn't the owner's own studiable/active card (countsForToday
+          // false) or there was no prior summary to patch — the client leaves
+          // its state alone in that case, same as today.
+          todaySummary,
+        };
+      }),
+    );
     const progress = outcome.progress;
 
     // A completed review is the study activity a streak should count — not
@@ -938,7 +1141,7 @@ export const recordReview = createServerFn({ method: "POST" })
     try {
       streak = await recordStudyActivityFor(context.userId);
     } catch (error) {
-      console.error("Failed to record streak activity:", error);
+      logOperationFailure("study.failed-to-record-streak-activity", error);
     }
 
     // Achievements are settled after the streak, because one of them asks how
@@ -968,7 +1171,7 @@ export const recordReview = createServerFn({ method: "POST" })
         now,
       });
     } catch (error) {
-      console.error("Failed to record achievements:", error);
+      logOperationFailure("study.failed-to-record-achievements", error);
     }
 
     return {
@@ -980,7 +1183,7 @@ export const recordReview = createServerFn({ method: "POST" })
       unlocked,
       // Only on the review that finished the set, and only ever once per set.
       setCompleted: outcome.setJustCompleted
-        ? { setId: data.setId, title: studySet.title, xp: SET_COMPLETION_XP }
+        ? { setId: data.setId, title: outcome.setTitle, xp: SET_COMPLETION_XP }
         : null,
       // See the comment on `todaySummary` inside the transaction above.
       todaySummary: outcome.todaySummary,
@@ -1114,7 +1317,7 @@ export const resetSetProgress = createServerFn({ method: "POST" })
         });
       }
     } catch (error) {
-      console.error("Failed to sync today summary:", error);
+      logOperationFailure("summary.sync", error);
     }
     return { ok: true as const, cleared: snap.size };
   });
@@ -1205,7 +1408,10 @@ const dailyStatsRangeSchema = z.object({ dates: z.array(dateKeySchema).min(1).ma
 function readSetSessions(stored: unknown): Record<string, SetSession> {
   if (!stored || typeof stored !== "object") return {};
   return Object.fromEntries(
-    Object.entries(stored as Record<string, unknown>).map(([id, value]) => [id, readSetSession(value)]),
+    Object.entries(stored as Record<string, unknown>).map(([id, value]) => [
+      id,
+      readSetSession(value),
+    ]),
   );
 }
 
@@ -1512,7 +1718,7 @@ export const getTodaySummary = createServerFn({ method: "GET" })
       });
       return { summary, dailyGoal };
     } catch (error) {
-      console.error("Failed to store today summary:", error);
+      logOperationFailure("study.failed-to-store-today-summary", error);
       // No raw-count fallback anymore (that was the over-counted number this
       // change removes). With a stored summary, serving it stale beats
       // showing an over-counted "N due"; without one there is nothing true

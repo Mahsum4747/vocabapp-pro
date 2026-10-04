@@ -1,6 +1,15 @@
+import { logOperationFailure } from "./diagnostics";
 import { useEffect, useMemo } from "react";
 import { create } from "zustand";
-import type { CardEnrichment, CardProgress, CaseExamples, CardStatus, DailyStats, ReviewRating, StudySet } from "./types";
+import type {
+  CardEnrichment,
+  CardProgress,
+  CaseExamples,
+  CardStatus,
+  DailyStats,
+  ReviewRating,
+  StudySet,
+} from "./types";
 import { emptyDailyStats, isCardActive } from "./types";
 import { markServed, type SetSession } from "./session-pass";
 import type { AchievementId, UserProfile } from "./gamification";
@@ -38,6 +47,7 @@ import type { LanguageCode } from "./lang/languages";
 import { isStudiableSet, summarizeLibrary, weakCards, type LibraryReview } from "./srs";
 
 type DraftCard = {
+  id?: string;
   term: string;
   definition: string;
   imageUrl?: string | null;
@@ -180,7 +190,7 @@ export const useStudyStore = create<StudyState>()((set, get) => ({
       const sets = await getMySets();
       set({ sets, isLoaded: true });
     } catch (error) {
-      console.error("Failed to fetch sets:", error);
+      logOperationFailure("store.failed-to-fetch-sets", error);
       set({ sets: [], isLoaded: true });
     }
   },
@@ -197,7 +207,7 @@ export const useStudyStore = create<StudyState>()((set, get) => ({
       }
       return found;
     } catch (error) {
-      console.error("Failed to fetch set:", error);
+      logOperationFailure("store.failed-to-fetch-set", error);
       return null;
     }
   },
@@ -207,7 +217,7 @@ export const useStudyStore = create<StudyState>()((set, get) => ({
       const publicSets = await getPublicSets();
       set({ publicSets });
     } catch (error) {
-      console.error("Failed to fetch public sets:", error);
+      logOperationFailure("store.failed-to-fetch-public-sets", error);
     }
   },
 
@@ -216,7 +226,7 @@ export const useStudyStore = create<StudyState>()((set, get) => ({
       const streak = await getStreakFn();
       set({ streak });
     } catch (error) {
-      console.error("Failed to fetch streak:", error);
+      logOperationFailure("store.failed-to-fetch-streak", error);
     }
   },
 
@@ -303,7 +313,7 @@ export const useStudyStore = create<StudyState>()((set, get) => ({
     try {
       await replaceCardsFn({ data: { id: targetSet.id, cards: updatedCards } });
     } catch (error) {
-      console.error("Failed to save star:", error);
+      logOperationFailure("store.failed-to-save-star", error);
     }
   },
 
@@ -320,7 +330,7 @@ export const useStudyStore = create<StudyState>()((set, get) => ({
     } catch (error) {
       // Signed out, or someone else's set — study still works, it just shows
       // no prior progress.
-      console.error("Failed to load progress:", error);
+      logOperationFailure("store.failed-to-load-progress", error);
     }
   },
 
@@ -336,7 +346,7 @@ export const useStudyStore = create<StudyState>()((set, get) => ({
         ),
       });
     } catch (error) {
-      console.error("Failed to load progress:", error);
+      logOperationFailure("store.failed-to-load-progress", error);
     }
   },
 
@@ -431,7 +441,7 @@ export const useStudyStore = create<StudyState>()((set, get) => ({
       // before this call has had time to come back.
       configureSound(profile.soundSettings);
     } catch (error) {
-      console.error("Failed to load profile:", error);
+      logOperationFailure("store.failed-to-load-profile", error);
       // Signed out, or the read failed: leave `profile` null so the UI shows
       // nothing rather than an invented goal of zero.
       set({ today: get().today ?? emptyDailyStats(date) });
@@ -442,7 +452,7 @@ export const useStudyStore = create<StudyState>()((set, get) => ({
     try {
       set({ todaySummary: await getTodaySummaryFn() });
     } catch (error) {
-      console.error("Failed to load today summary:", error);
+      logOperationFailure("store.failed-to-load-today-summary", error);
     } finally {
       set({ todaySummarySettled: true });
     }
@@ -461,7 +471,7 @@ export const useStudyStore = create<StudyState>()((set, get) => ({
     try {
       await dismissLearningPrefsPromptFn({});
     } catch (error) {
-      console.error("Failed to record prefs prompt dismissal:", error);
+      logOperationFailure("store.failed-to-record-prefs-prompt-dismissal", error);
     }
   },
 
@@ -519,7 +529,7 @@ export const useStudyStore = create<StudyState>()((set, get) => ({
       // by completed reviews, server-side, inside recordReview.
       await updateSetMetaFn({ data: { id: resolvedId, patch: {} } });
     } catch (error) {
-      console.error("Failed to record set activity:", error);
+      logOperationFailure("store.failed-to-record-set-activity", error);
     }
   },
 
@@ -602,7 +612,7 @@ export const useStudyStore = create<StudyState>()((set, get) => ({
     // Bookkeeping only: a failed write must never interrupt a study round.
     void updateSetSessionFn({
       data: { setId: target.id, cap: next.cap ?? null, served: next.served },
-    }).catch((error) => console.error("Failed to save session progress:", error));
+    }).catch((error) => logOperationFailure("store.failed-to-save-session-progress", error));
   },
 
   fetchMySetsForTransfer: async () => {
@@ -615,7 +625,7 @@ export const useStudyStore = create<StudyState>()((set, get) => ({
       });
       return mySets;
     } catch (error) {
-      console.error("Failed to load your sets:", error);
+      logOperationFailure("store.failed-to-load-your-sets", error);
       return null;
     }
   },

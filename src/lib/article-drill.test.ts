@@ -47,7 +47,10 @@ describe("article drill write path never touches the FSRS review pipeline", () =
 
   it("never references XP, achievements, or streak logic", () => {
     const source = readSource();
-    assert.doesNotMatch(source, /applyXp|xpForReview|unlockAchievementsFor|recordStudyActivityFor|Achievement/);
+    assert.doesNotMatch(
+      source,
+      /applyXp|xpForReview|unlockAchievementsFor|recordStudyActivityFor|Achievement/,
+    );
   });
 
   it("never imports CardProgress, ReviewEvent, or DailyStats types", () => {
@@ -57,8 +60,8 @@ describe("article drill write path never touches the FSRS review pipeline", () =
 
   it("the only Firestore write uses FieldValue.increment for counters, never a scheduler-shaped field", () => {
     const source = readSource();
-    const start = source.indexOf("await ref.set(");
-    const end = source.indexOf("\n    );", start);
+    const start = source.indexOf("tx.set(");
+    const end = source.indexOf("\n      );", start);
     assert.ok(start !== -1 && end !== -1);
     const body = source.slice(start, end);
     assert.doesNotMatch(body, /dueAt|interval|stability|difficulty|masteryScore|scheduler:/);
