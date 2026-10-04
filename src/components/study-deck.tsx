@@ -162,6 +162,14 @@ export function StudyDeck({
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      // Focused native controls own Enter/Space (speech, flip and grading).
+      // The deck shortcut must not swallow their activation or also flip.
+      if (
+        (e.key === " " || e.key === "Enter") &&
+        e.target instanceof Element &&
+        e.target.closest("button, a, select, [role=button], [contenteditable=true]")
+      )
+        return;
       if (e.key === " " || e.key === "Enter") {
         e.preventDefault();
         flip("key");

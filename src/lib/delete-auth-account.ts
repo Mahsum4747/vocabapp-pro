@@ -26,23 +26,22 @@ export const deleteAuthAccount = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
   .handler(async ({ context }) => {
     const userId = context.userId;
-    const connectionString = process.env.DATABASE_URL?.trim();
-    if (!connectionString) {
-      // PGLite fallback (no real Postgres to connect to) — Firestore data is
-      // still deleted by `deleteUserAccount`; nothing further to do here.
-      return { ok: true };
-    }
-
-    const { Pool } = await import("pg");
-    const pool = new Pool({ connectionString });
-    try {
-      // `session."userId"` and `account."userId"` both reference `user.id` with
-      // ON DELETE CASCADE (migrations/auth/0001_auth.sql) — deleting the user
-      // row alone removes their sessions and accounts too.
-      await pool.query('DELETE FROM "user" WHERE id = $1', [userId]);
-    } finally {
-      await pool.end();
-    }
-
-    return { ok: true };
+    const { getAdminFirestore } = await import("./firebase-admin.server");
+    const { deleteLearningThenIdentity } = await import("./account-deletion.server");
+    // Recheck/finish Firestore cleanup here: client ordering is not an invariant.
+    return deleteLearningThenIdentity(getAdminFirestore(), userId, async () => {
+      const connectionString = process.env.DATABASE_URL?.trim();
+      if (!connectionString) return; // Existing preview-only PGLite contract.
+      const { Pool } = await import("pg");
+      const pool = new Pool({ connectionString });
+      try {
+        await pool.query('DELETE FROM "user" WHERE id = $1', [userId]);
+      } finally {
+        // A connection-close failure after DELETE must not claim auth survived.
+        await pool.end().catch(async (error) => {
+          const { logOperationFailure } = await import("./diagnostics");
+          logOperationFailure("account.pool-close", error);
+        });
+      }
+    });
   });

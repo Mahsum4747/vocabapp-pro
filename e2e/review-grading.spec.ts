@@ -1,8 +1,7 @@
 import { expect, test } from "./support/app";
 import { card, DAY, NOW, reviewed, studySet, TODAY_KEY, type Seed } from "./support/backend";
 
-const cardFace = (page: import("@playwright/test").Page) =>
-  page.getByRole("button", { name: /Show (definition|term)/ });
+const cardFace = (page: import("@playwright/test").Page) => page.getByTestId("flash-card");
 
 /** Four cards in identical, due-today state — only the grade will differ. */
 function identicalDueCards(): Seed {
@@ -154,4 +153,52 @@ test("duplicate terms and renamed content retain distinct review identities", as
   ]);
   expect(backend.progressOf("opaque-a")?.totalReviews).toBe(5);
   expect(backend.progressOf("opaque-b")?.totalReviews).toBe(5);
+});
+
+test("native flip and speech controls are separate and keyboard activation never flips twice", async ({
+  page,
+  launch,
+}, testInfo) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(window.speechSynthesis, "getVoices", {
+      value: () => [
+        {
+          name: "Test English",
+          lang: "en-US",
+          default: true,
+          localService: true,
+          voiceURI: "test-en",
+        },
+        {
+          name: "Test German",
+          lang: "de-DE",
+          default: false,
+          localService: true,
+          voiceURI: "test-de",
+        },
+      ],
+    });
+  });
+  await launch(identicalDueCards());
+  await page.goto("/review");
+  const flip = page.getByRole("button", { name: "Show definition", exact: true });
+  const listen = cardFace(page).getByRole("button", { name: "Listen", exact: true });
+  await expect(listen).toBeVisible();
+  await expect(page.locator("button button, [role=button] button")).toHaveCount(0);
+  await listen.focus();
+  await page.keyboard.press("Enter");
+  await expect(flip).toBeVisible();
+  await page.keyboard.press("Space");
+  await expect(flip).toBeVisible();
+  await flip.focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("button", { name: "Show term", exact: true })).toBeVisible();
+  await expect(cardFace(page)).toContainText("def eins");
+  await page.keyboard.press("Space");
+  await expect(flip).toBeVisible();
+  await expect(cardFace(page)).toContainText("eins");
+  await page.screenshot({
+    path: `screenshots/premerge-review-${testInfo.project.name}.png`,
+    fullPage: true,
+  });
 });

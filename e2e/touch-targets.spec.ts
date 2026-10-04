@@ -24,11 +24,17 @@ for (const [name, path] of PAGES) {
     await launch(queueLibrary());
     await page.goto(path);
     await page.waitForTimeout(1500); // routes hydrate and fetch at different speeds
+    // Profile-dependent controls must exist before measuring their hit areas.
+    if (path === "/sets/set-verbs")
+      await expect(page.getByRole("slider", { name: "Cards per session" })).toBeVisible();
     expect(await undersizedTargets(page)).toEqual([]);
   });
 }
 
-test("menus and dialogs: items and close buttons have a 44px tap area", async ({ page, launch }) => {
+test("menus and dialogs: items and close buttons have a 44px tap area", async ({
+  page,
+  launch,
+}) => {
   await launch(queueLibrary());
   await page.goto("/sets/set-verbs");
   await expect(page.getByRole("heading", { name: "Verbs" })).toBeVisible();

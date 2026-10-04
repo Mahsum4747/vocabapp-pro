@@ -1,3 +1,4 @@
+export const MAX_SET_CARDS = 2000;
 /** Opaque ID is identity. Terms/content may change; copies intentionally get new IDs. */
 export function indexCardDrafts<T extends { id?: string }>(
   drafts: T[],
@@ -29,13 +30,19 @@ export function planCardTransfer(
   copy: (card: import("./types").Card, id: string) => import("./types").Card,
 ) {
   const selectedIds = new Set(ids);
-  if (selectedIds.size !== ids.length || ids.some((id) => !source.some((card) => card.id === id)))
+  const sourceIds = new Set(source.map((card) => card.id));
+  if (
+    !ids.length ||
+    ids.length > MAX_SET_CARDS ||
+    selectedIds.size !== ids.length ||
+    ids.some((id) => !sourceIds.has(id))
+  )
     throw new Error("Invalid transferred card IDs");
   const selected = source.filter((card) => selectedIds.has(card.id));
   const added = move ? selected : selected.map((card) => copy(card, createId()));
   const targetCards = [...target, ...added];
   if (
-    targetCards.length > 2000 ||
+    targetCards.length > MAX_SET_CARDS ||
     new Set(targetCards.map((card) => card.id)).size !== targetCards.length
   )
     throw new Error("Invalid target card collection");

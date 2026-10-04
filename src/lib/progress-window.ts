@@ -41,3 +41,8 @@ export function foldRoundIntoRollingAccuracy(
   );
   return { accuracy: Math.round((100 * sums.correct) / sums.total), recentRounds };
 }
+
+/** Lifetime participation is not the denominator of rolling accuracy. */
+export function roundAccuracyEvidence(accuracy: number, totalAttempts: number): string {
+  return `${accuracy}% rolling accuracy; lifetime questions answered: ${totalAttempts}`;
+}

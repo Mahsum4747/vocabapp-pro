@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { MAX_SET_CARDS } from "./card-identity";
 /** Identifiers are single Firestore path segments, never paths. */
 export const documentIdSchema = z
   .string()
@@ -16,3 +17,15 @@ export function assertCardMembership(cards: readonly { id: string }[], cardId: s
   if (!cards.some((card) => card.id === cardId))
     throw new Error("Card does not belong to this set.");
 }
+
+/** A transfer accepts the same number of identities as a valid set. */
+export const transferSchema = z
+  .object({
+    sourceSetId: documentIdSchema,
+    targetSetId: documentIdSchema,
+    cardIds: z.array(documentIdSchema).min(1).max(MAX_SET_CARDS),
+  })
+  .refine(
+    (v) => v.sourceSetId !== v.targetSetId && new Set(v.cardIds).size === v.cardIds.length,
+    "Invalid transfer",
+  );

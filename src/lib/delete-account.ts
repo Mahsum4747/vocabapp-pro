@@ -1,4 +1,3 @@
-import { userDocumentPaths } from "./user-data-inventory";
 import { createServerFn } from "@tanstack/react-start";
 import { authMiddleware } from "./auth/middleware";
 
@@ -20,19 +19,8 @@ export const deleteUserAccount = createServerFn({ method: "POST" })
     const { getAdminFirestore } = await import("./firebase-admin.server");
     const db = getAdminFirestore();
 
-    // Delete every study set this user owns (public sets included — a
-    // deleted owner leaves nothing to keep public around; see study-sets.ts's
-    // `deleteSet` for the same top-level `study_sets` + `ownerId` shape).
-    const setsSnapshot = await db.collection("study_sets").where("ownerId", "==", userId).get();
-    for (const doc of setsSnapshot.docs) await db.recursiveDelete(doc.ref);
-
-    // `cardProgress`, `reviewEvents` and `dailyStats` are subcollections under
-    // `users/{uid}` (see getAllProgress/resetSetProgress/getDailyStatsRange in
-    // study-sets.ts), not top-level collections — recursiveDelete removes the
-    // profile document and all of them in one pass.
-    for (const path of userDocumentPaths(userId)) {
-      await db.recursiveDelete(db.doc(path));
-    }
+    const { deleteLearningData } = await import("./account-deletion.server");
+    await deleteLearningData(db, userId);
 
     return { ok: true };
   });

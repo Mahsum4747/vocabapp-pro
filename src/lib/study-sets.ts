@@ -1,7 +1,7 @@
 import { logOperationFailure, observeOperation } from "./diagnostics";
 import { LANGUAGES } from "./lang/languages";
-import { documentIdSchema, assertCardMembership } from "./input-schemas";
-import { indexCardDrafts, removedCardIds, planCardTransfer } from "./card-identity";
+import { documentIdSchema, assertCardMembership, transferSchema } from "./input-schemas";
+import { indexCardDrafts, removedCardIds, MAX_SET_CARDS } from "./card-identity";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 // Type-only, so no firebase-admin code reaches the client bundle.
@@ -175,7 +175,7 @@ const draftCardSchema = z.object({
 });
 const cardsSchema = z
   .array(draftCardSchema)
-  .max(2000)
+  .max(MAX_SET_CARDS)
   .refine((cards) => {
     const ids = cards.flatMap((c) => (c.id ? [c.id] : []));
     return new Set(ids).size === ids.length;
@@ -814,16 +814,6 @@ export const copyPublicSet = createServerFn({ method: "POST" })
     return cloned;
   });
 
-const transferSchema = z
-  .object({
-    sourceSetId: idSchema,
-    targetSetId: idSchema,
-    cardIds: z.array(idSchema).min(1).max(100),
-  })
-  .refine(
-    (v) => v.sourceSetId !== v.targetSetId && new Set(v.cardIds).size === v.cardIds.length,
-    "Invalid transfer",
-  );
 type TransferCardsInput = z.infer<typeof transferSchema>;
 
 /**
@@ -838,91 +828,23 @@ type TransferCardsInput = z.infer<typeof transferSchema>;
 async function transferCards(userId: string, data: TransferCardsInput, removeFromSource: boolean) {
   const { getAdminFirestore, FieldValue } = await import("./firebase-admin.server");
   const db = getAdminFirestore();
-  const sourceRef = db.collection("study_sets").doc(data.sourceSetId);
-  const targetRef = db.collection("study_sets").doc(data.targetSetId);
-  const outcome = await db.runTransaction(async (tx) => {
-    const sourceDoc = await tx.get(sourceRef);
-    const targetDoc = await tx.get(targetRef);
-    if (!sourceDoc.exists || !targetDoc.exists) throw new Error("Set not found.");
-    const source = sourceDoc.data() as StudySet;
-    const target = targetDoc.data() as StudySet;
-    if (
-      target.ownerId !== userId ||
-      (removeFromSource ? source.ownerId !== userId : source.ownerId !== userId && !source.isPublic)
-    )
-      throw new Error("Transfer not permitted.");
-    const { sourceCards, targetCards, addedCount } = planCardTransfer(
-      source.cards,
-      target.cards,
-      data.cardIds,
-      removeFromSource,
-      uidServer,
-      freshCardCopy,
-    );
-    const rows = removeFromSource
-      ? await tx.get(
-          db
-            .collection("users")
-            .doc(userId)
-            .collection("cardProgress")
-            .where("setId", "==", data.sourceSetId),
-        )
-      : null;
-    const drillRows = removeFromSource
-      ? await tx.get(
-          db
-            .collection("users")
-            .doc(userId)
-            .collection("articleDrillProgress")
-            .where("setId", "==", data.sourceSetId),
-        )
-      : null;
-    const userRef = db.collection("users").doc(userId);
-    const userDoc = removeFromSource ? await tx.get(userRef) : null;
-    const now = Date.now();
-    tx.update(targetRef, { cards: targetCards, updatedAt: now });
-    tx.set(userRef, { todaySummary: FieldValue.delete() }, { merge: true });
-    if (removeFromSource) {
-      tx.update(sourceRef, { cards: sourceCards, updatedAt: now });
-      for (const row of rows?.docs ?? [])
-        if (data.cardIds.includes(row.id)) tx.update(row.ref, { setId: data.targetSetId });
-      for (const row of drillRows?.docs ?? [])
-        if (data.cardIds.includes(row.data().cardId))
-          tx.update(row.ref, { setId: data.targetSetId });
-      const sessions = userDoc?.data()?.setSessions;
-      if (sessions?.[data.sourceSetId])
-        tx.set(
-          userRef,
-          {
-            setSessions: {
-              [data.sourceSetId]: {
-                ...sessions[data.sourceSetId],
-                served: (sessions[data.sourceSetId].served ?? []).filter(
-                  (id: string) => !data.cardIds.includes(id),
-                ),
-              },
-            },
-          },
-          { merge: true },
-        );
-    }
-    return { source, target, sourceCards, targetCards, addedCount };
-  });
-  await syncSummaryForSetChange({
+  const { transferCardDocuments } = await import("./card-transfer.server");
+  const outcome = await transferCardDocuments(
+    db,
     userId,
-    before: outcome.target,
-    after: { ...outcome.target, cards: outcome.targetCards },
-  });
-  if (removeFromSource)
-    await syncSummaryForSetChange({
-      userId,
-      before: outcome.source,
-      after: { ...outcome.source, cards: outcome.sourceCards },
-    });
+    data,
+    removeFromSource,
+    FieldValue.delete(),
+  );
+  // The transaction invalidated the derived cache. Rebuild on the next read;
+  // applying old content deltas after a concurrent rebuild would double-count.
   return {
     addedCount: outcome.addedCount,
     sourceCards: outcome.sourceCards,
     targetCards: outcome.targetCards,
+    movedProgress: outcome.movedProgress,
+    sessions: outcome.sessions,
+    updatedAt: outcome.updatedAt,
   };
 }
 
@@ -1476,19 +1398,8 @@ export const updateSetSession = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     const { getAdminFirestore } = await import("./firebase-admin.server");
     const db = getAdminFirestore();
-    const ref = db.collection("users").doc(context.userId);
-    const now = Date.now();
-    const existing = await ref.get();
-    await ref.set(
-      {
-        id: context.userId,
-        setSessions: { [data.setId]: { cap: data.cap, served: data.served } },
-        updatedAt: now,
-        ...(existing.exists ? {} : { createdAt: now }),
-      },
-      { merge: true },
-    );
-    return { ok: true };
+    const { saveCurrentSetSession } = await import("./card-transfer.server");
+    return saveCurrentSetSession(db, context.userId, data);
   });
 
 /**

@@ -13,16 +13,13 @@ export function advanceRound<T extends RoundState>(
   total: number,
   now: number,
 ): T & { recentRounds: RoundResult[] } {
-  if (
-    !Number.isSafeInteger(previous.totalAttempts) ||
-    previous.totalAttempts < 0 ||
-    !Number.isSafeInteger(previous.totalAttempts + total)
-  )
+  const attempts = previous.totalAttempts ?? 0;
+  if (!Number.isSafeInteger(attempts) || attempts < 0 || !Number.isSafeInteger(attempts + total))
     throw new Error("Invalid stored attempt counter");
   return {
     ...previous,
     ...foldRoundIntoRollingAccuracy(previous.recentRounds ?? [], correct, total),
-    totalAttempts: previous.totalAttempts + total,
+    totalAttempts: attempts + total,
     lastPracticedAt: Math.max(previous.lastPracticedAt ?? 0, now),
   };
 }
@@ -42,7 +39,7 @@ export async function recordTopicRound(
         lastPracticedAt: null,
         accuracy: null,
       };
-      const next = advanceRound(previous, correct, total, Date.now());
+      const next = { ...advanceRound(previous, correct, total, Date.now()), topicId };
       tx.set(ref, { [topicId]: next }, { merge: true });
       return next;
     }),
@@ -103,4 +100,24 @@ export async function recordPassageCompletion(
       return { completedPassageIds };
     }),
   );
+}
+
+/** Retry saving content never replaces accumulated learning state. */
+export async function saveIdempotentPasteTopic(
+  db: Firestore,
+  ref: DocumentReference,
+  content: Record<string, unknown>,
+  initial: object,
+): Promise<void> {
+  await db.runTransaction(async (tx) => {
+    const existing = await tx.get(ref);
+    if (!existing.exists) tx.set(ref, initial);
+    else {
+      const previous = existing.data()!;
+      for (const key of Object.keys(content).filter((key) => key !== "id")) {
+        if (JSON.stringify(previous[key]) !== JSON.stringify(content[key]))
+          throw new Error("Topic ID already used with different content.");
+      }
+    }
+  });
 }

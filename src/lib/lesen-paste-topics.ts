@@ -132,17 +132,8 @@ export const saveLesenPasteTopic = createServerFn({ method: "POST" })
       recentRounds: [],
     };
     const ref = collectionFor(db, context.userId).doc(data.id);
-    await db.runTransaction(async (tx) => {
-      const existing = await tx.get(ref);
-      if (!existing.exists) tx.set(ref, stored);
-      else {
-        const previous = existing.data()!;
-        for (const key of Object.keys(data).filter((key) => key !== "id")) {
-          if (JSON.stringify(previous[key]) !== JSON.stringify(data[key as keyof typeof data]))
-            throw new Error("Topic ID already used with different content.");
-        }
-      }
-    });
+    const { saveIdempotentPasteTopic } = await import("./learning-progress.server");
+    await saveIdempotentPasteTopic(db, ref, data, stored);
     return { id: ref.id };
   });
 

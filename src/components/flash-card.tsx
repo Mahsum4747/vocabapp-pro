@@ -47,18 +47,9 @@ export function FlashCard({
   const profile = profileFor(termLangCode);
   return (
     <div
-      role="button"
-      tabIndex={0}
-      onKeyDown={(event) => {
-        if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) {
-          event.preventDefault();
-          event.stopPropagation();
-          onFlip();
-        }
-      }}
-      onClick={onFlip}
+      data-testid="flash-card"
       className={cn(
-        "flex min-h-80 w-full flex-col justify-between gap-4 rounded-card p-8 text-left shadow-[var(--elevation-2)] active:opacity-90 md:min-h-96",
+        "relative flex min-h-80 w-full flex-col justify-between gap-4 rounded-card p-8 text-left shadow-[var(--elevation-2)] active:opacity-90 md:min-h-96",
         // Colour/opacity transitions; a keyboard flip (instant) keeps only the press
         // feedback so nothing else animates. Opacity is listed so active:opacity-90
         // eases instead of snapping.
@@ -67,18 +58,29 @@ export function FlashCard({
           : "transition-[background-color,color,opacity] duration-[var(--duration-fast)] ease-[var(--ease-out)]",
         "border border-border bg-surface text-fg",
       )}
-      aria-label={flipped ? "Show term" : "Show definition"}
     >
+      {/* Native flip control is a sibling of speech controls, not their ancestor.
+          Text stays in the accessibility tree; speech remains independently focusable. */}
+      <button
+        type="button"
+        aria-label={flipped ? "Show term" : "Show definition"}
+        onClick={onFlip}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") event.stopPropagation();
+        }}
+        className="absolute inset-0 rounded-card focus-visible:outline-2 focus-visible:outline-primary"
+      />
       <div
         key={flipped ? "back" : "front"}
         data-motion={instant ? "instant" : undefined}
-        className="card-face flex flex-1 flex-col justify-between gap-4"
+        className="card-face pointer-events-none relative flex flex-1 flex-col justify-between gap-4"
       >
         <div className="flex items-center justify-between">
           <span className="text-xs font-medium tracking-wide text-muted uppercase">
             {flipped ? "Definition" : "Term"}
           </span>
           <SpeakButton
+            className="pointer-events-auto relative z-10"
             text={flipped ? definition : term}
             language={flipped ? undefined : termLanguage}
           />
@@ -111,6 +113,7 @@ export function FlashCard({
             <span className="flex items-start gap-1">
               <span className="text-base whitespace-pre-line text-muted">{definition2}</span>
               <SpeakButton
+                className="pointer-events-auto relative z-10"
                 text={definition2}
                 language={definitionLanguage2}
                 label="Listen to the second definition"
@@ -121,7 +124,12 @@ export function FlashCard({
           {flipped && example ? (
             <span className="flex items-start gap-1">
               <span className="text-sm italic text-muted md:text-base">{example}</span>
-              <SpeakButton text={example} language={termLanguage} label="Listen to the example" />
+              <SpeakButton
+                className="pointer-events-auto relative z-10"
+                text={example}
+                language={termLanguage}
+                label="Listen to the example"
+              />
             </span>
           ) : null}
           {/* Personal, never spoken (no SpeakButton) — it's a reminder to the

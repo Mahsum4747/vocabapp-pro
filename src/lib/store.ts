@@ -1,3 +1,4 @@
+import { movedClientState } from "./transfer-client";
 import { logOperationFailure } from "./diagnostics";
 import { useEffect, useMemo } from "react";
 import { create } from "zustand";
@@ -637,8 +638,15 @@ export const useStudyStore = create<StudyState>()((set, get) => ({
       data: { sourceSetId: source, targetSetId: target, cardIds },
     });
     set({
-      sets: get().sets.map((s) => (s.id === target ? { ...s, cards: result.targetCards } : s)),
+      sets: get().sets.map((s) =>
+        s.id === target ? { ...s, cards: result.targetCards, updatedAt: result.updatedAt } : s,
+      ),
+      publicSets: get().publicSets.map((s) =>
+        s.id === target ? { ...s, cards: result.targetCards, updatedAt: result.updatedAt } : s,
+      ),
+      todaySummary: null,
     });
+    await get().fetchTodaySummary();
     return result.addedCount;
   },
 
@@ -648,13 +656,8 @@ export const useStudyStore = create<StudyState>()((set, get) => ({
     const result = await moveCardsToSetFn({
       data: { sourceSetId: source, targetSetId: target, cardIds },
     });
-    set({
-      sets: get().sets.map((s) => {
-        if (s.id === target) return { ...s, cards: result.targetCards };
-        if (s.id === source) return { ...s, cards: result.sourceCards };
-        return s;
-      }),
-    });
+    set(movedClientState(get(), source, target, cardIds, result));
+    await get().fetchTodaySummary();
     return result.addedCount;
   },
 

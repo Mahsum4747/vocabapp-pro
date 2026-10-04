@@ -52,7 +52,7 @@ export function SessionLength({ studySet, className }: { studySet: StudySet; cla
               onClick={() => commit(stop)}
               aria-pressed={shown === stop}
               className={cn(
-                "rounded-control px-3 py-1 text-xs font-medium tabular-nums transition-colors",
+                "rounded-control px-3 py-1 pointer-coarse:min-h-11 pointer-coarse:min-w-11 text-xs font-medium tabular-nums transition-colors",
                 shown === stop
                   ? "bg-primary text-primary-fg"
                   : "bg-surface-2 text-muted hover:text-fg",
@@ -74,7 +74,7 @@ export function SessionLength({ studySet, className }: { studySet: StudySet; cla
         onPointerUp={(e) => commit(Number(e.currentTarget.value))}
         onKeyUp={(e) => commit(Number(e.currentTarget.value))}
         onBlur={(e) => commit(Number(e.currentTarget.value))}
-        className="mt-3 w-full accent-[var(--color-primary)]"
+        className="mt-3 w-full pointer-coarse:min-h-11 accent-[var(--color-primary)]"
       />
       <p className="mt-1 text-xs text-muted tabular-nums">
         This session: {shown} / {size} · {passRemaining(session, ids)} left this pass

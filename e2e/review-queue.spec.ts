@@ -1,8 +1,7 @@
 import { expect, test } from "./support/app";
 import { queueLibrary } from "./support/library";
 
-const cardFace = (page: import("@playwright/test").Page) =>
-  page.getByRole("button", { name: /Show (definition|term)/ });
+const cardFace = (page: import("@playwright/test").Page) => page.getByTestId("flash-card");
 
 test.describe("Start review → the right words", () => {
   test("banner counts only due words, and the round serves them in priority order", async ({

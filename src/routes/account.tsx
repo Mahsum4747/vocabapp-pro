@@ -657,12 +657,14 @@ function AccountTab() {
     if (confirmText.toUpperCase() !== "DELETE") return;
     setIsDeleting(true);
     let learningDeleted = false;
+    let identityDeleted = false;
     try {
       // Two separate server functions/requests (Firestore, then Postgres) —
       // see delete-auth-account.ts for why they aren't combined into one.
       await deleteUserAccount({});
       learningDeleted = true;
       await deleteAuthAccount({});
+      identityDeleted = true;
       toast.success("Account deleted.");
       // Sign out and redirect to login. Dynamic import: better-auth/react
       // must stay out of every route's eager bundle graph (see auth-gate.tsx).
@@ -672,9 +674,11 @@ function AccountTab() {
       reportOperationFailure(
         "account.delete",
         error,
-        learningDeleted
-          ? "Learning data removed. Sign-in account deletion failed; retry deletion."
-          : "Deletion did not finish. Retry to remove the remaining data.",
+        identityDeleted
+          ? "Account removed. Session sign-out failed; return to Sign in."
+          : learningDeleted
+            ? "Learning data removed. Sign-in account deletion failed; retry deletion."
+            : "Deletion did not finish. Retry to remove the remaining data.",
       );
       setIsDeleting(false);
     }

@@ -1,3 +1,4 @@
+import { roundAccuracyEvidence } from "./progress-window";
 import { logOperationFailure } from "./diagnostics";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
@@ -89,12 +90,13 @@ export function buildGrammarAssessmentPrompt(
   const lines = topics
     .map(
       (t) =>
-        `- ${humanizeTopicId(t.topicId)}: ${t.accuracy}% accuracy over ${t.totalAttempts} questions`,
+        `- ${humanizeTopicId(t.topicId)}: ${roundAccuracyEvidence(t.accuracy, t.totalAttempts)}`,
     )
     .join("\n");
   const parts = [
     "This is a German learner's grammar drill practice data, one line per topic practiced so far:",
     lines,
+    "Rolling accuracy is question-weighted over up to 20 completed rounds. Lifetime questions is a separate participation counter, not the accuracy denominator.",
     "Identify the weakest 2-3 topics — lowest accuracy, and only topics with enough attempts to be " +
       "meaningful (ignore a topic with only 1-2 attempts if better-attempted topics are also weak) — " +
       "and write ONE short, concrete sentence of advice for EACH, naming the topic and what to " +
@@ -103,7 +105,7 @@ export function buildGrammarAssessmentPrompt(
   ];
   if (pasteTopics.length > 0) {
     const pasteLines = pasteTopics
-      .map((t) => `- ${t.topic}: ${t.accuracy}% accuracy over ${t.totalAttempts} questions`)
+      .map((t) => `- ${t.topic}: ${roundAccuracyEvidence(t.accuracy, t.totalAttempts)}`)
       .join("\n");
     parts.push(
       "In addition, here are grammar topics the learner created THEMSELVES, using their own AI, " +
