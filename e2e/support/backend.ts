@@ -1,3 +1,4 @@
+import { recommendationExamples } from "../../src/lib/adaptive-recommendations.fixtures.ts";
 import { buildTodaySummary } from "../../src/lib/today-summary.ts";
 import { applyXp, xpForReview, type UserProfile } from "../../src/lib/gamification.ts";
 import { planReview } from "../../src/lib/review-plan.ts";
@@ -154,6 +155,8 @@ export class MockBackend {
       },
       getProfile: () => ({ profile: this.profile, today: this.today }),
       recordReview: (data) => this.recordReview(data as RecordedReview),
+      // Existing tests stay focused on their own flow; recommendation specs override this.
+      getLearningSignals: () => ({ ...recommendationExamples().strong, generatedAt: NOW }),
       getGrammarProgress: () => ({}),
       getLesenPassageProgress: () => ({}),
       fetchGermanGlosses: () => ({}),

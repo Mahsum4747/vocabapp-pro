@@ -23,7 +23,7 @@ const setModes = new Set<string>(["articles", "cases", "conjugation", "satzbau",
 /** Audited grammar routes have matching slugs; set modes require an eligible owned set. */
 export function practiceDestination(
   topicId: string,
-  signals: LearningSignals,
+  signals: { vocabulary: Pick<LearningSignals["vocabulary"], "practiceTargets"> },
 ): PracticeDestination | null {
   if (setModes.has(topicId)) {
     const setId = signals.vocabulary.practiceTargets?.[topicId as SetPracticeMode];

@@ -1,3 +1,4 @@
+import { HomeRecommendedNext } from "@/components/home-recommended-next";
 import { useEffect, useState, type ReactNode } from "react";
 import { Link, Navigate } from "@tanstack/react-router";
 import { User } from "lucide-react";
@@ -256,4 +257,11 @@ export function AccountNavItem({ className }: { className?: string }) {
       <DailyGoalDialog open={goalOpen} onOpenChange={setGoalOpen} />
     </>
   );
+}
+
+/** Home uses this existing lazy auth boundary to preserve SSR chunk isolation. */
+export function HomeRecommendedNextGate({ refreshVersion }: { refreshVersion: number }) {
+  const { user, isPending } = useCurrentUserState();
+  const owner = !isPending && user && !user.isDevFallback ? user.id : null;
+  return <HomeRecommendedNext owner={owner} refreshVersion={refreshVersion} />;
 }

@@ -37,6 +37,10 @@ const ReportSignedIn = lazy(() =>
   import("@/lib/auth/gates").then((m) => ({ default: m.ReportSignedIn })),
 );
 
+const HomeRecommendedNext = lazy(() =>
+  import("@/lib/auth/gates").then((m) => ({ default: m.HomeRecommendedNextGate })),
+);
+
 type Search = { view?: "mine" | "public" };
 
 export const Route = createFileRoute("/")({
@@ -47,6 +51,7 @@ export const Route = createFileRoute("/")({
 });
 
 function Home() {
+  const [recommendationRefresh, setRecommendationRefresh] = useState(0);
   const sets = useStudyStore((s) => s.sets);
   const publicSets = useStudyStore((s) => s.publicSets);
   const restoreSeeds = useStudyStore((s) => s.restoreSeeds);
@@ -93,8 +98,8 @@ function Home() {
 
   // Pull-to-refresh re-runs the exact same fetches as the mount effect above
   // — same data, just re-requested on demand instead of full page reload.
-  function refreshHome() {
-    return Promise.all([
+  async function refreshHome() {
+    await Promise.all([
       fetchSets(),
       fetchPublicSets(),
       fetchStreak(),
@@ -102,6 +107,7 @@ function Home() {
       fetchProfile(),
       fetchTodaySummary(),
     ]);
+    setRecommendationRefresh((version) => version + 1);
   }
 
   const { view: viewParam } = Route.useSearch();
@@ -292,6 +298,10 @@ function Home() {
             </Button>
           </div>
         </section>
+
+        <Suspense fallback={null}>
+          <HomeRecommendedNext refreshVersion={recommendationRefresh} />
+        </Suspense>
 
         <LibraryProgressPanel className="mt-section" showReview={false} />
 

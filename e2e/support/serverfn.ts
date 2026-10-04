@@ -23,6 +23,11 @@ export class ServerFnMock {
   readonly calls: ServerFnCall[] = [];
   readonly unhandled: string[] = [];
 
+  // Optional production IDs supplied only by the local compiled-browser config.
+  private readonly compiledNames: Record<string, string> = JSON.parse(
+    process.env.KARTA_E2E_SERVER_FN_NAMES ?? "{}",
+  );
+
   constructor(private readonly handlers: Record<string, ServerFnHandler>) {}
 
   callsTo(name: string): ServerFnCall[] {
@@ -37,7 +42,7 @@ export class ServerFnMock {
     const request = route.request();
     const url = new URL(request.url());
     const id = decodeURIComponent(url.pathname.split("/_serverFn/")[1] ?? "");
-    let name = "";
+    let name = this.compiledNames[id] ?? "";
     try {
       const meta = JSON.parse(Buffer.from(id, "base64url").toString("utf8")) as { export: string };
       name = meta.export.replace(/_createServerFn_handler$/, "");

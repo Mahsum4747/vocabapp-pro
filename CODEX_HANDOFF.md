@@ -5,6 +5,19 @@ Audited source: `2f3e680e438626e7759162c79f1afeafad229d16`, branch `main`.
 
 This document describes the checked-out implementation, not an earlier agent's plans. Paths below are repository-relative. Source and observed command results take precedence over comments. No application code was changed. No production records were queried. No credentials were printed. Fetch updated local remote-tracking references; no pull, commit, push, merge, deployment, or migration was performed during this audit. Temporary validation logs and a disposable source archive live outside the repository under `/tmp/codex-audit-*`.
 
+## Home primary recommendation UI — 2026-10-04
+
+Feature branch `codex/home-recommended-next-v1`, based on merged LearningSignals /
+adaptive policy main `35d73daadf0d95198c641e942210a00ffe618dae`.
+See `HOME_RECOMMENDED_NEXT.md` for placement, states, exact route semantics,
+screenshot audit/polish, validation and additional read cost.
+Home now renders only the engine's primary suggestion after Today/creation shortcuts.
+The existing authenticated signals loader is reused; no ranking or Firestore query
+path duplicated. Retry is quiet; empty/signed-out/known-stale targets render nothing.
+Reuse the existing lazy auth gates boundary: a separate auth entry for the card
+caused a Nitro/rolldown SSR chunk failure; compilation alone did not detect it.
+No migration, reset, production access, deployment, merge or push in this task.
+
 ## Current hardening update — 2026-10-04
 
 The original audit below is a dated baseline at `2f3e680e`. The current feature
