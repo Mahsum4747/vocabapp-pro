@@ -4,7 +4,8 @@ import { z } from "zod";
 // convention grammar-paste-topics.ts's own top-level import uses.
 import type { Firestore } from "firebase-admin/firestore";
 import { authMiddleware } from "./auth/middleware";
-import { foldRoundIntoRollingAccuracy } from "./grammar-progress";
+import type { RoundResult } from "./progress-window";
+import { documentIdSchema, roundCountsSchema } from "./input-schemas";
 
 /**
  * Persistence for Lesen Paste's AI-generated, learner-supplied reading
@@ -30,17 +31,21 @@ import { foldRoundIntoRollingAccuracy } from "./grammar-progress";
 
 const questionSchema = z.object({
   prompt: z.string().trim().min(1).max(500),
-  options: z.array(z.string().trim().min(1)).length(4),
+  options: z
+    .array(z.string().trim().min(1).max(1000))
+    .length(4)
+    .refine((options) => new Set(options).size === 4, "Options must be distinct"),
   correctIndex: z.number().int().min(0).max(3),
   explanation: z.string().trim().max(400).nullable(),
 });
 
 const saveSchema = z.object({
+  id: documentIdSchema,
   level: z.enum(["A1", "A2", "B1", "B2"]),
   topic: z.string().trim().max(200),
   title: z.string().trim().min(1).max(200),
-  text: z.string().trim().min(1).max(4000),
-  questions: z.array(questionSchema).min(1).max(20),
+  text: z.string().trim().min(10).max(4000),
+  questions: z.array(questionSchema).length(5),
 });
 
 export interface LesenPasteQuestionStored {
@@ -82,7 +87,7 @@ type StoredLesenPasteTopic = {
   accuracy: number | null;
   lastPracticedAt: number | null;
   totalAttempts: number;
-  recentResults: number[];
+  recentRounds: RoundResult[];
 };
 
 function collectionFor(db: Firestore, userId: string) {
@@ -124,9 +129,20 @@ export const saveLesenPasteTopic = createServerFn({ method: "POST" })
       accuracy: null,
       lastPracticedAt: null,
       totalAttempts: 0,
-      recentResults: [],
+      recentRounds: [],
     };
-    const ref = await collectionFor(db, context.userId).add(stored);
+    const ref = collectionFor(db, context.userId).doc(data.id);
+    await db.runTransaction(async (tx) => {
+      const existing = await tx.get(ref);
+      if (!existing.exists) tx.set(ref, stored);
+      else {
+        const previous = existing.data()!;
+        for (const key of Object.keys(data).filter((key) => key !== "id")) {
+          if (JSON.stringify(previous[key]) !== JSON.stringify(data[key as keyof typeof data]))
+            throw new Error("Topic ID already used with different content.");
+        }
+      }
+    });
     return { id: ref.id };
   });
 
@@ -141,7 +157,7 @@ export const listLesenPasteTopics = createServerFn({ method: "GET" })
     return snap.docs.map((d) => toSummary(d.id, d.data() as StoredLesenPasteTopic));
   });
 
-const idSchema = z.object({ id: z.string().trim().min(1).max(200) });
+const idSchema = z.object({ id: documentIdSchema });
 
 /** Full content (including `questions`) for re-opening one saved passage
  *  into a session. */
@@ -167,15 +183,13 @@ export const deleteLesenPasteTopic = createServerFn({ method: "POST" })
   .handler(async ({ context, data }): Promise<{ ok: true }> => {
     const { getAdminFirestore } = await import("./firebase-admin.server");
     const db = getAdminFirestore();
-    await collectionFor(db, context.userId).doc(data.id).delete();
+    await db.recursiveDelete(collectionFor(db, context.userId).doc(data.id));
     return { ok: true };
   });
 
-const recordSchema = z.object({
-  id: z.string().trim().min(1).max(200),
-  correctInRound: z.number().int().min(0),
-  totalInRound: z.number().int().min(1).max(50),
-});
+const recordSchema = roundCountsSchema.and(
+  z.object({ id: documentIdSchema, roundId: documentIdSchema }),
+);
 
 /** One write per finished round (never per question) — same write-budget
  *  discipline as grammar-paste-topics.ts's own equivalent. */
@@ -186,25 +200,13 @@ export const recordLesenPasteTopicRoundResult = createServerFn({ method: "POST" 
     const { getAdminFirestore } = await import("./firebase-admin.server");
     const db = getAdminFirestore();
     const ref = collectionFor(db, context.userId).doc(data.id);
-    const doc = await ref.get();
-    if (!doc.exists) return null;
-    const existing = doc.data() as StoredLesenPasteTopic;
-
-    const { accuracy, recentResults } = foldRoundIntoRollingAccuracy(
-      existing.recentResults ?? [],
+    const { recordSavedRound } = await import("./learning-progress.server");
+    const next = await recordSavedRound<StoredLesenPasteTopic>(
+      db,
+      ref,
+      data.roundId,
       data.correctInRound,
       data.totalInRound,
     );
-    const totalAttempts = (existing.totalAttempts ?? 0) + data.totalInRound;
-    const lastPracticedAt = Date.now();
-
-    const next: StoredLesenPasteTopic = {
-      ...existing,
-      accuracy,
-      lastPracticedAt,
-      totalAttempts,
-      recentResults,
-    };
-    await ref.set(next, { merge: true });
-    return toSummary(doc.id, next);
+    return next ? toSummary(ref.id, next) : null;
   });

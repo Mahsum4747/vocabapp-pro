@@ -1,3 +1,4 @@
+import { reportOperationFailure } from "./operation-errors";
 import { useCallback, useEffect } from "react";
 import { useCelebration } from "@/components/celebration";
 import { useStudyStore } from "./store";
@@ -67,7 +68,11 @@ export function useReviewLogger(): LogReview {
           else if (outcome.goalJustMet) celebrate.dailyGoalMet();
         })
         .catch((error) => {
-          console.error("Failed to record review:", error);
+          reportOperationFailure(
+            "review.persist",
+            error,
+            "Your review was not saved. Please try again.",
+          );
         });
     },
     [recordReview, celebrate],

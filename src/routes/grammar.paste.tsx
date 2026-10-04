@@ -1,5 +1,7 @@
+import { usePasteSave } from "@/lib/use-paste-save";
+import { reportOperationFailure } from "@/lib/operation-errors";
 import { AlertTriangle, Copy, Download, Trash2 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -115,30 +117,36 @@ function GrammarPastePage() {
       .catch(() => toast.error("Couldn't copy the prompt."));
   }
 
+  const roundReceipt = useRef(crypto.randomUUID());
+  const persistence = usePasteSave<GrammarPasteRound>(
+    (data) => saveGrammarPasteTopic({ data }),
+    (payload, id) => {
+      setRound({
+        topic: payload.topic,
+        ruleExplanation: payload.ruleExplanation,
+        questions: payload.questions as GrammarPasteRound["questions"],
+      });
+      roundReceipt.current = crypto.randomUUID();
+      setProgressRetry(null);
+      setActiveTopicId(id);
+      refreshSavedTopics();
+    },
+  );
   function start() {
+    if (persistence.status === "saving") return;
+    persistence.validating();
     setErrors([]);
     const result = parseGrammarPasteJson(text, questionCount);
     if (!result.ok) {
+      persistence.reset();
       setErrors(result.errors);
       return;
     }
-    setRound(result.value);
-    setActiveTopicId(null);
-    // Saved once, automatically, right here — never per question, never on
-    // re-opening an already-saved topic (see openSavedTopic below, which
-    // never calls this).
-    saveGrammarPasteTopic({ data: result.value })
-      .then(({ id }) => {
-        setActiveTopicId(id);
-        refreshSavedTopics();
-      })
-      .catch((err) => {
-        console.error("Failed to save Grammar Paste topic:", err);
-        toast.error("Couldn't save this topic to your history — the round still works.");
-      });
+    persistence.begin(result.value as GrammarPasteRound);
   }
 
   function openSavedTopic(id: string) {
+    persistence.reset();
     getGrammarPasteTopic({ data: { id } })
       .then((full) => {
         if (!full) {
@@ -146,7 +154,13 @@ function GrammarPastePage() {
           refreshSavedTopics();
           return;
         }
-        setRound({ topic: full.topic, ruleExplanation: full.ruleExplanation, questions: full.questions });
+        setRound({
+          topic: full.topic,
+          ruleExplanation: full.ruleExplanation,
+          questions: full.questions,
+        });
+        roundReceipt.current = crypto.randomUUID();
+        setProgressRetry(null);
         setActiveTopicId(full.id);
       })
       .catch(() => toast.error("Couldn't open this saved topic."));
@@ -161,31 +175,81 @@ function GrammarPastePage() {
   }
 
   function reset() {
+    persistence.reset();
+    setProgressRetry(null);
     setRound(null);
     setActiveTopicId(null);
     setText("");
     setErrors([]);
   }
 
+  const [progressRetry, setProgressRetry] = useState<{
+    id: string;
+    roundId: string;
+    correctInRound: number;
+    totalInRound: number;
+  } | null>(null);
+  async function persistRound(request: NonNullable<typeof progressRetry>) {
+    try {
+      const summary = await recordGrammarPasteTopicRoundResult({ data: request });
+      if (!summary) throw new Error("Saved topic no longer exists");
+      if (roundReceipt.current === request.roundId) setProgressRetry(null);
+      setSavedTopics((prev) =>
+        prev ? prev.map((topic) => (topic.id === summary.id ? summary : topic)) : prev,
+      );
+    } catch (error) {
+      if (roundReceipt.current !== request.roundId) return;
+      setProgressRetry(request);
+      reportOperationFailure(
+        "paste.progress",
+        error,
+        "Progress was not saved. Retry from this screen.",
+      );
+    }
+  }
   function handleRoundComplete(correctInRound: number, totalInRound: number) {
     if (!activeTopicId) return;
-    recordGrammarPasteTopicRoundResult({ data: { id: activeTopicId, correctInRound, totalInRound } })
-      .then((summary) => {
-        if (!summary) return;
-        setSavedTopics((prev) =>
-          prev ? prev.map((t) => (t.id === summary.id ? summary : t)) : prev,
-        );
-      })
-      .catch(() => {});
+    void persistRound({
+      id: activeTopicId,
+      roundId: roundReceipt.current,
+      correctInRound,
+      totalInRound,
+    });
   }
 
   return (
     <AppShell>
       <div className="mx-auto max-w-md">
+        {progressRetry ? (
+          <Button onClick={() => void persistRound(progressRetry)}>Retry progress save</Button>
+        ) : null}
         <AiGeneratedBadge />
+        <p role="status" className="mt-2 text-sm text-muted">
+          {persistence.status === "validating"
+            ? "Validating…"
+            : persistence.status === "saving"
+              ? "Saving to your history…"
+              : persistence.status === "failed"
+                ? "Not saved. Practice starts after saving."
+                : round
+                  ? "Saved to your history"
+                  : ""}
+        </p>
+        {persistence.status === "failed" ? (
+          <Button onClick={() => void persistence.retry()}>Retry saving</Button>
+        ) : null}
 
         {round ? (
-          <GrammarPasteSession round={round} onRestart={reset} onRoundComplete={handleRoundComplete} />
+          <GrammarPasteSession
+            key={activeTopicId}
+            round={round}
+            onRestart={reset}
+            onRoundStart={() => {
+              roundReceipt.current = crypto.randomUUID();
+              setProgressRetry(null);
+            }}
+            onRoundComplete={handleRoundComplete}
+          />
         ) : (
           <>
             <h1 className="font-display text-2xl font-medium tracking-tight">
@@ -252,7 +316,9 @@ function GrammarPastePage() {
                   aria-pressed={questionCount === count}
                   className={cn(
                     "rounded-control px-3 py-1 text-sm font-medium transition-colors",
-                    questionCount === count ? "bg-primary text-primary-ink" : "text-muted hover:text-fg",
+                    questionCount === count
+                      ? "bg-primary text-primary-ink"
+                      : "text-muted hover:text-fg",
                   )}
                 >
                   {count}
@@ -270,7 +336,13 @@ function GrammarPastePage() {
               <pre className="mt-2 max-h-48 overflow-auto rounded-card bg-surface p-3 font-mono text-xs whitespace-pre-wrap text-fg">
                 {prompt}
               </pre>
-              <Button type="button" variant="outline" size="sm" className="mt-2" onClick={copyPrompt}>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="mt-2"
+                onClick={copyPrompt}
+              >
                 <Copy />
                 Copy prompt
               </Button>
@@ -282,7 +354,10 @@ function GrammarPastePage() {
             <Textarea
               id="grammar-paste-json"
               value={text}
-              onChange={(e) => setText(e.target.value)}
+              onChange={(e) => {
+                if (persistence.status === "failed") persistence.reset();
+                setText(e.target.value);
+              }}
               placeholder='{"topic": "...", "ruleExplanation": "...", "questions": [...]}'
               className="mt-1 min-h-40 font-mono text-sm"
             />
@@ -293,7 +368,14 @@ function GrammarPastePage() {
                 ))}
               </ul>
             ) : null}
-            <Button type="button" className="mt-4 w-full" onClick={start} disabled={!text.trim()}>
+            <Button
+              type="button"
+              className="mt-4 w-full"
+              onClick={start}
+              disabled={
+                !text.trim() || persistence.status === "saving" || persistence.status === "failed"
+              }
+            >
               Start practice round
             </Button>
           </>
@@ -332,10 +414,12 @@ function exportableJson(round: GrammarPasteRound): string {
 function GrammarPasteSession({
   round,
   onRestart,
+  onRoundStart,
   onRoundComplete,
 }: {
   round: GrammarPasteRound;
   onRestart: () => void;
+  onRoundStart: () => void;
   onRoundComplete: (correctInRound: number, totalInRound: number) => void;
 }) {
   function buildRound(): DrillQuestion[] {
@@ -376,6 +460,7 @@ function GrammarPasteSession({
         fetchSample={() => Promise.resolve(numberSample(round.questions.length))}
         buildRound={buildRound}
         roundSize={round.questions.length}
+        onRoundStart={onRoundStart}
         onRoundComplete={onRoundComplete}
       />
       <div className="mx-auto mt-4 flex max-w-md items-center justify-center gap-2">

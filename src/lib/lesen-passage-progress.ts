@@ -35,7 +35,9 @@ import { authMiddleware } from "./auth/middleware";
 const LEVELS = ["A1", "A2", "B1", "B2"] as const;
 type Level = (typeof LEVELS)[number];
 
-export type LesenPassageProgressDoc = Partial<Record<Level, { completedPassageIds: string[]; lastPracticedAt: number }>>;
+export type LesenPassageProgressDoc = Partial<
+  Record<Level, { completedPassageIds: string[]; lastPracticedAt: number }>
+>;
 
 const recordSchema = z.object({
   level: z.enum(LEVELS),
@@ -69,22 +71,14 @@ export const recordLesenPassageCompletion = createServerFn({ method: "POST" })
   .handler(async ({ context, data }): Promise<{ completedPassageIds: string[] }> => {
     const { getAdminFirestore } = await import("./firebase-admin.server");
     const db = getAdminFirestore();
+    const { LESEN_PASSAGES } = await import("./german/lesen-data");
+    if (
+      !LESEN_PASSAGES.some(
+        (passage) => passage.id === data.passageId && passage.level === data.level,
+      )
+    )
+      throw new Error("Unknown bundled passage for this level.");
     const ref = db.collection("lesenProgress").doc(context.userId);
-    const doc = await ref.get();
-    const existing = (doc.data() ?? {}) as LesenPassageProgressDoc;
-    const existingIds = existing[data.level]?.completedPassageIds ?? [];
-    const completedPassageIds = existingIds.includes(data.passageId)
-      ? existingIds
-      : [...existingIds, data.passageId];
-
-    await ref.set(
-      {
-        [data.level]: {
-          completedPassageIds,
-          lastPracticedAt: Date.now(),
-        },
-      },
-      { merge: true },
-    );
-    return { completedPassageIds };
+    const { recordPassageCompletion } = await import("./learning-progress.server");
+    return recordPassageCompletion(db, ref, data.level, data.passageId);
   });

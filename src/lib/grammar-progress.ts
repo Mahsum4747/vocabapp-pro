@@ -18,40 +18,23 @@ import { authMiddleware } from "./auth/middleware";
  * one call.
  */
 
-export const RECENT_WINDOW = 20;
+import { foldRoundIntoRollingAccuracy, type RoundResult } from "./progress-window";
+export { RECENT_WINDOW, foldRoundIntoRollingAccuracy } from "./progress-window";
+import { roundCountsSchema } from "./input-schemas";
 
-/**
- * Pure fold of one round's (correctInRound/totalInRound) result into an
- * existing rolling bit window, trimmed to `window` — the exact math both
- * `recordGrammarRoundResult` below and `grammar-paste-topics.ts`'s own
- * per-topic accuracy use, factored out so the two stay identical rather
- * than maintaining two copies of the same rounding/trimming logic.
- */
-export function foldRoundIntoRollingAccuracy(
-  existingBits: number[],
-  correctInRound: number,
-  totalInRound: number,
-  window: number = RECENT_WINDOW,
-): { accuracy: number; recentResults: number[] } {
-  const wrongInRound = totalInRound - correctInRound;
-  const roundBits = [...Array<number>(correctInRound).fill(1), ...Array<number>(wrongInRound).fill(0)];
-  const recentResults = [...existingBits, ...roundBits].slice(-window);
-  const accuracy = Math.round(
-    (recentResults.reduce((sum, bit) => sum + bit, 0) / recentResults.length) * 100,
-  );
-  return { accuracy, recentResults };
-}
-
-const recordSchema = z.object({
-  topicId: z.string().trim().min(1).max(64),
-  correctInRound: z.number().int().min(0),
-  totalInRound: z.number().int().min(1).max(50),
-});
+const recordSchema = roundCountsSchema.and(
+  z.object({
+    topicId: z
+      .string()
+      .trim()
+      .regex(/^[a-z0-9-]+$/)
+      .max(64),
+  }),
+);
 
 export interface GrammarTopicProgress {
   topicId: string;
-  /** 0-100, over the most recent up-to-RECENT_WINDOW individual questions
-   *  (not rounds) — see `recordGrammarRoundResult`. */
+  /** 0-100, over the most recent up-to-RECENT_WINDOW completed rounds — see `recordGrammarRoundResult`. */
   accuracy: number;
   lastPracticedAt: number;
   /** Total questions ever answered for this topic — never trimmed, unlike
@@ -59,30 +42,17 @@ export interface GrammarTopicProgress {
   totalAttempts: number;
 }
 
-/** The stored Firestore shape adds the raw rolling bit window `accuracy` is
+/** The stored Firestore shape adds the raw rolling round window `accuracy` is
  *  derived from — never returned to a client, an implementation detail of
  *  this file only. */
 type StoredTopicProgress = GrammarTopicProgress & {
-  recentResults: number[];
+  recentRounds: RoundResult[];
 };
 
 export type GrammarProgressDoc = Record<string, GrammarTopicProgress>;
 
-/**
- * Folds one just-finished round's (correctInRound / totalInRound) result
- * into the topic's stored rolling-accuracy window and writes it — ONE
- * Firestore write, called exactly once per round from each drill's
- * session-end transition (never per question).
- *
- * `accuracy` is a rolling average over the last `RECENT_WINDOW` individual
- * QUESTIONS, not rounds, per the task spec ("son 20 soru"). Since this only
- * ever receives a round-level count (never per-question detail, by the same
- * write-budget constraint), the round is expanded into `totalInRound`
- * synthetic 1/0 bits (all the round's correct answers, then all its misses
- * — order doesn't matter for a plain average) and appended to the topic's
- * existing bit window, then trimmed back to `RECENT_WINDOW`. `totalAttempts`
- * is a separate, never-trimmed lifetime counter.
- */
+/** One transaction per finished round. Accuracy is question-weighted over
+ * the most recent 20 completed rounds; lifetime attempts never get trimmed. */
 export const recordGrammarRoundResult = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
   .validator(recordSchema)
@@ -90,33 +60,25 @@ export const recordGrammarRoundResult = createServerFn({ method: "POST" })
     const { getAdminFirestore } = await import("./firebase-admin.server");
     const db = getAdminFirestore();
     const ref = db.collection("grammarProgress").doc(context.userId);
-    const doc = await ref.get();
-    const existing = doc.data()?.[data.topicId] as StoredTopicProgress | undefined;
-
-    const { accuracy, recentResults } = foldRoundIntoRollingAccuracy(
-      existing?.recentResults ?? [],
+    const { recordTopicRound } = await import("./learning-progress.server");
+    const next = await recordTopicRound(
+      db,
+      ref,
+      data.topicId,
       data.correctInRound,
       data.totalInRound,
     );
-    const totalAttempts = (existing?.totalAttempts ?? 0) + data.totalInRound;
-    const lastPracticedAt = Date.now();
-
-    const next: StoredTopicProgress = {
+    return {
       topicId: data.topicId,
-      accuracy,
-      lastPracticedAt,
-      totalAttempts,
-      recentResults,
+      accuracy: next.accuracy!,
+      lastPracticedAt: next.lastPracticedAt!,
+      totalAttempts: next.totalAttempts,
     };
-    // Merge-write scoped to just this one topic's field — never touches any
-    // other topic's entry in the same doc, let alone cardProgress/FSRS.
-    await ref.set({ [data.topicId]: next }, { merge: true });
-    return { topicId: data.topicId, accuracy, lastPracticedAt, totalAttempts };
   });
 
 /**
  * Every topic's progress for the signed-in user, for the grammar hub's
- * per-tile accuracy display. Strips `recentResults` (the raw bit window) —
+ * per-tile accuracy display. Strips `recentRounds` (the raw round window) —
  * the hub only ever needs the summary fields.
  */
 export const getGrammarProgress = createServerFn({ method: "GET" })

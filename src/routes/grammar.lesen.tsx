@@ -1,3 +1,4 @@
+import { reportOperationFailure } from "@/lib/operation-errors";
 import { useEffect, useState } from "react";
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { AuthGate } from "@/components/auth-gate";
@@ -8,7 +9,10 @@ import { Button } from "@/components/ui/button";
 import { LESEN_PASSAGES } from "@/lib/german/lesen-data";
 import type { LesenLevel, LesenPassage } from "@/lib/german/lesen-types";
 import { recordGrammarRoundResult } from "@/lib/grammar-progress";
-import { getLesenPassageProgress, recordLesenPassageCompletion } from "@/lib/lesen-passage-progress";
+import {
+  getLesenPassageProgress,
+  recordLesenPassageCompletion,
+} from "@/lib/lesen-passage-progress";
 import type { LesenPassageProgressDoc } from "@/lib/lesen-passage-progress";
 
 export const Route = createFileRoute("/grammar/lesen")({
@@ -83,7 +87,9 @@ function LesenPage() {
   useEffect(() => {
     getLesenPassageProgress()
       .then(setProgressDoc)
-      .catch(() => {});
+      .catch((error) =>
+        reportOperationFailure("lesen.progress", error, "Reading progress could not be saved."),
+      );
   }, []);
 
   // The level-picker screen and an active round/result both render via
@@ -120,7 +126,9 @@ function LesenPage() {
     // score screen.
     void recordGrammarRoundResult({
       data: { topicId: "lesen", correctInRound: correctCount, totalInRound: total },
-    }).catch(() => {});
+    }).catch((error) =>
+      reportOperationFailure("lesen.progress", error, "Reading progress could not be saved."),
+    );
     if (passage && level) {
       recordLesenPassageCompletion({ data: { level, passageId: passage.id } })
         .then(({ completedPassageIds }) => {
@@ -129,7 +137,9 @@ function LesenPage() {
             [level]: { completedPassageIds, lastPracticedAt: Date.now() },
           }));
         })
-        .catch(() => {});
+        .catch((error) =>
+          reportOperationFailure("lesen.progress", error, "Reading progress could not be saved."),
+        );
     }
   }
 
@@ -168,10 +178,18 @@ function LesenPage() {
   if (done) {
     const pct = Math.round((resultCorrect / resultTotal) * 100);
     return (
-      <StudySessionShell title="Lesen" mode="Lesen" index={resultTotal} total={resultTotal} onBack={backOneStep}>
+      <StudySessionShell
+        title="Lesen"
+        mode="Lesen"
+        index={resultTotal}
+        total={resultTotal}
+        onBack={backOneStep}
+      >
         <div className="mx-auto max-w-md rounded-card bg-surface p-8 text-center shadow-[var(--elevation-1)]">
           <p className="text-sm text-muted">Round result</p>
-          <p className="mt-2 font-display text-5xl font-medium tracking-tight tabular-nums">{pct}%</p>
+          <p className="mt-2 font-display text-5xl font-medium tracking-tight tabular-nums">
+            {pct}%
+          </p>
           <p className="mt-2 text-sm text-muted">
             {resultCorrect} / {resultTotal} correct
           </p>
@@ -206,7 +224,11 @@ function LesenPage() {
           <p className="text-xs font-medium text-subtle">
             {passage.title} · {passage.source}
           </p>
-          <LesenSentenceInsertionBoard key={passage.id} passage={passage} onComplete={finishRound} />
+          <LesenSentenceInsertionBoard
+            key={passage.id}
+            passage={passage}
+            onComplete={finishRound}
+          />
         </div>
       </StudySessionShell>
     );

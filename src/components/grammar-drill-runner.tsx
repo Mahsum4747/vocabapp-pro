@@ -1,3 +1,4 @@
+import { reportOperationFailure } from "@/lib/operation-errors";
 import { Check, Info } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
@@ -5,7 +6,11 @@ import { StudySessionShell } from "@/components/study-session-shell";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { EmptyState } from "@/components/empty-state";
-import { fetchGermanGlosses, fetchRandomNounSample, type GermanGloss } from "@/lib/german/grammar-drill-sample";
+import {
+  fetchGermanGlosses,
+  fetchRandomNounSample,
+  type GermanGloss,
+} from "@/lib/german/grammar-drill-sample";
 import { recordGrammarRoundResult } from "@/lib/grammar-progress";
 import { GRAMMAR_RULES, type GrammarRule, type GrammarRuleTopic } from "@/content/grammar-rules";
 import { GrammarRuleContent } from "@/components/grammar-rule-content";
@@ -22,7 +27,8 @@ function entryKey(entry: unknown): string | null {
   if (!entry || typeof entry !== "object") return null;
   const lemma = (entry as { lemma?: unknown }).lemma;
   const infinitive = (entry as { infinitive?: unknown }).infinitive;
-  const key = typeof lemma === "string" ? lemma : typeof infinitive === "string" ? infinitive : null;
+  const key =
+    typeof lemma === "string" ? lemma : typeof infinitive === "string" ? infinitive : null;
   return key ? key.trim().toLowerCase() : null;
 }
 
@@ -54,6 +60,7 @@ export function GrammarDrillRunner<T = NounEntry>({
   trackProgress = true,
   ruleOverride,
   roundSize = ROUND_SIZE,
+  onRoundStart,
   onRoundComplete,
 }: {
   mode: string;
@@ -107,6 +114,7 @@ export function GrammarDrillRunner<T = NounEntry>({
    *  per-saved-topic accuracy, in `grammarPasteTopics`, see
    *  grammar.paste.tsx and grammar-paste-topics.ts). Most callers omit
    *  this entirely. */
+  onRoundStart?: () => void;
   onRoundComplete?: (correctInRound: number, totalInRound: number) => void;
 }) {
   const [round, setRound] = useState(0);
@@ -183,7 +191,9 @@ export function GrammarDrillRunner<T = NounEntry>({
   // them) skip this entirely (empty `terms` -> no fetch).
   const [glosses, setGlosses] = useState<Record<string, GermanGloss>>({});
   useEffect(() => {
-    const terms = [...new Set(questions.map((q) => q.glossKey).filter((k): k is string => Boolean(k)))];
+    const terms = [
+      ...new Set(questions.map((q) => q.glossKey).filter((k): k is string => Boolean(k))),
+    ];
     if (terms.length === 0) {
       setGlosses({});
       return;
@@ -208,6 +218,7 @@ export function GrammarDrillRunner<T = NounEntry>({
   const [done, setDone] = useState(false);
 
   function restart() {
+    onRoundStart?.();
     setIndex(0);
     setSelected(null);
     setCorrectCount(0);
@@ -292,7 +303,9 @@ export function GrammarDrillRunner<T = NounEntry>({
       if (trackProgress && topic) {
         void recordGrammarRoundResult({
           data: { topicId: topic, correctInRound: correctCount, totalInRound: questions.length },
-        }).catch(() => {});
+        }).catch((error) =>
+          reportOperationFailure("grammar.progress", error, "Practice result could not be saved."),
+        );
       }
       onRoundComplete?.(correctCount, questions.length);
       return;

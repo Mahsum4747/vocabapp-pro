@@ -1,5 +1,7 @@
+import { usePasteSave } from "@/lib/use-paste-save";
+import { reportOperationFailure } from "@/lib/operation-errors";
 import { AlertTriangle, Copy, Trash2 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -112,32 +114,42 @@ function LesenPastePage() {
       .catch(() => toast.error("Couldn't copy the prompt."));
   }
 
+  const roundReceipt = useRef(crypto.randomUUID());
+  const persistence = usePasteSave<
+    LesenPasteRound & { level: "A1" | "A2" | "B1" | "B2"; topic: string }
+  >(
+    (data) => saveLesenPasteTopic({ data }),
+    (payload, id) => {
+      setRound({
+        title: payload.title,
+        text: payload.text,
+        questions: payload.questions as LesenPasteRound["questions"],
+      });
+      roundReceipt.current = crypto.randomUUID();
+      setProgressRetry(null);
+      setActiveTopicId(id);
+      setDone(false);
+      refreshSavedTopics();
+    },
+  );
   function start() {
+    if (persistence.status === "saving") return;
+    persistence.validating();
     setErrors([]);
     const result = parseLesenPasteJson(text);
     if (!result.ok) {
+      persistence.reset();
       setErrors(result.errors);
       return;
     }
-    setRound(result.value);
-    setActiveTopicId(null);
-    setDone(false);
-    // Saved once, automatically, right here — never per question, never on
-    // re-opening an already-saved passage (see openSavedTopic below).
-    saveLesenPasteTopic({
-      data: { level, topic: topic.trim(), title: result.value.title, text: result.value.text, questions: result.value.questions },
-    })
-      .then(({ id }) => {
-        setActiveTopicId(id);
-        refreshSavedTopics();
-      })
-      .catch((err) => {
-        console.error("Failed to save Lesen Paste passage:", err);
-        toast.error("Couldn't save this passage to your history — the round still works.");
-      });
+    persistence.begin({ level, topic: topic.trim(), ...result.value } as LesenPasteRound & {
+      level: "A1" | "A2" | "B1" | "B2";
+      topic: string;
+    });
   }
 
   function openSavedTopic(summary: LesenPasteTopicSummary) {
+    persistence.reset();
     getLesenPasteTopic({ data: { id: summary.id } })
       .then((full) => {
         if (!full) {
@@ -146,6 +158,8 @@ function LesenPastePage() {
           return;
         }
         setRound({ title: full.title, text: full.text, questions: full.questions });
+        roundReceipt.current = crypto.randomUUID();
+        setProgressRetry(null);
         setActiveTopicId(full.id);
         setDone(false);
       })
@@ -161,6 +175,8 @@ function LesenPastePage() {
   }
 
   function reset() {
+    persistence.reset();
+    setProgressRetry(null);
     setRound(null);
     setActiveTopicId(null);
     setDone(false);
@@ -168,23 +184,64 @@ function LesenPastePage() {
     setErrors([]);
   }
 
+  const [progressRetry, setProgressRetry] = useState<{
+    id: string;
+    roundId: string;
+    correctInRound: number;
+    totalInRound: number;
+  } | null>(null);
+  async function persistRound(request: NonNullable<typeof progressRetry>) {
+    try {
+      const summary = await recordLesenPasteTopicRoundResult({ data: request });
+      if (!summary) throw new Error("Saved topic no longer exists");
+      if (roundReceipt.current === request.roundId) setProgressRetry(null);
+      setSavedTopics((prev) =>
+        prev ? prev.map((topic) => (topic.id === summary.id ? summary : topic)) : prev,
+      );
+    } catch (error) {
+      if (roundReceipt.current !== request.roundId) return;
+      setProgressRetry(request);
+      reportOperationFailure(
+        "paste.progress",
+        error,
+        "Progress was not saved. Retry from this screen.",
+      );
+    }
+  }
   function handleRoundComplete(correctInRound: number, totalInRound: number) {
     setResultCorrect(correctInRound);
     setResultTotal(totalInRound);
     setDone(true);
     if (!activeTopicId) return;
-    recordLesenPasteTopicRoundResult({ data: { id: activeTopicId, correctInRound, totalInRound } })
-      .then((summary) => {
-        if (!summary) return;
-        setSavedTopics((prev) => (prev ? prev.map((t) => (t.id === summary.id ? summary : t)) : prev));
-      })
-      .catch(() => {});
+    void persistRound({
+      id: activeTopicId,
+      roundId: roundReceipt.current,
+      correctInRound,
+      totalInRound,
+    });
   }
 
   return (
     <AppShell>
       <div className="mx-auto max-w-md">
+        {progressRetry ? (
+          <Button onClick={() => void persistRound(progressRetry)}>Retry progress save</Button>
+        ) : null}
         <AiGeneratedBadge />
+        <p role="status" className="mt-2 text-sm text-muted">
+          {persistence.status === "validating"
+            ? "Validating…"
+            : persistence.status === "saving"
+              ? "Saving to your history…"
+              : persistence.status === "failed"
+                ? "Not saved. Practice starts after saving."
+                : round
+                  ? "Saved to your history"
+                  : ""}
+        </p>
+        {persistence.status === "failed" ? (
+          <Button onClick={() => void persistence.retry()}>Retry saving</Button>
+        ) : null}
 
         {round && done ? (
           <div className="mx-auto max-w-md rounded-card bg-surface p-8 text-center shadow-[var(--elevation-1)]">
@@ -203,7 +260,12 @@ function LesenPastePage() {
           <>
             <LesenChoiceBoard
               key={activeTopicId ?? round.title}
-              passage={{ title: round.title, source: "AI-generated", text: round.text, questions: round.questions }}
+              passage={{
+                title: round.title,
+                source: "AI-generated",
+                text: round.text,
+                questions: round.questions,
+              }}
               onComplete={handleRoundComplete}
             />
             <div className="mt-4 flex justify-center">
@@ -214,10 +276,12 @@ function LesenPastePage() {
           </>
         ) : (
           <>
-            <h1 className="font-display text-2xl font-medium tracking-tight">Practice your own topic</h1>
+            <h1 className="font-display text-2xl font-medium tracking-tight">
+              Practice your own topic
+            </h1>
             <p className="mt-2 text-sm text-muted">
-              Pick a level and (optionally) a topic, copy the prompt into your own AI chat, then paste back
-              the JSON it returns.
+              Pick a level and (optionally) a topic, copy the prompt into your own AI chat, then
+              paste back the JSON it returns.
             </p>
 
             {savedTopics && savedTopics.length > 0 ? (
@@ -291,13 +355,19 @@ function LesenPastePage() {
               <summary className="cursor-pointer font-medium text-fg">Lesen Paste prompt</summary>
               <p className="mt-2 text-muted">{lesenPasteRuleFor(level)}</p>
               <p className="mt-1 text-muted">
-                Paste this prompt into your own AI chat (the level and TOPIC line are already filled in
-                from above), then paste the JSON it returns below.
+                Paste this prompt into your own AI chat (the level and TOPIC line are already filled
+                in from above), then paste the JSON it returns below.
               </p>
               <pre className="mt-2 max-h-48 overflow-auto rounded-card bg-surface p-3 font-mono text-xs whitespace-pre-wrap text-fg">
                 {prompt}
               </pre>
-              <Button type="button" variant="outline" size="sm" className="mt-2" onClick={copyPrompt}>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="mt-2"
+                onClick={copyPrompt}
+              >
                 <Copy />
                 Copy prompt
               </Button>
@@ -309,7 +379,10 @@ function LesenPastePage() {
             <Textarea
               id="lesen-paste-json"
               value={text}
-              onChange={(e) => setText(e.target.value)}
+              onChange={(e) => {
+                if (persistence.status === "failed") persistence.reset();
+                setText(e.target.value);
+              }}
               placeholder='{"title": "...", "text": "...", "questions": [...]}'
               className="mt-1 min-h-40 font-mono text-sm"
             />
@@ -320,7 +393,14 @@ function LesenPastePage() {
                 ))}
               </ul>
             ) : null}
-            <Button type="button" className="mt-4 w-full" onClick={start} disabled={!text.trim()}>
+            <Button
+              type="button"
+              className="mt-4 w-full"
+              onClick={start}
+              disabled={
+                !text.trim() || persistence.status === "saving" || persistence.status === "failed"
+              }
+            >
               Start practice round
             </Button>
           </>
