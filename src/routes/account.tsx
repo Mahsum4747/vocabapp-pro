@@ -1,3 +1,4 @@
+import { reportOperationFailure } from "@/lib/operation-errors";
 import { getPromptById, promptTitle } from "@/content/write-prompts";
 import { createFileRoute } from "@tanstack/react-router";
 import { format } from "date-fns";
@@ -121,7 +122,9 @@ function AccountPage() {
         ) : null}
         {tab === "goal" ? <GoalTab timeZone={profile.timeZone} /> : null}
         {tab === "feedback" ? <AiFeedbackTab /> : null}
-        {tab === "grammar" ? <GrammarReviewTab explanationLanguage={profile.explanationLanguage} /> : null}
+        {tab === "grammar" ? (
+          <GrammarReviewTab explanationLanguage={profile.explanationLanguage} />
+        ) : null}
         {tab === "sound" ? <SoundTab /> : null}
         {tab === "account" ? <AccountTab /> : null}
       </div>
@@ -213,7 +216,10 @@ function XpChart({ rows }: { rows: DailyStats[] }) {
           <div key={row.date} className="flex flex-1 flex-col items-center gap-1.5">
             <span className="text-xs text-muted tabular-nums">{row.xpEarned}</span>
             <div
-              className={cn("w-full rounded-control", row.xpEarned > 0 ? "bg-primary" : "bg-surface-2")}
+              className={cn(
+                "w-full rounded-control",
+                row.xpEarned > 0 ? "bg-primary" : "bg-surface-2",
+              )}
               style={{ height: Math.max(4, height) }}
             />
             <span className="text-2xs text-subtle">{format(`${row.date}T00:00`, "EEE")}</span>
@@ -353,10 +359,10 @@ function SoundTab() {
       </div>
 
       <p className="text-xs text-subtle">
-        Card audio (the speaker icon) uses your device&apos;s best available voice for each
-        language automatically. For more or better-sounding voices, check your OS&apos;s voice
-        settings — iOS: Settings → Accessibility → Spoken Content → Voices; Android: install
-        additional voice packs from Google text-to-speech settings.
+        Card audio (the speaker icon) uses your device&apos;s best available voice for each language
+        automatically. For more or better-sounding voices, check your OS&apos;s voice settings —
+        iOS: Settings → Accessibility → Spoken Content → Voices; Android: install additional voice
+        packs from Google text-to-speech settings.
       </p>
     </div>
   );
@@ -437,7 +443,10 @@ function AiFeedbackTab() {
           <h2 className="text-sm font-medium">{group.setTitle}</h2>
           <div className="mt-2 space-y-2">
             {group.entries.map((entry) => (
-              <div key={entry.id} className="rounded-card bg-surface p-4 shadow-[var(--elevation-1)]">
+              <div
+                key={entry.id}
+                className="rounded-card bg-surface p-4 shadow-[var(--elevation-1)]"
+              >
                 <p className="font-medium">
                   {entry.term ??
                     (entry.promptId && getPromptById(entry.promptId) ? (
@@ -492,9 +501,12 @@ function ErrorTagSummary({ entries }: { entries: WriteItFeedbackLogEntry[] }) {
   if (entries.length < MIN_FEEDBACK_FOR_SUMMARY) {
     return (
       <div className="rounded-card bg-surface p-4 shadow-[var(--elevation-1)]">
-        <p className="text-xs font-medium tracking-wide text-muted uppercase">Most common mistakes</p>
+        <p className="text-xs font-medium tracking-wide text-muted uppercase">
+          Most common mistakes
+        </p>
         <p className="mt-1 text-sm text-muted">
-          Not enough feedback yet to spot a pattern — write a few more sentences and check back here.
+          Not enough feedback yet to spot a pattern — write a few more sentences and check back
+          here.
         </p>
       </div>
     );
@@ -519,7 +531,9 @@ function ErrorTagSummary({ entries }: { entries: WriteItFeedbackLogEntry[] }) {
   if (top.length === 0) {
     return (
       <div className="rounded-card bg-surface p-4 shadow-[var(--elevation-1)]">
-        <p className="text-xs font-medium tracking-wide text-muted uppercase">Most common mistakes</p>
+        <p className="text-xs font-medium tracking-wide text-muted uppercase">
+          Most common mistakes
+        </p>
         <p className="mt-1 text-sm text-muted">No categorized mistakes in your feedback yet.</p>
       </div>
     );
@@ -532,7 +546,10 @@ function ErrorTagSummary({ entries }: { entries: WriteItFeedbackLogEntry[] }) {
         {top.map(({ category, count }) => (
           <li key={category} className="text-sm text-fg">
             {ERROR_CATEGORY_LABELS[category]}
-            <span className="text-muted"> — {count} time{count === 1 ? "" : "s"}</span>
+            <span className="text-muted">
+              {" "}
+              — {count} time{count === 1 ? "" : "s"}
+            </span>
           </li>
         ))}
       </ul>
@@ -585,7 +602,10 @@ function GrammarReviewTab({ explanationLanguage }: { explanationLanguage?: strin
       if (result.status === "ok") {
         setState({ status: "ready", assessment: result.assessment });
       } else if (result.status === "insufficient") {
-        setState({ status: "error", error: "Not enough practice data yet — try a few more drills." });
+        setState({
+          status: "error",
+          error: "Not enough practice data yet — try a few more drills.",
+        });
       } else {
         setState({ status: "error", error: result.error });
       }
@@ -611,8 +631,8 @@ function GrammarReviewTab({ explanationLanguage }: { explanationLanguage?: strin
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted">
-        Get a short AI review of your grammar drill accuracy across every topic you&apos;ve practiced,
-        with a suggestion for what to focus on next.
+        Get a short AI review of your grammar drill accuracy across every topic you&apos;ve
+        practiced, with a suggestion for what to focus on next.
       </p>
       <Button onClick={() => void requestAssessment()} disabled={state.status === "loading"}>
         {state.status === "loading" ? "Analyzing…" : "Get grammar review"}
@@ -636,10 +656,12 @@ function AccountTab() {
   async function handleDeleteAccount() {
     if (confirmText.toUpperCase() !== "DELETE") return;
     setIsDeleting(true);
+    let learningDeleted = false;
     try {
       // Two separate server functions/requests (Firestore, then Postgres) —
       // see delete-auth-account.ts for why they aren't combined into one.
       await deleteUserAccount({});
+      learningDeleted = true;
       await deleteAuthAccount({});
       toast.success("Account deleted.");
       // Sign out and redirect to login. Dynamic import: better-auth/react
@@ -647,7 +669,13 @@ function AccountTab() {
       const { signOut } = await import("@/lib/auth/client");
       await signOut("/login");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to delete account.");
+      reportOperationFailure(
+        "account.delete",
+        error,
+        learningDeleted
+          ? "Learning data removed. Sign-in account deletion failed; retry deletion."
+          : "Deletion did not finish. Retry to remove the remaining data.",
+      );
       setIsDeleting(false);
     }
   }

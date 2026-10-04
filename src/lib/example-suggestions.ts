@@ -1,3 +1,4 @@
+import { logOperationFailure } from "./diagnostics";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { authMiddleware } from "./auth/middleware.ts";
@@ -155,7 +156,8 @@ export const suggestExampleSentences = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
   .validator((input: unknown) => inputSchema.parse(input))
   .handler(async ({ data }) => {
-    const termLanguageCode = asLanguageCode(data.termLangCode) ?? normalizeLanguage(data.termLanguage ?? "");
+    const termLanguageCode =
+      asLanguageCode(data.termLangCode) ?? normalizeLanguage(data.termLanguage ?? "");
     const profile = profileFor(termLanguageCode);
     if (!profile.hasExampleSuggestions) {
       return {
@@ -179,12 +181,15 @@ export const suggestExampleSentences = createServerFn({ method: "POST" })
       }
     } catch (error) {
       // Cache is a nice-to-have — a Firestore hiccup shouldn't block the suggestion.
-      console.error("Example suggestion cache lookup failed:", error);
+      logOperationFailure("example-suggestions.storage", new Error("Operation failed"));
     }
 
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-      return { ok: false as const, error: "Example suggestions aren't available in this environment." };
+      return {
+        ok: false as const,
+        error: "Example suggestions aren't available in this environment.",
+      };
     }
 
     const budget = await (await import("./ai-budget.server")).spendAiAction("assist");
@@ -217,7 +222,7 @@ export const suggestExampleSentences = createServerFn({ method: "POST" })
         },
       );
     } catch (error) {
-      console.error("Gemini request failed:", error);
+      logOperationFailure("example-suggestions.gemini", new Error("Operation failed"));
       return { ok: false as const, error: "Couldn't reach the AI service, try again." };
     }
 
@@ -225,7 +230,7 @@ export const suggestExampleSentences = createServerFn({ method: "POST" })
       return { ok: false as const, error: "AI quota exceeded, try again later." };
     }
     if (!res.ok) {
-      console.error("Gemini API error:", res.status, await res.text().catch(() => ""));
+      logOperationFailure("example-suggestions.gemini", new Error("Operation failed"));
       return { ok: false as const, error: "Couldn't get suggestions, try again." };
     }
 
@@ -236,7 +241,7 @@ export const suggestExampleSentences = createServerFn({ method: "POST" })
     const text = body.candidates?.[0]?.content?.parts?.[0]?.text;
     if (!text) {
       const blockReason = body.promptFeedback?.blockReason ?? body.candidates?.[0]?.finishReason;
-      console.error("Gemini returned no usable content:", blockReason, body.promptFeedback);
+      logOperationFailure("example-suggestions.gemini", new Error("Operation failed"));
       return {
         ok: false as const,
         error: blockReason
@@ -249,7 +254,7 @@ export const suggestExampleSentences = createServerFn({ method: "POST" })
     try {
       parsed = suggestionSchema.parse(JSON.parse(text));
     } catch (error) {
-      console.error("Gemini returned unusable JSON:", error);
+      logOperationFailure("example-suggestions.gemini", new Error("Operation failed"));
       return { ok: false as const, error: "Couldn't read the AI response, try again." };
     }
 
@@ -262,7 +267,7 @@ export const suggestExampleSentences = createServerFn({ method: "POST" })
         createdAt: Date.now(),
       });
     } catch (error) {
-      console.error("Failed to write example suggestion cache:", error);
+      logOperationFailure("example-suggestions.storage", new Error("Operation failed"));
     }
 
     return { ok: true as const, ...parsed };

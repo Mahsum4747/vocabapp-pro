@@ -1,3 +1,4 @@
+import { logOperationFailure } from "./diagnostics";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { authMiddleware } from "./auth/middleware";
@@ -86,7 +87,10 @@ export function buildGrammarAssessmentPrompt(
   pasteTopics: GrammarPasteTopicForAssessment[] = [],
 ): string {
   const lines = topics
-    .map((t) => `- ${humanizeTopicId(t.topicId)}: ${t.accuracy}% accuracy over ${t.totalAttempts} questions`)
+    .map(
+      (t) =>
+        `- ${humanizeTopicId(t.topicId)}: ${t.accuracy}% accuracy over ${t.totalAttempts} questions`,
+    )
     .join("\n");
   const parts = [
     "This is a German learner's grammar drill practice data, one line per topic practiced so far:",
@@ -178,7 +182,7 @@ export const getGrammarAssessment = createServerFn({ method: "POST" })
         )
         .map((t) => ({ topic: t.topic, accuracy: t.accuracy, totalAttempts: t.totalAttempts }));
     } catch (error) {
-      console.error("Failed to read grammarPasteTopics for assessment (continuing without them):", error);
+      logOperationFailure("grammar-assessment.storage", new Error("Operation failed"));
     }
 
     let res: Response;
@@ -197,7 +201,11 @@ export const getGrammarAssessment = createServerFn({ method: "POST" })
                 role: "user",
                 parts: [
                   {
-                    text: buildGrammarAssessmentPrompt(summary, data.explanationLanguage, pasteSummary),
+                    text: buildGrammarAssessmentPrompt(
+                      summary,
+                      data.explanationLanguage,
+                      pasteSummary,
+                    ),
                   },
                 ],
               },
@@ -217,7 +225,7 @@ export const getGrammarAssessment = createServerFn({ method: "POST" })
         },
       );
     } catch (error) {
-      console.error("Gemini request failed:", error);
+      logOperationFailure("grammar-assessment.gemini", new Error("Operation failed"));
       return { status: "error", error: "Couldn't get a review right now — try again." };
     }
 
@@ -225,7 +233,7 @@ export const getGrammarAssessment = createServerFn({ method: "POST" })
       return { status: "error", error: "AI quota exceeded, try again later." };
     }
     if (!res.ok) {
-      console.error("Gemini API error:", res.status, await res.text().catch(() => ""));
+      logOperationFailure("grammar-assessment.gemini", new Error("Operation failed"));
       return { status: "error", error: "Couldn't get a review right now — try again." };
     }
 
@@ -236,7 +244,7 @@ export const getGrammarAssessment = createServerFn({ method: "POST" })
     const text = body.candidates?.[0]?.content?.parts?.[0]?.text;
     if (!text) {
       const blockReason = body.promptFeedback?.blockReason ?? body.candidates?.[0]?.finishReason;
-      console.error("Gemini returned no usable content:", blockReason, body.promptFeedback);
+      logOperationFailure("grammar-assessment.gemini", new Error("Operation failed"));
       return { status: "error", error: "Couldn't get a review right now — try again." };
     }
 
@@ -244,7 +252,7 @@ export const getGrammarAssessment = createServerFn({ method: "POST" })
     try {
       parsed = assessmentSchema.parse(JSON.parse(text));
     } catch (error) {
-      console.error("Gemini returned unusable JSON:", error);
+      logOperationFailure("grammar-assessment.gemini", new Error("Operation failed"));
       return { status: "error", error: "Couldn't get a review right now — try again." };
     }
 

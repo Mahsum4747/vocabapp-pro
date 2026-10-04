@@ -1,3 +1,4 @@
+import { logOperationFailure } from "./diagnostics";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { authMiddleware } from "./auth/middleware";
@@ -163,7 +164,7 @@ export const generateStudySet = createServerFn({ method: "POST" })
       }
     } catch (error) {
       // Cache is a nice-to-have — a Firestore hiccup shouldn't block generation.
-      console.error("AI cache lookup failed:", error);
+      logOperationFailure("generate-set.storage", new Error("Operation failed"));
     }
 
     const apiKey = process.env.GEMINI_API_KEY;
@@ -207,7 +208,7 @@ export const generateStudySet = createServerFn({ method: "POST" })
         },
       );
     } catch (error) {
-      console.error("Gemini request failed:", error);
+      logOperationFailure("generate-set.gemini", new Error("Operation failed"));
       return { ok: false as const, error: "Couldn't reach the AI service, try again." };
     }
 
@@ -215,7 +216,7 @@ export const generateStudySet = createServerFn({ method: "POST" })
       return { ok: false as const, error: "AI quota exceeded, try again later." };
     }
     if (!res.ok) {
-      console.error("Gemini API error:", res.status, await res.text().catch(() => ""));
+      logOperationFailure("generate-set.gemini", new Error("Operation failed"));
       return { ok: false as const, error: "Couldn't generate the set, try again." };
     }
 
@@ -226,7 +227,7 @@ export const generateStudySet = createServerFn({ method: "POST" })
     const text = body.candidates?.[0]?.content?.parts?.[0]?.text;
     if (!text) {
       const blockReason = body.promptFeedback?.blockReason ?? body.candidates?.[0]?.finishReason;
-      console.error("Gemini returned no usable content:", blockReason, body.promptFeedback);
+      logOperationFailure("generate-set.gemini", new Error("Operation failed"));
       return {
         ok: false as const,
         error: blockReason
@@ -239,7 +240,7 @@ export const generateStudySet = createServerFn({ method: "POST" })
     try {
       parsed = payloadSchema.parse(JSON.parse(text));
     } catch (error) {
-      console.error("Gemini returned unusable JSON:", error);
+      logOperationFailure("generate-set.gemini", new Error("Operation failed"));
       return { ok: false as const, error: "Couldn't read the AI response, try again." };
     }
 
@@ -253,7 +254,7 @@ export const generateStudySet = createServerFn({ method: "POST" })
         createdAt: Date.now(),
       });
     } catch (error) {
-      console.error("Failed to write AI cache:", error);
+      logOperationFailure("generate-set.storage", new Error("Operation failed"));
     }
 
     return { ok: true as const, set: { ...parsed, termLanguage: data.termLanguage } };

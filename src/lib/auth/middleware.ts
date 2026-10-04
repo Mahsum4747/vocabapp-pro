@@ -1,3 +1,4 @@
+import { observeOperation } from "../diagnostics";
 import { createMiddleware } from "@tanstack/react-start";
 
 /**
@@ -42,8 +43,8 @@ export const authMiddleware = createMiddleware({ type: "function" })
     const { requireUserId } = await import("./verify.server");
     // Reject scripted cross-site/sibling requests before touching per-user data.
     assertSameSiteRequest();
-    const userId = await requireUserId(context.bearerToken);
-    return next({ context: { userId } });
+    const userId = await observeOperation("auth.verify", () => requireUserId(context.bearerToken));
+    return observeOperation("authenticated.operation", () => next({ context: { userId } }));
   });
 
 /**
@@ -62,6 +63,8 @@ export const optionalAuthMiddleware = createMiddleware({ type: "function" })
     const { assertSameSiteRequest } = await import("./isolation.server");
     const { getUserIdOrNull } = await import("./verify.server");
     assertSameSiteRequest();
-    const userId = await getUserIdOrNull(context.bearerToken);
-    return next({ context: { userId } });
+    const userId = await observeOperation("auth.verify", () =>
+      getUserIdOrNull(context.bearerToken),
+    );
+    return observeOperation("authenticated.operation", () => next({ context: { userId } }));
   });

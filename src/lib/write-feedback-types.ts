@@ -1,3 +1,4 @@
+import { logOperationFailure } from "./diagnostics";
 import { z } from "zod";
 
 /**
@@ -37,13 +38,13 @@ const errorTagSchema = z.object({
  * Fail-safe, not fail-loud: an unknown category or a malformed single tag
  * is dropped, valid tags in the same array still parse; anything that
  * isn't an array at all (missing field, wrong type, whole block malformed)
- * yields `[]`. Never throws. Logs a console warning (dev-visible only) so
+ * yields `[]`. Never throws. Logs a privacy-safe diagnostic so
  * a parse miss is noticeable during testing without ever blocking submit
  * or surfacing to the user — the free-text feedback renders regardless.
  */
 export function parseErrorTags(raw: unknown): FeedbackErrorTag[] {
   if (!Array.isArray(raw)) {
-    if (raw !== undefined) console.warn("Write mode: errorTags block was not an array", raw);
+    if (raw !== undefined) logOperationFailure("write.tags.invalid", new Error("Invalid tags"));
     return [];
   }
   const tags: FeedbackErrorTag[] = [];
@@ -52,7 +53,7 @@ export function parseErrorTags(raw: unknown): FeedbackErrorTag[] {
     if (result.success) {
       tags.push(result.data);
     } else {
-      console.warn("Write mode: dropping malformed error tag", item, result.error.message);
+      logOperationFailure("write.tags.invalid", result.error);
     }
   }
   return tags;

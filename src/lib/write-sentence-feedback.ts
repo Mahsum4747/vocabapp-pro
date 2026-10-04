@@ -1,3 +1,4 @@
+import { logOperationFailure } from "./diagnostics";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { getPromptById } from "@/content/write-prompts";
@@ -182,7 +183,7 @@ export const getWriteSentenceFeedback = createServerFn({ method: "POST" })
         },
       );
     } catch (error) {
-      console.error("Gemini request failed:", error);
+      logOperationFailure("write-sentence-feedback.gemini", new Error("Operation failed"));
       return { ok: false as const, error: "Couldn't get feedback right now — try again." };
     }
 
@@ -190,7 +191,7 @@ export const getWriteSentenceFeedback = createServerFn({ method: "POST" })
       return { ok: false as const, error: "AI quota exceeded, try again later." };
     }
     if (!res.ok) {
-      console.error("Gemini API error:", res.status, await res.text().catch(() => ""));
+      logOperationFailure("write-sentence-feedback.gemini", new Error("Operation failed"));
       return { ok: false as const, error: "Couldn't get feedback right now — try again." };
     }
 
@@ -201,7 +202,7 @@ export const getWriteSentenceFeedback = createServerFn({ method: "POST" })
     const text = body.candidates?.[0]?.content?.parts?.[0]?.text;
     if (!text) {
       const blockReason = body.promptFeedback?.blockReason ?? body.candidates?.[0]?.finishReason;
-      console.error("Gemini returned no usable content:", blockReason, body.promptFeedback);
+      logOperationFailure("write-sentence-feedback.gemini", new Error("Operation failed"));
       return { ok: false as const, error: "Couldn't get feedback right now — try again." };
     }
 
@@ -209,7 +210,7 @@ export const getWriteSentenceFeedback = createServerFn({ method: "POST" })
     try {
       parsed = feedbackSchema.parse(JSON.parse(text));
     } catch (error) {
-      console.error("Gemini returned unusable JSON:", error);
+      logOperationFailure("write-sentence-feedback.gemini", new Error("Operation failed"));
       return { ok: false as const, error: "Couldn't get feedback right now — try again." };
     }
 
@@ -238,7 +239,7 @@ export const getWriteSentenceFeedback = createServerFn({ method: "POST" })
           createdAt: Date.now(),
         });
     } catch (error) {
-      console.error("Failed to log Write mode AI feedback:", error);
+      logOperationFailure("write-sentence-feedback.storage", new Error("Operation failed"));
     }
 
     return { ok: true as const, feedback: parsed.feedback };
