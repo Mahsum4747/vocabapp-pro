@@ -1,3 +1,4 @@
+import { buildTodaySummary } from "../../src/lib/today-summary.ts";
 import { applyXp, xpForReview, type UserProfile } from "../../src/lib/gamification.ts";
 import { planReview } from "../../src/lib/review-plan.ts";
 import { defaultScheduler } from "../../src/lib/srs/index.ts";
@@ -19,7 +20,7 @@ export const DAY = 24 * 60 * 60 * 1000;
 export const TODAY_KEY = "2026-03-10";
 export const USER_ID = "user-e2e";
 
-/** A card whose id follows the app's invariant: `term.trim().toLowerCase()`. */
+/** Deterministic fixture IDs; production card IDs are opaque UUIDs. */
 export function card(term: string, definition: string, extra: Partial<Card> = {}): Card {
   return {
     id: term.trim().toLowerCase(),
@@ -31,7 +32,12 @@ export function card(term: string, definition: string, extra: Partial<Card> = {}
   };
 }
 
-export function studySet(id: string, title: string, cards: Card[], extra: Partial<StudySet> = {}): StudySet {
+export function studySet(
+  id: string,
+  title: string,
+  cards: Card[],
+  extra: Partial<StudySet> = {},
+): StudySet {
   return {
     id,
     title,
@@ -73,6 +79,7 @@ export function reviewed(
 
 export type Seed = {
   sets: StudySet[];
+  handlers?: Record<string, ServerFnHandler>;
   progress?: CardProgress[];
   /** What `getStreak` answers. */
   streak?: StreakInfo;
@@ -126,9 +133,14 @@ export class MockBackend {
 
   handlers(): Record<string, ServerFnHandler> {
     return {
+      getTodaySummary: () => ({
+        summary: buildTodaySummary(this.seed.sets, Object.fromEntries(this.progress), NOW),
+        dailyGoal: this.profile.dailyGoal,
+      }),
       getMySets: () => this.seed.sets,
       getPublicSets: () => [],
-      getSetById: (data) => this.seed.sets.find((s) => s.id === (data as { id: string }).id) ?? null,
+      getSetById: (data) =>
+        this.seed.sets.find((s) => s.id === (data as { id: string }).id) ?? null,
       getAllProgress: () => [...this.progress.values()],
       getSetProgress: (data) =>
         [...this.progress.values()].filter((p) => p.setId === (data as { setId: string }).setId),
@@ -142,6 +154,12 @@ export class MockBackend {
       },
       getProfile: () => ({ profile: this.profile, today: this.today }),
       recordReview: (data) => this.recordReview(data as RecordedReview),
+      getGrammarProgress: () => ({}),
+      getLesenPassageProgress: () => ({}),
+      fetchGermanGlosses: () => ({}),
+      listGrammarPasteTopics: () => [],
+      listLesenPasteTopics: () => [],
+      ...this.seed.handlers,
     };
   }
 

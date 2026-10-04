@@ -1,3 +1,4 @@
+import { matchingOptions } from "@/lib/german/lesen-matching-options";
 import { Check, X } from "lucide-react";
 import { useState } from "react";
 import {
@@ -96,7 +97,9 @@ function OptionChip({
   });
   const style = {
     touchAction: "none" as const,
-    ...(transform ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`, zIndex: 10 } : {}),
+    ...(transform
+      ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`, zIndex: 10 }
+      : {}),
   };
   return (
     <button
@@ -106,6 +109,7 @@ function OptionChip({
       {...attributes}
       type="button"
       disabled={disabled}
+      aria-pressed={selected}
       onClick={onToggleSelect}
       className={cn(
         // touch-none (the Tailwind class) sets the SAME touch-action:none,
@@ -199,7 +203,8 @@ export function LesenMatchBoard({
   // placed, same as a real exam letter being "used up". Multi-use
   // (zuordnung_person's "mehrmals gewählt werden" only): the pool never
   // shrinks — the same person can be the right answer for several targets.
-  const pool = allowMultiple ? passage.options : passage.options.filter((o) => !placedOptionIds.has(o.id));
+  const options = matchingOptions(passage);
+  const pool = allowMultiple ? options : options.filter((o) => !placedOptionIds.has(o.id));
   const allFilled = passage.targets.every((t) => placements[t.id] !== null);
 
   function place(targetId: string, optionId: string) {
@@ -235,7 +240,9 @@ export function LesenMatchBoard({
   }
 
   function finish() {
-    const correctCount = passage.targets.filter((t) => placements[t.id] === t.correctOptionId).length;
+    const correctCount = passage.targets.filter(
+      (t) => placements[t.id] === t.correctOptionId,
+    ).length;
     onComplete(correctCount, passage.targets.length);
   }
 
@@ -243,7 +250,9 @@ export function LesenMatchBoard({
     <DndContext sensors={sensors} collisionDetection={collisionDetection} onDragEnd={handleDragEnd}>
       {passage.referenceText ? (
         <div className="rounded-card border border-border bg-surface p-5 shadow-[var(--elevation-1)]">
-          <p className="whitespace-pre-line font-serif text-sm leading-relaxed text-fg">{passage.referenceText}</p>
+          <p className="whitespace-pre-line font-serif text-sm leading-relaxed text-fg">
+            {passage.referenceText}
+          </p>
         </div>
       ) : null}
       {passage.referenceItems ? (
@@ -258,7 +267,12 @@ export function LesenMatchBoard({
           ))}
         </div>
       ) : null}
-      <p className={cn("text-sm text-muted", (passage.referenceText || passage.referenceItems) && "mt-4")}>
+      <p
+        className={cn(
+          "text-sm text-muted",
+          (passage.referenceText || passage.referenceItems) && "mt-4",
+        )}
+      >
         {passage.instruction}
       </p>
 
@@ -280,11 +294,15 @@ export function LesenMatchBoard({
                     onToggleSelect={() => setSelected((cur) => (cur === o.id ? null : o.id))}
                   >
                     {o.shortLabel}
-                    {useCount > 0 ? <span className="ml-1.5 text-xs text-subtle">({useCount}×)</span> : null}
+                    {useCount > 0 ? (
+                      <span className="ml-1.5 text-xs text-subtle">({useCount}×)</span>
+                    ) : null}
                   </OptionChip>
                 );
               })}
-              {pool.length === 0 ? <p className="text-sm text-subtle">All options placed.</p> : null}
+              {pool.length === 0 ? (
+                <p className="text-sm text-subtle">All options placed.</p>
+              ) : null}
             </div>
           </div>
 
@@ -293,7 +311,7 @@ export function LesenMatchBoard({
             <div className="mt-2 space-y-3" data-testid="lesen-match-targets">
               {passage.targets.map((t) => {
                 const placedId = placements[t.id];
-                const placedOption = placedId ? passage.options.find((o) => o.id === placedId) : undefined;
+                const placedOption = placedId ? options.find((o) => o.id === placedId) : undefined;
                 const state: SlotState = !checked
                   ? placedId
                     ? "filled"
@@ -321,7 +339,13 @@ export function LesenMatchBoard({
                       }}
                     >
                       <span className="flex items-center justify-between gap-2">
-                        <span>{placedOption ? placedOption.shortLabel : selected ? "Tap to place here" : "Drag an option here"}</span>
+                        <span>
+                          {placedOption
+                            ? placedOption.shortLabel
+                            : selected
+                              ? "Tap to place here"
+                              : "Drag an option here"}
+                        </span>
                         {checked ? (
                           placedId === t.correctOptionId ? (
                             <Check className="size-4 shrink-0 text-success" />
@@ -369,7 +393,8 @@ function GapSlot({
   onClick: () => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: gapId });
-  const truncated = placedText && placedText.length > 24 ? `${placedText.slice(0, 24)}…` : placedText;
+  const truncated =
+    placedText && placedText.length > 24 ? `${placedText.slice(0, 24)}…` : placedText;
   return (
     <button
       ref={setNodeRef}
@@ -377,6 +402,7 @@ function GapSlot({
       // comment for why this has to be an inline style, not just the
       // `touch-none` class.
       style={{ touchAction: "none" }}
+      aria-label={`Gap ${gapId}`}
       type="button"
       onClick={onClick}
       disabled={disabled}
@@ -452,7 +478,9 @@ export function LesenSentenceInsertionBoard({
         {passage.segments.map((segment, i) => {
           const gap = passage.gaps[i];
           const placedId = gap ? placements[gap.id] : undefined;
-          const placedOption = placedId ? passage.options.find((o) => o.id === placedId) : undefined;
+          const placedOption = placedId
+            ? passage.options.find((o) => o.id === placedId)
+            : undefined;
           const state: SlotState | undefined = !gap
             ? undefined
             : !checked
@@ -471,7 +499,9 @@ export function LesenSentenceInsertionBoard({
                   state={state}
                   placedText={placedOption?.text ?? null}
                   disabled={checked}
-                  onClick={() => (placedOption ? clear(gap.id) : selected && place(gap.id, selected))}
+                  onClick={() =>
+                    placedOption ? clear(gap.id) : selected && place(gap.id, selected)
+                  }
                 />
               ) : null}
             </span>
@@ -493,7 +523,9 @@ export function LesenSentenceInsertionBoard({
               {o.text}
             </OptionChip>
           ))}
-          {pool.length === 0 ? <p className="text-sm text-subtle sm:col-span-2">All sentences placed.</p> : null}
+          {pool.length === 0 ? (
+            <p className="text-sm text-subtle sm:col-span-2">All sentences placed.</p>
+          ) : null}
         </div>
       </div>
 

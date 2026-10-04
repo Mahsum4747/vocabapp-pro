@@ -52,7 +52,11 @@ async function launchApp(page: Page, seed: Seed, leaks: string[]): Promise<Harne
     return route.abort();
   });
   await page.route("**/api/auth/get-session", (route) =>
-    route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(sessionBody()) }),
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(sessionBody()),
+    }),
   );
 
   const backend = new MockBackend(seed);
@@ -64,6 +68,8 @@ async function launchApp(page: Page, seed: Seed, leaks: string[]): Promise<Harne
 export const test = base.extend<{ launch: (seed: Seed) => Promise<Harness> }>({
   launch: async ({ page }, use) => {
     const leaks: string[] = [];
+    const runtimeErrors: string[] = [];
+    page.on("pageerror", (error) => runtimeErrors.push(error.message));
     const harnesses: Harness[] = [];
     await use(async (seed) => {
       const harness = await launchApp(page, seed, leaks);
@@ -71,6 +77,7 @@ export const test = base.extend<{ launch: (seed: Seed) => Promise<Harness> }>({
       return harness;
     });
     // A request that no mock claimed means the test was not actually hermetic.
+    expect(runtimeErrors, "uncaught browser errors").toEqual([]);
     expect(leaks, "requests to /api that no mock handled").toEqual([]);
     for (const harness of harnesses) {
       expect(harness.serverFns.unhandled, "server functions that no mock handled").toEqual([]);

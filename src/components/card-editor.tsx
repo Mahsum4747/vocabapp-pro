@@ -73,8 +73,8 @@ function DiacriticRow({ onInsert }: { onInsert: (char: string) => void }) {
     // Single-row, horizontally-scrollable strip so it never wraps onto a
     // second line and eats vertical space between the input and the
     // keyboard — flex-wrap previously let 7 chars spill onto 2-3 rows on
-    // narrow phones. min-h/min-w-9 (36px) stays above the 24px WCAG floor
-    // while being noticeably more compact than the old 44px targets. No
+    // narrow phones. Coarse-pointer targets are 44px, consistent with the
+    // mobile control regression contract. No
     // extra margin here: the parent's space-y-1.5 already sets the gap
     // to the input above it.
     <div className="flex flex-nowrap gap-1 overflow-x-auto">
@@ -87,7 +87,7 @@ function DiacriticRow({ onInsert }: { onInsert: (char: string) => void }) {
           // (read in onClick) are still whatever the user left them at.
           onMouseDown={(e) => e.preventDefault()}
           onClick={() => onInsert(char)}
-          className="shrink-0 rounded-control bg-surface-2 px-2 py-0.5 text-xs font-medium text-fg hover:bg-border active:bg-border pointer-coarse:min-h-9 pointer-coarse:min-w-9"
+          className="shrink-0 rounded-control bg-surface-2 px-2 py-0.5 text-xs font-medium text-fg hover:bg-border active:bg-border pointer-coarse:min-h-11 pointer-coarse:min-w-11"
         >
           {char}
         </button>
@@ -983,7 +983,7 @@ export function CardEditor({
                   spellCheck={false}
                 />
               </div>
-              <label className="flex items-center gap-2 text-xs text-muted select-none">
+              <label className="flex items-center gap-2 text-xs text-muted select-none pointer-coarse:min-h-11">
                 <input
                   type="checkbox"
                   checked={card.enrichment?.noPlural === true}

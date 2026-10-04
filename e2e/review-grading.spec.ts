@@ -8,7 +8,13 @@ const cardFace = (page: import("@playwright/test").Page) =>
 function identicalDueCards(): Seed {
   const terms = ["eins", "zwei", "drei", "vier"];
   return {
-    sets: [studySet("set-nums", "Numbers", terms.map((t) => card(t, `def ${t}`)))],
+    sets: [
+      studySet(
+        "set-nums",
+        "Numbers",
+        terms.map((t) => card(t, `def ${t}`)),
+      ),
+    ],
     progress: terms.map((t) => reviewed(t, "set-nums", { dueAt: NOW - 60 * 60 * 1000 })),
   };
 }
@@ -64,7 +70,10 @@ test.describe("flipping and grading a card", () => {
     expect(backend.reviews).toHaveLength(4);
   });
 
-  test("the SRS interval follows the grade: again < hard < good < easy", async ({ page, launch }) => {
+  test("the SRS interval follows the grade: again < hard < good < easy", async ({
+    page,
+    launch,
+  }) => {
     const { backend } = await launch(identicalDueCards());
     await page.goto("/review");
 
@@ -75,8 +84,8 @@ test.describe("flipping and grading a card", () => {
     await expect.poll(() => backend.reviews.length).toBe(4); // writes are fire-and-forget
 
     // Identical starting rows, so any difference comes from the grade alone.
-    const [again, hard, good, easy] = ["eins", "zwei", "drei", "vier"].map(
-      (t) => backend.progressOf(t)!,
+    const [again, hard, good, easy] = ["eins", "zwei", "drei", "vier"].map((t) =>
+      backend.progressOf(t)!,
     );
     expect(again.intervalDays).toBeLessThan(hard.intervalDays);
     expect(hard.intervalDays).toBeLessThan(good.intervalDays);
@@ -114,4 +123,35 @@ test.describe("flipping and grading a card", () => {
     await page.goto("/review");
     await expect(page.getByRole("heading", { name: "You're all caught up" })).toBeVisible();
   });
+});
+
+test("duplicate terms and renamed content retain distinct review identities", async ({
+  page,
+  launch,
+}) => {
+  const first = card("renamed term", "first definition", { id: "opaque-a" });
+  const second = card("renamed term", "second definition", { id: "opaque-b" });
+  const { backend, serverFns } = await launch({
+    sets: [studySet("set-identity", "Identity", [first, second])],
+    progress: [
+      reviewed("opaque-a", "set-identity", { dueAt: NOW - 1000 }),
+      reviewed("opaque-b", "set-identity", { dueAt: NOW - 1000 }),
+    ],
+  });
+  await page.goto("/review");
+  await expect(cardFace(page)).toContainText("renamed term");
+  await cardFace(page).click();
+  await expect(cardFace(page)).toContainText("first definition");
+  await page.getByRole("button", { name: "Good", exact: true }).click();
+  await expect(cardFace(page)).toContainText("renamed term");
+  await cardFace(page).click();
+  await expect(cardFace(page)).toContainText("second definition");
+  await page.getByRole("button", { name: "Easy", exact: true }).click();
+  await expect.poll(() => backend.reviews.length).toBe(2);
+  expect(serverFns.callsTo("recordReview").map((call) => (call.data as any).cardId)).toEqual([
+    "opaque-a",
+    "opaque-b",
+  ]);
+  expect(backend.progressOf("opaque-a")?.totalReviews).toBe(5);
+  expect(backend.progressOf("opaque-b")?.totalReviews).toBe(5);
 });

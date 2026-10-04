@@ -46,8 +46,16 @@ export function FlashCard({
 }) {
   const profile = profileFor(termLangCode);
   return (
-    <button
-      type="button"
+    <div
+      role="button"
+      tabIndex={0}
+      onKeyDown={(event) => {
+        if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) {
+          event.preventDefault();
+          event.stopPropagation();
+          onFlip();
+        }
+      }}
       onClick={onFlip}
       className={cn(
         "flex min-h-80 w-full flex-col justify-between gap-4 rounded-card p-8 text-left shadow-[var(--elevation-2)] active:opacity-90 md:min-h-96",
@@ -66,55 +74,64 @@ export function FlashCard({
         data-motion={instant ? "instant" : undefined}
         className="card-face flex flex-1 flex-col justify-between gap-4"
       >
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-medium tracking-wide text-muted uppercase">
-          {flipped ? "Definition" : "Term"}
-        </span>
-        <SpeakButton text={flipped ? definition : term} language={flipped ? undefined : termLanguage} />
-      </div>
-      {imageUrl ? (
-        <img
-          src={imageUrl}
-          alt=""
-          className="mx-auto max-h-28 rounded-control object-contain md:max-h-36"
-        />
-      ) : null}
-      <div className="flex flex-col gap-3">
-        <span
-          className={cn(
-            "text-balance",
-            flipped
-              ? "text-xl leading-snug whitespace-pre-line md:text-2xl"
-              : "font-serif text-3xl font-semibold tracking-tight text-headword md:text-4xl",
-          )}
-        >
-          {flipped ? (
-            definition
-          ) : (
-            <ArticleizedTerm term={term} enrichment={enrichment} profile={profile} />
-          )}
-        </span>
-        {/* Second definition sits right under the primary one — same side,
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-medium tracking-wide text-muted uppercase">
+            {flipped ? "Definition" : "Term"}
+          </span>
+          <SpeakButton
+            text={flipped ? definition : term}
+            language={flipped ? undefined : termLanguage}
+          />
+        </div>
+        {imageUrl ? (
+          <img
+            src={imageUrl}
+            alt=""
+            className="mx-auto max-h-28 rounded-control object-contain md:max-h-36"
+          />
+        ) : null}
+        <div className="flex flex-col gap-3">
+          <span
+            className={cn(
+              "text-balance",
+              flipped
+                ? "text-xl leading-snug whitespace-pre-line md:text-2xl"
+                : "font-serif text-3xl font-semibold tracking-tight text-headword md:text-4xl",
+            )}
+          >
+            {flipped ? (
+              definition
+            ) : (
+              <ArticleizedTerm term={term} enrichment={enrichment} profile={profile} />
+            )}
+          </span>
+          {/* Second definition sits right under the primary one — same side,
             same question, just a different language. Never leaks the term. */}
-        {flipped && definition2 ? (
-          <span className="flex items-start gap-1">
-            <span className="text-base whitespace-pre-line text-muted">{definition2}</span>
-            <SpeakButton text={definition2} language={definitionLanguage2} label="Listen to the second definition" />
-          </span>
-        ) : null}
-        {/* The example is in the term language, so it belongs with the answer side. */}
-        {flipped && example ? (
-          <span className="flex items-start gap-1">
-            <span className="text-sm italic text-muted md:text-base">{example}</span>
-            <SpeakButton text={example} language={termLanguage} label="Listen to the example" />
-          </span>
-        ) : null}
-        {/* Personal, never spoken (no SpeakButton) — it's a reminder to the
+          {flipped && definition2 ? (
+            <span className="flex items-start gap-1">
+              <span className="text-base whitespace-pre-line text-muted">{definition2}</span>
+              <SpeakButton
+                text={definition2}
+                language={definitionLanguage2}
+                label="Listen to the second definition"
+              />
+            </span>
+          ) : null}
+          {/* The example is in the term language, so it belongs with the answer side. */}
+          {flipped && example ? (
+            <span className="flex items-start gap-1">
+              <span className="text-sm italic text-muted md:text-base">{example}</span>
+              <SpeakButton text={example} language={termLanguage} label="Listen to the example" />
+            </span>
+          ) : null}
+          {/* Personal, never spoken (no SpeakButton) — it's a reminder to the
             learner, not language content. */}
-        {flipped && note ? <span className="text-sm whitespace-pre-line text-muted">{note}</span> : null}
+          {flipped && note ? (
+            <span className="text-sm whitespace-pre-line text-muted">{note}</span>
+          ) : null}
+        </div>
+        <span className="text-sm text-subtle">Tap to flip</span>
       </div>
-      <span className="text-sm text-subtle">Tap to flip</span>
-      </div>
-    </button>
+    </div>
   );
 }

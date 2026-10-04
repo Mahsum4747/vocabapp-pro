@@ -16,7 +16,7 @@ test.describe("Start review → the right words", () => {
     // Excluded, archived, reference-set and one-card-set cards are not counted,
     // nor is the not-due, new or weak material.
     await expect(page.getByText("3 words waiting")).toBeVisible();
-    await expect(page.getByText("1 overdue · 3 due total")).toBeVisible();
+    await expect(page.getByText("3 due · 1 new left for today's goal.")).toBeVisible();
 
     await page.getByRole("link", { name: /words waiting/ }).click();
     await expect(page).toHaveURL(/\/review$/);
@@ -67,7 +67,9 @@ test.describe("Start review → the right words", () => {
     const seed = queueLibrary();
     // Only comfortable, not-due cards: no fresh, weak or due material.
     seed.sets = seed.sets.filter((s) => s.id === "set-nouns");
-    seed.progress = seed.progress!.filter((p) => p.setId === "set-nouns").map((p) => ({ ...p, dueAt: p.dueAt! + 30 * 24 * 60 * 60 * 1000 }));
+    seed.progress = seed
+      .progress!.filter((p) => p.setId === "set-nouns")
+      .map((p) => ({ ...p, dueAt: p.dueAt! + 30 * 24 * 60 * 60 * 1000 }));
     await launch(seed);
     await page.goto("/review");
     await expect(page.getByRole("heading", { name: "You're all caught up" })).toBeVisible();
