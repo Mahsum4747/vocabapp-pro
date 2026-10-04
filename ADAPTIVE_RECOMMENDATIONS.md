@@ -5,7 +5,7 @@
 Pure `buildAdaptiveStudyPlan(signals: LearningSignals): AdaptiveStudyPlan`. Only
 learner input is LearningSignals; the reference time is its generatedAt. No
 Firestore, writes, new collection, AI, clock, random ranking, UI or scheduler
-changes. No server endpoint added. A future authenticated consumer can obtain
+changes. No server endpoint added. Paste history now prevents the brand-new fallback. A future authenticated consumer can obtain
 `getLearningSignals()` once and pass the result into the builder.
 
 - `src/lib/adaptive-recommendations.ts`: candidate generation, ranking, merging.
@@ -17,13 +17,16 @@ changes. No server endpoint added. A future authenticated consumer can obtain
   by LearningSignals for compatibility. Engine imports the lightweight function.
 - `src/lib/learning-signals.ts`: adds vocabulary.practiceTargets. No new reads.
 - `src/lib/adaptive-recommendations.fixtures.ts`: synthetic, fixed-time inputs.
-- `src/lib/adaptive-recommendations.test.ts`: 52 pure tests.
+- `src/lib/adaptive-recommendations.test.ts`: 52 core tests, plus 77 quality tests
+  in adaptive-recommendations.review.test.ts and 65 synthetic policy scenarios.
 
 ## 2. Exact public model
 
 EvidenceLevel = none | low | medium | high. Domains distinguish scheduled review,
 weak/new vocabulary, grammar, reading, writing. Scores remain internal.
-No unmeasured estimatedMinutes is emitted.
+No unmeasured estimatedMinutes is emitted. The action union retains introduce_words/
+reading_passage for compatibility; the reviewed engine emits review/
+choose_reading_level for those candidates instead.
 
 ```ts
 export type StudyRecommendation = {
@@ -66,7 +69,8 @@ export type AdaptiveStudyPlan = {
 
 | Candidate | Eligibility | Base score |
 | --- | --- | --- |
-| Overdue | 1–5 overdue cards | 95 |
+| Overdue | exactly1 overdue card | 85 |
+| Overdue | 2–5 overdue cards | 95 |
 | Overdue | >5 overdue cards | 110 |
 | Due only | 1–5 due cards | 60 |
 | Due only | >=6 due cards | 85 |
@@ -91,13 +95,14 @@ otherwise 0. Unknown timestamps are neutral, future timestamps count as recent.
 No recency adjustment to schedule or aggregate weak/new vocabulary.
 
 Priority: score >=100 urgent; >=70 high; >=45 medium; otherwise low.
-Scores are rule relevance, not a learner rating. Even maximum weakness (94) is
-below small overdue (95); severe evidenced grammar can beat 1 due card (60).
+Scores are rule relevance, not a learner rating. Maximum weakness (94) can beat exactly1 overdue (85); 2–5 overdue (95)
+and large overdue (110) win. Severe grammar can also beat 1 due card (60).
 Recency can lower a borderline recommendation from medium to low.
 
 Primary is highest score, then lexical destination key. Subsequent choices may
 prefer the least represented domain among candidates within 6 points of the
-highest remaining eligible score. Maximum 4 total, maximum 2 per domain. No
+highest remaining eligible score. Maximum 4 total, target 2 per domain. The cap yields if an over-cap candidate
+is >6 points better than the best uncapped alternative. No
 padding. Empty plan has primary null. Topic/category inputs are sorted before
 merging so array order does not change output.
 
@@ -117,6 +122,8 @@ explicit repetition rule, not a claim of high statistical confidence. No
 submission error rate or correctness denominator is inferred from missing tags.
 
 ## 5. Domain behavior
+
+See ADAPTIVE_RECOMMENDATIONS_REVIEW.md for the focused policy review.
 
 Vocabulary uses existing due/overdue and isWeakWord-derived counts. Scheduled
 review replaces aggregate weak review, avoiding redundant vocabulary cards.
@@ -192,10 +199,11 @@ verb_position/word_order_other→satzbau; verb_conjugation→conjugation;
 register/missing_leitpunkt→write; spelling/word_choice→no recommendation.
 There is no reliably dedicated drill for the latter two categories.
 
-Lesen has no level query parser: action.level is advisory and route opens chooser.
+Lesen has no level query parser: action.type is choose_reading_level, action.level is advisory, and reason
+explicitly instructs manual level selection.
 Write defaults to Words: reason explicitly instructs selection of Task tab.
-Review has no new-only query parser: introduce_words count is advisory, not an
-exclusive mode or guaranteed session length. No route parsing changed.
+Review has no new-only query parser: new-word candidate now uses review action with no count; its reason explains
+the queue. suggestedNewWordLimit is advisory evidence, not a session promise. No route parsing changed.
 
 ## 8. Exact synthetic fixture outputs
 
@@ -452,8 +460,8 @@ returned plans including primary, not illustrative manually written cards.
 ## 9. Validation
 
 - `npm run typecheck`: 0 diagnostics.
-- `npm test`: 210 script tests + 934 TypeScript tests = 1144 passing.
-- `node --import ./scripts/test-register.mjs --test src/lib/adaptive-recommendations.test.ts`: 52 passing.
+- `npm test`: 210 script tests + 1011 TypeScript tests = 1221 passing.
+- `node --import ./scripts/test-register.mjs --test src/lib/adaptive-recommendations.test.ts`: 52 core tests passing; combined with review.test.ts: 129 passing.
 - `npm run build:compile`: successful safe compile, credentials blanked by
   existing helper; no migration entry point executed.
 - `git diff --check`: clean.

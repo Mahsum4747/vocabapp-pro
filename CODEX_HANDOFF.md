@@ -49,6 +49,16 @@ No endpoint, Home/UI, scheduler, persistence or AI changes. See
 ADAPTIVE_RECOMMENDATIONS.md for exact types, scoring, routes, full fixture outputs
 and validation. Branch stays local, unmerged and undeployed; no migration/reset.
 
+## Recommendation quality review — 2026-10-04
+
+65 synthetic scenarios pass, with 77 added quality tests (129 combined engine tests).
+Exactly1 overdue base95→85 permits severe evidenced grammar to win; large backlog
+unchanged. Domain cap yields only to work >6 points stronger than alternatives.
+New-content action opens review without a new-only/count guarantee; Lesen explicitly
+asks manual level selection. Paste history prevents false new-user fallback.
+No architecture/read/SRS/UI changes. ADAPTIVE_RECOMMENDATIONS_REVIEW.md records
+actual candidate scores, decisions and caveats. Local review commit; no push/merge/deploy.
+
 ## 1. Executive Summary
 
 Karta is an authenticated vocabulary and German practice application. React/TanStack Start supplies the UI and server-function transport. Better Auth uses Postgres for identity/session persistence; Firestore stores learning content, progress, settings, and AI caches. Firebase Auth is not the application's login mechanism.

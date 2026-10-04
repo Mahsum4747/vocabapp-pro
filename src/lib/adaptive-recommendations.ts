@@ -133,7 +133,9 @@ export function buildAdaptiveStudyPlan(signals: LearningSignals): AdaptiveStudyP
     const score = overdue
       ? v.overdueCards > ADAPTIVE_RULES.urgentOverdueAbove
         ? 110
-        : 95
+        : v.overdueCards === 1
+          ? 85
+          : 95
       : v.dueCards >= ADAPTIVE_RULES.largeDueAt
         ? 85
         : 60;
@@ -323,9 +325,9 @@ export function buildAdaptiveStudyPlan(signals: LearningSignals): AdaptiveStudyP
     push("lesen", score, {
       domain: "reading",
       title: `Continue ${level} reading`,
-      reason: `You have completed ${l.completedPassages} of ${l.totalPassages} ${level} reading passages.`,
+      reason: `You have completed ${l.completedPassages} of ${l.totalPassages} ${level} reading passages. Open Lesen and select ${level} to continue.`,
       route: RECOMMENDATION_ROUTES.reading,
-      action: { type: "reading_passage", level, count: 1 },
+      action: { type: "choose_reading_level", level },
       evidence: {
         level: l.evidence,
         sources: ["reading"],
@@ -377,18 +379,24 @@ export function buildAdaptiveStudyPlan(signals: LearningSignals): AdaptiveStudyP
     const count = Math.min(v.newCards, capacity, 20);
     push("new-words", 40 + goalBoost, {
       domain: "vocabulary",
-      title: "Learn new words",
-      reason: `You have ${v.newCards} unreviewed words and room for ${count} new words within today's goal.`,
+      title: "Review your vocabulary",
+      reason: `You have ${v.newCards} unreviewed words. Open Review; the existing queue selects the session. New words depend on the queue and your daily goal.`,
       route: RECOMMENDATION_ROUTES.review,
-      action: { type: "introduce_words", count },
+      action: { type: "review" },
       evidence: {
         level: v.evidence,
         sources: ["vocabulary"],
-        metrics: { newCards: v.newCards, remainingDailyCapacity: capacity },
+        metrics: {
+          newCards: v.newCards,
+          remainingDailyCapacity: capacity,
+          suggestedNewWordLimit: count,
+        },
       },
     });
   }
   const noHistory =
+    signals.grammar.pasteTopics.length === 0 &&
+    signals.reading.pasteTopics.length === 0 &&
     Object.values(signals.reading.levels).every(
       (l) => l.completedPassages === 0 && l.lastPracticedAt === null,
     ) &&
@@ -462,9 +470,16 @@ export function buildAdaptiveStudyPlan(signals: LearningSignals): AdaptiveStudyP
   const selected: Candidate[] = [],
     domainCounts = new Map<string, number>();
   while (pool.length && selected.length < ADAPTIVE_RULES.maxRecommendations) {
-    const allowed = pool.filter(
+    const underCap = pool.filter(
       (c) => (domainCounts.get(c.recommendation.domain) ?? 0) < ADAPTIVE_RULES.maxPerDomain,
     );
+    // Diversity is a near-tie preference, never a reason to hide stronger work.
+    const allowed = underCap.length
+      ? pool.filter(
+          (c) =>
+            underCap.includes(c) || c.score > underCap[0]!.score + ADAPTIVE_RULES.diversityBand,
+        )
+      : [];
     if (!allowed.length) break;
     const top = allowed[0]!;
     const next =

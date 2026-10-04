@@ -66,8 +66,9 @@ test("only new vocabulary starts at current remaining capacity", () => {
   Object.assign(s.vocabulary, { totalActiveCards: 15, newCards: 15 });
   Object.assign(s.activity, { uniqueWordsToday: 7, goalProgress: 0.7 });
   const p = plan(s);
-  assert.equal(p.primary!.action.type, "introduce_words");
-  assert.equal(p.primary!.action.count, 3);
+  assert.equal(p.primary!.action.type, "review");
+  assert.equal(p.primary!.evidence.metrics.suggestedNewWordLimit, 3);
+  assert.equal(p.primary!.action.count, undefined);
 });
 test("large overdue backlog urgent and ahead of even severe grammar", () => {
   const s = experiencedSignals();
@@ -133,13 +134,13 @@ test("new words suppressed by scheduled pressure", () => {
   const s = experiencedSignals();
   s.vocabulary.newCards = 10;
   s.vocabulary.dueCards = 1;
-  assert.ok(!plan(s).recommendations.some((r) => r.action.type === "introduce_words"));
+  assert.ok(!plan(s).recommendations.some((r) => r.id === "adaptive:new-words"));
 });
 test("new words suppressed by meaningful weakness", () => {
   const s = experiencedSignals();
   s.vocabulary.newCards = 10;
   s.grammar.topics = [topicWeak("plural")];
-  assert.ok(!plan(s).recommendations.some((r) => r.action.type === "introduce_words"));
+  assert.ok(!plan(s).recommendations.some((r) => r.id === "adaptive:new-words"));
 });
 test("new words suppressed after daily goal or with no remaining capacity", () => {
   const s = experiencedSignals();
@@ -248,7 +249,10 @@ test("partial reading resumes existing B1 interest, no fabricated level accuracy
   assert.equal(r.action.level, "B1");
   assert.equal(r.route, "/grammar/lesen");
   assert.equal(r.evidence.metrics.levelAccuracy, null);
-  assert.equal(r.reason, "You have completed 4 of 30 B1 reading passages.");
+  assert.equal(
+    r.reason,
+    "You have completed 4 of 30 B1 reading passages. Open Lesen and select B1 to continue.",
+  );
 });
 test("fully completed reading not recommended without clear overall weakness", () => {
   const s = experiencedSignals();
@@ -366,7 +370,7 @@ test("set-scoped recommendation suppressed without eligible owned target", () =>
   s.vocabulary.practiceTargets = {};
   assert.equal(plan(s).primary, null);
 });
-test("max4 with at most2 per domain; output not padded", () => {
+test("max4; domain cap yields when weaker alternative would hide stronger work", () => {
   const s = experiencedSignals();
   s.grammar.topics = ["plural", "passiv", "pronomen", "steigerung", "imperativ"].map((id) =>
     topicWeak(id),
@@ -375,7 +379,7 @@ test("max4 with at most2 per domain; output not padded", () => {
   s.reading.levels.B1.completedPassages = 3;
   const p = plan(s);
   assert.equal(p.recommendations.length, 4);
-  assert.equal(p.recommendations.filter((r) => r.domain === "grammar").length, 2);
+  assert.equal(p.recommendations.filter((r) => r.domain === "grammar").length, 3);
   assert.equal(plan(recommendationExamples().overdue).recommendations.length, 1);
 });
 test("domain diversity within6 score points preserves primary", () => {
