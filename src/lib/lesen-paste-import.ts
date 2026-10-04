@@ -11,7 +11,7 @@
  *
  * This output is NEVER written to `grammarProgress`/`lesenProgress` and
  * NEVER mixed into the bundled `LESEN_PASSAGES` pool — it only ever drives
- * one throwaway choice-style session (grammar.lesen-paste.tsx), saved to
+ * a choice-style session (grammar.lesen-paste.tsx), saved to
  * its own separate `lesenPasteTopics` history. See that route's and
  * lesen-paste-topics.ts's own doc comments.
  */

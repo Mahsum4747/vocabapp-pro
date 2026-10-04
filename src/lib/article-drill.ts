@@ -45,7 +45,7 @@ const setQuerySchema = z.object({ setId: idSchema, kind: drillKindSchema });
 /**
  * Record one article-drill attempt for the signed-in user.
  *
- * A plain merge-write of an attempts/correct counter — no scheduler, no due
+ * A transaction with membership validation and atomic counters — no scheduler, no due
  * date, no mastery score. Ownership check mirrors `recordReview`'s: a drill
  * attempt only makes sense against a set the caller can actually open.
  */

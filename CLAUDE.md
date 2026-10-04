@@ -1,45 +1,44 @@
-# vocabapp-pro
+# Karta / vocabapp-pro
 
-TanStack Start + Vite + Nitro tabanlı bir Almanca kelime öğrenme uygulaması. Deploy: Vercel (yalnızca `main` branch otomatik deploy — Ignored Build Step ile ayarlı).
+TanStack Start + React + Vite + Nitro. Production target: Vercel. Source and tests take precedence over historical agent notes.
 
-## Mimari
-- **Auth:** Better Auth + Neon Postgres (`src/lib/auth/`) — email/şifre ile, Firebase Auth DEĞİL.
-- **Veri:** Firebase Firestore, SADECE sunucu tarafında `src/lib/study-sets.ts` üzerinden erişiliyor (`firebase-admin.server`, dinamik import ile). Client kodunda asla doğrudan Firestore çağrısı yapma.
-- **Storage:** Devre dışı (`IMAGE_UPLOAD_ENABLED = false` — Firebase Storage paralı Blaze plan gerektiriyor, kod hazır ama flag kapalı).
-- **Store:** `src/lib/store.ts` (Zustand), server function'ları çağırır.
-- **Koleksiyonlar:** study sets, cards, cardProgress, reviewEvents, dailyStats, user_streaks.
+## Architecture
 
-## Kritik invariant'lar (bunları asla sessizce değiştirme)
-- **Card id = `term.trim().toLowerCase()`.** Id'ler FSRS/mastery/progress state'ini taşıyor — normalize mantığını değiştirmeden önce mutlaka sor, kırılırsa kullanıcı verisi kaybolur.
-- **Enrichment (gender/plural/example) sadece `resolveSetLanguages(set).term === 'de'` olduğunda uygulanır.** Diğer dil çiftlerini (EN/TR/KU) etkilememeli.
-- **API key'ler (GEMINI_API_KEY, FIREBASE_PRIVATE_KEY vb.) asla client'a sızmamalı.**
-- `replaceCards` gibi toplu güncelleme fonksiyonları geçmişte defalarca alan kaybettirdi (starred/mastery, sonra status). Yeni bir Card alanı eklerken bu tür fonksiyonların onu koruduğunu kontrol et.
+- Auth: Better Auth and Neon Postgres; email/password UI. Retained preview broker providers are server configuration. Firebase Auth is not used for sign-in.
+- Learning data: server-only Firestore Admin, dynamically imported in authenticated server handlers. No direct browser Firestore access. Cards are embedded in `study_sets`, not a separate collection.
+- Store: Zustand (`src/lib/store.ts`), calling server functions. Grammar, reading, Paste and writing have their own server modules.
+- Storage upload remains disabled by `IMAGE_UPLOAD_ENABLED`.
 
-## Bilinen tuzaklar
-- `.grok/app-env.json`, `VITE_AUTH_ENABLED` değerini `.env`'in üzerine sessizce yazabilir — auth/env sorunlarında ikisini birlikte kontrol et.
-- `firebase-admin`, Nitro'nun `traceDeps: ["firebase-admin*"]` ayarıyla (vite.config.ts) bundle'a dahil ediliyor — `rollupConfig.external` DEĞİL. Bu ayarı bozma.
-- `better-auth/react` client'ını (`useCurrentUser`, `authClient`) her sayfada render edilen paylaşılan component'lere (AppShell gibi) eager import etme — rolldown'da `"ssr_exports is not defined"` bundling hatasını tetikliyor. Gerekliyse `React.lazy`/`Suspense` ile lazy-load et.
-- `BETTER_AUTH_SECRET`, `DATABASE_URL`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY`, `VITE_AUTH_ENABLED` Vercel'de zaten ayarlı — değiştirme.
+## Contracts
 
-## Bilinen baseline hatalar (dokunma)
-- `typecheck`: 5 hata (popup.server.ts, seed.ts — dead code, ilgisiz)
-- `test:scripts`: 13 pre-existing failure
-- Bunlar senin değişikliğinden önce de vardı. Typecheck/test sonucunu bu sayıyla karşılaştır — artmadıysa sorun yok, düzeltmeye çalışma.
-- Çalıştırılmamış iki dry-run migration script'i var: `migrate-share-ids.mjs`, `migrate-card-examples.mjs` — bunları kimse istemeden çalıştırma.
+- Card identity is immutable and opaque. Editors carry IDs explicitly; term changes and duplicate terms retain independent identities. Copies/public copies get new UUIDs. Moves preserve IDs, vocabulary progress and article/case counters; progress `setId` follows the move. Never match edits by normalized term.
+- Removed cards lose current progress/drill/session references. Append-only historical review/error events remain until account deletion.
+- German enrichment applies only when `resolveSetLanguages(set).term === 'de'`. Preserve omitted examples, note, image and user enrichment on edits.
+- Review validation checks set access and actual card membership inside its transaction.
+- Grammar accuracy means question-weighted accuracy over the last 20 completed rounds. Store `recentRounds: {correct,total}[]`; never synthesize an order of answers from totals.
+- Grammar/Lesen/Paste updates are transactional. Paste save identity is allocated once before saving; sessions open after save succeeds. Retry uses the same topic ID. Paste round receipt IDs make progress retries idempotent.
+- Paste remains separate from the fixed grammar curriculum and bundled Lesen completion map.
+- Account deletion follows `user-data-inventory.ts`, deletes owned sets and recursively all user roots. SQL identity deletion remains the separate authenticated endpoint.
+- SRS parameters/semantics are unchanged. A future LearningSignals view must derive from existing sources, not create another stored truth.
 
-## Çalışma kuralı
-- Kod değişikliğinden sonra sadece `npm run typecheck` çalıştır. Tarayıcıdan test etme, deploy tetikleme, kendi kendine ek doğrulama yapma — kullanıcı kendisi test edip sonucu bildirecek.
-- Skip browser-based visual self-verification (no qa-*.tsx debug routes, no localhost screenshots, no standalone review HTML files) unless explicitly asked for one in the task prompt. Numeric/computed verification (WCAG contrast ratios, exact computed style values, typecheck, build) is sufficient proof of correctness for visual/CSS changes and should be used instead — it's cheaper and catches real regressions just as well. This applies project-wide, not just to the current UX/UI redesign work.
-- For low-risk visual/CSS/copy-only changes (no changes to scoring, FSRS, data models, or auth/security logic): once typecheck and full build are clean on the branch, merge to main and push without waiting for explicit go-ahead first. Vercel auto-deploys from main. Still report back with a summary (files changed, token/color choices, typecheck/build status, merge commit hash, deploy status) after the fact — this just removes the mid-task approval checkpoint, not the reporting. This does NOT apply to: anything touching FSRS/scoring/CardProgress/CardEnrichment/Firestore rules/auth, anything that previously broke production (hooks-order changes deserve extra care), or anything the task prompt explicitly flags as needing review first.
-- Basit değişikliklerde (tek dosya, açık neden-sonuç) doğrudan eyleme geç.
-- Kök nedeni belirsiz bug'larda (build/bundling hataları, cross-file state sorunları) önce kısaca hangi hipotezi test ettiğini belirt, sonra düzelt — burada acele etme.
-- Bitince kısa özet ver.
+## Reproducible validation
 
-## Yanıt stili
-- Nezaket ifadesi kullanma ("Elbette", "Anladım", "İşte kod", "Başarılar").
-- Yalnızca değiştirilmesi gereken kodu veya çalıştırılacak komutu ver, kodun nasıl çalıştığını açıklama.
-- "Şunu yapacağım" gibi planlama metni üretme, doğrudan eyleme geç (yukarıdaki belirsiz-bug istisnası hariç).
-- Hata yaparsan özür dileme, doğrudan çözümü yaz.
+Node 24.20.0 (`.node-version`/`.nvmrc`), npm 11.19.0. Install with `npm ci --ignore-scripts` from the committed lockfile. Versions are not bumped by hardening.
 
-## Şu anki odak
-Almanca zenginleştirme hattı: 3A (dil kodları) → 3B (sözlük) → 3B.5 (article grading) tamamlandı. Şu an örnek cümle kaynağı üzerinde çalışılıyor — bundled Wiktionary verisi hem definition hem example paneline besleniyor (DE/EN/TR güçlü, Kurdish zayıf kapsam), AI otomatik tetiklenmiyor, "Generate with AI" fallback olarak duruyor.
+- `npm run typecheck`
+- `npm test` — script tests and automatically discovered `src/**/*.test.ts`; loader supports aliases and TSX.
+- `npm run build:compile` — production compilation with backend credentials blanked; no migrations.
+- `npm run test:e2e` — hermetic desktop/mobile Playwright; never real Firestore.
+- `npm run build` includes `db:migrate`: do not use against a configured production database for local validation.
+
+The old accepted baseline of 5 type errors / 13 script failures is obsolete. Full outcomes and schema reset guidance: `PREPROD_HARDENING.md`. The original dated audit remains in `CODEX_HANDOFF.md`, with a current hardening update.
+
+## Safety and bundling
+
+- Never stage `.env.local` or expose keys/tokens/private content in logs. Diagnostics use fixed operation names and safe error categories.
+- Never change production environment values or run live reset/migration/deployment without explicit authorization.
+- `scripts/reset-karta-test-data.mjs` defaults to dry-run and requires an exact project/user confirmation to delete test data. It is never run automatically.
+- Keep Nitro `traceDeps: ["firebase-admin*"]`; plain externalization omits required runtime files.
+- Keep Better Auth client imports lazy in shared UI; eager imports have broken SSR chunk splitting.
+- Keep PreviewHostBridge and platform branding/PWA contracts.
+- Hardening changes require review before merging; do not merge or push main automatically.

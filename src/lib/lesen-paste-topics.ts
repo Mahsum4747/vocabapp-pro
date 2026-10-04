@@ -25,8 +25,8 @@ import { documentIdSchema, roundCountsSchema } from "./input-schemas";
  *   grammar.lesen-paste.tsx's own "Your saved passages" list.
  *
  * WRITE BUDGET, same discipline as grammar-paste-topics.ts: one write to
- * save a passage (on a successful paste, not per question), and one write
- * per finished round thereafter (never per question).
+ * save a passage (on a successful paste, not per question), and one transaction
+ * per finished round thereafter (topic plus durable receipt, never per question).
  */
 
 const questionSchema = z.object({
@@ -191,7 +191,7 @@ const recordSchema = roundCountsSchema.and(
   z.object({ id: documentIdSchema, roundId: documentIdSchema }),
 );
 
-/** One write per finished round (never per question) — same write-budget
+/** One transaction per finished round (topic and receipt, never per question) — same write-budget
  *  discipline as grammar-paste-topics.ts's own equivalent. */
 export const recordLesenPasteTopicRoundResult = createServerFn({ method: "POST" })
   .middleware([authMiddleware])

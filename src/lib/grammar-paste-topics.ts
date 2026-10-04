@@ -20,7 +20,7 @@ import { documentIdSchema, roundCountsSchema } from "./input-schemas";
  * - `grammarProgress/{uid}` (grammar-progress.ts): the fixed 26-topic
  *   schema there is never touched — a pasted topic's progress lives on
  *   its OWN doc here (`accuracy`/`lastPracticedAt`/`totalAttempts`/
- *   `recentRounds`, same rolling-window shape and math as
+ *   `recentRounds`, shared exact round-window math as
  *   `grammar-progress.ts`'s own, via the shared `foldRoundIntoRollingAccuracy`
  *   helper) — never merged into the fixed collection.
  * - The fixed 26-topic hub: nothing here is a `ModeId`, nothing here shows
@@ -29,8 +29,8 @@ import { documentIdSchema, roundCountsSchema } from "./input-schemas";
  *   clearly labeled) grammar-assessment.ts's prompt.
  *
  * WRITE BUDGET, same discipline as grammar-progress.ts: one write to save a
- * topic (on a successful paste, not per question), and one write per
- * finished round thereafter (never per question).
+ * topic (on a successful paste, not per question), and one transaction per
+ * finished round thereafter (topic plus durable receipt, never per question).
  */
 
 const questionSchema = z.object({
@@ -194,7 +194,7 @@ const recordSchema = roundCountsSchema.and(
   z.object({ id: documentIdSchema, roundId: documentIdSchema }),
 );
 
-/** One write per finished round (never per question) — same write-budget
+/** One transaction per finished round (topic and receipt, never per question) — same write-budget
  *  discipline as grammar-progress.ts's own `recordGrammarRoundResult`,
  *  applied to this separate per-topic doc instead of the fixed
  *  `grammarProgress/{uid}` collection. */

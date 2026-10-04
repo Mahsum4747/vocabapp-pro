@@ -281,14 +281,11 @@ function toCards(
  *     set becomes studiable)  -> its own contribution is added
  *   - a card leaves the pool (set deleted, card removed/archived/excluded, set
  *     becomes a reference or drops below 2 cards)  -> it is subtracted
- * Brand-new card ids can't have a progress row, so they cost no read; every
- * other id is read once with `getAll`.
- *
- * `deleteIds` are progress rows to delete because their set is gone for good
- * (only `deleteSet` passes them: never for archived/excluded/reference — those
- * are reversible — nor for a card removal, term edit or move). Best-effort like the streak: the edit
- * is already stored, and a failure here only leaves a badge count slightly off
- * until the weekly full rebuild.
+ * Entering/leaving IDs are read in chunks, so moved cards retain their real
+ * learned contribution while copies without progress count as new.
+ * `deleteIds` identifies irreversible card/set removals; reversible flags
+ * never erase progress. Cache synchronization is best-effort; create/edit/move
+ * transactions invalidate the derived cache so reads can rebuild it.
  */
 async function syncSummaryForSetChange(change: {
   userId: string;
@@ -831,7 +828,8 @@ type TransferCardsInput = z.infer<typeof transferSchema>;
 
 /**
  * Shared by `copyCardsToSet` and `moveCardsToSet`: add the selected cards
- * (as fresh copies, mastery/starred reset) to `targetSetId`, which must be
+ * to `targetSetId`: copies get fresh identities/flags, moves retain identity
+ * and learning progress. The target must be
  * owned by the caller. For a move, the cards are also removed from
  * `sourceSetId`, which must then be owned by the caller too; for a copy the
  * source only needs to be readable (own set, or someone else's public set —

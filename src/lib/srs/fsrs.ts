@@ -5,14 +5,14 @@ import type { LearningState, ReviewInput, Scheduler, SchedulerState } from "./sc
  * An FSRS-shaped scheduler.
  *
  * It uses the FSRS memory model — a power forgetting curve over (stability,
- * difficulty) — rather than SM-2's ease factor, so the stored state is the
- * same shape the upstream `ts-fsrs` package expects and can be handed over to
- * it later without a data migration.
+ * difficulty) — rather than SM-2's ease factor. These concepts overlap upstream `ts-fsrs`,
+ * but integration requires explicit state/rating/history mapping and a policy
+ * for the custom mastered state and existing due dates. See PREPROD_HARDENING.md.
  *
  * The weights below are FSRS-shaped defaults, not values fitted to this app's
  * review history. They are deliberately exposed as parameters: once there is
- * enough review data, fit a real weight vector (or drop in `ts-fsrs`) and pass
- * it here — nothing else has to change.
+ * enough review data, fit suitable custom parameters here, or evaluate an upstream migration
+ * with explicit mapping and historical replay.
  */
 export type FsrsWeights = {
   /** Initial stability per rating: again, hard, good, easy. */

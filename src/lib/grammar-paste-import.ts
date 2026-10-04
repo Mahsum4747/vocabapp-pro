@@ -5,9 +5,8 @@
  * usable round at all. Pure, no framework imports, directly unit-testable.
  *
  * This output is NEVER written to `grammarProgress` and NEVER added to the
- * fixed 26-topic hub — it only ever drives one throwaway
- * `GrammarDrillRunner` session (grammar.paste.tsx), gone the moment the
- * learner navigates away. See that route's own doc comment.
+ * fixed curriculum hub. After validation the route persists it to its own
+ * Grammar Paste history before opening practice; progress stays on that topic.
  */
 
 export type GrammarPasteQuestion = {
