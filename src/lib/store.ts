@@ -1,3 +1,5 @@
+// Public read API export also makes the server function discoverable during compilation.
+export { getLearningSignals } from "./get-learning-signals";
 import { movedClientState } from "./transfer-client";
 import { logOperationFailure } from "./diagnostics";
 import { useEffect, useMemo } from "react";

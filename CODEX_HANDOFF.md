@@ -26,6 +26,18 @@ separates its rolling denominator from lifetime attempts.
 See PREPROD_HARDENING_REVIEW.md for fresh validation and the merge decision;
 the original hardening validation remains recorded in PREPROD_HARDENING.md.
 
+## LearningSignals foundation — 2026-10-04
+
+Production main was merged/deployed at `088be3e0`. The next isolated branch,
+`codex/learning-signals-foundation`, adds an authenticated session-only read model:
+`getLearningSignals()` → projected Firestore reads → pure `buildLearningSignals`.
+No persistence, scheduler, cache repair, recommendation or UI feature changes.
+Existing Hub CEFR labels are extracted unchanged into shared grammar-curriculum.
+Fixed/Paste and bundled/Paste reading stay separate. Per-level reading accuracy,
+writing error rates and longest streak remain unavailable rather than fabricated.
+See LEARNING_SIGNALS.md for the complete model, date/evidence rules and read costs.
+This foundation branch is not merged or deployed.
+
 ## 1. Executive Summary
 
 Karta is an authenticated vocabulary and German practice application. React/TanStack Start supplies the UI and server-function transport. Better Auth uses Postgres for identity/session persistence; Firestore stores learning content, progress, settings, and AI caches. Firebase Auth is not the application's login mechanism.
