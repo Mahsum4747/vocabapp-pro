@@ -38,6 +38,17 @@ writing error rates and longest streak remain unavailable rather than fabricated
 See LEARNING_SIGNALS.md for the complete model, date/evidence rules and read costs.
 This foundation branch is not merged or deployed.
 
+## Adaptive recommendations v1 — 2026-10-04
+
+`codex/adaptive-recommendations-v1` starts from unmerged LearningSignals HEAD
+`395e504024b545a18e67a73633216bf38564c898`. Pure buildAdaptiveStudyPlan consumes
+only LearningSignals, deterministic bounded candidates with explanatory evidence,
+conservative thresholds, shared actual destinations and deduplication. Existing
+set projections now derive eligible practiceTargets; no additional Firestore reads.
+No endpoint, Home/UI, scheduler, persistence or AI changes. See
+ADAPTIVE_RECOMMENDATIONS.md for exact types, scoring, routes, full fixture outputs
+and validation. Branch stays local, unmerged and undeployed; no migration/reset.
+
 ## 1. Executive Summary
 
 Karta is an authenticated vocabulary and German practice application. React/TanStack Start supplies the UI and server-function transport. Better Auth uses Postgres for identity/session persistence; Firestore stores learning content, progress, settings, and AI caches. Firebase Auth is not the application's login mechanism.

@@ -3,7 +3,8 @@
 Read-only derived model for future recommendation/progress consumers. Branch:
 `codex/learning-signals-foundation`, based on production main `088be3e0`.
 No collection, persisted score, migration, UI feature, cache, AI request or SRS
-change. No recommendation eligibility/ranking is implemented.
+change. The original foundation implements no ranking. The subsequent adaptive branch
+adds a pure consumer; see ADAPTIVE_RECOMMENDATIONS.md.
 
 ## Entry points and boundary
 
@@ -213,6 +214,7 @@ export type DrillSignal = {
 export type LearningSignals = {
   generatedAt: number;
   vocabulary: {
+    practiceTargets: Partial<Record<"articles" | "cases" | "conjugation" | "satzbau" | "cloze" | "write", string>>;
     totalActiveCards: number;
     reviewedCards: number;
     newCards: number;
@@ -281,3 +283,12 @@ only in its child process. Environment files/production configuration unchanged.
 
 Git scope: one isolated feature commit; not pushed, merged or deployed. Tracked
 working tree clean after commit; pre-existing untracked local assets retained.
+
+## Adaptive routing extension
+
+`vocabulary.practiceTargets: SignalPracticeTargets` maps articles/cases/conjugation/
+satzbau/cloze/write to an eligible owned set ID, derived from the existing projected
+sets using unchanged Hub predicates, active cards only, reference sets excluded.
+The first eligible set in lexical ID order is used. No Firestore read added.
+Evidence bands now live in learning-evidence.ts and remain re-exported unchanged
+from learning-signals.ts. Read authorization, scheduling and persistence unchanged.

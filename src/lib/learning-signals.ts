@@ -1,3 +1,6 @@
+import { evidenceLevel, type EvidenceLevel } from "./learning-evidence";
+export { evidenceLevel, type EvidenceLevel } from "./learning-evidence";
+import { buildSignalPracticeTargets, type SignalPracticeTargets } from "./learning-signal-targets";
 import {
   isCardActive,
   isCorrectRating,
@@ -21,12 +24,6 @@ export const WRITING_SIGNAL_WINDOW = 20;
 export const REVIEW_SIGNAL_WINDOW = 100;
 export const READING_LEVELS = ["A1", "A2", "B1", "B2"] as const;
 export type ReadingLevel = (typeof READING_LEVELS)[number];
-export type EvidenceLevel = "none" | "low" | "medium" | "high";
-/** Participation thresholds, not statistical confidence or recommendation eligibility. */
-export function evidenceLevel(sampleSize: number): EvidenceLevel {
-  const n = count(sampleSize);
-  return n === 0 ? "none" : n < 10 ? "low" : n < 30 ? "medium" : "high";
-}
 export type AccuracySignal = {
   accuracy: number | null;
   lifetimeAttempts: number;
@@ -71,6 +68,7 @@ export type DrillSignal = {
 export type LearningSignals = {
   generatedAt: number;
   vocabulary: {
+    practiceTargets: SignalPracticeTargets;
     totalActiveCards: number;
     reviewedCards: number;
     newCards: number;
@@ -333,6 +331,7 @@ export function buildLearningSignals(input: LearningSignalsInput): LearningSigna
   return {
     generatedAt: now,
     vocabulary: {
+      practiceTargets: buildSignalPracticeTargets(sets),
       totalActiveCards: mastery.active,
       reviewedCards: mastery.reviewed,
       newCards: mastery.notStarted,
