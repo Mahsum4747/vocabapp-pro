@@ -1,3 +1,4 @@
+import { logOperationFailure } from "../diagnostics";
 /**
  * Live-preview sign-in popup — server-only (NEVER import from the client).
  *
@@ -62,24 +63,26 @@ export async function handleAuthPopupRequest(request: Request): Promise<Response
   // Stay first-party for the callback so the session cookie lands in THIS popup.
   const back = `${url.origin}/auth/popup?done=1`;
   try {
-    const apiRes = await auth.api.signInWithOAuth2({
-      body: {
-        providerId,
-        callbackURL: back,
-        errorCallbackURL: `${back}&error=1`,
-      },
-      // Forward the preview host so Better Auth derives the correct baseURL /
-      // redirect_uri for the dynamic `*.grok-sandbox.com` origin.
-      headers: request.headers,
-      asResponse: true,
-    });
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set("content-type", "application/json");
+    const apiRes = await auth.handler(
+      new Request(`${url.origin}/api/auth/sign-in/oauth2`, {
+        method: "POST",
+        headers: requestHeaders,
+        body: JSON.stringify({
+          providerId,
+          callbackURL: back,
+          errorCallbackURL: `${back}&error=1`,
+        }),
+      }),
+    );
 
     if (!apiRes.ok) {
-      const detail = await apiRes.text().catch(() => "");
+      logOperationFailure("auth.oauth-init", new Error("OAuth rejected"));
       return completionResponse({
         source: "grok-auth-popup",
         token: null,
-        error: detail || `oauth_init_failed_${apiRes.status}`,
+        error: `oauth_init_failed_${apiRes.status}`,
       });
     }
 
@@ -103,7 +106,8 @@ export async function handleAuthPopupRequest(request: Request): Promise<Response
     }
     return new Response(null, { status: 302, headers });
   } catch (err) {
-    const message = err instanceof Error ? err.message : "oauth_init_threw";
+    logOperationFailure("auth.oauth-init", err);
+    const message = "oauth_init_threw";
     return completionResponse({
       source: "grok-auth-popup",
       token: null,

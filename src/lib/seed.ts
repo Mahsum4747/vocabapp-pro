@@ -1,13 +1,15 @@
 import type { StudySet } from "./types";
 
 function set(
-  partial: Omit<StudySet, "createdAt" | "updatedAt" | "lastStudiedAt"> & {
+  partial: Omit<StudySet, "createdAt" | "updatedAt" | "lastStudiedAt" | "ownerId" | "isPublic"> & {
     createdAt?: number;
   },
 ): StudySet {
   const now = partial.createdAt ?? Date.now();
   return {
     ...partial,
+    ownerId: "dev-user",
+    isPublic: false,
     createdAt: now,
     updatedAt: now,
     lastStudiedAt: null,
@@ -15,12 +17,11 @@ function set(
 }
 
 function cards(pairs: [string, string][]) {
-  return pairs.map(([term, definition], index) => ({
-    id: `card-${term.slice(0, 12)}-${index}`,
+  return pairs.map(([term, definition]) => ({
+    id: crypto.randomUUID(),
     term,
     definition,
     starred: false,
-    mastery: 0,
     imageUrl: null,
   }));
 }
