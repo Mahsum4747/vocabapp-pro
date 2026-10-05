@@ -714,9 +714,9 @@ The tuple is collision-free and independent of labels. Owner identity exists in 
 
 ### Durable contract and classification
 
-Version 1 document fields:
+Version 2 prototype document fields:
 
-- `schemaVersion: 1`, `trackId`, `releaseId`, `lessonId`, `lessonVersion` (SHA-256 of the full authored lesson definition).
+- `schemaVersion: 2`, `trackId`, `releaseId`, `lessonId`, `resumeContractVersion` (explicit positive integer), `definitionHash` (SHA-256 of the full authored lesson definition at the last accepted checkpoint).
 - `revision`, `practiceRun`, `currentStepId: string | null`, ordered `completedStepIds` (validated contiguous prefix).
 - `response: string | null` (at most 160 characters; current checked bounded response only), `checked`, `attempts` (current step only).
 - `firstFinishedAt: number | null`, `updatedAt: number` (server epoch milliseconds).
@@ -724,7 +724,7 @@ Version 1 document fields:
 
 Durable truth: scope/version, ordered acknowledged traversal, current checked bounded answer, current-step retry count, revision/run, first completion milestone, server update time and bounded replay receipts.
 
-Derived: row status, current step index, completion percentage, deterministic feedback/results and display labels. They come from durable truth plus current local work and the exact compatible lesson definition, never copied into storage. Merely opening an untouched lesson can mark it in progress in route memory; no document is created until acknowledgement. Historical completion is independent of the current repeat-practice run.
+Derived: row status, current step index, completion percentage, deterministic feedback/results and display labels. They come from durable truth plus current local work and the current compatible lesson definition, never copied into storage. Merely opening an untouched lesson can mark it in progress in route memory; no document is created until acknowledgement. Historical completion is independent of the current repeat-practice run.
 
 Session only: unchecked drafts, open/original writing, immediate answer feedback before acknowledgement, focus/button/loading/error state and pending command. Responses are retained locally on save failure/conflict. No keystroke writes or browser-local persistence.
 
@@ -738,11 +738,11 @@ Entering Learn authenticates the learner and reads exactly the two known authore
 
 Finished lessons open in the finished view. Intentional restart creates a new current practice run and resets its traversal/answer while retaining `firstFinishedAt`. Unit rows retain Finished and show Practicing again for an active repeat. Completion is guided-practice traversal, never mastery or complete A1 proficiency.
 
-A different definition hash blocks saved-answer restoration/grading and writes; it preserves the old document and shows an unavailable lesson. Unknown scopes/lessons and unauthored lessons are rejected. There is no compatible archive or replacement mapping yet, so the UI does not invent one or silently migrate answers. Withdrawn/unauthored route content stays unavailable.
+A different `resumeContractVersion` blocks saved-answer restoration/grading and writes; it preserves the old document and shows an unavailable lesson. A different `definitionHash` alone does not block resume. L01/L02 explicitly declare compatibility version 1. Authors must bump it when persisted step IDs/order become incompatible, task meaning or grading materially changes, or required response contracts change (including relevant grading-algorithm changes). Keep it stable for titles, descriptions, explanations, punctuation, spacing/layout and feedback wording that does not change grading. This is an explicit author/reviewer responsibility, not automatic semantic inference from a hash. Schema-1 prototype records remain unavailable and untouched; no migration or replacement occurs. Unknown scopes/lessons and unauthored lessons are rejected. There is no compatible archive or replacement mapping yet, so the UI does not invent one or silently migrate answers. Withdrawn/unauthored route content stays unavailable.
 
 ### Writes, concurrency and cost
 
-Each explicit Check, Continue/Finish or Restart submits one UUID command with the exact lesson hash and expected revision. One owner-scoped Firestore transaction reads one progress document, validates the stored contract and applies a pure transition. An accepted new command writes that one document. Reads, duplicate acknowledgements, conflicts and unavailable versions write nothing.
+Each explicit Check, Continue/Finish or Restart submits one UUID command with the authored compatibility version and expected revision. One owner-scoped Firestore transaction reads one progress document, validates the stored contract and applies a pure transition. An accepted new command writes that one document. Reads, duplicate acknowledgements, conflicts and unavailable versions write nothing. Definition hashes are diagnostic integrity fingerprints, excluded from command payloads/receipt digests. Copy edits therefore preserve exact retry identity. A new accepted checkpoint records the current definition hash in the existing write; reads expose the current hash without refreshing stored records or revisions.
 
 Identical retries reuse their original UUID, payload and revision. The receipt digest rejects UUID reuse with another payload. A duplicate returns current server truth without replaying the transition, including when newer commands already exist. A duplicate acknowledgement returning a newer revision is shown as a conflict in the UI, keeping the local answer until explicit recovery. Compare-and-update rejects stale tabs/restarts; transactional retries admit one competing revision, returning a conflict for the other. Step order/prefix validation prevents skipping and out-of-order traversal. First completion and update times never regress. The last-64 receipt window is bounded; an evicted delayed retry conflicts on its stale revision rather than replaying.
 
@@ -784,3 +784,17 @@ The first dev browser pass exposed duplicate Strict Mode loads and an incorrect 
 - `npm run check:auth -- --dev-url http://127.0.0.1:5199`: passed, dev and build agree (sign-in on). The earlier default-server probe was indeterminate because no server was observable at its default address; the hermetic test-server probe confirms the actual tested configuration.
 
 Remaining limitations: two unpublished lessons only; no offline queue/autosave, compatible archived release or replacement map, automatic TTL, published/directional enrollment mapping, skill evidence/mastery/assessments, overlays, audio or live-backend verification. A deliberately discarded/forcibly closed unsaved answer cannot resume. Authentication must be configured; shared auth-off preview identities are refused. Existing account-deletion transaction/lifecycle semantics are unchanged.
+
+
+### Phase 1C compatibility hardening (2026-10-05)
+
+Based on `855d13efd50fa477f5e3196c50b5412232ad1b83`, this narrow revision separates authored `resumeContractVersion` from diagnostic `definitionHash`. Only L01/L02 compatibility metadata was added; lesson content, IDs, Firestore paths, release/track identity, revisions, receipts, concurrency/idempotency, completion and privacy rules remain unchanged. Schema-1 unpublished records are preserved as unavailable, without migration. Approved architecture documents are unchanged.
+
+Hardening validation:
+
+- Focused persistence tests: **23 passed**; combined curriculum/Phase 1B/persistence tests: **35 passed**. New coverage proves copy/feedback and explanation edits preserve resume, completion and receipt retries; explicit bumps for IDs/order/task meaning/grading/response changes reject old progress and commands without writes. Existing stale revisions/idempotency, bounded-answer pruning, owner isolation and no legacy/FSRS writes still pass.
+- Legacy FSRS/review/foundation/grammar regressions: **66 passed**.
+- Typecheck and compile-only `npm run build:compile`: passed. No migration-triggering build was run.
+- Compiled desktop/mobile Learn regressions: **24 passed**, including L01/L02 durable reload resume, completion, retries/conflicts and unchanged legacy vocabulary Learn. Resumed desktop/mobile screenshots were inspected.
+- Scoped lint: **0 errors**, existing provider/hook Fast Refresh warning only. `git diff --check`: passed.
+- No migration, production data access, push, merge or deployment.

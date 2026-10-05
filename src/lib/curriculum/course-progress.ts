@@ -15,11 +15,15 @@ const counter = z
   .int()
   .min(0)
   .max(Number.MAX_SAFE_INTEGER - 1);
+const resumeContractVersionSchema = counter.min(1);
+export function lessonResumeContractVersion(lesson: LessonDefinition) {
+  return resumeContractVersionSchema.parse(lesson.resumeContractVersion);
+}
 export const courseScopeSchema = z.object({ trackId: id, releaseId: id }).strict();
 export const progressCommandSchema = courseScopeSchema
   .extend({
     lessonId: id,
-    lessonVersion: z.string().regex(/^[a-f0-9]{64}$/),
+    resumeContractVersion: resumeContractVersionSchema,
     expectedRevision: counter,
     operationId: z.string().uuid(),
     action: z.discriminatedUnion("type", [
@@ -34,9 +38,10 @@ export const progressCommandSchema = courseScopeSchema
 export type ProgressCommand = z.infer<typeof progressCommandSchema>;
 export const durableProgressSchema = courseScopeSchema
   .extend({
-    schemaVersion: z.literal(1),
+    schemaVersion: z.literal(2),
     lessonId: id,
-    lessonVersion: z.string().regex(/^[a-f0-9]{64}$/),
+    resumeContractVersion: resumeContractVersionSchema,
+    definitionHash: z.string().regex(/^[a-f0-9]{64}$/),
     revision: counter,
     practiceRun: counter,
     currentStepId: id.nullable(),
@@ -53,10 +58,19 @@ export const durableProgressSchema = courseScopeSchema
       .max(64),
   })
   .strict();
+// Old unpublished prototype rows stay readable as unavailable; never migrate or overwrite them.
+export const storedProgressSchema = z.discriminatedUnion("schemaVersion", [
+  durableProgressSchema,
+  durableProgressSchema
+    .omit({ resumeContractVersion: true, definitionHash: true })
+    .extend({ schemaVersion: z.literal(1), lessonVersion: z.string().regex(/^[a-f0-9]{64}$/) })
+    .strict(),
+]);
 export type DurableProgress = z.infer<typeof durableProgressSchema>;
 export type ProgressDescriptor = {
   lessonId: string;
-  lessonVersion: string;
+  resumeContractVersion: number;
+  definitionHash: string;
   progress: DurableProgress | null;
   unavailable: boolean;
 };
@@ -84,12 +98,13 @@ export function progressDocumentId(scope: {
 }) {
   return encodeURIComponent(JSON.stringify([scope.trackId, scope.releaseId, scope.lessonId]));
 }
-export function initialProgress(lesson: LessonDefinition, lessonVersion: string): DurableProgress {
+export function initialProgress(lesson: LessonDefinition, definitionHash: string): DurableProgress {
   return {
     ...COURSE_SCOPE,
-    schemaVersion: 1,
+    schemaVersion: 2,
     lessonId: lesson.id,
-    lessonVersion,
+    resumeContractVersion: lessonResumeContractVersion(lesson),
+    definitionHash,
     revision: 0,
     practiceRun: 0,
     currentStepId: lesson.steps[0].id,
@@ -108,7 +123,8 @@ export function validateStoredProgress(input: unknown, lesson: LessonDefinition)
   if (
     progress.trackId !== COURSE_SCOPE.trackId ||
     progress.releaseId !== COURSE_SCOPE.releaseId ||
-    progress.lessonId !== lesson.id
+    progress.lessonId !== lesson.id ||
+    progress.resumeContractVersion !== lessonResumeContractVersion(lesson)
   )
     throw Error("Stored progress scope mismatch.");
   const count = progress.completedStepIds.length;
@@ -157,7 +173,11 @@ export function applyProgressCommand(
   digest: string,
   now: number,
 ): SaveProgressResult {
-  if (previous.lessonVersion !== command.lessonVersion) return { kind: "unavailable" };
+  if (
+    previous.resumeContractVersion !== command.resumeContractVersion ||
+    command.resumeContractVersion !== lessonResumeContractVersion(lesson)
+  )
+    return { kind: "unavailable" };
   const receipt = previous.receipts.find((candidate) => candidate.id === command.operationId);
   if (receipt) {
     if (receipt.digest !== digest) throw Error("Acknowledgement ID reused with another operation.");

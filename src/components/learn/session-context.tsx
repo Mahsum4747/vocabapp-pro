@@ -48,7 +48,7 @@ export function LearnSessionProvider({ children }: { children: ReactNode }) {
   const [sessions, setSessionState] = useState<LessonSessions>({});
   const sessionRef = useRef<LessonSessions>({});
   const durable = useRef<Record<string, DurableProgress>>({});
-  const versions = useRef<Record<string, string>>({});
+  const versions = useRef<Record<string, number>>({});
   const pending = useRef<Record<string, Pending>>({});
   const alive = useRef(false);
   const loadGeneration = useRef(0);
@@ -77,7 +77,7 @@ export function LearnSessionProvider({ children }: { children: ReactNode }) {
       const restored: Record<string, LessonSession> = {};
       const states: Record<string, SaveState> = {};
       for (const descriptor of result.lessons) {
-        versions.current[descriptor.lessonId] = descriptor.lessonVersion;
+        versions.current[descriptor.lessonId] = descriptor.resumeContractVersion;
         const lesson = germanA1.lessons.find((candidate) => candidate.id === descriptor.lessonId)!;
         if (descriptor.progress) {
           durable.current[lesson.id] = descriptor.progress;
@@ -185,7 +185,7 @@ export function LearnSessionProvider({ children }: { children: ReactNode }) {
     const command: ProgressCommand = {
       ...COURSE_SCOPE,
       lessonId: lesson.id,
-      lessonVersion: versions.current[lesson.id],
+      resumeContractVersion: versions.current[lesson.id],
       expectedRevision: durable.current[lesson.id]?.revision ?? 0,
       operationId: crypto.randomUUID(),
       action:

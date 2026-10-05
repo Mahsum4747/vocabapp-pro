@@ -1054,6 +1054,7 @@ export const germanA1: CurriculumRelease = {
   lessons: [
     {
       id: "DE.A1.U01.L01",
+      resumeContractVersion: 1,
       unitId: "DE.A1.U01",
       title: "Meet and identify: introduce yourself",
       outcome: "One original identity statement; guided production",
@@ -1071,6 +1072,7 @@ export const germanA1: CurriculumRelease = {
     },
     {
       id: "DE.A1.U01.L02",
+      resumeContractVersion: 1,
       unitId: "DE.A1.U01",
       title: "Name people and things",
       outcome: "Match pictured/labeled entities then write a familiar noun phrase",

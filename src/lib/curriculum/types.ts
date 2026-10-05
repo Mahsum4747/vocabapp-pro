@@ -43,6 +43,9 @@ export type LessonStep = StepBase &
   );
 export type LessonDefinition = {
   id: string;
+  /** Required for durable authored lessons. Bump only for incompatible step identity/order,
+   * task meaning, grading or response contracts; retain for presentation/feedback copy edits. */
+  resumeContractVersion?: number;
   unitId: string;
   title: string;
   outcome: string;

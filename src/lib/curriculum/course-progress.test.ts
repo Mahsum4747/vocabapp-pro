@@ -7,6 +7,7 @@ import { deleteLearningData } from "../account-deletion.server";
 import { USER_SUBCOLLECTIONS } from "../user-data-inventory";
 import {
   COURSE_SCOPE,
+  lessonResumeContractVersion,
   durableProgressSchema,
   progressCommandSchema,
   resumeProgress,
@@ -14,9 +15,9 @@ import {
   type DurableProgress,
 } from "./course-progress";
 import {
+  lessonDefinitionHash,
   readCourseProgress,
   saveCourseProgress,
-  lessonContentVersion,
   courseProgressPath,
   requireCourseAuthentication,
 } from "./course-progress.server";
@@ -30,7 +31,7 @@ const command = (
 ): ProgressCommand => ({
   ...COURSE_SCOPE,
   lessonId: lesson.id,
-  lessonVersion: lessonContentVersion(lesson),
+  resumeContractVersion: lessonResumeContractVersion(lesson),
   expectedRevision: revision,
   operationId: randomUUID(),
   action,
@@ -75,7 +76,7 @@ test("shape validation rejects UI/mastery/owner fields, huge payloads and invali
     { action: { type: "check", stepId: first.steps[2].id, response: "x".repeat(161) } },
   ])
     assert.equal(progressCommandSchema.safeParse({ ...valid, ...extra }).success, false);
-  assert.equal(durableProgressSchema.safeParse({ schemaVersion: 2 }).success, false);
+  assert.equal(durableProgressSchema.safeParse({ schemaVersion: 3 }).success, false);
 });
 test("reads are reads, empty documents are not created, owner isolation and auth wiring", async () => {
   const f = fakeProgressDb();
@@ -191,16 +192,16 @@ test("release/track/lesson rejection and changed/withdrawn content keep old reco
     await assert.rejects(saveCourseProgress(f.db, "u", { ...command(), ...extra }));
   assert.equal(f.writes.length, 0);
   assert.equal(
-    (await saveCourseProgress(f.db, "u", { ...command(), lessonVersion: "0".repeat(64) })).kind,
+    (await saveCourseProgress(f.db, "u", { ...command(), resumeContractVersion: 2 })).kind,
     "unavailable",
   );
   await saveCourseProgress(f.db, "u", command());
   const path = courseProgressPath("u", command());
   const old = f.records.get(path) as DurableProgress;
-  f.records.set(path, { ...old, lessonVersion: "0".repeat(64) });
+  f.records.set(path, { ...old, resumeContractVersion: 2 });
   assert.equal((await readCourseProgress(f.db, "u", COURSE_SCOPE)).lessons[0].unavailable, true);
   assert.equal((await saveCourseProgress(f.db, "u", command(first, 1))).kind, "unavailable");
-  assert.deepEqual(f.records.get(path), { ...old, lessonVersion: "0".repeat(64) });
+  assert.deepEqual(f.records.get(path), { ...old, resumeContractVersion: 2 });
 });
 test("skips/forged completed states rejected, bounded answers pruned, open text never stored", async () => {
   const f = fakeProgressDb();
@@ -272,4 +273,217 @@ test("auth-off preview fallback is rejected before any durable course access", a
     if (previous === undefined) delete process.env.VITE_AUTH_ENABLED;
     else process.env.VITE_AUTH_ENABLED = previous;
   }
+});
+
+// Simulate a reviewed authored-definition edit without changing the storage adapter.
+async function withLesson(lesson: LessonDefinition, run: () => Promise<void>) {
+  const original = germanA1.lessons;
+  germanA1.lessons = original.map((entry) => (entry.id === lesson.id ? lesson : entry));
+  try {
+    await run();
+  } finally {
+    germanA1.lessons = original;
+  }
+}
+async function checkedChoice(lesson: LessonDefinition) {
+  const f = fakeProgressDb();
+  await saveCourseProgress(f.db, "u", command(lesson));
+  await saveCourseProgress(
+    f.db,
+    "u",
+    command(lesson, 1, { type: "continue", stepId: lesson.steps[1].id }),
+  );
+  const step = lesson.steps[2];
+  assert.equal(step.kind, "choice");
+  if (step.kind !== "choice") throw Error("Fixture needs a choice");
+  const check = command(lesson, 2, {
+    type: "check",
+    stepId: step.id,
+    response: step.correctAnswer,
+  });
+  await saveCourseProgress(f.db, "u", check);
+  return { f, check, step };
+}
+for (const lesson of [first, second])
+  test(`${lesson.id}: copy and feedback edits preserve checked resume, completion and receipt retries`, async () => {
+    const { f, check, step } = await checkedChoice(lesson);
+    const completed = fakeProgressDb();
+    await finish(completed, lesson);
+    const previous = (await readCourseProgress(f.db, "u", COURSE_SCOPE)).lessons.find(
+      (entry) => entry.lessonId === lesson.id,
+    )!.progress!;
+    const edited: LessonDefinition = {
+      ...lesson,
+      title: `${lesson.title}!`,
+      description: "A clearer learner-facing subtitle.",
+      steps: lesson.steps.map((entry) =>
+        entry.kind === "choice" || entry.kind === "text"
+          ? {
+              ...entry,
+              label: `${entry.label}.`,
+              prompt: `${entry.prompt} `,
+              feedback: `${entry.feedback} Take your time.`,
+            }
+          : entry,
+      ),
+    };
+    assert.notEqual(lessonDefinitionHash(edited), lessonDefinitionHash(lesson));
+    assert.equal(lessonResumeContractVersion(edited), lessonResumeContractVersion(lesson));
+    await withLesson(edited, async () => {
+      const descriptor = (await readCourseProgress(f.db, "u", COURSE_SCOPE)).lessons.find(
+        (entry) => entry.lessonId === lesson.id,
+      )!;
+      assert.equal(descriptor.unavailable, false);
+      assert.equal(descriptor.definitionHash, lessonDefinitionHash(edited));
+      assert.deepEqual(descriptor.progress, previous); // A diagnostic hash mismatch never rewrites a read.
+      const restored = resumeProgress(descriptor.progress!, edited);
+      assert.equal(restored.responses[step.id], step.correctAnswer);
+      assert.equal(restored.feedback?.outcome, "correct");
+      assert.ok(restored.feedback?.message.includes("Take your time."));
+      const finished = (await readCourseProgress(completed.db, "u", COURSE_SCOPE)).lessons.find(
+        (entry) => entry.lessonId === lesson.id,
+      )!;
+      assert.equal(finished.unavailable, false);
+      assert.equal(resumeProgress(finished.progress!, edited).status, "finished");
+      assert.equal(finished.progress!.firstFinishedAt, 100);
+      const writes = f.writes.length;
+      const duplicate = await saveCourseProgress(f.db, "u", check);
+      assert.equal(duplicate.kind, "saved");
+      assert.equal(f.writes.length, writes);
+      const advanced = await saveCourseProgress(
+        f.db,
+        "u",
+        command(lesson, 3, { type: "continue", stepId: step.id }),
+      );
+      assert.ok(advanced.kind === "saved");
+      assert.equal(advanced.progress.revision, previous.revision + 1);
+      assert.deepEqual(advanced.progress.receipts.slice(0, -1), previous.receipts);
+      assert.equal(advanced.progress.definitionHash, lessonDefinitionHash(edited));
+    });
+  });
+
+test("explanatory wording edits remain resume-compatible and do not write on reload", async () => {
+  const f = fakeProgressDb();
+  await saveCourseProgress(f.db, "u", command());
+  const edited = {
+    ...first,
+    steps: first.steps.map((step) =>
+      step.kind === "explanation"
+        ? { ...step, explanation: `${step.explanation}\nTake your time reading this example.` }
+        : step,
+    ),
+  };
+  assert.notEqual(lessonDefinitionHash(edited), lessonDefinitionHash(first));
+  await withLesson(edited, async () => {
+    const read = (await readCourseProgress(f.db, "u", COURSE_SCOPE)).lessons[0];
+    assert.equal(read.unavailable, false);
+    assert.equal(resumeProgress(read.progress!, edited).stepIndex, 1);
+    assert.equal(f.writes.length, 1);
+    assert.equal(
+      (
+        await saveCourseProgress(
+          f.db,
+          "u",
+          command(first, 1, { type: "continue", stepId: first.steps[1].id }),
+        )
+      ).kind,
+      "saved",
+    );
+  });
+});
+
+const incompatibleEdits: [string, LessonDefinition][] = [
+  [
+    "step IDs",
+    { ...first, steps: first.steps.map((step) => ({ ...step, id: `${step.id}.changed` })) },
+  ],
+  ["step order", { ...first, steps: [first.steps[1], first.steps[0], ...first.steps.slice(2)] }],
+  [
+    "choice grading",
+    {
+      ...first,
+      steps: first.steps.map((step) =>
+        step.kind === "choice"
+          ? {
+              ...step,
+              correctAnswer: step.options.find((answer) => answer !== step.correctAnswer)!,
+            }
+          : step,
+      ),
+    },
+  ],
+  [
+    "text grading",
+    {
+      ...second,
+      steps: second.steps.map((step) =>
+        step.kind === "text"
+          ? { ...step, acceptedAnswers: ["different"], caseSensitive: !step.caseSensitive }
+          : step,
+      ),
+    },
+  ],
+  [
+    "response kind",
+    {
+      ...first,
+      steps: first.steps.map((step) =>
+        step.kind === "text" ? { ...step, kind: "original" as const, maxLength: 80 } : step,
+      ),
+    },
+  ],
+  [
+    "task meaning",
+    {
+      ...second,
+      steps: second.steps.map((step) =>
+        step.kind === "text" ? { ...step, prompt: "Write a different kind of information." } : step,
+      ),
+    },
+  ],
+];
+for (const [reason, definition] of incompatibleEdits)
+  test(`${reason}: an authored compatibility bump rejects old resume and old/new commands without writes`, async () => {
+    const baseline = definition.id === first.id ? first : second;
+    const { f } = await checkedChoice(baseline);
+    // Semantic changes require an explicit editorial bump; a hash cannot decide task meaning.
+    const edited = {
+      ...definition,
+      resumeContractVersion: lessonResumeContractVersion(baseline) + 1,
+    };
+    const before = structuredClone([...f.records.entries()]);
+    const writes = f.writes.length;
+    await withLesson(edited, async () => {
+      const read = (await readCourseProgress(f.db, "u", COURSE_SCOPE)).lessons.find(
+        (entry) => entry.lessonId === baseline.id,
+      )!;
+      assert.equal(read.unavailable, true);
+      assert.equal(read.progress, null);
+      assert.equal((await saveCourseProgress(f.db, "u", command(baseline, 3))).kind, "unavailable");
+      assert.equal((await saveCourseProgress(f.db, "u", command(edited, 3))).kind, "unavailable");
+    });
+    assert.equal(f.writes.length, writes);
+    assert.deepEqual([...f.records.entries()], before);
+  });
+
+test("schema-1 prototype records stay unavailable and untouched; authored contracts must be explicit", async () => {
+  const f = fakeProgressDb();
+  await finish(f, first);
+  const path = courseProgressPath("u", command());
+  const current = f.records.get(path) as DurableProgress;
+  const { resumeContractVersion: _version, definitionHash, ...retained } = current;
+  const legacy = { ...retained, schemaVersion: 1, lessonVersion: definitionHash };
+  f.records.set(path, legacy);
+  const writes = f.writes.length;
+  const read = (await readCourseProgress(f.db, "u", COURSE_SCOPE)).lessons[0];
+  assert.equal(read.unavailable, true);
+  assert.equal(read.progress, null);
+  assert.equal(
+    (await saveCourseProgress(f.db, "u", command(first, current.revision))).kind,
+    "unavailable",
+  );
+  assert.equal(f.writes.length, writes);
+  assert.deepEqual(f.records.get(path), legacy);
+  assert.throws(() => lessonResumeContractVersion({ ...first, resumeContractVersion: undefined }));
+  assert.throws(() => lessonResumeContractVersion({ ...first, resumeContractVersion: 0 }));
 });

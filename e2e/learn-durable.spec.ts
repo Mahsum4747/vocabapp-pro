@@ -141,7 +141,7 @@ test("changed or withdrawn lesson preserves stored data and blocks old-answer gr
   await fixture.advanceLesson(1, 4);
   const path = courseProgressPath(USER_ID, { ...COURSE_SCOPE, lessonId: germanA1.lessons[1].id });
   const old = fixture.storage.records.get(path) as DurableProgress;
-  fixture.storage.records.set(path, { ...old, lessonVersion: "0".repeat(64) });
+  fixture.storage.records.set(path, { ...old, resumeContractVersion: 2 });
   const h = await launch({ sets: [], handlers: fixture.handlers });
   await page.goto(l02);
   await expect(
@@ -149,7 +149,7 @@ test("changed or withdrawn lesson preserves stored data and blocks old-answer gr
   ).toBeVisible();
   await expect(page.getByText(/compatible replacement is not available/)).toBeVisible();
   expect(h.serverFns.callsTo("acknowledgeCourseProgress")).toHaveLength(0);
-  expect(fixture.storage.records.get(path)).toEqual({ ...old, lessonVersion: "0".repeat(64) });
+  expect(fixture.storage.records.get(path)).toEqual({ ...old, resumeContractVersion: 2 });
 });
 
 test("signed-out Learn redirects before reading or writing course progress", async ({

@@ -1,8 +1,11 @@
 import { randomUUID } from "node:crypto";
 import { germanA1 } from "../../src/content/curriculum/german-a1";
-import { COURSE_SCOPE, type ProgressCommand } from "../../src/lib/curriculum/course-progress";
 import {
-  lessonContentVersion,
+  lessonResumeContractVersion,
+  COURSE_SCOPE,
+  type ProgressCommand,
+} from "../../src/lib/curriculum/course-progress";
+import {
   readCourseProgress,
   saveCourseProgress,
 } from "../../src/lib/curriculum/course-progress.server";
@@ -53,7 +56,7 @@ export function courseProgressFixture() {
         const result = await saveCourseProgress(storage.db, USER_ID, {
           ...COURSE_SCOPE,
           lessonId: lesson.id,
-          lessonVersion: lessonContentVersion(lesson),
+          resumeContractVersion: lessonResumeContractVersion(lesson),
           expectedRevision: revision,
           operationId: randomUUID(),
           action,
