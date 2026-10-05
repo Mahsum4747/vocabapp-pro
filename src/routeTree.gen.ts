@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AccountRouteImport } from './routes/account'
 import { Route as CreateRouteImport } from './routes/create'
 import { Route as GrammarRouteImport } from './routes/grammar'
+import { Route as LearnRouteImport } from './routes/learn'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ReviewRouteImport } from './routes/review'
 import { Route as SignupRouteImport } from './routes/signup'
@@ -41,6 +42,8 @@ import { Route as GrammarRulesRouteImport } from './routes/grammar.rules'
 import { Route as GrammarSteigerungRouteImport } from './routes/grammar.steigerung'
 import { Route as GrammarSubjektiveModalverbenRouteImport } from './routes/grammar.subjektive-modalverben'
 import { Route as GrammarTrennbareVerbenRouteImport } from './routes/grammar.trennbare-verben'
+import { Route as LearnIndexRouteImport } from './routes/learn.index'
+import { Route as LearnLessonIdRouteImport } from './routes/learn.$lessonId'
 import { Route as SetsSetIdRouteImport } from './routes/sets.$setId'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as SetsSetIdIndexRouteImport } from './routes/sets.$setId.index'
@@ -74,6 +77,11 @@ const CreateRoute = CreateRouteImport.update({
 const GrammarRoute = GrammarRouteImport.update({
   id: '/grammar',
   path: '/grammar',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LearnRoute = LearnRouteImport.update({
+  id: '/learn',
+  path: '/learn',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -219,6 +227,16 @@ const GrammarTrennbareVerbenRoute = GrammarTrennbareVerbenRouteImport.update({
   path: '/trennbare-verben',
   getParentRoute: () => GrammarRoute,
 } as any)
+const LearnIndexRoute = LearnIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => LearnRoute,
+} as any)
+const LearnLessonIdRoute = LearnLessonIdRouteImport.update({
+  id: '/$lessonId',
+  path: '/$lessonId',
+  getParentRoute: () => LearnRoute,
+} as any)
 const SetsSetIdRoute = SetsSetIdRouteImport.update({
   id: '/sets/$setId',
   path: '/sets/$setId',
@@ -295,6 +313,7 @@ export interface FileRoutesByFullPath {
   '/account': typeof AccountRoute
   '/create': typeof CreateRoute
   '/grammar': typeof GrammarRouteWithChildren
+  '/learn': typeof LearnRouteWithChildren
   '/login': typeof LoginRoute
   '/review': typeof ReviewRoute
   '/signup': typeof SignupRoute
@@ -322,8 +341,10 @@ export interface FileRoutesByFullPath {
   '/grammar/steigerung': typeof GrammarSteigerungRoute
   '/grammar/subjektive-modalverben': typeof GrammarSubjektiveModalverbenRoute
   '/grammar/trennbare-verben': typeof GrammarTrennbareVerbenRoute
+  '/learn/$lessonId': typeof LearnLessonIdRoute
   '/sets/$setId': typeof SetsSetIdRouteWithChildren
   '/grammar/': typeof GrammarIndexRoute
+  '/learn/': typeof LearnIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/sets/$setId/articles': typeof SetsSetIdArticlesRoute
   '/sets/$setId/cases': typeof SetsSetIdCasesRoute
@@ -369,7 +390,9 @@ export interface FileRoutesByTo {
   '/grammar/steigerung': typeof GrammarSteigerungRoute
   '/grammar/subjektive-modalverben': typeof GrammarSubjektiveModalverbenRoute
   '/grammar/trennbare-verben': typeof GrammarTrennbareVerbenRoute
+  '/learn/$lessonId': typeof LearnLessonIdRoute
   '/grammar': typeof GrammarIndexRoute
+  '/learn': typeof LearnIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/sets/$setId/articles': typeof SetsSetIdArticlesRoute
   '/sets/$setId/cases': typeof SetsSetIdCasesRoute
@@ -390,6 +413,7 @@ export interface FileRoutesById {
   '/account': typeof AccountRoute
   '/create': typeof CreateRoute
   '/grammar': typeof GrammarRouteWithChildren
+  '/learn': typeof LearnRouteWithChildren
   '/login': typeof LoginRoute
   '/review': typeof ReviewRoute
   '/signup': typeof SignupRoute
@@ -417,8 +441,10 @@ export interface FileRoutesById {
   '/grammar/steigerung': typeof GrammarSteigerungRoute
   '/grammar/subjektive-modalverben': typeof GrammarSubjektiveModalverbenRoute
   '/grammar/trennbare-verben': typeof GrammarTrennbareVerbenRoute
+  '/learn/$lessonId': typeof LearnLessonIdRoute
   '/sets/$setId': typeof SetsSetIdRouteWithChildren
   '/grammar/': typeof GrammarIndexRoute
+  '/learn/': typeof LearnIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/sets/$setId/articles': typeof SetsSetIdArticlesRoute
   '/sets/$setId/cases': typeof SetsSetIdCasesRoute
@@ -440,6 +466,7 @@ export interface FileRouteTypes {
     | '/account'
     | '/create'
     | '/grammar'
+    | '/learn'
     | '/login'
     | '/review'
     | '/signup'
@@ -467,8 +494,10 @@ export interface FileRouteTypes {
     | '/grammar/steigerung'
     | '/grammar/subjektive-modalverben'
     | '/grammar/trennbare-verben'
+    | '/learn/$lessonId'
     | '/sets/$setId'
     | '/grammar/'
+    | '/learn/'
     | '/api/auth/$'
     | '/sets/$setId/articles'
     | '/sets/$setId/cases'
@@ -514,7 +543,9 @@ export interface FileRouteTypes {
     | '/grammar/steigerung'
     | '/grammar/subjektive-modalverben'
     | '/grammar/trennbare-verben'
+    | '/learn/$lessonId'
     | '/grammar'
+    | '/learn'
     | '/api/auth/$'
     | '/sets/$setId/articles'
     | '/sets/$setId/cases'
@@ -534,6 +565,7 @@ export interface FileRouteTypes {
     | '/account'
     | '/create'
     | '/grammar'
+    | '/learn'
     | '/login'
     | '/review'
     | '/signup'
@@ -561,8 +593,10 @@ export interface FileRouteTypes {
     | '/grammar/steigerung'
     | '/grammar/subjektive-modalverben'
     | '/grammar/trennbare-verben'
+    | '/learn/$lessonId'
     | '/sets/$setId'
     | '/grammar/'
+    | '/learn/'
     | '/api/auth/$'
     | '/sets/$setId/articles'
     | '/sets/$setId/cases'
@@ -583,6 +617,7 @@ export interface RootRouteChildren {
   AccountRoute: typeof AccountRoute
   CreateRoute: typeof CreateRoute
   GrammarRoute: typeof GrammarRouteWithChildren
+  LearnRoute: typeof LearnRouteWithChildren
   LoginRoute: typeof LoginRoute
   ReviewRoute: typeof ReviewRoute
   SignupRoute: typeof SignupRoute
@@ -618,6 +653,13 @@ declare module '@tanstack/react-router' {
       path: '/grammar'
       fullPath: '/grammar'
       preLoaderRoute: typeof GrammarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/learn': {
+      id: '/learn'
+      path: '/learn'
+      fullPath: '/learn'
+      preLoaderRoute: typeof LearnRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -816,6 +858,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GrammarTrennbareVerbenRouteImport
       parentRoute: typeof GrammarRoute
     }
+    '/learn/': {
+      id: '/learn/'
+      path: '/'
+      fullPath: '/learn/'
+      preLoaderRoute: typeof LearnIndexRouteImport
+      parentRoute: typeof LearnRoute
+    }
+    '/learn/$lessonId': {
+      id: '/learn/$lessonId'
+      path: '/$lessonId'
+      fullPath: '/learn/$lessonId'
+      preLoaderRoute: typeof LearnLessonIdRouteImport
+      parentRoute: typeof LearnRoute
+    }
     '/sets/$setId': {
       id: '/sets/$setId'
       path: '/sets/$setId'
@@ -976,6 +1032,18 @@ const GrammarRouteChildren: GrammarRouteChildren = {
 const GrammarRouteWithChildren =
   GrammarRoute._addFileChildren(GrammarRouteChildren)
 
+interface LearnRouteChildren {
+  LearnLessonIdRoute: typeof LearnLessonIdRoute
+  LearnIndexRoute: typeof LearnIndexRoute
+}
+
+const LearnRouteChildren: LearnRouteChildren = {
+  LearnLessonIdRoute: LearnLessonIdRoute,
+  LearnIndexRoute: LearnIndexRoute,
+}
+
+const LearnRouteWithChildren = LearnRoute._addFileChildren(LearnRouteChildren)
+
 interface SetsSetIdRouteChildren {
   SetsSetIdArticlesRoute: typeof SetsSetIdArticlesRoute
   SetsSetIdCasesRoute: typeof SetsSetIdCasesRoute
@@ -1015,6 +1083,7 @@ const rootRouteChildren: RootRouteChildren = {
   AccountRoute: AccountRoute,
   CreateRoute: CreateRoute,
   GrammarRoute: GrammarRouteWithChildren,
+  LearnRoute: LearnRouteWithChildren,
   LoginRoute: LoginRoute,
   ReviewRoute: ReviewRoute,
   SignupRoute: SignupRoute,

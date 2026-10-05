@@ -26,6 +26,9 @@ export function AppShell({
           <Logo />
           <div className="flex items-center gap-2">
             {action}
+            <Button asChild variant="ghost" size="sm" className="hidden md:inline-flex">
+              <Link to="/learn">Learn</Link>
+            </Button>
             <Button asChild size="sm">
               <Link to="/create">
                 <Plus />

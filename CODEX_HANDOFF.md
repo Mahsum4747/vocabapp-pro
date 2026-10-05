@@ -561,3 +561,72 @@ None of these recommendations was implemented.
 - Check untouched application diff; commit/deploy/migration authorization is separate from taking ownership.
 - Revalidate remote Vercel/rules/migration status only when requested; this audit did not inspect them.
 - Start new feature work from what already exists, especially rules, Grammar Paste, Lesen/Lesen Paste and Write mode.
+
+## 31. Phase 1A curriculum vertical slice — 2026-10-05
+
+Implemented on `codex/karta-phase1a-vertical-slice`, branched from approved architecture HEAD `9271cdc391570dbfee2615f513f53533af64f396`. All six repository-local Karta skills were available and applied. The approved blueprints were preserved; no architecture contradiction or redesign was needed.
+
+### Repository audit and implementation
+
+The actual stack remains React/TanStack Start/Router, TypeScript and existing UI primitives. `/sets/$setId/learn` is vocabulary practice, not a canonical course surface; no `/learn` course existed. AppShell/MobileNav have lazy authentication boundaries. StudySessionShell is layout-only but includes set-oriented back/mute chrome; the new lesson uses a focused layout and reuses Button/Input/Textarea/Progress. Grammar runners contain sampling/service/progress behavior and were not mounted in the curriculum flow. Existing server-side Firestore learning progress and FSRS remain untouched. Tests use the repository's Node TypeScript loader and hermetic Playwright harness. Normal `npm run build` runs `db:migrate`, so it was not used.
+
+The new pure contracts cover releases, skills, units, lessons, hard prerequisite IDs, stages and four small response kinds. The static fixture preserves all 100 approved skill IDs and hard prerequisites, all 10 units and all 40 lesson IDs/focus. Soft/related edges are not implemented in Phase 1A. They remain advisory blueprint metadata, not silent runtime unlock requirements. Only U01.L01 has content; the remaining 39 lessons have empty steps and explicit `not-authored` availability.
+
+The pure validator returns deterministic readable errors for duplicate/empty/cross-entity canonical IDs, unresolved prerequisites/lesson/step/unit references, self-dependencies, hard cycles, invalid/duplicate/orphan unit membership and malformed actionable content/answer metadata. It performs no I/O or writes. Tests compare the checked-in fixture with the blueprint's exact registry and lesson tables; the app does not parse Markdown at runtime.
+
+### Lesson and UI behavior
+
+`DE.A1.U01.L01`, “Meet and identify: introduce yourself”, introduces G01/G02/G13/V01/W01 in deliberately limited scope. Seven original stages:
+
+1. Discover: Mira introduces herself with `Ich bin Mira.`
+2. Understand: `ich bin`, informal singular `du bist`, singular `sie/er ist`, simple person–verb–name order; no exhaustive pronoun/sein paradigm.
+3. Recognize: choose Nora's first-person introduction.
+4. Recall: supply `bin` for Emil's introduction without choices.
+5. Produce: construct `Ich bin Leo.` from a specified intent.
+6. Apply: write an original introduction using a chosen/fictional name; explicitly unassessed.
+7. Check: supply `bist` while addressing Lina; a formative lesson check only.
+
+Exact bounded answers tolerate case, surrounding/extra whitespace and terminal punctuation; this does not assess orthographic mastery. Original text is length-bounded/nonempty but its meaning and writing quality are not judged. Incorrect responses offer nearby explanation and retry; no automatic advance. Successful checks require explicit Continue; completion offers Return to Learn and restart. Controls stay disabled until hydration so native form submission cannot reload and discard the session. Input labels, radio semantics, keyboard submission, live feedback, focus movement, safe spacing and progress naming are explicit.
+
+Learn shows German A1, the ten-unit structure and four U01 lesson titles; only the first is actionable. Later lessons and unknown URLs return honest unavailable/not-found states. One desktop header link and one mobile Learn entry were added; no Home redesign, route removal or global navigation migration occurred. Existing color/type/spacing tokens support Quiet Editorial without recoloring legacy pages. Screenshot polish replaced the native bright-green progress bar with the existing primitive, added its optional accessible label, removed a duplicate mobile header Learn entry and split the explanation into short paragraphs.
+
+### Progress, governance and deferred work
+
+Learn owns React context state per mounted route tree: pinned release/lesson IDs, current step, completed steps, responses, attempt counts, outcomes and finished state. It survives Learn↔lesson client navigation, resets on reload/leaving Learn, and never enters a module-global learner store, localStorage, database or legacy study store. Lesson finished is not skill mastered, text-path complete or full A1. There is no evidence projection, legacy backfill, SRS rating, AI call or scheduler write.
+
+The release is labelled unpublished/prototype, with original Karta provenance. `prototype-review` records this internal prototype review, not qualified educator/publication approval. Expert editorial/linguistic review and accepted release assessment/writing policy remain required before canonical publication. English support is a minimal placeholder; full source-language overlays, durable resume, U01.L02+, published curriculum, Progress, mixed review, formal assessments, exam adapters and listening/speaking remain deferred. No migrations/collections/dependencies/authentication/production configuration were added or changed. No migration command, production data mutation, merge, push or deployment was performed. Existing blank-credential local dev/test infrastructure retains its normal in-memory PGLite schema bootstrap; that is not a production migration or new curriculum persistence.
+
+### Validation and visual review
+
+- Eight focused curriculum/session tests passed. The relevant broader set (curriculum, FSRS scheduler, review plan, grammar drills and foundation hardening) passed all 74 tests.
+- `npm run typecheck` passed.
+- `npm run build:compile` passed with production credentials blanked and migration/deploy commands excluded. Existing browser-externalized `node:crypto`/large-bundle warnings were not changed.
+- Development Playwright Learn + existing Home recommendations: 48 tests passed on desktop/mobile. Final narrow mobile Learn rerun also passed all three tests (390px flow, 320px dark layout).
+- Production-compiled local preview: all six Learn tests passed on desktop/mobile. The keyboard test explicitly waits for controls to become ready after route return.
+- End-to-end tests cover wrong/correct answers, blank gating, keyboard Check, original/unassessed response, long input, retained draft/current step, completion, restart/reload reset, unavailable IDs, dark mode and no horizontal overflow. The complete Learn flow asserted zero learning server-function calls and zero POST/PUT/PATCH/DELETE requests.
+- Actual Learn/Lesson desktop/mobile light/dark screenshots were inspected before and after the second polish pass, including input and writing-feedback states. Hierarchy, readable width, wrapping, touch controls and narrow-screen overflow were checked. Desktop emulation does not prove behavior on a physical mobile keyboard.
+- Targeted ESLint: zero errors, one React Fast Refresh warning for colocating the session provider and hook. Existing dev warmup import-protection warnings from untouched `streak.ts` and expected blank-backend errors remain outside this slice; the tested Learn flow had no uncaught runtime errors.
+- Linux-specific `/workspace` smoke/startup helpers were not rewritten for this macOS checkout. Existing hermetic dev/compiled Playwright configurations provided actual rendered and interaction verification. The agent-browser CLI was unavailable; Playwright and the Codex browser were used. Screenshots remain ignored local artifacts under `screenshots/`.
+
+### Exact file changes
+
+Created:
+- `src/lib/curriculum/types.ts`
+- `src/lib/curriculum/validate.ts`
+- `src/lib/curriculum/lesson-session.ts`
+- `src/lib/curriculum/curriculum.test.ts`
+- `src/content/curriculum/german-a1.ts`
+- `src/content/curriculum/german-a1-lesson.ts`
+- `src/components/learn/session-context.tsx`
+- `src/components/learn/lesson-screen.tsx`
+- `src/routes/learn.tsx`
+- `src/routes/learn.index.tsx`
+- `src/routes/learn.$lessonId.tsx`
+- `e2e/learn-prototype.spec.ts`
+
+Changed:
+- `src/components/app-shell.tsx` — additive desktop Learn link
+- `src/components/mobile-nav.tsx` — additive mobile Learn link
+- `src/components/ui/progress.tsx` — optional accessible label, unchanged existing defaults
+- `src/routeTree.gen.ts` — generated Learn route registration/types
+- `CODEX_HANDOFF.md` — this implementation record

@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils";
 export function Progress({
   value,
   className,
+  label,
   /** "mastery" fills with a gray-to-success gradient across the FULL 0-100
    *  range (see backgroundSize below) so the bar's own color, not just its
    *  length, reflects how far along it is. Default stays the flat primary
@@ -10,6 +11,7 @@ export function Progress({
   tone = "primary",
 }: {
   value: number;
+  label?: string;
   className?: string;
   tone?: "primary" | "mastery";
 }) {
@@ -18,6 +20,7 @@ export function Progress({
     <div
       className={cn("h-1.5 w-full overflow-hidden rounded-full bg-surface-2", className)}
       role="progressbar"
+      aria-label={label}
       aria-valuenow={clamped}
       aria-valuemin={0}
       aria-valuemax={100}

@@ -1,5 +1,5 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import { Home, Library, User } from "lucide-react";
+import { Home, Library, User, BookOpen } from "lucide-react";
 import { lazy, Suspense, useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
@@ -66,7 +66,19 @@ export function MobileNav() {
         <Home className="size-5" />
         Home
       </Link>
-      <Link to="/" search={{ view: "mine" }} className={cn(itemClass, isLibrary && "text-primary-ink")}>
+      <Link
+        to="/learn"
+        aria-current={location.pathname.startsWith("/learn") ? "page" : undefined}
+        className={cn(itemClass, location.pathname.startsWith("/learn") && "text-primary-ink")}
+      >
+        <BookOpen className="size-5" />
+        Learn
+      </Link>
+      <Link
+        to="/"
+        search={{ view: "mine" }}
+        className={cn(itemClass, isLibrary && "text-primary-ink")}
+      >
         <Library className="size-5" />
         My Library
       </Link>
