@@ -14,14 +14,12 @@ function LearnLesson() {
           {lesson ? "This lesson is not yet authored" : "Lesson not found"}
         </h1>
         <p className="mt-4 text-muted">
-          Only the first German A1 lesson is available in this prototype.
+          Two German A1 lessons are available in Unit 1. More are being authored.
         </p>
         <Button asChild className="mt-6">
           <Link to="/learn">Return to Learn</Link>
         </Button>
       </main>
     );
-  return (
-    <LessonScreen key={`${germanA1.id}:${lesson.id}`} releaseId={germanA1.id} lesson={lesson} />
-  );
+  return <LessonScreen key={`${germanA1.id}:${lesson.id}`} release={germanA1} lesson={lesson} />;
 }

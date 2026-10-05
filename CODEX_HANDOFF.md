@@ -630,3 +630,59 @@ Changed:
 - `src/components/ui/progress.tsx` — optional accessible label, unchanged existing defaults
 - `src/routeTree.gen.ts` — generated Learn route registration/types
 - `CODEX_HANDOFF.md` — this implementation record
+
+## 32. Karta Phase 1B — Unit 1 and a second authored lesson (2026-10-05)
+
+Base: `codex/karta-phase1a-vertical-slice`, `cb7e2a48e197418b4d385f0645681c581a4fea8a`.
+Implementation branch: `codex/karta-phase1b-unit1-engine`. All six repository-local Karta skills were discoverable and consulted. Approved architecture/blueprint documents remain unchanged.
+
+### Audit and justified changes
+
+Phase 1A's pure validation/transition functions and four response kinds were sound. The route-owned provider held only one session, so opening another lesson would discard the first. The lesson screen embedded Lesson 1 numbering, an introduction subtitle and first-lesson completion copy; response controls were embedded in that screen. These became generic only where the second lesson required it. Existing Button/Input/Textarea/Progress and design tokens were reused. No plugin framework, factory, backend interface or new provider was added.
+
+- `src/lib/curriculum/types.ts`: adds `classify`/`read` stages, optional case-sensitive bounded text and a learner-facing description separate from the approved outcome.
+- `src/lib/curriculum/lesson-session.ts`: retains pure traversal/retries; adds release-qualified per-lesson map updates, isolated restart, truthful status and next authored lesson lookup. Original writing remains unassessed. Capitalization checking is opt-in; L01 answer behavior is unchanged.
+- `src/components/learn/session-context.tsx`: the existing Learn-owned React provider stores multiple sessions. Entering a lesson initializes its own entry; responses, attempts, step index and completion remain isolated. Reload or leaving the Learn route tree resets everything. No browser storage or server calls.
+- `src/components/learn/exercise-response.tsx` (new): shared native choice and bounded text/open-writing controls. Classification is a single-choice task; reading, recall and phrase construction are bounded text tasks. Definitions and validation remain outside presentation.
+- `src/components/learn/lesson-screen.tsx`: generic unit/lesson numbering, content description, completion and next action; return to Unit and restart one lesson; keeps hydration-safe submission, retry guards and heading focus.
+- `src/content/curriculum/german-a1-entities.ts` (new): original L02 authored content.
+- `src/content/curriculum/german-a1.ts`: authors L02 and versions the prototype release to `DE.A1.CURRICULUM.PROTOTYPE.1B` / `1.0.0-prototype.2`; all 100 skills, hard prerequisite edges, 40 lesson IDs and approved focus/outcome metadata remain intact.
+- `src/content/curriculum/german-a1-lesson.ts`: only concise learner wording/paragraph spacing; L01 progression and scoring unchanged.
+- `src/routes/learn.units.$unitId.tsx` (new): Unit title/outcome and four rows; L01/L02 available/in progress/finished in this session; L03/L04 not authored. No mastery percentage, fake locks or unit completion claim.
+- `src/routes/learn.index.tsx`: retains 10 units/40 lessons and hides the internal skill taxonomy; Unit 1 opens the Unit view, two lessons are available, and the next unfinished authored lesson is the course action.
+- `src/routes/learn.$lessonId.tsx`: generic release prop and truthful two-lesson availability copy.
+- `src/routeTree.gen.ts`: generated Unit route registration; existing vocabulary Learn route unchanged.
+- `src/lib/curriculum/curriculum.test.ts`: updates only authored-availability expectations and preserves registry/graph/L01 tests.
+- `src/lib/curriculum/phase1b.test.ts` (new): exact L02 metadata/stages, deterministic category/entity/capitalization checks, bounded phrases, isolated retries/completion/restart, release isolation/reset and no mastery/unit completion.
+- `e2e/learn-prototype.spec.ts`: retains L01 end-to-end coverage and checks/clicks the L02 next action; unavailable case moves to L03.
+- `e2e/learn-unit1.spec.ts` (new): L02 end-to-end, two session isolation, restart, keyboard Check/Continue, focus, zero new Learn server calls/write requests, mobile targets/overflow, dark 320px, and existing vocabulary question/grading/next flow with its existing session bookkeeping explicitly mocked.
+- `CODEX_HANDOFF.md`: this Phase 1B record only.
+
+### L02 content and progression
+
+`DE.A1.U01.L02`, “Name people and things”, retains exactly G08/G09/G10/G12/V02/W02/R01 and the approved outcome. Eight stages: Discover → Understand → Recognize → Classify → Recall → Read → Produce → Check. Four controlled workplace labels: der Mann, die Frau, das Büro, das Telefon. Learners recognize das Telefon, classify Büro as a place, recall eine Frau, retrieve Nora from “Die Frau ist Nora”, write ein Büro with capital/umlaut, and identify Die Frau as the subject. Articles are taught as lexical gender information and simple nominative phrases, without broader paradigms/case theory. All examples are original Karta content; no external assets, copyrighted exam questions or AI grading.
+
+L01 completion offers L02 directly. L02 completion says the next lesson is not authored and the unit is still in progress. Completed guided practice never creates independent evidence or mastery. L01 open writing stays explicitly unassessed.
+
+### Visual review and accessibility
+
+Actual browser screenshots were inspected for overview desktop/mobile, Unit desktop/mobile, L01 desktop, L02 desktop/mobile, dark Unit/lesson and 320px narrow layouts. Files are ignored local artifacts under `screenshots/phase1b-*.png`, with the existing `lesson-writing-*.png` feedback captures retained.
+
+First review found L02 explanation density and metadata-like subtitles particularly awkward on narrow phones. The second polish pass added concise authored learner descriptions while preserving outcome metadata, shortened the explanation into three compact lines/paragraphs, reduced L01 double paragraph gaps and completion action spacing, and retained quieter feedback boxes and clear primary/secondary hierarchy. Repeated prototype footers were removed from individual steps; overview/Unit/completion communicate session limits, and open-writing feedback says “Saved for this practice session. This writing is unassessed.” Final accessibility review removed a nested main landmark and allowed the next-lesson action to wrap on narrow screens. Final screenshots confirm readable text/controls and no horizontal overflow. Native labels/radios/forms, visible focus styles, announced feedback, focus after step change, keyboard Enter for Check and Continue, disabled guards and >=44px lesson targets were exercised. Mobile checks use 390px and 320px browser emulation; a physical software keyboard/screen-reader session was not tested.
+
+### Validation and safety
+
+- `node --import ./scripts/test-register.mjs --test src/lib/curriculum/curriculum.test.ts src/lib/curriculum/phase1b.test.ts`: **12 passed, 0 failed**.
+- Relevant broader suite (`src/lib/srs/scheduler.test.ts`, `src/lib/review-plan.test.ts`, `src/lib/foundation-hardening.test.ts`, `src/lib/grammar-drills.test.ts`): **66 passed, 0 failed**.
+- `npm run typecheck`: passed.
+- Scoped ESLint across curriculum/content/Learn routes/components: **0 errors**, one existing provider/hook Fast Refresh warning.
+- `git diff --check`: passed.
+- `npm run build:compile`: passed; normal `build` still invokes migration, so it was deliberately not used. The compile-only wrapper blanks backend/AI credentials.
+- `npx playwright test e2e/learn-prototype.spec.ts e2e/learn-unit1.spec.ts`: **12 passed** (desktop/mobile).
+- `npx playwright test --config e2e/home-compiled.config.ts e2e/learn-prototype.spec.ts e2e/learn-unit1.spec.ts`: **12 passed**. After the final landmark/wrapping-action adjustments, `--grep 'bounded lesson|two lessons|dark 320'` compiled recheck: **6 passed, 0 failed**.
+- Initial legacy test failures were test assumptions/fixture gaps: the route starts directly with a question, and grading invokes existing `updateSetSession`. The regression test now exercises the real unchanged flow with that call explicitly mocked. The new Learn tests still assert no server-function calls and no POST/PUT/PATCH/DELETE requests. Fixtures also reject unexpected server calls/API requests and uncaught page errors.
+- Existing dev warmup emits credential-denied backend diagnostics and the pre-existing `streak.ts` import-protection warning. Those do not represent new Learn writes; backend credentials are blank and actual test requests are sealed/mocked. The local dev adapter may bootstrap its existing in-memory PGLite schema; no migration command, new schema or production migration was run.
+
+FSRS scheduler/queue, vocabulary progress, old grammar scoring, existing practice routes, authentication, dependencies, production configuration and persistence code are unchanged. No durable state, evidence backend, production migration/Firestore collection, new service, deployment, merge or push. Unrelated pre-existing untracked files were preserved and excluded from the commit.
+
+Remaining scope: only L01/L02 authored; L03 onward, assessment/checkpoints, mixed review, mastery/evidence, durable progress, source-language overlays, audio/speaking/listening and publication expert review remain deferred. This is an unpublished prototype, not a proficiency or exam-readiness assessment.

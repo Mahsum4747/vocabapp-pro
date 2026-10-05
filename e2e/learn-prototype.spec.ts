@@ -45,8 +45,8 @@ test("Learn prototype: bounded lesson, retries, session resume and truthful comp
     fullPage: true,
   });
   await noOverflow(page);
-  await page.getByRole("link", { name: "Learn", exact: true }).click();
-  await page.getByRole("link", { name: "Continue lesson", exact: true }).click();
+  await page.getByRole("link", { name: "Unit 1", exact: true }).click();
+  await page.getByRole("link", { name: /introduce yourself/i }).click();
   await expect(page.getByLabel("Missing German word")).toHaveValue("bin");
   await expect(page.getByRole("button", { name: "Check", exact: true })).toBeEnabled();
   await page.getByLabel("Missing German word").press("Enter");
@@ -59,7 +59,7 @@ test("Learn prototype: bounded lesson, retries, session resume and truthful comp
   await expect(page.getByLabel("Your introduction")).toHaveAttribute("maxlength", "160");
   await page.getByLabel("Your introduction").fill("Ich bin Alex.");
   await page.getByRole("button", { name: "Record response", exact: true }).click();
-  await expect(page.getByRole("status")).toContainText("not been assessed");
+  await expect(page.getByRole("status")).toContainText("unassessed");
   await page.screenshot({
     path: `screenshots/lesson-writing-${testInfo.project.name}.png`,
     fullPage: true,
@@ -68,13 +68,18 @@ test("Learn prototype: bounded lesson, retries, session resume and truthful comp
   await page.getByLabel("Missing word for this sentence").fill("bist");
   await page.getByRole("button", { name: "Check", exact: true }).click();
   await page.getByRole("button", { name: "Finish lesson", exact: true }).click();
-  await expect(
-    page.getByRole("heading", { name: "You finished your first lesson." }),
-  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Lesson finished." })).toBeVisible();
   await expect(page.getByText(/does not establish skill mastery/)).toBeVisible();
-  await page.getByRole("link", { name: "Return to Learn", exact: true }).click();
-  await expect(page.getByText("Lesson finished in this session", { exact: true })).toBeVisible();
-  await page.getByRole("link", { name: "View finished lesson", exact: true }).click();
+  await expect(
+    page.getByRole("link", { name: "Next lesson: Name people and things", exact: true }),
+  ).toBeVisible();
+  await page
+    .getByRole("link", { name: "Next lesson: Name people and things", exact: true })
+    .click();
+  await expect(page.getByText("Lesson 2 · Step 1 of 8", { exact: true })).toBeVisible();
+  await page.getByRole("link", { name: "Unit 1", exact: true }).click();
+  await expect(page.getByText("Finished · This session", { exact: true })).toBeVisible();
+  await page.getByRole("link", { name: /introduce yourself/i }).click();
   await page.getByRole("button", { name: "Practice lesson again", exact: true }).click();
   await expect(page.getByText("Lesson 1 · Step 1 of 7", { exact: true })).toBeVisible();
   // This additive flow must not invoke any learning server function, even reads.
@@ -86,7 +91,7 @@ test("Learn prototype: bounded lesson, retries, session resume and truthful comp
 
 test("direct unavailable lesson and unknown ID remain unavailable", async ({ page, launch }) => {
   await launch({ sets: [] });
-  await page.goto("/learn/DE.A1.U01.L02");
+  await page.goto("/learn/DE.A1.U01.L03");
   await expect(
     page.getByRole("heading", { name: "This lesson is not yet authored" }),
   ).toBeVisible();

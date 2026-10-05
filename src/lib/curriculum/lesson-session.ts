@@ -29,13 +29,13 @@ export function startLesson(releaseId: string, lesson: LessonDefinition): Lesson
     status: "in-progress",
   };
 }
-function normalize(value: string) {
-  return value
+function normalize(value: string, caseSensitive = false) {
+  const normalized = value
     .normalize("NFC")
     .trim()
     .replace(/\s+/g, " ")
-    .replace(/[.!?]$/, "")
-    .toLocaleLowerCase("en");
+    .replace(/[.!?]$/, "");
+  return caseSensitive ? normalized : normalized.toLocaleLowerCase("en");
 }
 /** Only exact bounded answers are evaluated. Original writing stays unassessed. */
 export function evaluateStep(step: LessonStep, response: string): StepResult | null {
@@ -48,12 +48,15 @@ export function evaluateStep(step: LessonStep, response: string): StepResult | n
       };
     return {
       outcome: "unassessed",
-      message:
-        "Response recorded for this session. Its meaning and writing quality have not been assessed.",
+      message: "Saved for this practice session. This writing is unassessed.",
     };
   }
   const answers = step.kind === "choice" ? [step.correctAnswer] : step.acceptedAnswers;
-  const correct = answers.some((answer) => normalize(answer) === normalize(response));
+  const correct = answers.some(
+    (answer) =>
+      normalize(answer, step.kind === "text" && step.caseSensitive) ===
+      normalize(response, step.kind === "text" && step.caseSensitive),
+  );
   return {
     outcome: correct ? "correct" : "incorrect",
     message: correct ? `That fits. ${step.feedback}` : `Try again. ${step.feedback}`,
@@ -94,4 +97,40 @@ export function transitionLesson(
     feedback: null,
     status: last ? "finished" : "in-progress",
   };
+}
+
+/** Route-owned, release-qualified sessions; a restart replaces only one entry. */
+export type LessonSessions = Readonly<Record<string, LessonSession>>;
+export const sessionKey = (releaseId: string, lessonId: string) => `${releaseId}:${lessonId}`;
+export function updateLessonSession(
+  sessions: LessonSessions,
+  releaseId: string,
+  lesson: LessonDefinition,
+  action: LessonAction | { type: "restart" },
+): LessonSessions {
+  const key = sessionKey(releaseId, lesson.id);
+  const state = sessions[key] ?? startLesson(releaseId, lesson);
+  return {
+    ...sessions,
+    [key]:
+      action.type === "restart"
+        ? startLesson(releaseId, lesson)
+        : transitionLesson(lesson, state, action),
+  };
+}
+export function lessonStatus(
+  releaseId: string,
+  lesson: LessonDefinition,
+  sessions: LessonSessions,
+) {
+  if (lesson.availability === "not-authored") return "Not yet authored";
+  const state = sessions[sessionKey(releaseId, lesson.id)];
+  return state?.status === "finished" ? "Finished" : state ? "In progress" : "Available";
+}
+/** Next means the next authored lesson in the same unit, never an unlock/mastery rule. */
+export function nextAuthoredLesson(lessons: readonly LessonDefinition[], lesson: LessonDefinition) {
+  const unitLessons = lessons.filter((candidate) => candidate.unitId === lesson.unitId);
+  return unitLessons
+    .slice(unitLessons.findIndex((candidate) => candidate.id === lesson.id) + 1)
+    .find((candidate) => candidate.availability === "prototype");
 }

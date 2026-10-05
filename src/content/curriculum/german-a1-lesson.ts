@@ -29,7 +29,7 @@ export const identityLessonSteps: readonly LessonStep[] = [
     prompt: "Who are you talking about?",
     example: "Ich bin Mira.\nDu bist Leo.\nSie ist Nora.\nEr ist Emil.",
     explanation:
-      "ich = I; du = you (one person, informal); sie = she; er = he.\n\nThe word for ‘am / are / is’ changes: ich bin, du bist, sie/er ist.\n\nIn these statements, the person comes first and the verb comes second. Capitalize the first word and finish with a full stop.\n\nWe are using just these forms today, not the full verb table.",
+      "ich = I; du = you (one person, informal); sie = she; er = he.\nThe word for ‘am / are / is’ changes: ich bin, du bist, sie/er ist.\nIn these statements, the person comes first and the verb comes second. Capitalize the first word and finish with a full stop.\nWe are using just these forms today, not the full verb table.",
     skillIds: [G01, G02, G13, V01],
   },
   {
@@ -79,7 +79,7 @@ export const identityLessonSteps: readonly LessonStep[] = [
     inputLabel: "Your introduction",
     maxLength: 160,
     explanation:
-      "You can use a fictional name. This response is for practice: we will keep it in this session, but do not judge its meaning or claim writing proficiency.",
+      "Use a fictional name if you like. Your writing stays in this practice session and is unassessed.",
     skillIds: [G01, G02, G13, V01, W01],
   },
   {

@@ -101,7 +101,7 @@ test("validator rejects missing, duplicate, mismatched and orphan unit membershi
   c.lessons[0].unitId = "missing";
   assert.ok(validateCurriculum(c).some((e) => e.includes("Unresolved unit")));
 });
-test("only U01.L01 is actionable and its bounded content/stage contract is complete", () => {
+test("U01.L01 retains its authored and its bounded content/stage contract is complete", () => {
   assert.equal(lesson.id, "DE.A1.U01.L01");
   assert.deepEqual(lesson.introducedSkillIds, [
     "DE.A1.GRAMMAR.PRONOUNS.SUBJECT",
@@ -117,11 +117,11 @@ test("only U01.L01 is actionable and its bounded content/stage contract is compl
   assert.equal(lesson.steps.at(-1)?.purpose, "formative-check");
   assert.equal(lesson.steps[5].kind, "original");
   assert.ok(
-    germanA1.lessons.slice(1).every((l) => l.availability === "not-authored" && !l.steps.length),
+    germanA1.lessons.slice(2).every((l) => l.availability === "not-authored" && !l.steps.length),
   );
-  assert.throws(() => startLesson(germanA1.id, germanA1.lessons[1]));
+  assert.throws(() => startLesson(germanA1.id, germanA1.lessons[2]));
   const c = clone();
-  c.lessons[1].steps = lesson.steps;
+  c.lessons[2].steps = lesson.steps;
   assert.ok(validateCurriculum(c).some((e) => e.includes("Unauthored lesson")));
 });
 test("bounded evaluation distinguishes blank, incorrect, equivalent and unassessed writing", () => {

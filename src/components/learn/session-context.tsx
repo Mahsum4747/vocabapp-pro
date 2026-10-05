@@ -6,16 +6,16 @@ import {
   type Dispatch,
   type SetStateAction,
 } from "react";
-import type { LessonSession } from "@/lib/curriculum/lesson-session";
+import type { LessonSessions } from "@/lib/curriculum/lesson-session";
 
 const Context = createContext<{
-  session: LessonSession | null;
-  setSession: Dispatch<SetStateAction<LessonSession | null>>;
+  sessions: LessonSessions;
+  setSessions: Dispatch<SetStateAction<LessonSessions>>;
 } | null>(null);
 /** Owned by the Learn route tree, never a module-global learner store. */
 export function LearnSessionProvider({ children }: { children: ReactNode }) {
-  const [session, setSession] = useState<LessonSession | null>(null);
-  return <Context.Provider value={{ session, setSession }}>{children}</Context.Provider>;
+  const [sessions, setSessions] = useState<LessonSessions>({});
+  return <Context.Provider value={{ sessions, setSessions }}>{children}</Context.Provider>;
 }
 export function useLearnSession() {
   const context = useContext(Context);

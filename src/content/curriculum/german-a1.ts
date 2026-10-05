@@ -1,11 +1,12 @@
 import type { CurriculumRelease } from "@/lib/curriculum/types";
+import { entityLessonSteps } from "./german-a1-entities";
 import { identityLessonSteps } from "./german-a1-lesson";
 
-/** Approved registry metadata; only U01.L01 has original prototype content.
+/** Approved registry metadata; U01.L01 and U01.L02 have original prototype content.
  * English support is a placeholder, not a complete source-language overlay. */
 export const germanA1: CurriculumRelease = {
-  id: "DE.A1.CURRICULUM.PROTOTYPE.1A",
-  version: "1.0.0-prototype.1",
+  id: "DE.A1.CURRICULUM.PROTOTYPE.1B",
+  version: "1.0.0-prototype.2",
   targetLanguage: "de",
   level: "A1",
   title: "German A1",
@@ -1056,6 +1057,7 @@ export const germanA1: CurriculumRelease = {
       unitId: "DE.A1.U01",
       title: "Meet and identify: introduce yourself",
       outcome: "One original identity statement; guided production",
+      description: "Introduce yourself with one simple German sentence.",
       introducedSkillIds: [
         "DE.A1.GRAMMAR.PRONOUNS.SUBJECT",
         "DE.A1.GRAMMAR.VERBS.SEIN_PRESENT",
@@ -1072,6 +1074,7 @@ export const germanA1: CurriculumRelease = {
       unitId: "DE.A1.U01",
       title: "Name people and things",
       outcome: "Match pictured/labeled entities then write a familiar noun phrase",
+      description: "Read a few workplace labels, then write a short German phrase.",
       introducedSkillIds: [
         "DE.A1.GRAMMAR.NOUNS.GENDER",
         "DE.A1.GRAMMAR.ARTICLES.DEFINITE_NOM",
@@ -1082,8 +1085,8 @@ export const germanA1: CurriculumRelease = {
         "DE.A1.READING.PERSON_ENTITIES",
       ],
       consolidatedSkillIds: [],
-      availability: "not-authored",
-      steps: [],
+      availability: "prototype",
+      steps: entityLessonSteps,
     },
     {
       id: "DE.A1.U01.L03",

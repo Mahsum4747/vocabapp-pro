@@ -1,6 +1,14 @@
 /** Curriculum metadata is independent of transport, storage and morphology. */
 export type LessonStage =
-  "discover" | "understand" | "recognize" | "recall" | "produce" | "apply" | "check";
+  | "discover"
+  | "understand"
+  | "recognize"
+  | "classify"
+  | "read"
+  | "recall"
+  | "produce"
+  | "apply"
+  | "check";
 export type ContentPurpose = "teach" | "practice" | "formative-check";
 export type SkillDefinition = {
   id: string;
@@ -24,7 +32,13 @@ export type LessonStep = StepBase &
   (
     | { kind: "explanation" }
     | { kind: "choice"; options: readonly string[]; correctAnswer: string; feedback: string }
-    | { kind: "text"; inputLabel: string; acceptedAnswers: readonly string[]; feedback: string }
+    | {
+        kind: "text";
+        inputLabel: string;
+        acceptedAnswers: readonly string[];
+        caseSensitive?: boolean;
+        feedback: string;
+      }
     | { kind: "original"; inputLabel: string; maxLength: number }
   );
 export type LessonDefinition = {
@@ -32,6 +46,7 @@ export type LessonDefinition = {
   unitId: string;
   title: string;
   outcome: string;
+  description?: string;
   introducedSkillIds: readonly string[];
   consolidatedSkillIds: readonly string[];
   availability: "prototype" | "not-authored";

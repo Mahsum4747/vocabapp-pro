@@ -46,6 +46,7 @@ import { Route as LearnIndexRouteImport } from './routes/learn.index'
 import { Route as LearnLessonIdRouteImport } from './routes/learn.$lessonId'
 import { Route as SetsSetIdRouteImport } from './routes/sets.$setId'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as LearnUnitsUnitIdRouteImport } from './routes/learn.units.$unitId'
 import { Route as SetsSetIdIndexRouteImport } from './routes/sets.$setId.index'
 import { Route as SetsSetIdArticlesRouteImport } from './routes/sets.$setId.articles'
 import { Route as SetsSetIdCasesRouteImport } from './routes/sets.$setId.cases'
@@ -247,6 +248,11 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LearnUnitsUnitIdRoute = LearnUnitsUnitIdRouteImport.update({
+  id: '/units/$unitId',
+  path: '/units/$unitId',
+  getParentRoute: () => LearnRoute,
+} as any)
 const SetsSetIdIndexRoute = SetsSetIdIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -346,6 +352,7 @@ export interface FileRoutesByFullPath {
   '/grammar/': typeof GrammarIndexRoute
   '/learn/': typeof LearnIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/learn/units/$unitId': typeof LearnUnitsUnitIdRoute
   '/sets/$setId/articles': typeof SetsSetIdArticlesRoute
   '/sets/$setId/cases': typeof SetsSetIdCasesRoute
   '/sets/$setId/cloze': typeof SetsSetIdClozeRoute
@@ -394,6 +401,7 @@ export interface FileRoutesByTo {
   '/grammar': typeof GrammarIndexRoute
   '/learn': typeof LearnIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/learn/units/$unitId': typeof LearnUnitsUnitIdRoute
   '/sets/$setId/articles': typeof SetsSetIdArticlesRoute
   '/sets/$setId/cases': typeof SetsSetIdCasesRoute
   '/sets/$setId/cloze': typeof SetsSetIdClozeRoute
@@ -446,6 +454,7 @@ export interface FileRoutesById {
   '/grammar/': typeof GrammarIndexRoute
   '/learn/': typeof LearnIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/learn/units/$unitId': typeof LearnUnitsUnitIdRoute
   '/sets/$setId/articles': typeof SetsSetIdArticlesRoute
   '/sets/$setId/cases': typeof SetsSetIdCasesRoute
   '/sets/$setId/cloze': typeof SetsSetIdClozeRoute
@@ -499,6 +508,7 @@ export interface FileRouteTypes {
     | '/grammar/'
     | '/learn/'
     | '/api/auth/$'
+    | '/learn/units/$unitId'
     | '/sets/$setId/articles'
     | '/sets/$setId/cases'
     | '/sets/$setId/cloze'
@@ -547,6 +557,7 @@ export interface FileRouteTypes {
     | '/grammar'
     | '/learn'
     | '/api/auth/$'
+    | '/learn/units/$unitId'
     | '/sets/$setId/articles'
     | '/sets/$setId/cases'
     | '/sets/$setId/cloze'
@@ -598,6 +609,7 @@ export interface FileRouteTypes {
     | '/grammar/'
     | '/learn/'
     | '/api/auth/$'
+    | '/learn/units/$unitId'
     | '/sets/$setId/articles'
     | '/sets/$setId/cases'
     | '/sets/$setId/cloze'
@@ -886,6 +898,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/learn/units/$unitId': {
+      id: '/learn/units/$unitId'
+      path: '/units/$unitId'
+      fullPath: '/learn/units/$unitId'
+      preLoaderRoute: typeof LearnUnitsUnitIdRouteImport
+      parentRoute: typeof LearnRoute
+    }
     '/sets/$setId/': {
       id: '/sets/$setId/'
       path: '/'
@@ -1035,11 +1054,13 @@ const GrammarRouteWithChildren =
 interface LearnRouteChildren {
   LearnLessonIdRoute: typeof LearnLessonIdRoute
   LearnIndexRoute: typeof LearnIndexRoute
+  LearnUnitsUnitIdRoute: typeof LearnUnitsUnitIdRoute
 }
 
 const LearnRouteChildren: LearnRouteChildren = {
   LearnLessonIdRoute: LearnLessonIdRoute,
   LearnIndexRoute: LearnIndexRoute,
+  LearnUnitsUnitIdRoute: LearnUnitsUnitIdRoute,
 }
 
 const LearnRouteWithChildren = LearnRoute._addFileChildren(LearnRouteChildren)
