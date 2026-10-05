@@ -3,12 +3,12 @@ import { ArrowLeft, ArrowRight } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { useLearnSession } from "@/components/learn/session-context";
 import { germanA1 } from "@/content/curriculum/german-a1";
-import { lessonStatus } from "@/lib/curriculum/lesson-session";
+import { lessonStatus, sessionKey } from "@/lib/curriculum/lesson-session";
 
 export const Route = createFileRoute("/learn/units/$unitId")({ component: LearnUnit });
 function LearnUnit() {
   const { unitId } = Route.useParams();
-  const { sessions } = useLearnSession();
+  const { sessions, blockedLessons } = useLearnSession();
   const unit = germanA1.units.find((candidate) => candidate.id === unitId);
   const number = unit ? germanA1.units.indexOf(unit) + 1 : 0;
   return (
@@ -37,7 +37,9 @@ function LearnUnit() {
             <ol className="mt-7 divide-y divide-border border-y border-border">
               {unit.lessonIds.map((id, index) => {
                 const lesson = germanA1.lessons.find((candidate) => candidate.id === id)!;
-                const status = lessonStatus(germanA1.id, lesson, sessions);
+                const status = blockedLessons.includes(id)
+                  ? "Saved lesson unavailable"
+                  : lessonStatus(germanA1.id, lesson, sessions);
                 const content = (
                   <>
                     <span className="text-sm tabular-nums text-muted">
@@ -47,7 +49,10 @@ function LearnUnit() {
                       <span className="block font-medium">{lesson.title}</span>
                       <span className="mt-1 block text-sm text-muted">
                         {status}
-                        {status === "Finished" ? " · This session" : ""}
+                        {status === "Finished" &&
+                        sessions[sessionKey(germanA1.id, id)]?.status === "in-progress"
+                          ? " · Practicing again"
+                          : ""}
                       </span>
                     </span>
                     {lesson.availability === "prototype" && (
@@ -73,8 +78,8 @@ function LearnUnit() {
               })}
             </ol>
             <p className="mt-5 text-sm leading-relaxed text-muted">
-              Session progress lasts while you stay in Learn. Reloading or leaving Learn resets it.
-              Finished lessons are practice milestones, not skill mastery.
+              Checked steps and lesson completion are saved to your account. Open writing stays on
+              this page. Finished lessons are practice milestones, not skill mastery.
             </p>
             {unit.lessonIds.every(
               (id) =>

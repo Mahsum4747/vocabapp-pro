@@ -6,7 +6,6 @@ import { Progress } from "@/components/ui/progress";
 import { ExerciseResponse } from "./exercise-response";
 import {
   startLesson,
-  updateLessonSession,
   sessionKey,
   nextAuthoredLesson,
   type LessonAction,
@@ -21,7 +20,14 @@ export function LessonScreen({
   release: CurriculumRelease;
   lesson: LessonDefinition;
 }) {
-  const { sessions, setSessions } = useLearnSession();
+  const {
+    sessions,
+    setSessions,
+    dispatch: dispatchProgress,
+    retry,
+    acceptSaved,
+    saves,
+  } = useLearnSession();
   const releaseId = release.id;
   const session = sessions[sessionKey(releaseId, lesson.id)];
   const unit = release.units.find((candidate) => candidate.id === lesson.unitId)!;
@@ -29,7 +35,7 @@ export function LessonScreen({
   const unitNumber = release.units.indexOf(unit) + 1;
   const next = nextAuthoredLesson(release.lessons, lesson);
   // SSR can render a form before its handlers hydrate. Prevent native submission
-  // from reloading the page and destroying the in-memory prototype session.
+  // from reloading the page before an answer can be acknowledged.
   const [ready, setReady] = useState(false);
   useEffect(() => setReady(true), []);
   useEffect(() => {
@@ -54,8 +60,11 @@ export function LessonScreen({
     }
   }, [state.stepIndex, state.status]);
   function dispatch(action: LessonAction) {
-    setSessions((previous) => updateLessonSession(previous, releaseId, lesson, action));
+    dispatchProgress(lesson, action);
   }
+  const save = saves[lesson.id];
+  const saving = save?.phase === "saving";
+  const blocked = ["failed", "conflict", "unavailable"].includes(save?.phase ?? "");
   const explaining = step.kind === "explanation";
   const complete = state.status === "finished";
   return (
@@ -78,7 +87,7 @@ export function LessonScreen({
       <main className="mx-auto max-w-3xl px-page-safe pt-6 pb-section-safe sm:pt-8">
         <p className="text-sm font-medium text-primary-ink">
           {complete
-            ? "Lesson finished · Session only"
+            ? "Lesson finished"
             : `Lesson ${lessonNumber} · Step ${state.stepIndex + 1} of ${lesson.steps.length}`}
         </p>
         <h1 className="mt-3 font-display text-2xl font-semibold tracking-tight sm:text-3xl">
@@ -92,6 +101,40 @@ export function LessonScreen({
           value={(state.completedStepIds.length / lesson.steps.length) * 100}
           className="mt-6 h-1.5"
         />
+        {save && (
+          <div className="mt-4 text-sm" aria-live="polite">
+            {save.phase === "saving" && <p className="text-muted">Saving progress…</p>}
+            {save.phase === "saved" && <p className="text-muted">Progress saved</p>}
+            {save.phase === "unsaved" && (
+              <p className="text-muted">Your answer is here. Check it to save this step.</p>
+            )}
+            {save.phase === "failed" && (
+              <div className="rounded-control bg-danger-soft p-4 text-danger">
+                <p>Your answer is still here, but it hasn’t saved. Try again.</p>
+                <Button variant="secondary" className="mt-3" onClick={() => retry(lesson)}>
+                  Retry saving
+                </Button>
+              </div>
+            )}
+            {save.phase === "conflict" && (
+              <div className="rounded-control bg-surface-2 p-4 text-fg">
+                <p>
+                  Another tab saved newer progress. Your answer is still here. Load saved progress
+                  to replace it.
+                </p>
+                <Button variant="secondary" className="mt-3" onClick={() => acceptSaved(lesson)}>
+                  Load saved progress
+                </Button>
+              </div>
+            )}
+            {save.phase === "unavailable" && (
+              <p className="text-danger">
+                This lesson has changed. Your response is still here, but it cannot be saved against
+                new content. Return to the unit for availability.
+              </p>
+            )}
+          </div>
+        )}
         {complete ? (
           <section className="mt-10" aria-labelledby="lesson-finished">
             <Check className="size-7 text-primary-ink" aria-hidden="true" />
@@ -110,8 +153,7 @@ export function LessonScreen({
                 " Your open writing remains unassessed."}
             </p>
             <p className="mt-4 text-sm text-muted">
-              This progress stays only while you remain in Learn. Reloading or leaving Learn resets
-              it.
+              Your lesson completion is saved. Practicing again keeps that milestone.
             </p>
             {next ? (
               <Button asChild className="mt-6 h-auto min-h-11 whitespace-normal py-3">
@@ -132,12 +174,8 @@ export function LessonScreen({
               </Button>
               <Button
                 variant="secondary"
-                disabled={!ready}
-                onClick={() =>
-                  setSessions((previous) =>
-                    updateLessonSession(previous, releaseId, lesson, { type: "restart" }),
-                  )
-                }
+                disabled={!ready || saving || blocked}
+                onClick={() => dispatchProgress(lesson, { type: "restart" })}
               >
                 Practice lesson again
               </Button>
@@ -177,7 +215,7 @@ export function LessonScreen({
               <ExerciseResponse
                 step={step}
                 answer={answer}
-                disabled={!ready || !!passed}
+                disabled={!ready || !!passed || saving || blocked}
                 incorrect={state.feedback?.outcome === "incorrect"}
                 onRespond={(value) => dispatch({ type: "respond", value })}
               />
@@ -201,7 +239,10 @@ export function LessonScreen({
                 type="submit"
                 className="mt-7 w-full sm:w-auto sm:min-w-40"
                 disabled={
-                  !ready || (!explaining && !passed && (!answer.trim() || !!state.feedback))
+                  !ready ||
+                  saving ||
+                  blocked ||
+                  (!explaining && !passed && (!answer.trim() || !!state.feedback))
                 }
               >
                 {explaining || passed

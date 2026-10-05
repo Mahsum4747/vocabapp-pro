@@ -1,10 +1,14 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { defineConfig } from "@playwright/test";
 import base from "../playwright.config";
 
 // Read the compiler's registry, never guess hashes or allow an unmocked request.
 // This variable exists only in the test runner/workers, not production config.
-const registry = readFileSync(".vercel/output/functions/__server.func/_ssr/ssr.mjs", "utf8");
+const compiledDirectory = ".vercel/output/functions/__server.func/_ssr";
+const registry = readdirSync(compiledDirectory)
+  .filter((name) => name.endsWith(".mjs"))
+  .map((name) => readFileSync(`${compiledDirectory}/${name}`, "utf8"))
+  .join("\n");
 const names = Object.fromEntries(
   Array.from(
     registry.matchAll(/"([a-f0-9]{64})": \{\s*functionName: "([^"]+)"/g),

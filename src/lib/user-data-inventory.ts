@@ -28,6 +28,7 @@ export const USER_SUBCOLLECTIONS = [
   "grammarPasteTopics",
   "lesenPasteTopics",
   "aiFeedbackLog",
+  "courseProgress",
 ] as const;
 // Profile fields include preferences, sound settings, setSessions, Today cache,
 // XP, completedSets and achievements. Paste roundReceipts are nested beneath topics.

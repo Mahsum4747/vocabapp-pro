@@ -1,5 +1,5 @@
 import { HomeRecommendedNext } from "@/components/home-recommended-next";
-import { useEffect, useState, type ReactNode } from "react";
+import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
 import { Link, Navigate } from "@tanstack/react-router";
 import { User } from "lucide-react";
 import {
@@ -264,4 +264,30 @@ export function HomeRecommendedNextGate({ refreshVersion }: { refreshVersion: nu
   const { user, isPending } = useCurrentUserState();
   const owner = !isPending && user && !user.isDevFallback ? user.id : null;
   return <HomeRecommendedNext owner={owner} refreshVersion={refreshVersion} />;
+}
+
+// Reuse the established lazy auth chunk; never link its client into lesson routes.
+const LearnProgressProvider = lazy(() =>
+  import("@/components/learn/session-context").then((module) => ({
+    default: module.LearnSessionProvider,
+  })),
+);
+export function AuthenticatedLearn({ children }: { children: ReactNode }) {
+  const { user, isPending } = useCurrentUserState();
+  if (isPending) return <p className="px-page-safe py-12 text-muted">Loading your lessons…</p>;
+  if (!user) return <RedirectToSignIn />;
+  if (user.isDevFallback)
+    return (
+      <main className="px-page-safe py-12">
+        <h1 className="text-xl font-semibold">Sign in is needed to save lesson progress.</h1>
+        <p className="mt-3 text-muted">
+          Durable course practice requires an authenticated account.
+        </p>
+      </main>
+    );
+  return (
+    <Suspense fallback={<p className="px-page-safe py-12 text-muted">Loading your lessons…</p>}>
+      <LearnProgressProvider key={user.id}>{children}</LearnProgressProvider>
+    </Suspense>
+  );
 }

@@ -8,14 +8,17 @@ import { germanA1 } from "@/content/curriculum/german-a1";
 
 export const Route = createFileRoute("/learn/")({ component: LearnCourse });
 function LearnCourse() {
-  const { sessions } = useLearnSession();
+  const { sessions, blockedLessons } = useLearnSession();
+  const authored = germanA1.lessons.filter(
+    (lesson) => lesson.availability === "prototype" && !blockedLessons.includes(lesson.id),
+  );
   const first =
-    germanA1.lessons.find(
-      (lesson) =>
-        lesson.availability === "prototype" &&
-        lessonStatus(germanA1.id, lesson, sessions) !== "Finished",
-    ) ?? germanA1.lessons[1];
-  const session = sessions[sessionKey(germanA1.id, first.id)];
+    authored.find(
+      (lesson) => sessions[sessionKey(germanA1.id, lesson.id)]?.status === "in-progress",
+    ) ??
+    authored.find((lesson) => lessonStatus(germanA1.id, lesson, sessions) !== "Finished") ??
+    authored.at(-1);
+  const session = sessions[sessionKey(germanA1.id, first?.id ?? "")];
   return (
     <AppShell>
       <div className="mx-auto max-w-4xl">
@@ -32,21 +35,25 @@ function LearnCourse() {
         <div className="mt-8 flex flex-col gap-4 border-y border-border py-5 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="font-medium">Your next lesson</p>
-            <p className="mt-1 text-sm text-muted">{first.title}</p>
+            <p className="mt-1 text-sm text-muted">
+              {first?.title ?? "Saved lessons are currently unavailable"}
+            </p>
             {session?.status === "finished" && (
-              <p className="mt-2 text-sm text-primary-ink">Lesson finished in this session</p>
+              <p className="mt-2 text-sm text-primary-ink">Lesson finished</p>
             )}
           </div>
-          <Button asChild className="shrink-0">
-            <Link to="/learn/$lessonId" params={{ lessonId: first.id }}>
-              {session?.status === "finished"
-                ? "View finished lesson"
-                : session
-                  ? "Continue lesson"
-                  : "Start lesson"}
-              <ArrowRight />
-            </Link>
-          </Button>
+          {first && (
+            <Button asChild className="shrink-0">
+              <Link to="/learn/$lessonId" params={{ lessonId: first.id }}>
+                {session?.status === "finished"
+                  ? "View finished lesson"
+                  : session
+                    ? "Continue lesson"
+                    : "Start lesson"}
+                <ArrowRight />
+              </Link>
+            </Button>
+          )}
         </div>
         <section className="mt-9" aria-labelledby="course-units">
           <div className="flex items-center gap-2">
@@ -57,7 +64,7 @@ function LearnCourse() {
           </div>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
             10 units · 40 planned lessons. Two lessons are available in this unpublished prototype.
-            Session progress resets on reload or leaving Learn.
+            Checked steps and lesson completion are saved to your account.
           </p>
           <ol className="mt-5 divide-y divide-border">
             {germanA1.units.map((unit, index) => (

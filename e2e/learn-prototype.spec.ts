@@ -1,3 +1,4 @@
+import { courseProgressFixture } from "./support/course-progress";
 import { mkdirSync } from "node:fs";
 import { expect, test } from "./support/app";
 
@@ -14,7 +15,7 @@ test("Learn prototype: bounded lesson, retries, session resume and truthful comp
   isMobile,
 }, testInfo) => {
   if (isMobile) await page.setViewportSize({ width: 390, height: 844 });
-  const harness = await launch({ sets: [] });
+  const harness = await launch({ sets: [], handlers: courseProgressFixture().handlers });
   const writes: string[] = [];
   page.on("request", (request) => {
     if (["POST", "PUT", "PATCH", "DELETE"].includes(request.method())) writes.push(request.url());
@@ -60,6 +61,11 @@ test("Learn prototype: bounded lesson, retries, session resume and truthful comp
   await page.getByLabel("Your introduction").fill("Ich bin Alex.");
   await page.getByRole("button", { name: "Record response", exact: true }).click();
   await expect(page.getByRole("status")).toContainText("unassessed");
+  const openCheck = harness.serverFns.callsTo("acknowledgeCourseProgress").at(-1)!.data as {
+    action: { type: string; response?: string };
+  };
+  expect(openCheck.action).not.toHaveProperty("response");
+  expect(JSON.stringify(openCheck)).not.toContain("Alex");
   await page.screenshot({
     path: `screenshots/lesson-writing-${testInfo.project.name}.png`,
     fullPage: true,
@@ -78,19 +84,23 @@ test("Learn prototype: bounded lesson, retries, session resume and truthful comp
     .click();
   await expect(page.getByText("Lesson 2 · Step 1 of 8", { exact: true })).toBeVisible();
   await page.getByRole("link", { name: "Unit 1", exact: true }).click();
-  await expect(page.getByText("Finished · This session", { exact: true })).toBeVisible();
+  await expect(page.getByText("Finished", { exact: true })).toBeVisible();
   await page.getByRole("link", { name: /introduce yourself/i }).click();
   await page.getByRole("button", { name: "Practice lesson again", exact: true }).click();
   await expect(page.getByText("Lesson 1 · Step 1 of 7", { exact: true })).toBeVisible();
-  // This additive flow must not invoke any learning server function, even reads.
-  expect(harness.serverFns.calls).toEqual([]);
-  expect(writes).toEqual([]);
+  // Course persistence must remain isolated from every legacy learning server function.
+  expect(
+    harness.serverFns.calls.every((call) =>
+      ["getCourseProgress", "acknowledgeCourseProgress"].includes(call.name),
+    ),
+  ).toBe(true);
+  expect(writes.every((url) => url.includes("/_serverFn/"))).toBe(true);
   await page.reload();
   await expect(page.getByText("Lesson 1 · Step 1 of 7", { exact: true })).toBeVisible();
 });
 
 test("direct unavailable lesson and unknown ID remain unavailable", async ({ page, launch }) => {
-  await launch({ sets: [] });
+  await launch({ sets: [], handlers: courseProgressFixture().handlers });
   await page.goto("/learn/DE.A1.U01.L03");
   await expect(
     page.getByRole("heading", { name: "This lesson is not yet authored" }),
@@ -105,7 +115,7 @@ test("Learn and lesson dark mode, narrow layout and long writing remain readable
   launch,
   isMobile,
 }, testInfo) => {
-  await launch({ sets: [] });
+  await launch({ sets: [], handlers: courseProgressFixture().handlers });
   if (isMobile) await page.setViewportSize({ width: 320, height: 844 });
   await page.emulateMedia({ colorScheme: "dark" });
   await page.goto("/learn");

@@ -686,3 +686,101 @@ First review found L02 explanation density and metadata-like subtitles particula
 FSRS scheduler/queue, vocabulary progress, old grammar scoring, existing practice routes, authentication, dependencies, production configuration and persistence code are unchanged. No durable state, evidence backend, production migration/Firestore collection, new service, deployment, merge or push. Unrelated pre-existing untracked files were preserved and excluded from the commit.
 
 Remaining scope: only L01/L02 authored; L03 onward, assessment/checkpoints, mixed review, mastery/evidence, durable progress, source-language overlays, audio/speaking/listening and publication expert review remain deferred. This is an unpublished prototype, not a proficiency or exam-readiness assessment.
+
+
+## 33. Karta Phase 1C — durable course progress and resume (2026-10-05)
+
+Base: approved/pushed `codex/karta-phase1b-unit1-engine`, `56597b598bdb4a833ca0c7fc5eb0f20f84135960`. Work branch: `codex/karta-phase1c-durable-progress`. All six repository-local Karta skills were discoverable and read before substantive work. Approved architecture/content remains unchanged; only L01/L02 are supported. This section supersedes the Phase 1B session-only limitations for those lessons.
+
+### Source audit and storage decision
+
+The audit verified current source, not just this handoff: `study-sets.ts`, `learning-progress.server.ts`, `grammar-paste-topics.ts`, `lesen-paste-topics.ts`, `write-it-feedback.ts`, authentication middleware/verification, user-data inventory/deletion, existing lesson/session routes and the wire-level browser mocking infrastructure.
+
+- `users/{uid}` holds legacy preferences/profile/XP/session/cache fields. Vocabulary `cardProgress`, `reviewEvents` and daily statistics are separate user subcollections; review transactions and membership/owner checks must remain authoritative for FSRS.
+- `grammarProgress/{uid}` and `lesenProgress/{uid}` are separate legacy document roots. Grammar round aggregation and Lesen completion merging retain their existing transactional semantics.
+- `users/{uid}/grammarPasteTopics` and `lesenPasteTopics` contain authored imported-topic progress; their round receipts bind IDs to payloads and guard retries. They are not course persistence.
+- `users/{uid}/aiFeedbackLog` stores optional writing-feedback records. Learn open writing does not use that log.
+- Existing authenticated server functions derive `context.userId` from verified sessions and reject cross-site requests. The auth-off middleware has a shared preview fallback: new Learn handlers additionally reject `VITE_AUTH_ENABLED=false`, before initializing Firestore. A Learn-only gate was added to the existing lazy authentication module, preserving all prior gates/verifier behavior; this avoids the known Nitro SSR chunk cycle.
+- Existing profile reads and legacy Today cache behavior were inspected; the new course read does not reuse cache paths with hidden writes.
+- Central deletion recursively deletes `users/{uid}` plus the separate legacy roots. Recursive deletion covers descendants even without a parent document. Adding `courseProgress` to the subcollection inventory is sufficient; a hermetic test executes the existing deletion helper against newly written Learn records and preserves another owner's records.
+
+Chosen model: **one user subcollection, one bounded document per scoped lesson**. It reuses the existing authenticated Firestore/server-function transaction pattern, avoids a second database or a growing account-wide document, and limits concurrency contention to one lesson.
+
+Exact path:
+
+`users/{verifiedUid}/courseProgress/{encodeURIComponent(JSON.stringify([trackId, releaseId, lessonId]))}`
+
+The tuple is collision-free and independent of labels. Owner identity exists in the authoritative path, never in browser input. The strict input schema rejects client owner IDs and extra fields. This is additive: absent documents are valid, and no migration or live collection initialization is needed.
+
+### Durable contract and classification
+
+Version 1 document fields:
+
+- `schemaVersion: 1`, `trackId`, `releaseId`, `lessonId`, `lessonVersion` (SHA-256 of the full authored lesson definition).
+- `revision`, `practiceRun`, `currentStepId: string | null`, ordered `completedStepIds` (validated contiguous prefix).
+- `response: string | null` (at most 160 characters; current checked bounded response only), `checked`, `attempts` (current step only).
+- `firstFinishedAt: number | null`, `updatedAt: number` (server epoch milliseconds).
+- `receipts: [{id: UUID, digest: SHA-256}]` (last 64 commands, no raw answer history).
+
+Durable truth: scope/version, ordered acknowledged traversal, current checked bounded answer, current-step retry count, revision/run, first completion milestone, server update time and bounded replay receipts.
+
+Derived: row status, current step index, completion percentage, deterministic feedback/results and display labels. They come from durable truth plus current local work and the exact compatible lesson definition, never copied into storage. Merely opening an untouched lesson can mark it in progress in route memory; no document is created until acknowledgement. Historical completion is independent of the current repeat-practice run.
+
+Session only: unchecked drafts, open/original writing, immediate answer feedback before acknowledgement, focus/button/loading/error state and pending command. Responses are retained locally on save failure/conflict. No keystroke writes or browser-local persistence.
+
+Future: track enrollment/publication, source-language overlays, compatible archived content/replacement mappings, skill evidence, mastery, assessment/checkpoint records, unit completion, AI grading and audio. Future independent evidence must have its own validated contract; these traversal receipts must not be repurposed as proficiency evidence. The scoped/versioned adapter and pure domain functions provide an additive extension boundary. Browser resume helpers live separately from runtime validation; server functions load lazily.
+
+### Track/release and resume
+
+Temporary practice track: `de-a1-text-practice-v1`. Release: `DE.A1.CURRICULUM.PROTOTYPE.1B`. This is explicit unpublished target-course practice, not enrollment in a published curriculum. Current source-language preferences do not define its identity. A future published/directional learning track needs an explicit mapping policy; do not silently reinterpret this practice key or split it per overlay.
+
+Entering Learn authenticates the learner and reads exactly the two known authored lesson references. Strict Mode effect replay shares the same pending request. Missing rows remain missing until acknowledgement; entering a lesson, rendering rows and typing perform no writes. Reload or leaving/re-entering Learn reconstructs the current pinned step, checked bounded answer, retry count and completion from server truth. L01/L02 remain independent.
+
+Finished lessons open in the finished view. Intentional restart creates a new current practice run and resets its traversal/answer while retaining `firstFinishedAt`. Unit rows retain Finished and show Practicing again for an active repeat. Completion is guided-practice traversal, never mastery or complete A1 proficiency.
+
+A different definition hash blocks saved-answer restoration/grading and writes; it preserves the old document and shows an unavailable lesson. Unknown scopes/lessons and unauthored lessons are rejected. There is no compatible archive or replacement mapping yet, so the UI does not invent one or silently migrate answers. Withdrawn/unauthored route content stays unavailable.
+
+### Writes, concurrency and cost
+
+Each explicit Check, Continue/Finish or Restart submits one UUID command with the exact lesson hash and expected revision. One owner-scoped Firestore transaction reads one progress document, validates the stored contract and applies a pure transition. An accepted new command writes that one document. Reads, duplicate acknowledgements, conflicts and unavailable versions write nothing.
+
+Identical retries reuse their original UUID, payload and revision. The receipt digest rejects UUID reuse with another payload. A duplicate returns current server truth without replaying the transition, including when newer commands already exist. A duplicate acknowledgement returning a newer revision is shown as a conflict in the UI, keeping the local answer until explicit recovery. Compare-and-update rejects stale tabs/restarts; transactional retries admit one competing revision, returning a conflict for the other. Step order/prefix validation prevents skipping and out-of-order traversal. First completion and update times never regress. The last-64 receipt window is bounded; an evicted delayed retry conflicts on its stale revision rather than replaying.
+
+Correct first-pass traversal costs 12 accepted commands for L01 and 14 for L02 (Check plus Continue for answer steps, Continue for explanation steps). Wrong-answer retries and explicit restarts each add one accepted command. A new Learn route mount reads two documents, with no query/index or profile/FSRS/cache reads needed. Current route memory avoids additional reads while moving between Learn/Unit/lesson. Transaction retries can add reads; no listeners, polling, per-keystroke writes or new composite indexes.
+
+### Failure UX, privacy and deletion
+
+Initial load failure gates lesson interaction and offers Retry loading. Check feedback is local immediately, while Progress saved, traversal, completion and restart wait for server acknowledgement. Save failure keeps the answer and pending command and offers Retry saving with the same operation ID. Lost acknowledgement is therefore recoverable without counting another attempt. Conflict keeps the local answer until explicit Load saved progress replaces it. Version-unavailable saves preserve the answer locally and block further progression.
+
+Leaving Learn with an unsaved/failed/pending answer requires an explicit Stay in Learn or Leave without saving choice; hard reload/close uses the browser's before-unload warning. Within Learn the provider retains local answers. Account changes remount the provider by verified user ID; pending responses from an unmounted owner are ignored. This is not an offline queue: forcibly closing/confirming discard loses unacknowledged local work.
+
+Open/original text is never sent or stored. Only its unassessed step acknowledgement is durable; after reload the saved marker can continue without restoring sensitive writing. Bounded checked text is retained only for the current resumable step, then cleared on Continue, completion or restart. No previous answers, full keystroke history, question/title copies, AI feedback, analytics or mastery are stored. Hash receipts contain no raw text, but bounded-answer hashes are not an anonymization claim. Completion/receipts remain until account deletion; no automatic lifetime-history or draft retention service was added.
+
+The centralized recursive users-root deletion includes all track/release lesson documents. Inventory and hermetic deletion coverage were extended in the same change; there is no new orphan root.
+
+### Visual review and validation
+
+Actual screenshots were inspected for persisted overview, Unit 1 (L01 Finished/L02 In progress), resumed L02, save failure and stale-tab conflict, including desktop, 390px mobile and dark 320px layouts. Local ignored artifacts: `screenshots/phase1c/`. The second polish shortened recovery messages and kept a quiet saved status, clear retry/load actions, retained answer, disabled Continue until acknowledgement and wrapping actions without horizontal overflow. Existing keyboard/focus/native labels and lesson target sizes are retained. Keyboard tests wait for acknowledgement before pressing Continue. Physical mobile keyboards, screen readers and real Firestore/network devices were not exercised.
+
+Validation results are recorded below. All backend fixtures are hermetic; the fake transaction adapter and wire-level server-function mocks never initialize a production backend. Existing dev warmup can emit credential-denied diagnostics and the pre-existing `streak.ts` import-protection warning. Test server credentials are blank and actual test requests are sealed. The existing dev adapter can bootstrap its in-memory PGLite schema; no new schema, migration command or production migration was run.
+
+FSRS scheduling/queues and vocabulary review semantics, `grammarProgress`, `lesenProgress`, Paste behavior, legacy `/sets/$setId/learn`, Home/Progress, authored curriculum, dependencies and production configuration remain unchanged. New course reads perform no writes. No live user records, production migration, deployment, merge or push. Unrelated pre-existing untracked files are preserved and excluded.
+
+
+Final checks:
+
+- `node --import ./scripts/test-register.mjs --test src/lib/curriculum/curriculum.test.ts src/lib/curriculum/phase1b.test.ts src/lib/curriculum/course-progress.test.ts`: **25 passed, 0 failed**. Covers strict contracts, owner isolation/auth wiring and auth-off denial, both lesson resumes/completions/restarts, ordering/versions, concurrent revisions, identical receipts and eviction, answer pruning, isolated writes, read purity and existing recursive deletion.
+- `node --import ./scripts/test-register.mjs --test src/lib/srs/scheduler.test.ts src/lib/review-plan.test.ts src/lib/foundation-hardening.test.ts src/lib/grammar-drills.test.ts`: **66 passed, 0 failed**.
+- `npm run typecheck`: passed.
+- Scoped ESLint across curriculum, fake backend, Learn components/routes, user inventory and auth gates: **0 errors**, one existing colocated-provider/hook Fast Refresh warning.
+- `git diff --check`: passed.
+- `npm run build:compile`: passed. Normal migration-triggering `build` was not run. Compilation initially exposed the existing Nitro/rolldown SSR chunk fragility; the final Learn-only gate reuses the established lazy authentication module, browser resume helpers stay separate from runtime validation, and new server functions load lazily. No dependencies or production configuration were changed. The compiled browser fixture now discovers the registry across emitted chunks rather than assuming a single entry file.
+- `npx playwright test --config e2e/home-compiled.config.ts e2e/learn-durable.spec.ts e2e/learn-prototype.spec.ts e2e/learn-unit1.spec.ts`: **24 passed, 0 failed** (desktop/mobile). Includes signed-out denial, load/save/lost-ack failures, same-command retry, delayed retry after another tab advances, explicit conflict replacement, changed-version blocking, durable route/reload behavior, open-writing network minimization, keyboard/focus/targets/layout and the unchanged legacy vocabulary Learn flow.
+
+The first dev browser pass exposed duplicate Strict Mode loads and an incorrect logo selector. A subsequent keyboard test exposed a test pressing Enter before acknowledgement enabled Continue; the test now waits for that enabled state. A later parallel dev/compiled run reached the 30-second whole-test limit on the long multi-reload scenario (23 other dev tests passed); its limit is now 60 seconds and the final dev recheck runs without a competing compiled server. These are recorded to distinguish corrected fixture/timing issues from the final results.
+
+
+- Final isolated dev run: `npx playwright test e2e/learn-durable.spec.ts e2e/learn-prototype.spec.ts e2e/learn-unit1.spec.ts`: **24 passed, 0 failed** (desktop/mobile).
+- `npm run check:auth -- --dev-url http://127.0.0.1:5199`: passed, dev and build agree (sign-in on). The earlier default-server probe was indeterminate because no server was observable at its default address; the hermetic test-server probe confirms the actual tested configuration.
+
+Remaining limitations: two unpublished lessons only; no offline queue/autosave, compatible archived release or replacement map, automatic TTL, published/directional enrollment mapping, skill evidence/mastery/assessments, overlays, audio or live-backend verification. A deliberately discarded/forcibly closed unsaved answer cannot resume. Authentication must be configured; shared auth-off preview identities are refused. Existing account-deletion transaction/lifecycle semantics are unchanged.

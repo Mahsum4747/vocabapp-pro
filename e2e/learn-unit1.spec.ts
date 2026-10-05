@@ -1,3 +1,4 @@
+import { courseProgressFixture } from "./support/course-progress";
 import { mkdirSync } from "node:fs";
 import { expect, test } from "./support/app";
 import { queueLibrary } from "./support/library";
@@ -5,13 +6,13 @@ import { undersizedTargets } from "./support/touch";
 async function overflow(page: import("@playwright/test").Page) {
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 }
-test("two lessons retain independent sessions, unit states and keyboard flow without writes", async ({
+test("two lessons retain independent sessions, unit states and keyboard flow with isolated course writes", async ({
   page,
   launch,
   isMobile,
 }, info) => {
   if (isMobile) await page.setViewportSize({ width: 390, height: 844 });
-  const harness = await launch({ sets: [] });
+  const harness = await launch({ sets: [], handlers: courseProgressFixture().handlers });
   const writes: string[] = [];
   page.on("request", (r) => {
     if (["POST", "PUT", "PATCH", "DELETE"].includes(r.method())) writes.push(r.url());
@@ -74,6 +75,7 @@ test("two lessons retain independent sessions, unit states and keyboard flow wit
     await expect(page.getByRole("button", { name: "Check", exact: true })).toBeEnabled();
     await page.getByLabel(label).press("Enter");
     await expect(page.getByRole("status")).toContainText("That fits");
+    await expect(page.getByRole("button", { name: "Continue", exact: true })).toBeEnabled();
     await page.getByRole("button", { name: "Continue", exact: true }).press("Enter");
   }
   await page.getByRole("radio", { name: "Die Frau", exact: true }).check();
@@ -86,13 +88,17 @@ test("two lessons retain independent sessions, unit states and keyboard flow wit
   await page.getByRole("link", { name: "Unit 1", exact: true }).click();
   await page.getByRole("link", { name: /introduce yourself/i }).click();
   await expect(page.getByText("Lesson 1 · Step 2 of 7", { exact: true })).toBeVisible();
-  expect(harness.serverFns.calls).toEqual([]);
-  expect(writes).toEqual([]);
+  expect(
+    harness.serverFns.calls.every((call) =>
+      ["getCourseProgress", "acknowledgeCourseProgress"].includes(call.name),
+    ),
+  ).toBe(true);
+  expect(writes.every((url) => url.includes("/_serverFn/"))).toBe(true);
   await page.reload();
-  await expect(page.getByText("Lesson 1 · Step 1 of 7", { exact: true })).toBeVisible();
+  await expect(page.getByText("Lesson 1 · Step 2 of 7", { exact: true })).toBeVisible();
 });
 test("dark 320px unit and lesson render without overflow", async ({ page, launch }, info) => {
-  await launch({ sets: [] });
+  await launch({ sets: [], handlers: courseProgressFixture().handlers });
   await page.setViewportSize({ width: 320, height: 844 });
   await page.emulateMedia({ colorScheme: "dark" });
   await page.goto("/learn/units/DE.A1.U01");

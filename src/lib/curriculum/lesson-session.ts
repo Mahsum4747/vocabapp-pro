@@ -11,6 +11,7 @@ export type LessonSession = {
   results: Readonly<Record<string, StepResult>>;
   feedback: StepResult | null;
   status: "in-progress" | "finished";
+  historicallyFinished?: boolean;
 };
 export type LessonAction =
   { type: "respond"; value: string } | { type: "check" } | { type: "continue" };
@@ -48,7 +49,7 @@ export function evaluateStep(step: LessonStep, response: string): StepResult | n
       };
     return {
       outcome: "unassessed",
-      message: "Saved for this practice session. This writing is unassessed.",
+      message: "Recorded here. Your open writing is unassessed.",
     };
   }
   const answers = step.kind === "choice" ? [step.correctAnswer] : step.acceptedAnswers;
@@ -125,7 +126,11 @@ export function lessonStatus(
 ) {
   if (lesson.availability === "not-authored") return "Not yet authored";
   const state = sessions[sessionKey(releaseId, lesson.id)];
-  return state?.status === "finished" ? "Finished" : state ? "In progress" : "Available";
+  return state?.status === "finished" || state?.historicallyFinished
+    ? "Finished"
+    : state
+      ? "In progress"
+      : "Available";
 }
 /** Next means the next authored lesson in the same unit, never an unlock/mastery rule. */
 export function nextAuthoredLesson(lessons: readonly LessonDefinition[], lesson: LessonDefinition) {
