@@ -10,7 +10,7 @@ Build one original German A1 curriculum that teaches usable vocabulary, grammar,
 
 - This document owns system boundaries, current-state audit, evidence semantics, compatibility, governance and roadmap.
 - [German A1 blueprint](GERMAN_A1_BLUEPRINT.md) owns the skill registry, prerequisite graph, 10 units/40 lessons, exercise mapping and assessment coverage.
-- [UX architecture](KARTA_UX_ARCHITECTURE_V1.md) owns navigation, Home hierarchy, screen descriptions and three visual directions.
+- [UX architecture](KARTA_UX_ARCHITECTURE_V1.md) owns navigation, Home hierarchy, screen descriptions and the approved Quiet Editorial visual baseline.
 
 These are proposals, not a representation of features already shipped. The registry contains 60 grammar, 14 reading, 16 writing and 10 vocabulary-related skills: **100 total**. Vocabulary skills represent abilities, not a word-count inventory. Listening/speaking and future exam competencies are not counted.
 
@@ -154,9 +154,11 @@ Before future persistence implementation, approve: track scoping, deletion/reten
 
 The detailed blueprint defines formative lesson checks, held-out unit checks, three checkpoints and a final text-capability portfolio. Lesson checks guide next work; they are not high-stakes certificates. Assessments select independent content families and include unaided production, not shuffled old options.
 
-Proposed launch evidence requirement: each core skill has recognition or comprehension coverage where applicable plus its designated independent-use evidence; integrated tasks can support several skills with separately judged outcomes. Two independent families across separated sessions support a “demonstrated independently” claim; writing additionally needs reviewed successful communicative work. These are conservative **product criteria to pilot**, not empirically calibrated educational thresholds. No perfect grammar or zero-error demand at A1. Failures identify specific follow-up work; overall averages cannot hide a missing production/reading domain.
+The 100 skills are a teaching, attribution and diagnosis taxonomy, not 100 equally expensive certification gates. Completion is judged against the essential functional outcomes in the German blueprint. Supporting skills develop through lessons and integrated use; diagnostic observations guide remediation without becoming completion requirements. Profiles describe suitable evidence, not a requirement for two standalone assessments of every atomic skill. Integrated tasks support multiple skills only where the response genuinely elicits each outcome and the evaluator can judge it; foundational form/syntax skills can be witnessed in later use.
 
-Text-path completion requires the 40 lessons finished or equivalently demonstrated through a future reviewed placement route; all 10 unit checks and three checkpoints recorded; unresolved essential comprehension/task-fulfilment gaps addressed; final independent reading, form, message and short-description performance; delayed follow-up evidence. Do not require all personal vocabulary to be “mastered” or every bundled reading passage completed. Duration and lesson word-count targets are planning aids, not proof of proficiency.
+Two independent families on separated sessions are a conservative pilot option for essential outcomes where appropriate, not a universal immutable minimum. Delayed retrieval/transfer remains important at functional-outcome level; cumulative lesson, unit and checkpoint evidence plus targeted rechecks avoid hundreds of certification events. Preserve separate recognition, recall, controlled/communicative production, transfer and retention dimensions, evaluator limits and unknown states; no global weighted mastery percentage.
+
+Text-path completion requires the 40 lessons finished or future reviewed equivalents, all 10 unit checks and three checkpoints recorded, essential functional outcomes demonstrated under the accepted release policy, and unresolved essential comprehension/task-fulfilment gaps addressed. Final work includes independent reading, form completion, bounded practical message/description performance and planned delayed transfer checks. Supporting micro-skills do not each require isolated retesting. In v1, the claim explicitly describes bounded writing performance; optional open writing remains separately assessed or unassessed and does not silently become certified free-writing ability. No personal vocabulary mastery quota, word-count denominator or requirement to finish every bundled passage applies.
 
 Full-language A1/exam readiness remains unavailable until listening and speaking are assessed. A future provider adapter maps these Karta outcomes to separately versioned competencies/task types, identifies coverage gaps and tests format familiarity using original/licensed content. It never issues a Goethe/telc certificate or promises a pass.
 
@@ -170,7 +172,9 @@ The existing Lesen attribution states CC BY 4.0 and upstream generated originali
 
 Generated practice, if approved later, requires skill, language/track context, generator/model and prompt versions, validator version, family/provenance, review status and allowed purpose. AI output is untrusted variation, never linguistic truth or canonical by default. No generation is performed for this blueprint. A prompt validator's syntactic success is not pedagogical or linguistic validation.
 
-Future writing evaluation should first use deterministic checks for bounded form/grammar tasks; optional AI supports feedback on open text but must return assessed/unknown outcomes with rubric/version and no hidden inferred correctness. Human review/calibration is required before AI alone can gate path completion. Collect minimal evidence; avoid persisting full draft keystrokes or raw texts in aggregate signals. Define owner deletion across future roots, limited assessment retention and consent before adding storage. Audio later needs speaker rights, transformations, transcripts and publication provenance; no speech datasets are acquired now.
+Writing v1 uses reliable bounded/deterministic form, phrase and structured communicative tasks. Reviewed required-point checks can establish bounded evidence only for details/functions the task and validator actually resolve; finding keywords alone cannot establish meaning, comprehensibility or general writing ability. Unsupported dimensions remain unknown. Open writing can receive optional AI feedback, but AI-only judgment cannot certify completion before calibration and an accepted evaluation policy. Official completion-gating writing needs an accepted bounded rubric/validator or reviewed human/calibrated evaluation; unfinished open-text evaluation infrastructure must not block U01, curriculum contracts or safe lesson prototypes. Longer-term human review/calibrated evaluation remains the goal for richer writing claims.
+
+Collect minimal evidence; avoid persisting full draft keystrokes or raw texts in aggregate signals. Define owner deletion across future roots, limited assessment retention and consent before adding storage. Audio later needs speaker rights, transformations, transcripts and publication provenance; no speech datasets are acquired now.
 
 ## 8. Gaps and reuse boundaries
 
@@ -189,14 +193,22 @@ Future writing evaluation should first use deterministic checks for bounded form
 
 ## 9. Implementation roadmap (later authorization required)
 
+Two gates separate safe development from canonical publication:
+
+- **Prototype/development gate:** permits curriculum contracts, graph validation, a Learn shell, one reviewed vertical slice, local/test fixtures and UX prototypes under later implementation authorization. Label these unpublished prototypes; do not claim public canonical readiness or official completion. Full-course expert review, final lexical coverage and open-writing evaluator staffing need not be finished to develop U01 safely. Persistence changes still require their separate approval.
+- **Publication/canonical-release gate:** requires editorial and linguistic review, asset provenance/licensing, reviewed sense-based lexical coverage, accepted assessment criteria and appropriate completion-gating writing policy, plus accessibility and UX acceptance. A reviewed prototype slice does not clear the full release. Expert review is required before publication, not before every safe prototype step.
+
+
 | Phase | Goal and affected areas | Dependencies and exit evidence | Risks | Explicit exclusions |
 | --- | --- | --- | --- | --- |
-| 0 — Editorial and product review | Approve scope, text-only claim, rubric/evidence criteria, lexical coverage and provenance plan | Expert German review; rights review for reused assets; select visual direction; settle open questions | Overclaiming A1; licensing and assessment staffing | No product code, curriculum generation or dataset ingestion |
-| 1 — Contracts + one safe vertical slice | Versioned curriculum/skill/content contracts, graph validator, course resolver; proposed Learn shell and U01.01 prototype | Phase 0; approved storage design in separate task before durable resume; fixtures show owner/track/release separation and unknown evidence | Accidental SRS coupling; framework SSR/auth imports | No broad UI rewrite, legacy backfill, production migrations or extra languages |
+| 0 — Editorial and product review | Approve scope, text-only claim, rubric/evidence criteria, lexical coverage and provenance plan | Publication gate: expert German review, rights, lexical coverage and assessment/writing policy; Quiet Editorial already selected | Overclaiming A1; licensing and assessment staffing | No product code, curriculum generation or dataset ingestion |
+| 1 — Contracts + one safe vertical slice | Versioned curriculum/skill/content contracts, graph validator, course resolver; proposed Learn shell and U01.01 prototype | Prototype gate; review the slice, not the whole release; approved storage design separately before durable resume; fixtures show owner/track/release separation and unknown evidence | Accidental SRS coupling; framework SSR/auth imports | No broad UI rewrite, legacy backfill, production migrations or extra languages |
 | 2 — German A1 path and grammar interactions | Curate U01–U06, then U07–U10; stage engine, reference links, bounded vocabulary and early short reading/form/writing tasks | Stable slice; content review; prerequisite/lesson checks; desktop/mobile accessible flow including errors/resume | Content volume, misleading unlocks, dictionary outside A1 | No hundreds-item generation sprint, FSRS tuning or advanced grammar expansion |
-| 3 — Integrated reading/writing | Add form/short-answer reading, guided/free writing rubrics and original context families | Tested stage engine; independent item metadata; evaluator calibration; Task routes supported explicitly | AI reliability; missing tags; licensing | No speech curriculum or provider exam question banks |
+| 3 — Integrated reading/writing | Add form/short-answer reading, guided/free writing rubrics and original context families | Tested stage engine; independent item metadata; accepted bounded evaluation for official writing evidence; open-text calibration can follow; Task routes supported explicitly | AI reliability; missing tags; licensing | No speech curriculum or provider exam question banks |
 | 4 — Evidence + mixed review + Progress | Approved idempotent skill evidence, pure projections, domain progress and interleaved practice; course-aware Home arbitration | Assessed opportunity contract; repeated-family rules; regression matrix for sparse/conflicting signals and concurrency | Legacy contamination, read cost, opaque scores | No global mastery formula, hidden data repair or scheduler replacement |
-| 5 — Held-out assessments and controlled release | Unit/checkpoint/final text portfolio; delayed verification, revision policy and rollout | Reviewed independent families; fair accommodations; graded writing rubric; expose text-scope claim accurately | Assessment leakage, false completion, insufficient evaluator capacity | No full CEFR certification, exam pass guarantees or detailed A2–C2 curriculum |
+| 5 — Held-out assessments and controlled release | Unit/checkpoint/final text portfolio; delayed verification, revision policy and rollout | Reviewed independent families; fair accommodations; publication gate including accepted writing policy and UX; expose bounded text-scope claim accurately | Assessment leakage, false completion, insufficient evaluator capacity | No full CEFR certification, exam pass guarantees or detailed A2–C2 curriculum |
+
+Phase 0 publication review can run alongside Phase 1 prototype work; it is not a blanket prerequisite for development. The lexical 600–700 sense/chunk range is an authoring hypothesis only: a reviewed original sense inventory and recurring useful coverage determine scope, with flexible active/receptive balance and no word-count mastery denominator.
 
 Release implementation in reversible increments with existing practice always reachable. Future storage/migrations/deployment are separate explicit authorizations; this roadmap does not grant them.
 
@@ -208,14 +220,14 @@ Graph validation: unique immutable IDs, resolved edges, no hard/soft prerequisit
 
 Risks are content review capacity, broad receptive inventories leaking into productive gates, exam/full-A1 overclaim, historic aggregates being overinterpreted, leaked item families, SRS coupling when reusing routes, AI feedback uncertainty, track/version isolation, and incremental read costs. None requires production access to resolve this blueprint.
 
-Unresolved decisions requiring product/pedagogical review before implementation:
+Remaining decisions for publication or the affected later capability, without blocking safe prototypes:
 
-1. Which trained evaluator/human-review process can validate open writing for completion, and what turnaround is acceptable? Until resolved, open writing remains unassessed for official completion.
+1. Which trained evaluator/human-review process can validate open writing for completion, and what turnaround is acceptable? Until resolved, open writing remains unassessed for official completion; accepted bounded writing can gate v1, and U01 development can proceed.
 2. Should initial course entry offer reviewed placement/equivalence immediately or ship sequential entry first? This blueprint defaults to sequential entry; free Practice remains unrestricted.
 3. Which independently reviewed lexical sense list and active/receptive balance best fits Karta's adult learners? The proposed coverage envelope is not a final word bank.
-4. How many separated observations/delay days justify “demonstrated independently” across task types? Proposed minima are pilot criteria; calibrate with learner evidence.
+4. How many separated observations/delay days justify “demonstrated independently” across task types? Select outcome-specific pilot criteria and delayed transfer checks; no universal atomic-skill minimum.
 5. Are existing third-party Lesen assets cleared and pedagogically suitable for canonical lessons, or should they remain practice-only? Default: practice-only pending review.
-6. Which visual direction should be approved? The UX document recommends Quiet Editorial as the baseline.
+Quiet Editorial is approved. Exact color/type/spacing tokens remain subject to rendered Home/Learn/Lesson comparisons on mobile/desktop in light/dark mode, mandatory screenshot review and a second polish pass.
 
 No unresolved stack choice, authentication rebuild, database migration or future-language curriculum is manufactured here.
 

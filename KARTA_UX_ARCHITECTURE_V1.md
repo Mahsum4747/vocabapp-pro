@@ -125,6 +125,8 @@ The current structure lacks dedicated articles, nominative/accusative foundation
 
 No single rainbow radar/global score. An empty domain says “Not assessed yet” and links to an appropriate first task. Sparse evidence avoids categorical weakness. “Demonstrated in guided work” differs from independent ability. Future listening/speaking appear when meaningful data exists, with explicit scope rather than misleading zeros.
 
+Completion follows the German blueprint: 40 lessons or reviewed equivalents, 10 unit checks, three checkpoints and essential functional evidence including delayed transfer. Supporting skills develop through integrated use; diagnostic observations guide follow-up without extra gates. Two families on separated sessions are an outcome-specific pilot option, not a universal per-skill rule. Keep evidence dimensions and unknown states visible, with no global weighted mastery score. Lexical 600–700 coverage is an authoring hypothesis, never a progress denominator.
+
 ## 7. Text wireframes for the nine core screens
 
 Descriptions are layout intent, not generated UI mocks or code.
@@ -159,32 +161,31 @@ Top priority: answer a specific language question. Hierarchy: search/topic list;
 
 ### Progress
 
-Top priority: understand ability and next work. Hierarchy: text-path milestones; domain sections; recent independent evidence and unfinished assessment needs; concrete follow-up. Main CTA: selected next learning/practice action. Secondary: assessment detail, activity history, optional evidence detail in human language. Mobile: stacked domain sections, expand one; no tiny dashboards. Desktop: separate domain rows/columns with aligned labels, readable detail. Finished lessons can coexist with “Writing not assessed”; no generic 100% celebration masking it.
+Top priority: understand ability and next work. Hierarchy: text-path milestones; domain sections; recent independent evidence and unfinished assessment needs; concrete follow-up. Main CTA: selected next learning/practice action. Secondary: assessment detail, activity history, optional evidence detail in human language. Mobile: stacked domain sections, expand one; no tiny dashboards. Desktop: separate domain rows/columns with aligned labels, readable detail. Finished lessons can coexist with “Writing not assessed”; no generic 100% celebration masking it. Official completion depends on essential functional outcomes, not 100 atomic certificates. Show bounded assessed writing separately from optional open writing/AI feedback; AI-only judgments remain unassessed for certification before calibration. Accepted bounded writing can satisfy v1 requirements without claiming unrestricted free-writing ability.
 
 ### Exam Prep (future)
 
 Top priority: understand supported provider coverage. Hierarchy: provider/level/adapter version; prerequisites and missing domain coverage; competency map; format practice; independent readiness checks. Main CTA: supported format practice or address a missing prerequisite. Secondary: Learn/Practice, provider official information. Mobile: focused provider overview with no sixth compulsory tab. Desktop: optional secondary nav and competency detail. Before listening/speaking/evaluation coverage exists, say readiness cannot be established; never substitute text-path completion for it. No official questions copied.
 
-## 8. Three visual directions (unimplemented)
+## 8. Approved Quiet Editorial baseline (unimplemented)
 
-Colors below are design candidates, not verified contrast results. Audit actual text/control state contrast during implementation; do not treat a palette as accessibility proof.
+**Quiet Editorial is selected and approved**, not an open direction choice. It provides a calm adult language workspace, readable explanations and generous writing space. Exact hexadecimal colors, fonts, spacing and other tokens remain provisional until actual rendered comparison; approval of the direction is not contrast validation.
 
-| Aspect | A — Quiet Editorial (recommended) | B — Precise Studio | C — Warm Library |
-| --- | --- | --- | --- |
-| Mood | Calm language workspace, confident and readable | Focused modern tool, precise and restrained | Welcoming adult learning notebook, composed |
-| Color philosophy | Warm off-white ground, deep ink, one restrained teal action; muted semantic warnings | Cool neutral ground, charcoal ink, subdued indigo action | Soft parchment ground, dark brown ink, restrained moss action |
-| Candidate palette | Ground #F7F7F2; ink #182522; action #215E55 | Ground #F5F6F8; ink #1B2230; action #3C4C8A | Ground #FAF7F0; ink #2C2923; action #465B43 |
-| Typography | Legible sans body; slightly expressive headings or compatible editorial serif after rendering audit | One high-quality sans family with disciplined size/weight; tabular details sparingly | Humanist sans body, modest serif lesson headings; never textbook density |
-| Surfaces | Mostly flat; one subtle raised primary study surface | Tonal panels with fine separators, limited shadow | Paper-like tonal separation, no fake texture required |
-| Cards | Sparse action cards; lesson/unit lists use rows | Functional grouped lists; one action panel | Low-contrast groupings; avoid a card for every metric |
-| Navigation | Quiet selected rail and readable mobile labels | Compact aligned rail/header, explicit selected marker | Understated section labels, friendly short copy |
-| Lesson UI | Wide reading comfort, strong prompt/response separation, restrained annotations | Clear task geometry, disciplined toolbar/footer, precise form states | Gentle model/example presentation, strong single response area |
-| Mobile feel | Airy single column, clear touch feedback, fluid content | Efficient spacing without tiny touch targets, stable keyboard layout | Comfortable text and generous reading rhythm; no ornamental clutter |
-| Dark mode | Deep green-neutral ground, softened bright text, muted teal accent | Charcoal-blue neutral ground, controlled indigo emphasis | Warm dark neutral surfaces, gentle cream text, subdued moss |
+| Aspect | Selected direction and prototype guidance |
+| --- | --- |
+| Color | Warm off-white ground, deep ink, restrained teal action; provisional examples #F7F7F2 / #182522 / #215E55, not immutable tokens |
+| Typography | Legible sans body; restrained expressive headings or compatible editorial serif after rendering review |
+| Surfaces and cards | Mostly flat, subtle primary study surface, sparse action cards and unit/lesson rows |
+| Navigation | Quiet selected rail; explicit readable mobile labels |
+| Lesson | Comfortable reading width, clear prompt/response separation and restrained annotations |
+| Mobile | Airy single column, reachable controls, stable input/keyboard layout |
+| Dark mode | Deliberate deep neutral hierarchy, softened text and muted teal; validate each semantic state |
 
-Recommend Quiet Editorial for adult text-first learning because it gives explanations and writing space without making Home a dashboard. This is a proposal; existing colors are not binding. Any option must unify surrounding pages; a spectacular lesson isolated from incoherent navigation is insufficient.
+Precise Studio (cool, compact tool geometry) and Warm Library (parchment/moss notebook character) were exploratory alternatives and are not selected baselines. Retain them only as brief comparison context, not equal implementation options.
 
-System principles for all options: consistent type scale and reading width, spacing rhythm, radii and semantic state tokens; restrained shadows; one clear CTA per task; color reserved for meaning; no rainbow categories or excessive gradients. Distinct error/warning/status roles include text/icon meaning, never color alone. Motion is brief purposeful feedback; respect reduced motion, avoid celebratory interruption of a writing task. Dark mode needs deliberate hierarchy and contrast for each state, not inversion.
+Finalize tokens through rendered Home, Learn and Lesson comparisons on mobile and desktop, in both light and dark modes. Screenshot inspection and a second polish pass are mandatory; evaluate whole-page hierarchy, input states, text length and contrast before locking tokens. No screens are implemented or screenshots claimed in this document revision.
+
+Use consistent type scale, reading width, spacing, radii and semantic states; restrained shadows and one clear task CTA. Color communicates meaning with text/icons, never alone. Avoid rainbow categories and excessive gradients. Motion serves brief feedback and respects reduced motion. Unify surrounding pages with the lesson flow.
 
 ## 9. Full current-feature migration map
 
@@ -221,8 +222,8 @@ Eventually deprecate duplicated Home-directory entry groups and compatibility la
 
 ## 10. Acceptance and rollout constraints
 
-Before a later UI implementation is complete, inspect desktop/mobile screenshots and perform a second polish pass where needed. Review the whole page, not one component. Validate keyboard/reading order, semantic controls, visible focus, sufficiently contrasted states, >=44px practical touch targets, 390px and narrower layout, long/localized text, 200% zoom, safe areas and keyboard response. Avoid brittle fixed heights and horizontal overflow. Large tables need deliberate accessible behavior. Motion/reduced-motion and dark-mode states are included.
+Before a later UI implementation is complete, inspect desktop/mobile screenshots and perform a mandatory second polish pass. Review the whole page, not one component. Validate keyboard/reading order, semantic controls, visible focus, sufficiently contrasted states, >=44px practical touch targets, 390px and narrower layout, long/localized text, 200% zoom, safe areas and keyboard response. Avoid brittle fixed heights and horizontal overflow. Large tables need deliberate accessible behavior. Motion/reduced-motion and dark-mode states are included.
 
 Loading, empty, error, unavailable, signed-out, saving/retry, withdrawn content and long-copy states are designed for every main flow. Preserve current auth lazy boundaries and test compiled SSR later. Screenshot review is a future implementation acceptance requirement; no production redesign or screen generation is performed in this task.
 
-Rollout aligns with the primary roadmap: first one reviewed lesson slice; then Learn coverage; integrated Practice/Library links; truthful Progress/evidence; finally independent assessments and Home arbitration. Preserve existing practice during every increment. Open product choices are visual direction, initial placement policy and writing evaluation capacity—not whether to keep reference, memory scheduling or existing user content.
+Rollout aligns with the primary roadmap: first one reviewed lesson slice; then Learn coverage; integrated Practice/Library links; truthful Progress/evidence; finally independent assessments and Home arbitration. Preserve existing practice during every increment. Quiet Editorial is approved; remaining choices concern initial placement and the evaluation process for richer open-writing claims. Prototype/development may proceed with contracts, graph validator, Learn shell, one reviewed slice and local/test fixtures under later authorization. Canonical publication requires editorial/linguistic review, provenance/licensing, reviewed lexical coverage, accepted assessment/writing policy, and accessibility/UX acceptance. Unresolved open-writing evaluation must not block U01 development.
