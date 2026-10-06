@@ -103,7 +103,11 @@ test("exact original prototype definition: eight items, five types, six narrow g
 });
 test("registry/prerequisite graph remains valid with exactly 100 skills and four authored Unit 1 lessons", () => {
   assert.equal(germanA1.skills.length, 100);
-  assert.equal(germanA1.lessons.filter((l) => l.availability === "prototype").length, 4);
+  assert.equal(
+    germanA1.lessons.filter((l) => l.unitId === "DE.A1.U01" && l.availability === "prototype")
+      .length,
+    4,
+  );
   assert.deepEqual(validateCurriculum(germanA1), []);
 });
 test("taught German repertoire: only Unit 1 forms, familiar nouns/predicates, numbers and fictional names", () => {

@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import type { Firestore } from "firebase-admin/firestore";
 import { unit1Check, unit1CheckForm } from "@/content/curriculum/german-a1-unit1-check";
+import { germanA1 } from "@/content/curriculum/german-a1";
 import { userDocumentPaths } from "../user-data-inventory";
 import { readCourseProgress } from "./course-progress.server";
 import {
@@ -67,9 +68,11 @@ export async function createAssessmentAttempt(
     trackId: definition.trackId,
     releaseId: definition.releaseId,
   });
+  const unitLessonIds = germanA1.units.find((unit) => unit.id === unit1Check.unitId)!.lessonIds;
+  const unitLessons = course.lessons.filter((lesson) => unitLessonIds.includes(lesson.lessonId));
   if (
-    course.lessons.length !== 4 ||
-    !course.lessons.every(
+    unitLessons.length !== unitLessonIds.length ||
+    !unitLessons.every(
       (row) =>
         !row.unavailable &&
         row.progress?.firstFinishedAt !== null &&

@@ -40,9 +40,7 @@ function LearnUnit() {
         {unit && (
           <>
             <p className="mt-3 max-w-2xl leading-relaxed text-muted">
-              {number === 1
-                ? "Introduce yourself, name people and things, ask for details, and give basic information."
-                : "This unit is planned. Its lessons are not yet authored."}
+              {unit.description ?? "This unit is planned. Its lessons are not yet authored."}
             </p>
             {progress && progress.authoredCount > 0 && (
               <section
@@ -52,7 +50,8 @@ function LearnUnit() {
                 <p className="font-medium">{progress.status}</p>
                 <p className="mt-2 text-sm leading-relaxed text-muted">
                   {progress.finishedCount} of {progress.total} lessons finished
-                  {progress.status === "Unit lessons complete" && ". Unit 2 is not yet available."}
+                  {progress.status === "Unit lessons complete" &&
+                    ". This lesson sequence is finished."}
                 </p>
                 {next && (
                   <Button asChild className="mt-4 h-auto min-h-11 whitespace-normal py-3">

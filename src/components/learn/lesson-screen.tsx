@@ -1,4 +1,4 @@
-import { unitProgress } from "@/lib/curriculum/unit-progress";
+import { courseLearningAction, unitProgress } from "@/lib/curriculum/unit-progress";
 import { Link } from "@tanstack/react-router";
 import { ArrowLeft, Check } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -37,8 +37,14 @@ export function LessonScreen({
   const unitNumber = release.units.indexOf(unit) + 1;
   const progress = unitProgress(release, unit, sessions, blockedLessons);
   const following = nextAuthoredLesson(release.lessons, lesson);
+  const courseNext = courseLearningAction(release, sessions, blockedLessons);
   const next =
-    following && !blockedLessons.includes(following.id) ? following : progress.nextLesson;
+    following && !blockedLessons.includes(following.id)
+      ? following
+      : (progress.nextLesson ??
+        (progress.status === "Unit lessons complete" && courseNext.unit?.id !== unit.id
+          ? courseNext.lesson
+          : undefined));
   // SSR can render a form before its handlers hydrate. Prevent native submission
   // from reloading the page before an answer can be acknowledged.
   const [ready, setReady] = useState(false);
@@ -169,7 +175,7 @@ export function LessonScreen({
             ) : (
               <p className="mt-6 font-medium">
                 {progress.status === "Unit lessons complete"
-                  ? `Unit ${unitNumber} lessons complete. The next unit is not yet available.`
+                  ? `Unit ${unitNumber} lessons complete. More units are not yet authored.`
                   : "This lesson is finished. Return to the unit to see your remaining lessons."}
               </p>
             )}

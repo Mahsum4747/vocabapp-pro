@@ -107,7 +107,7 @@ test("Learn prototype: bounded lesson, retries, session resume and truthful comp
 
 test("direct unavailable lesson and unknown ID remain unavailable", async ({ page, launch }) => {
   await launch({ sets: [], handlers: courseProgressFixture().handlers });
-  await page.goto("/learn/DE.A1.U02.L01");
+  await page.goto("/learn/DE.A1.U03.L01");
   await expect(
     page.getByRole("heading", { name: "This lesson is not yet authored" }),
   ).toBeVisible();

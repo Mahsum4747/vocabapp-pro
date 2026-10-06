@@ -166,7 +166,7 @@ test("four durable lesson records derive unit completion; every write is isolate
   assert.equal(unitProgress(germanA1, unit, sessions).status, "Not started");
   const read = async () => {
     const rows = (await readCourseProgress(f.db, "u", COURSE_SCOPE)).lessons;
-    assert.equal(rows.length, 4);
+    assert.equal(rows.length, 8);
     sessions = Object.fromEntries(
       rows
         .filter((row) => row.progress)
@@ -245,7 +245,7 @@ test("four durable lesson records derive unit completion; every write is isolate
     assert.equal("evidence" in stored, false);
   }
   assert.equal(unitProgress(germanA1, unit, sessions, [lessons[3].id]).status, "In progress");
-  assert.equal(unitProgress(germanA1, germanA1.units[1], sessions).status, "Not yet authored");
+  assert.equal(unitProgress(germanA1, germanA1.units[1], sessions).status, "Not started");
 });
 for (const index of [2, 3])
   test(`${lessons[index].id}: duplicate retries and stale revisions cannot regress or create legacy writes`, async () => {

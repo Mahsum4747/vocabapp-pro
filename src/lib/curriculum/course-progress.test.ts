@@ -186,7 +186,7 @@ test("release/track/lesson rejection and changed/withdrawn content keep old reco
   for (const extra of [
     { releaseId: "unknown" },
     { trackId: "another" },
-    { lessonId: "DE.A1.U02.L01" },
+    { lessonId: "DE.A1.U03.L01" },
     { lessonId: "unknown" },
   ])
     await assert.rejects(saveCourseProgress(f.db, "u", { ...command(), ...extra }));

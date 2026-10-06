@@ -55,7 +55,12 @@ export type LessonDefinition = {
   availability: "prototype" | "not-authored";
   steps: readonly LessonStep[];
 };
-export type UnitDefinition = { id: string; title: string; lessonIds: readonly string[] };
+export type UnitDefinition = {
+  id: string;
+  title: string;
+  description?: string;
+  lessonIds: readonly string[];
+};
 export type CurriculumRelease = {
   id: string;
   version: string;

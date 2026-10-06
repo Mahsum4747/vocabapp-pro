@@ -19,7 +19,9 @@ test("two lessons retain independent sessions, unit states and keyboard flow wit
   });
   mkdirSync("screenshots", { recursive: true });
   await page.goto("/learn");
-  await expect(page.getByText("4 lessons available · Not started")).toBeVisible();
+  await expect(
+    page.locator("main ol > li").first().getByText("4 lessons available · Not started"),
+  ).toBeVisible();
   await page.screenshot({
     path: `screenshots/phase1b-overview-${info.project.name}.png`,
     fullPage: true,

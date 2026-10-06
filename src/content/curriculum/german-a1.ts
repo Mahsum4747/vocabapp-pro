@@ -1,10 +1,16 @@
+import {
+  routineLessonSteps,
+  belongingsLessonSteps,
+  negationLessonSteps,
+  revisionLessonSteps,
+} from "./german-a1-unit2";
 import { detailsLessonSteps } from "./german-a1-details";
 import { informationLessonSteps } from "./german-a1-information";
 import type { CurriculumRelease } from "@/lib/curriculum/types";
 import { entityLessonSteps } from "./german-a1-entities";
 import { identityLessonSteps } from "./german-a1-lesson";
 
-/** Approved registry metadata; All four U01 lessons have original prototype content.
+/** Approved registry metadata; all eight U01/U02 lessons have original prototype content.
  * English support is a placeholder, not a complete source-language overlay. */
 export const germanA1: CurriculumRelease = {
   id: "DE.A1.CURRICULUM.PROTOTYPE.1B",
@@ -1005,11 +1011,15 @@ export const germanA1: CurriculumRelease = {
     {
       id: "DE.A1.U01",
       title: "Foundations and identity",
+      description:
+        "Introduce yourself, name people and things, ask for details, and give basic information.",
       lessonIds: ["DE.A1.U01.L01", "DE.A1.U01.L02", "DE.A1.U01.L03", "DE.A1.U01.L04"],
     },
     {
       id: "DE.A1.U02",
       title: "People, home and routine",
+      description:
+        "Describe everyday routines and belongings, correct a home detail, and revise a short description.",
       lessonIds: ["DE.A1.U02.L01", "DE.A1.U02.L02", "DE.A1.U02.L03", "DE.A1.U02.L04"],
     },
     {
@@ -1130,6 +1140,7 @@ export const germanA1: CurriculumRelease = {
     },
     {
       id: "DE.A1.U02.L01",
+      resumeContractVersion: 1,
       unitId: "DE.A1.U02",
       title: "Everyday actions and routine",
       outcome: "Produce simple routine statements with different subjects",
@@ -1141,11 +1152,12 @@ export const germanA1: CurriculumRelease = {
         "DE.A1.WRITING.SIMPLE_SENTENCE",
       ],
       consolidatedSkillIds: [],
-      availability: "not-authored",
-      steps: [],
+      availability: "prototype",
+      steps: routineLessonSteps,
     },
     {
       id: "DE.A1.U02.L02",
+      resumeContractVersion: 1,
       unitId: "DE.A1.U02",
       title: "People, belongings and plurals",
       outcome: "Explain whose objects they are; resolve simple reference",
@@ -1155,11 +1167,12 @@ export const germanA1: CurriculumRelease = {
         "DE.A1.READING.REFERENCE",
       ],
       consolidatedSkillIds: [],
-      availability: "not-authored",
-      steps: [],
+      availability: "prototype",
+      steps: belongingsLessonSteps,
     },
     {
       id: "DE.A1.U02.L03",
+      resumeContractVersion: 1,
       unitId: "DE.A1.U02",
       title: "Say what is not true",
       outcome: "Contrast a real/incorrect personal or home detail",
@@ -1170,11 +1183,12 @@ export const germanA1: CurriculumRelease = {
         "DE.A1.WRITING.DESCRIPTION",
       ],
       consolidatedSkillIds: [],
-      availability: "not-authored",
-      steps: [],
+      availability: "prototype",
+      steps: negationLessonSteps,
     },
     {
       id: "DE.A1.U02.L04",
+      resumeContractVersion: 1,
       unitId: "DE.A1.U02",
       title: "Combine and revise statements",
       outcome: "Read a corrected fact and revise own short description",
@@ -1185,8 +1199,8 @@ export const germanA1: CurriculumRelease = {
         "DE.A1.WRITING.SELF_REVISION",
       ],
       consolidatedSkillIds: [],
-      availability: "not-authored",
-      steps: [],
+      availability: "prototype",
+      steps: revisionLessonSteps,
     },
     {
       id: "DE.A1.U03.L01",

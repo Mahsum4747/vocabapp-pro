@@ -4,15 +4,15 @@ import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { useLearnSession } from "@/components/learn/session-context";
 import { sessionKey } from "@/lib/curriculum/lesson-session";
-import { unitProgress } from "@/lib/curriculum/unit-progress";
+import { courseLearningAction, unitProgress } from "@/lib/curriculum/unit-progress";
 import { germanA1 } from "@/content/curriculum/german-a1";
 
 export const Route = createFileRoute("/learn/")({ component: LearnCourse });
 function LearnCourse() {
   const { sessions, blockedLessons } = useLearnSession();
-  const progress = unitProgress(germanA1, germanA1.units[0], sessions, blockedLessons);
-  const complete = progress.status === "Unit lessons complete";
-  const first = progress.nextLesson ?? progress.repeatLesson;
+  const action = courseLearningAction(germanA1, sessions, blockedLessons);
+  const complete = action.complete;
+  const first = action.lesson;
   const session = sessions[sessionKey(germanA1.id, first?.id ?? "")];
   return (
     <AppShell>
@@ -30,26 +30,32 @@ function LearnCourse() {
         <div className="mt-8 flex flex-col gap-4 border-y border-border py-5 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="font-medium">
-              {complete ? "Unit 1 lessons complete" : "Your next lesson"}
+              {complete ? "Available lesson sequences complete" : "Your next lesson"}
             </p>
             <p className="mt-1 text-sm text-muted">
               {complete
-                ? "All four lessons finished. Unit 2 is not yet available."
+                ? "All available lessons finished. More units are not yet authored."
                 : (first?.title ?? "Saved lessons are currently unavailable")}
             </p>
+            {!complete && action.unit && (
+              <p className="mt-2 text-sm text-primary-ink">
+                Unit {germanA1.units.indexOf(action.unit) + 1} · {action.unit.title}
+              </p>
+            )}
             {session?.status === "finished" && (
               <p className="mt-2 text-sm text-primary-ink">Lesson finished</p>
             )}
           </div>
-          {complete && !first ? (
-            <Button asChild className="shrink-0">
-              <Link to="/learn/units/$unitId" params={{ unitId: germanA1.units[0].id }}>
-                Revisit Unit 1<ArrowRight />
+          {complete && !first && action.unit ? (
+            <Button asChild className="h-auto min-h-11 shrink-0 whitespace-normal py-3">
+              <Link to="/learn/units/$unitId" params={{ unitId: action.unit.id }}>
+                Revisit Unit {germanA1.units.indexOf(action.unit) + 1}
+                <ArrowRight />
               </Link>
             </Button>
           ) : (
             first && (
-              <Button asChild className="shrink-0">
+              <Button asChild className="h-auto min-h-11 shrink-0 whitespace-normal py-3">
                 <Link to="/learn/$lessonId" params={{ lessonId: first.id }}>
                   {complete ? "Continue practice" : session ? "Continue lesson" : "Start lesson"}
                   <ArrowRight />
@@ -66,36 +72,40 @@ function LearnCourse() {
             </h2>
           </div>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
-            10 units · 40 planned lessons. All four Unit 1 lessons are available in this unpublished
-            prototype. Your checked steps and lesson completion are saved.
+            10 units · 40 planned lessons. All eight lessons in Units 1 and 2 are available in this
+            unpublished prototype. Your checked steps and lesson completion are saved.
           </p>
           <ol className="mt-5 divide-y divide-border">
-            {germanA1.units.map((unit, index) => (
-              <li key={unit.id} className="py-5">
-                <div className="flex items-baseline gap-4">
-                  <span className="text-sm tabular-nums text-muted">
-                    {String(index + 1).padStart(2, "0")}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <h3 className="font-medium">{unit.title}</h3>
-                    <p className="mt-1 text-sm text-muted">
-                      {index === 0
-                        ? `4 lessons available · ${progress.status}`
-                        : "4 lessons planned · Not yet authored"}
-                    </p>
+            {germanA1.units.map((unit, index) => {
+              const progress = unitProgress(germanA1, unit, sessions, blockedLessons);
+              return (
+                <li key={unit.id} className="py-5">
+                  <div className="flex items-baseline gap-4">
+                    <span className="text-sm tabular-nums text-muted">
+                      {String(index + 1).padStart(2, "0")}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <h3 className="font-medium">{unit.title}</h3>
+                      <p className="mt-1 text-sm text-muted">
+                        {progress.authoredCount > 0
+                          ? `${progress.authoredCount} lessons available · ${progress.status}`
+                          : "4 lessons planned · Not yet authored"}
+                      </p>
+                    </div>
                   </div>
-                </div>
-                {index === 0 && (
-                  <Link
-                    to="/learn/units/$unitId"
-                    params={{ unitId: unit.id }}
-                    className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-control text-sm font-medium text-primary-ink focus-visible:ring-2 focus-visible:ring-focus"
-                  >
-                    Open Unit 1<ArrowRight className="size-4" aria-hidden="true" />
-                  </Link>
-                )}
-              </li>
-            ))}
+                  {progress.authoredCount > 0 && (
+                    <Link
+                      to="/learn/units/$unitId"
+                      params={{ unitId: unit.id }}
+                      className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-control text-sm font-medium text-primary-ink focus-visible:ring-2 focus-visible:ring-focus"
+                    >
+                      Open Unit {index + 1}
+                      <ArrowRight className="size-4" aria-hidden="true" />
+                    </Link>
+                  )}
+                </li>
+              );
+            })}
           </ol>
         </section>
         <p className="mt-5 text-sm leading-relaxed text-muted">
