@@ -5,13 +5,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useLearnSession } from "./session-context";
 import { germanA1 } from "@/content/curriculum/german-a1";
-import { unit1Check as definition } from "@/content/curriculum/german-a1-unit1-check";
+import { unit1Check, unit1CheckForm } from "@/content/curriculum/german-a1-unit1-check";
 import { unitProgress } from "@/lib/curriculum/unit-progress";
 import type { AssessmentAttempt, AssessmentResponse } from "@/lib/curriculum/assessment";
-import { projectOutcomes } from "@/lib/curriculum/assessment-projection";
+import {
+  projectOutcomes,
+  observationKind,
+  nextFormLabel,
+} from "@/lib/curriculum/assessment-projection";
 const request = {
-  assessmentId: definition.id,
-  compatibilityVersion: definition.compatibilityVersion,
+  assessmentId: unit1Check.id,
+  compatibilityVersion: unit1Check.compatibilityVersion,
 };
 
 export function UnitCheckScreen({ attemptId }: { attemptId?: string }) {
@@ -20,6 +24,10 @@ export function UnitCheckScreen({ attemptId }: { attemptId?: string }) {
     unitProgress(germanA1, germanA1.units[0], sessions, blockedLessons).status ===
     "Unit lessons complete";
   const navigate = useNavigate();
+  const [history, setHistory] = useState<AssessmentAttempt[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(true);
+  const [historyFailed, setHistoryFailed] = useState(false);
+  const [historyToken, setHistoryToken] = useState(0);
   const [attempt, setAttempt] = useState<AssessmentAttempt | null>(null);
   const [loading, setLoading] = useState(Boolean(attemptId));
   const [loadFailed, setLoadFailed] = useState(false);
@@ -35,6 +43,40 @@ export function UnitCheckScreen({ attemptId }: { attemptId?: string }) {
   const alive = useRef(true);
   const heading = useRef<HTMLHeadingElement>(null);
   const loadRequest = useRef<{ token: number; promise: Promise<AssessmentAttempt> } | null>(null);
+  const definition = attempt ? unit1CheckForm(attempt.formId) : unit1Check;
+  const next = nextFormLabel(history);
+  const formLabel = definition.formId === "U01.FORM.A" ? "Form A" : "Form B";
+  const historyRequest = useRef<{ token: number; promise: Promise<AssessmentAttempt[]> } | null>(
+    null,
+  );
+  useEffect(() => {
+    let active = true;
+    setHistoryFailed(false);
+    setHistoryLoading(true);
+    if (historyRequest.current?.token !== historyToken)
+      historyRequest.current = {
+        token: historyToken,
+        promise: import("@/lib/curriculum/assessment-api").then(({ getUnitCheckHistory }) =>
+          getUnitCheckHistory({ data: request }),
+        ),
+      };
+    historyRequest.current.promise
+      .then((value) => {
+        if (active) {
+          setHistory(value);
+          setHistoryLoading(false);
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setHistoryFailed(true);
+          setHistoryLoading(false);
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, [historyToken]);
   const dirty = attempt?.status === "in-progress" && Object.values(answers).some(Boolean);
   const blocker = useBlocker({
     shouldBlockFn: () => Boolean(dirty),
@@ -65,6 +107,11 @@ export function UnitCheckScreen({ attemptId }: { attemptId?: string }) {
       .then((value) => {
         if (active) {
           setAttempt(value);
+          if (value.status === "submitted" && pending.current) {
+            setHistoryToken((n) => n + 1);
+            setAnswers({});
+            pending.current = null;
+          }
           setLoading(false);
         }
       })
@@ -115,6 +162,11 @@ export function UnitCheckScreen({ attemptId }: { attemptId?: string }) {
       });
       if (alive.current) {
         setAttempt(result.attempt);
+        setHistory((rows) => [
+          ...rows.filter((a) => a.attemptId !== result.attempt.attemptId),
+          result.attempt,
+        ]);
+        setHistoryToken((n) => n + 1);
         setConflict(result.kind === "conflict");
         setAnswers({});
         pending.current = null;
@@ -126,6 +178,7 @@ export function UnitCheckScreen({ attemptId }: { attemptId?: string }) {
       if (alive.current) setBusy(false);
     }
   }
+  const projections = projectOutcomes(unit1Check, history);
   const item = definition.items[index];
   const submitted = attempt?.status === "submitted";
   return (
@@ -198,38 +251,73 @@ export function UnitCheckScreen({ attemptId }: { attemptId?: string }) {
               Unit check: {attempt.responses.filter((r) => r.correct).length} /{" "}
               {definition.items.length} correct
             </h2>
-            <p className="mt-2 text-sm text-muted">Unit lessons complete · Check result saved.</p>
-            <p className="mt-4 leading-relaxed text-muted">
-              These observations describe this check only. They do not certify mastery, free writing
-              or speaking.
+            <p className="mt-2 text-sm text-muted">
+              {formLabel} · Unit lessons complete · Check result saved.
             </p>
-            <ul
-              className="mt-6 divide-y divide-border border-y border-border"
-              aria-label="Outcome evidence"
-            >
-              {projectOutcomes(definition, attempt).map((projection) => {
-                const target = definition.targets.find((t) => t.id === projection.targetId)!;
-                return (
-                  <li key={target.id} className="py-4">
-                    <p className="font-medium">{target.label}</p>
-                    <p
-                      className={`mt-1 text-sm ${projection.state === "demonstrated in this check" ? "text-primary-ink" : "text-muted"}`}
-                    >
-                      {projection.state === "demonstrated in this check"
-                        ? "Demonstrated in this check"
-                        : projection.state === "needs more evidence"
-                          ? "Needs more evidence"
-                          : "No evidence"}
-                    </p>
-                    <p className="mt-2 text-sm leading-relaxed text-muted">{target.scope}</p>
-                  </li>
-                );
-              })}
-            </ul>
+            <p className="mt-2 text-sm font-medium text-primary-ink">
+              {!historyLoading && !historyFailed
+                ? observationKind(attempt, history)
+                : "Saved observation"}
+            </p>
+            <p className="mt-4 leading-relaxed text-muted">
+              Your score is for this saved attempt. Evidence below uses saved checks; it does not
+              certify free writing, speaking or mastery.
+            </p>
+            <h3 className="mt-6 font-display text-xl font-semibold">Combined evidence</h3>
+            <p className="mt-2 text-sm leading-relaxed text-muted">
+              Latest observation in each form. Older item reviews stay separate.
+            </p>
+            {historyFailed && (
+              <div role="alert" className="mt-3 text-sm">
+                <p>
+                  Combined history could not be refreshed. This attempt remains saved; the summary
+                  is unavailable.
+                </p>
+                <Button
+                  variant="outline"
+                  className="mt-3 min-h-11"
+                  onClick={() => setHistoryToken((n) => n + 1)}
+                >
+                  Retry evidence history
+                </Button>
+              </div>
+            )}
+            {historyLoading && (
+              <p role="status" className="mt-3 text-sm text-muted">
+                Reading combined evidence…
+              </p>
+            )}
+            {!historyFailed && !historyLoading && projections.some((p) => p.repeatedForms > 0) && (
+              <p className="mt-2 text-sm text-muted">
+                Includes repeated observation; no additional independent form.
+              </p>
+            )}
+            {!historyFailed && !historyLoading && (
+              <ul
+                className="mt-6 divide-y divide-border border-y border-border"
+                aria-label="Outcome evidence"
+              >
+                {projections.map((projection) => {
+                  const target = definition.targets.find((t) => t.id === projection.targetId)!;
+                  return (
+                    <li key={target.id} className="py-4">
+                      <p className="font-medium">{target.label}</p>
+                      <p
+                        className={`mt-1 text-sm ${projection.state !== "needs more evidence" && projection.state !== "no evidence" ? "text-primary-ink" : "text-muted"}`}
+                      >
+                        {projection.state.charAt(0).toUpperCase() + projection.state.slice(1)}
+                      </p>
+                      <p className="mt-2 text-sm leading-relaxed text-muted">{target.scope}</p>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
             <details className="mt-5">
               <summary className="min-h-11 cursor-pointer py-3 font-medium focus-visible:ring-2 focus-visible:ring-focus">
                 Review item results
               </summary>
+              <p className="py-3 text-sm text-muted">{formLabel} · This saved attempt only</p>
               <ol className="divide-y divide-border">
                 {definition.items.map((task, i) => (
                   <li key={task.id} className="py-4">
@@ -254,17 +342,26 @@ export function UnitCheckScreen({ attemptId }: { attemptId?: string }) {
               </ol>
             </details>
             <p className="mt-5 text-sm leading-relaxed text-muted">
-              Another attempt repeats these prototype items. It is a repeat observation, not new
-              independent transfer evidence. Prior results remain saved; the latest accepted result
-              is shown on Unit 1.
+              {historyFailed || historyLoading
+                ? "Read the saved history before choosing another check."
+                : next.repeated
+                  ? `Next: ${next.formId === "U01.FORM.A" ? "Form A" : "Form B"} again. A repeated observation, not another independent form.`
+                  : "Next: Form B with alternate tasks for an additional independent observation."}{" "}
+              These prototype forms have not been validated as equivalent tests.
             </p>
             <Button
-              variant="outline"
+              variant={next.repeated ? "outline" : "default"}
               className="mt-5 min-h-11"
-              disabled={busy}
+              disabled={busy || historyLoading || historyFailed}
               onClick={() => void start()}
             >
-              {busy ? "Starting…" : failure ? "Retry retake" : "Try this check again"}
+              {busy
+                ? "Starting…"
+                : failure
+                  ? "Retry retake"
+                  : next.repeated
+                    ? "Repeat a check form"
+                    : "Try the alternate form"}
             </Button>
             {failure && (
               <p role="alert" className="mt-3 text-sm">
@@ -274,6 +371,16 @@ export function UnitCheckScreen({ attemptId }: { attemptId?: string }) {
           </section>
         ) : (
           <section className="mt-6 border-t border-border pt-6">
+            <p className="mb-3 text-sm font-medium text-primary-ink">
+              {formLabel} ·{" "}
+              {historyFailed || historyLoading
+                ? "Saved form"
+                : history.some((a) => a.formId === attempt.formId)
+                  ? "Repeated observation"
+                  : attempt.formId === "U01.FORM.B"
+                    ? "Alternate form"
+                    : "First observation"}
+            </p>
             <p className="text-sm tabular-nums text-muted">
               Item {index + 1} of {definition.items.length} ·{" "}
               {Object.values(answers).filter((value) => value.trim()).length} answered

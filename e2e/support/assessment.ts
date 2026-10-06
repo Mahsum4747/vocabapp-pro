@@ -2,6 +2,7 @@ import {
   createAssessmentAttempt,
   readAssessmentAttempt,
   readLatestAssessment,
+  readAssessmentHistory,
   submitAssessmentAttempt,
 } from "../../src/lib/curriculum/assessment.server";
 import { courseProgressFixture } from "./course-progress";
@@ -13,10 +14,15 @@ export async function assessmentFixture(complete = true) {
     for (let index = 0; index < 4; index++)
       await course.advanceLesson(index, germanA1.lessons[index].steps.length);
   let failLoad = false;
+  let failHistory = false;
   let failSubmit = false;
   let loseAck = false;
   let failStart = false;
+  let loseStartAck = false;
   return {
+    failNextHistory: () => {
+      failHistory = true;
+    },
     course,
     storage: course.storage,
     failNextLoad: () => {
@@ -28,11 +34,21 @@ export async function assessmentFixture(complete = true) {
     loseNextAck: () => {
       loseAck = true;
     },
+    loseNextStartAck: () => {
+      loseStartAck = true;
+    },
     failNextStart: () => {
       failStart = true;
     },
     handlers: {
       ...course.handlers,
+      getUnitCheckHistory: async (input: unknown) => {
+        if (failHistory) {
+          failHistory = false;
+          throw Error("Fixture history offline");
+        }
+        return readAssessmentHistory(course.storage.db, USER_ID, input);
+      },
       getLatestUnitCheck: async (input: unknown) =>
         readLatestAssessment(course.storage.db, USER_ID, input),
       getUnitCheckAttempt: async (input: unknown) => {
@@ -47,7 +63,12 @@ export async function assessmentFixture(complete = true) {
           failStart = false;
           throw Error("Fixture offline");
         }
-        return createAssessmentAttempt(course.storage.db, USER_ID, input);
+        const attempt = await createAssessmentAttempt(course.storage.db, USER_ID, input);
+        if (loseStartAck) {
+          loseStartAck = false;
+          throw Error("Fixture lost start acknowledgement");
+        }
+        return attempt;
       },
       finishUnitCheck: async (input: unknown) => {
         if (failSubmit) {

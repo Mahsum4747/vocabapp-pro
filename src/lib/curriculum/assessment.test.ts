@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
-import { unit1Check as definition } from "@/content/curriculum/german-a1-unit1-check";
+import { unit1Check as definition, unit1CheckB } from "@/content/curriculum/german-a1-unit1-check";
 import { germanA1 } from "@/content/curriculum/german-a1";
 import { validateCurriculum } from "./validate";
 import {
@@ -262,7 +262,7 @@ test("two concurrent tabs: one winner; changed retry cannot overwrite or duplica
   assert.equal(storage.writes.length, 2);
   assert.equal(results[0].attempt.evidence.length, 8);
 });
-test("retake is independent, prior history preserved, latest accepted projection replaces rather than averages", async () => {
+test("alternate retake preserves history and classifies each target without averaging", async () => {
   const { storage, request } = await start();
   const first = await submitAssessmentAttempt(
     storage.db,
@@ -276,7 +276,9 @@ test("retake is independent, prior history preserved, latest accepted projection
     await readLatestAssessment(storage.db, owner, ASSESSMENT_REQUEST),
     first.attempt,
   );
-  const mixed = answers.map((r, i) => ([3, 5].includes(i) ? { ...r, response: "wrong" } : r));
+  const mixed = unit1CheckB.items
+    .map((item) => ({ itemId: item.id, response: item.acceptedAnswers[0] }))
+    .map((r, i) => ([3, 5].includes(i) ? { ...r, response: "wrong" } : r));
   const next = await submitAssessmentAttempt(
     storage.db,
     owner,
@@ -288,12 +290,12 @@ test("retake is independent, prior history preserved, latest accepted projection
   assert.deepEqual(
     projectOutcomes(definition, next.attempt).map((p) => p.state),
     [
-      "demonstrated in this check",
-      "demonstrated in this check",
-      "demonstrated in this check",
+      "demonstrated in one observation",
+      "demonstrated in one observation",
+      "demonstrated in one observation",
       "needs more evidence",
       "needs more evidence",
-      "demonstrated in this check",
+      "demonstrated in one observation",
     ],
   );
 });
@@ -401,8 +403,8 @@ test("auth-off preview denied; every server API uses verified auth and rejects b
     else process.env.VITE_AUTH_ENABLED = previous;
   }
   const source = readFileSync("src/lib/curriculum/assessment-api.ts", "utf8");
-  assert.equal((source.match(/middleware\(\[authMiddleware\]\)/g) || []).length, 4);
-  assert.equal((source.match(/context.userId/g) || []).length, 4);
+  assert.equal((source.match(/middleware\(\[authMiddleware\]\)/g) || []).length, 5);
+  assert.equal((source.match(/context.userId/g) || []).length, 5);
   for (const handler of source.split(".handler").slice(1))
     assert.ok(
       handler.indexOf("await requireCourseAuthentication()") <

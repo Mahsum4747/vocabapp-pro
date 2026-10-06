@@ -929,3 +929,84 @@ Quiet Editorial screen: compact item counter, labelled radios/inputs, Previous/N
 Lesson completion != evidence. Assessment attempt != mastery. FSRS/CardProgress, grammarProgress, lesenProgress, Paste, course-progress semantics and legacy vocabulary Learn are unchanged. No Progress/Home integration, A1 completion algorithm, placement/exam mode, assessment scheduling, AI/open-writing grading, audio/speaking, Unit 2 content, mass authoring or production migration. Prototype English support and one exposed retake family remain explicit limits; educator review, stronger transfer coverage and live Firestore integration verification remain deferred.
 
 No push, merge, migration or deployment. Commit only Phase 1E contracts/content/UI, focused/browser tests, generated route registration, deletion inventory and this new handoff section; unrelated pre-existing machine-local files remain excluded.
+
+## 36. Karta Phase 1F — Assessment robustness and alternate-form foundation (2026-10-06)
+
+Base: approved/pushed `codex/karta-phase1e-unit1-evidence`, `4919a8235f99a34bc26fca8cc5dc1e6d697679e6`. Work branch: `codex/karta-phase1f-alternate-form`. All six repository-local Karta skills are discoverable and applied. This section supersedes Phase 1E's single exposed form/latest-attempt projection policy; approved architecture/blueprint documents, lessons, course-progress persistence, dependencies, migrations and production configuration remain unchanged.
+
+### Audit and minimal extension
+
+Inspected the existing eight items/render contracts, strict attempts/events, transactions and authenticated APIs, latest-attempt read/projection, same-form retake and result/review UI, exact six targets, Unit 1 blueprint/lesson scope, deletion inventory, transaction fixture and hermetic browser fixtures. Phase 1E had no explicit form/family identity, served the same tasks on every retake and projected only the last accepted attempt. Its immutable per-attempt document and embedded events already suffice for alternate forms; no storage redesign or new root is needed. The concrete limitation is that latest-attempt-only evidence cannot distinguish repeated success from confirmation across forms.
+
+`AssessmentDefinition` now carries assessment version, stable form ID and family ID in addition to its existing assessment ID, track/release/unit and compatibility version. `DE.A1.U01.CHECK.PROTOTYPE.1` remains assessment version 1. Form A is `U01.FORM.A` / `U01.FAMILY.A`; Form B is `U01.FORM.B` / `U01.FAMILY.B`. Both compatibility contracts currently have version 1. Existing A items, grading, IDs, ordering and six narrow target definitions are preserved. B item IDs `U01.B.C01`–`U01.B.C08` do not collide with A's `U01.C01`–`U01.C08`. Stable IDs, rather than array positions, resolve forms.
+
+Definition hashes remain deterministic diagnostics. Compatibility versions must bump for unsafe item/order, target meaning or response/grading-contract changes; learner-facing copy alone does not bump them. Assessment version describes the assessment, while per-form compatibility governs safe restore/grading. Requests identify the supported assessment/contract; the server chooses/resolves the attempt's form, never trusts a client-selected form/family, and validates stored metadata and complete event provenance against that exact form.
+
+New attempts use schema 2. Known schema-1 Phase 1E records are interpreted read-only as A, including derived A identity on events. No live data migration or read repair occurs. Existing accepted A retry digests remain valid. An explicit final submission of an old unfinished draft remains its normal one acceptance write; it does not trigger a bulk migration.
+
+### Original Form B plan
+
+Eight original Karta prototype tasks, pending pedagogical/editorial review. Same six narrow groups and distribution (one person, one articles, one question, two details, two statements, one supported field). B has two choices, two bounded-text tasks, two constructions, one reading extraction and one supported field. Only Unit 1 taught forms, familiar Büro/Telefon nouns, haben/sein statements, supplied plural/count/date scaffolding and fictional names are used. English role/field labels supply context, not new scored German vocabulary. No later grammar or independently assessed open writing.
+
+| Item | Target | Alternate structure |
+| --- | --- | --- |
+| U01.B.C01 | U01.person | Choose a self-identifying reply for a visitor exchange, rather than name the answering speaker |
+| U01.B.C02 | U01.articles | Repair both articles in a short note, rather than recognize a bundled option |
+| U01.B.C03 | U01.question | Assemble a yes/no identity question from pieces, rather than the unscaffolded intent-only A prompt |
+| U01.B.C04 | U01.details | Extract phone quantity in digits while ignoring a reference number |
+| U01.B.C05 | U01.details | Select the phone-note date from labelled notes, rather than type the small-office date |
+| U01.B.C06 | U01.statements | Turn labelled facts into a third-person haben sentence |
+| U01.B.C07 | U01.statements | Assemble the large-phone statement from pieces amid contrasting office context |
+| U01.B.C08 | U01.form | Fill the answering person's Name field from a dialogue, rather than a single first-person message |
+
+Complete B task arrangements differ from A and lesson fixtures; changing names alone is not the independence rule. Familiar language necessarily recurs. B's article production and scaffolding differences mean **psychometric equivalence is not claimed**. Targets remain narrow functional samples, not certification of all constituent skills or essential-outcome gates. The Name field remains supported W03 exposure, not independent R11 interpretation.
+
+### Selection, history and immutable provenance
+
+Same form/family = repeat observation. A and B = distinct observation families under the prototype authoring rule, allowing at most two independent families. This is not validated parallel-form reliability, controlled exam security or a guarantee of unseen exposure outside Karta. Accepted history determines the observation labels; drafts/abandoned answers provide no evidence. Unlimited retries do not create unlimited independent families.
+
+Server selection is deterministic: no accepted attempt → A; latest accepted A → B; latest accepted B → A. Thus the first alternate retake is B and subsequent retakes alternate based on accepted history. `finishedAt` descending, then attempt document ID descending, defines “latest,” including simultaneous timestamps. Drafts never advance selection. Start reads existing UUID first inside its transaction; an existing attempt is returned without changing its form. New selection reads the owner's attempts in the same transaction before its one create write. The stored form is immutable across refresh, URL reopen, retries and concurrent tabs. Different concurrent UUIDs may legitimately get the same form; those results stay in one family and cannot establish alternate confirmation. A start racing a submit observes a serialized before/after history and cannot reassign a previously created attempt.
+
+Storage remains `users/{verifiedOwner}/assessmentAttempts/{UUID}`. Two lifetime writes for new attempts: explicit draft start and atomic final acceptance. Read, duplicate start, identical retry and projection remain write-free. Changed competing submissions return the winning immutable result. New digest identity includes assessment version/form/family and ordered transient responses; legacy A digests retain their original layout. No duplicate deterministic events (`attemptId:itemId`). Attempts/events persist assessment ID/version, form/family, compatibility version, owner, attempt/item/target, correctness and server times; existing track/release/unit scope stays intact.
+
+A fifth authenticated API reads accepted history; all five deny auth-off access before Firestore initialization and use verified `context.userId`. No browser-direct database access. History is a prototype collection scan, avoiding a new persisted index/score or composite-index configuration. Its read/transfer cost grows with the number of attempts, and selection reads drafts as well. A production-scale history read plan needs deliberate follow-up; this phase does not silently add one. Transactions are exercised by deterministic hermetic optimistic fixtures, not a live Firestore service.
+
+### Cautious projection and retakes
+
+Projection is a pure read model. It uses the latest accepted compatible attempt **per known family**, with the same time/ID tie-break as selection. Every required item for a target must be correct within that form; both items are required for details/statements. No averaging across items, targets or history.
+
+- Neither family observed → `no evidence`.
+- Any latest observed family fails that target → `needs more evidence`, even when the other succeeds.
+- Only one successful family observed → `demonstrated in one observation`.
+- Latest target observations in both A and B succeed → `confirmed in an alternate form`.
+
+A repeat replaces that family's latest classification; it can resolve or introduce a contradiction but **does not add another independent family**. A+B confirmation means agreement between the latest samples from two authored families, not two guaranteed first-exposure successes. Repeat exposure is indicated separately. No score decay, confidence/proficiency percentages, lifetime weighting, scheduling or persisted projection/mastery record.
+
+Current-attempt score, form and observation kind are separate from the combined evidence section. Review resolves the URL's exact form and items, with its own classified results/accepted responses; combined history can include newer attempts and is labelled accordingly. Old attempt review never silently uses B prompts for A or merges responses. Unit entry labels the last saved form. After A the primary CTA offers the alternate form; once the next form has an accepted observation, retake wording calls it a repeat. Combined-history failure hides the unavailable summary and disables the history-dependent retake until explicit retry, while preserving exact-attempt review. One promise per explicit history/load token prevents effect re-entry from masking a failure. Lost acceptance acknowledgements support exact-payload retry or saved-result recovery.
+
+### Privacy, deletion and protected scope
+
+No raw typed answers, prompt/stimulus snapshots, keystrokes, AI feedback or exposure ledger are stored. Only classified item results and required provenance are durable; submission text is transient for bounded deterministic grading/digest. Existing recursive account deletion already covers both forms and their embedded events, plus drafts, even without a parent user document. Tests preserve another user's A/B records.
+
+Lesson completion != evidence. Assessment attempt != mastery. Same-form repeat != independent evidence. FSRS/CardProgress, grammarProgress, lesenProgress, Paste, courseProgress semantics and legacy vocabulary Learn remain unchanged. No unit/A1/CEFR mastery percentage, Progress/Home integration, recommendations, adaptive selection/scheduling, spaced assessment, AI/open-writing/audio grading, Unit 2 or mass authoring. No migration, merge, deployment or push. Pre-existing untracked local skills, CodeGraph, `.firebaserc` and `.vercelignore` are excluded.
+
+### Validation and visual review
+
+The existing sealed browser harness exercises real assessment/progress logic with fake transactions and mocked verified auth/server functions; credentials are blank and external APIs blocked. Initial browser assertions needed two corrections: wait for the actual Form B navigation before reading its URL, and select the specific competing-tab status rather than both that status and the new history-loading status. No application overwrite/form-switch bug was involved.
+
+Initial desktop and dark-320 screenshots showed legible forms and explicit cautious contradiction states, but too much result explanation and six duplicated repeat notes. The second polish pass shortened score/combined-history copy (also avoiding the implication that B already exists after A), moved repeat exposure to one summary note, removed internal authoring-rule jargon from learner copy, and gave the first alternate CTA primary emphasis while repeats stay secondary. The historical-read recovery also preserves explicit failure/retry instead of automatically masking initial history failures.
+
+Remaining limits: original unpublished English-supported content awaits educator review; only two authored families and narrow bounded samples; exact bounded acceptance is not open writing; no psychometric equivalence, parallel reliability or public completion certification; accepted-history exposure semantics and growing history-read cost; live backend/production transaction verification deferred.
+
+
+Final validation:
+
+- Focused `node --import ./scripts/test-register.mjs --test src/lib/curriculum/assessment*.test.ts`: final **35 passed, 0 failed** within the combined regression run (20 retained/updated Phase 1E + 15 Phase 1F cases). The selection/submission collision uses a barrier to force overlapping transaction snapshots and verifies retry, not merely parallel Promise dispatch. Covers exact A/B definitions and taught scope, structural alternation, immutable form/version/event provenance, A→B→repeat selection, concurrent same/different UUID starts, refresh, duplicate/lost-ack/competing submission, one-family repeats, alternate confirmation, contradictions/full two-item rules, latest-per-family history, stale/incompatible/forged data, legacy A read-only interpretation/retry, both-form deletion and unchanged protected documents.
+- `node --import ./scripts/test-register.mjs --test src/lib/curriculum/*.test.ts src/lib/srs/scheduler.test.ts src/lib/review-plan.test.ts src/lib/foundation-hardening.test.ts src/lib/grammar-drills.test.ts`: **151 passed, 0 failed** (35 assessment + 50 existing curriculum/progress + 66 legacy regressions).
+- `npm run typecheck`: passed after final changes. Scoped ESLint: **0 errors, 0 warnings**. `git diff --check`: passed.
+- `npm run build:compile`: passed on final application source. Generated SSR syntax check also passes. Normal migration-triggering `build`, `db:migrate` and deployment commands were not run. Existing bundle-size warnings remain outside this phase.
+- `npm exec playwright -- test e2e/learn-phase1e.spec.ts e2e/learn-phase1f.spec.ts e2e/learn-durable.spec.ts e2e/learn-phase1d.spec.ts e2e/learn-unit1.spec.ts e2e/learn-prototype.spec.ts`: **56 passed, 0 failed**, desktop/mobile. Then strengthened the B failure case to lose acknowledgement AFTER durable start; focused desktop/mobile dev rerun: **2 passed, 0 failed**, same B UUID and no extra writes.
+- Same complete six-file suite with `--config e2e/home-compiled.config.ts`: **56 passed, 0 failed**, including the strengthened lost-start-ack fixture. Includes all-four durable lesson resumes, legacy vocabulary Learn, auth/incomplete gating, refresh during B, retake/retry failure, lost start/submission acknowledgements, exact form review, combined history/repeats/contradictions, competing submission, stale/incompatible URL and explicit history recovery. The harness asserts no uncaught browser errors or unhandled backend calls. Existing dev warmup credential-denial/import-protection diagnostics do not access production services.
+- Rendered and inspected ignored `screenshots/phase1f/`: Unit before/after A, A check/result, B check/result/combined evidence, same-family-only repeat, A repeat after both forms, contradictory B result, exact A/B reviews, 390px B/combined result and dark 320px B/contradiction. Re-inspected after the polish pass. No horizontal overflow; narrow/dark text and controls remain legible. The mobile B action viewport additionally verifies the scrolled Next button above fixed navigation. Full-page captures can place fixed chrome within the image; viewport/action bounds and actual browser interaction confirm controls remain reachable.
+
+Completed work is limited to assessment content/contracts/history/projection/UI, focused tests/browser fixtures, and this appended Phase 1F section. No architecture contradiction was found. No push, merge, migration or deployment.

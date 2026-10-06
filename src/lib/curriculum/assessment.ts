@@ -12,6 +12,9 @@ export type AssessmentItem = {
 };
 export type AssessmentDefinition = {
   id: string;
+  assessmentVersion: number;
+  formId: string;
+  formFamilyId: string;
   trackId: string;
   releaseId: string;
   unitId: string;
@@ -40,7 +43,7 @@ export const submitAssessmentSchema = attemptRequestSchema
 const resultSchema = z
   .object({ itemId: z.string(), targetId: z.string(), correct: z.boolean() })
   .strict();
-const eventSchema = resultSchema
+const legacyEventSchema = resultSchema
   .extend({
     id: z.string(),
     learnerId: z.string(),
@@ -51,8 +54,20 @@ const eventSchema = resultSchema
     provenance: z.literal("assessment"),
   })
   .strict();
+const formIdentity = {
+  assessmentVersion: z.number().int().positive(),
+  formId: z.string().min(1),
+  formFamilyId: z.string().min(1),
+};
+const eventSchema = legacyEventSchema
+  .extend({
+    formId: formIdentity.formId,
+    formFamilyId: formIdentity.formFamilyId,
+    compatibilityVersion: z.number().int().positive(),
+  })
+  .strict();
 export type EvidenceEvent = z.infer<typeof eventSchema>;
-export const storedAttemptSchema = z
+const legacyAttemptSchema = z
   .object({
     schemaVersion: z.literal(1),
     attemptId: z.string().uuid(),
@@ -73,9 +88,40 @@ export const storedAttemptSchema = z
       .nullable(),
     // Correct/incorrect classes suffice for result review; raw typed answers are not stored.
     responses: z.array(resultSchema).max(10),
+    evidence: z.array(legacyEventSchema).max(10),
+  })
+  .strict();
+const currentAttemptSchema = legacyAttemptSchema
+  .extend({
+    schemaVersion: z.literal(2),
+    ...formIdentity,
     evidence: z.array(eventSchema).max(10),
   })
   .strict();
+/** Read-only interpretation of known Phase 1E records. Never writes/migrates legacy data. */
+export const storedAttemptSchema = z.union([
+  currentAttemptSchema,
+  currentAttemptSchema
+    .extend({
+      schemaVersion: z.literal(1),
+      formId: z.literal("U01.FORM.A"),
+      formFamilyId: z.literal("U01.FAMILY.A"),
+      assessmentVersion: z.literal(1),
+    })
+    .strict(),
+  legacyAttemptSchema.transform((a) => ({
+    ...a,
+    assessmentVersion: 1,
+    formId: "U01.FORM.A",
+    formFamilyId: "U01.FAMILY.A",
+    evidence: a.evidence.map((e) => ({
+      ...e,
+      formId: "U01.FORM.A",
+      formFamilyId: "U01.FAMILY.A",
+      compatibilityVersion: a.compatibilityVersion,
+    })),
+  })),
+]);
 export type AssessmentAttempt = z.infer<typeof storedAttemptSchema>;
 export type SubmissionResult = { kind: "accepted" | "conflict"; attempt: AssessmentAttempt };
 
@@ -125,6 +171,9 @@ export function validateAttempt(
     a.learnerId !== learnerId ||
     (attemptId && a.attemptId !== attemptId) ||
     a.assessmentId !== definition.id ||
+    a.assessmentVersion !== definition.assessmentVersion ||
+    a.formId !== definition.formId ||
+    a.formFamilyId !== definition.formFamilyId ||
     a.trackId !== definition.trackId ||
     a.releaseId !== definition.releaseId ||
     a.unitId !== definition.unitId ||
@@ -162,7 +211,10 @@ export function validateAttempt(
         e.learnerId !== learnerId ||
         e.assessmentAttemptId !== a.attemptId ||
         e.assessmentId !== definition.id ||
-        e.assessmentVersion !== definition.compatibilityVersion ||
+        e.assessmentVersion !== definition.assessmentVersion ||
+        e.compatibilityVersion !== definition.compatibilityVersion ||
+        e.formId !== definition.formId ||
+        e.formFamilyId !== definition.formFamilyId ||
         e.timestamp !== a.finishedAt
       )
         throw Error("Invalid evidence provenance.");

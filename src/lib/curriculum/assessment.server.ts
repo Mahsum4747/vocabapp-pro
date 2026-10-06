@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import type { Firestore } from "firebase-admin/firestore";
-import { unit1Check } from "@/content/curriculum/german-a1-unit1-check";
+import { unit1Check, unit1CheckForm } from "@/content/curriculum/german-a1-unit1-check";
 import { userDocumentPaths } from "../user-data-inventory";
 import { readCourseProgress } from "./course-progress.server";
 import {
@@ -10,9 +10,27 @@ import {
   gradeAssessment,
   validateAttempt,
   type AssessmentAttempt,
+  storedAttemptSchema,
   type SubmissionResult,
 } from "./assessment";
 
+function validateStored(raw: unknown, ownerId: string, attemptId?: string) {
+  const parsed = storedAttemptSchema.parse(raw);
+  return validateAttempt(parsed, unit1CheckForm(parsed.formId), ownerId, attemptId);
+}
+/** Prototype-only history scan: no composite index, persisted score or new root.
+ * Reads all attempt records, including drafts, inside selection transactions.
+ */
+function attemptsCollection(db: Firestore, ownerId: string) {
+  userDocumentPaths(ownerId);
+  return db.collection(`users/${ownerId}/assessmentAttempts`);
+}
+export function selectAssessmentForm(history: readonly AssessmentAttempt[]) {
+  const latest = [...history]
+    .filter((a) => a.status === "submitted")
+    .sort((a, b) => b.finishedAt! - a.finishedAt! || b.attemptId.localeCompare(a.attemptId))[0];
+  return unit1CheckForm(latest?.formId === unit1Check.formId ? "U01.FORM.B" : unit1Check.formId);
+}
 const hash = (value: unknown) => createHash("sha256").update(JSON.stringify(value)).digest("hex");
 export const ASSESSMENT_REQUEST = {
   assessmentId: unit1Check.id,
@@ -61,21 +79,27 @@ export async function createAssessmentAttempt(
     throw Error("Finish the four Unit 1 lessons first.");
   return db.runTransaction(async (tx) => {
     const raw = (await tx.get(ref)).data();
-    if (raw !== undefined) return validateAttempt(raw, definition, ownerId, request.attemptId);
+    if (raw !== undefined) return validateStored(raw, ownerId, request.attemptId);
+    const rows = await tx.get(attemptsCollection(db, ownerId));
+    const history = rows.docs.map((row) => validateStored(row.data(), ownerId, row.id));
+    const form = selectAssessmentForm(history);
     const attempt: AssessmentAttempt = {
-      schemaVersion: 1,
+      schemaVersion: 2,
+      assessmentVersion: form.assessmentVersion,
+      formId: form.formId,
+      formFamilyId: form.formFamilyId,
       attemptId: request.attemptId,
       learnerId: ownerId,
       assessmentId: definition.id,
       trackId: definition.trackId,
       releaseId: definition.releaseId,
       unitId: definition.unitId,
-      compatibilityVersion: definition.compatibilityVersion,
-      definitionHash: hash(definition),
+      compatibilityVersion: form.compatibilityVersion,
+      definitionHash: hash(form),
       status: "in-progress",
       startedAt: now,
       finishedAt: null,
-      itemOrder: definition.items.map((item) => item.id),
+      itemOrder: form.items.map((item) => item.id),
       submissionDigest: null,
       responses: [],
       evidence: [],
@@ -90,7 +114,7 @@ export async function readAssessmentAttempt(
   input: unknown,
 ): Promise<AssessmentAttempt> {
   const request = attemptRequestSchema.parse(input);
-  const definition = resolveAssessment({
+  resolveAssessment({
     assessmentId: request.assessmentId,
     compatibilityVersion: request.compatibilityVersion,
   });
@@ -98,26 +122,27 @@ export async function readAssessmentAttempt(
     await db.getAll(db.doc(assessmentAttemptPath(ownerId, request.attemptId)))
   )[0].data();
   if (raw === undefined) throw Error("Unknown attempt.");
-  return validateAttempt(raw, definition, ownerId, request.attemptId);
+  return validateStored(raw, ownerId, request.attemptId);
 }
-/** Single supported prototype assessment. Single-field index; implicit document-ID tie-break.
- * Latest means finishedAt descending, then document ID descending for simultaneous finishes.
- */
+/** Read-only accepted history, newest first with stable document-ID tie-break. */
+export async function readAssessmentHistory(
+  db: Firestore,
+  ownerId: string,
+  input: unknown,
+): Promise<AssessmentAttempt[]> {
+  resolveAssessment(input);
+  const rows = await attemptsCollection(db, ownerId).get();
+  return rows.docs
+    .map((row) => validateStored(row.data(), ownerId, row.id))
+    .filter((a) => a.status === "submitted")
+    .sort((a, b) => b.finishedAt! - a.finishedAt! || b.attemptId.localeCompare(a.attemptId));
+}
 export async function readLatestAssessment(
   db: Firestore,
   ownerId: string,
   input: unknown,
 ): Promise<AssessmentAttempt | null> {
-  const definition = resolveAssessment(input);
-  userDocumentPaths(ownerId);
-  const rows = await db
-    .collection(`users/${ownerId}/assessmentAttempts`)
-    .orderBy("finishedAt", "desc")
-    .limit(1)
-    .get();
-  if (!rows.docs.length) return null;
-  const attempt = validateAttempt(rows.docs[0].data(), definition, ownerId, rows.docs[0].id);
-  return attempt.status === "submitted" ? attempt : null;
+  return (await readAssessmentHistory(db, ownerId, input))[0] ?? null;
 }
 /** The entire accepted truth + deterministic events land in ONE transaction/document.
  * Subsequent identical submissions are reads; changed submissions return the winning result.
@@ -129,26 +154,34 @@ export async function submitAssessmentAttempt(
   now = Date.now(),
 ): Promise<SubmissionResult> {
   const request = submitAssessmentSchema.parse(input);
-  const definition = resolveAssessment({
+  resolveAssessment({
     assessmentId: request.assessmentId,
     compatibilityVersion: request.compatibilityVersion,
-  });
-  const responses = gradeAssessment(definition, request.responses);
-  const ordered = definition.items.map((item) => {
-    const response = request.responses.find((r) => r.itemId === item.id)!;
-    // Exact trimmed responses, in fixed item order: changed answers cannot disguise themselves as a retry.
-    return { itemId: item.id, response: response.response };
-  });
-  const digest = hash({
-    assessmentId: definition.id,
-    version: definition.compatibilityVersion,
-    responses: ordered,
   });
   const ref = db.doc(assessmentAttemptPath(ownerId, request.attemptId));
   return db.runTransaction(async (tx) => {
     const raw = (await tx.get(ref)).data();
     if (raw === undefined) throw Error("Unknown attempt.");
-    const previous = validateAttempt(raw, definition, ownerId, request.attemptId);
+    const previous = validateStored(raw, ownerId, request.attemptId);
+    const definition = unit1CheckForm(previous.formId);
+    const responses = gradeAssessment(definition, request.responses);
+    const ordered = definition.items.map((item) => ({
+      itemId: item.id,
+      response: request.responses.find((r) => r.itemId === item.id)!.response,
+    }));
+    // Keep legacy A retry digests stable; new digests bind the explicit form identity.
+    const digest = hash({
+      assessmentId: definition.id,
+      version: definition.compatibilityVersion,
+      ...(previous.schemaVersion === 2
+        ? {
+            assessmentVersion: definition.assessmentVersion,
+            formId: definition.formId,
+            formFamilyId: definition.formFamilyId,
+          }
+        : {}),
+      responses: ordered,
+    });
     if (previous.status === "submitted")
       return {
         kind: previous.submissionDigest === digest ? "accepted" : "conflict",
@@ -167,7 +200,10 @@ export async function submitAssessmentAttempt(
         learnerId: ownerId,
         assessmentAttemptId: previous.attemptId,
         assessmentId: definition.id,
-        assessmentVersion: definition.compatibilityVersion,
+        assessmentVersion: definition.assessmentVersion,
+        compatibilityVersion: definition.compatibilityVersion,
+        formId: definition.formId,
+        formFamilyId: definition.formFamilyId,
         timestamp: finishedAt,
         provenance: "assessment",
       })),

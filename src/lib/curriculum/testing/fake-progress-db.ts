@@ -10,6 +10,11 @@ export function fakeProgressDb(initial: Record<string, unknown> = {}) {
   const row = (path: string, source = records) => ({
     data: () => structuredClone(source.get(path)),
   });
+  const collectionRows = (path: string, source = records) => ({
+    docs: [...source.keys()]
+      .filter((key) => key.startsWith(`${path}/`) && !key.slice(path.length + 1).includes("/"))
+      .map((key) => ({ ...row(key, source), id: key.split("/").at(-1)! })),
+  });
   const db = {
     doc: ref,
     getAll: async (...refs: DocumentReference[]) => refs.map((reference) => row(reference.path)),
@@ -24,7 +29,13 @@ export function fakeProgressDb(initial: Record<string, unknown> = {}) {
         const snapshot = structuredClone(records);
         const pending: [string, unknown][] = [];
         const result = await action({
-          get: async (reference) => row(reference.path, snapshot),
+          get: async (reference) =>
+            (reference as unknown as { collectionPath?: string }).collectionPath
+              ? (collectionRows(
+                  (reference as unknown as { collectionPath: string }).collectionPath,
+                  snapshot,
+                ) as unknown as ReturnType<typeof row>)
+              : row(reference.path, snapshot),
           set: (reference, value) => pending.push([reference.path, structuredClone(value)]),
         });
         if (before !== version) {
@@ -40,6 +51,8 @@ export function fakeProgressDb(initial: Record<string, unknown> = {}) {
       }
     },
     collection: (collectionPath: string) => ({
+      collectionPath,
+      get: async () => collectionRows(collectionPath),
       where: () => ({ get: async () => ({ docs: [] }) }),
       orderBy: (field: string, direction: string) => ({
         limit: (limit: number) => ({

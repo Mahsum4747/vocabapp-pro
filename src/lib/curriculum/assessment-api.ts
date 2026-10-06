@@ -16,6 +16,16 @@ export const getLatestUnitCheck = createServerFn({ method: "GET" })
     const { readLatestAssessment } = await import("./assessment.server");
     return readLatestAssessment(getAdminFirestore(), context.userId, data);
   });
+export const getUnitCheckHistory = createServerFn({ method: "GET" })
+  .middleware([authMiddleware])
+  .validator((input: unknown) => assessmentRequestSchema.parse(input))
+  .handler(async ({ context, data }) => {
+    const { requireCourseAuthentication } = await import("./course-progress.server");
+    await requireCourseAuthentication();
+    const { getAdminFirestore } = await import("../firebase-admin.server");
+    const { readAssessmentHistory } = await import("./assessment.server");
+    return readAssessmentHistory(getAdminFirestore(), context.userId, data);
+  });
 export const getUnitCheckAttempt = createServerFn({ method: "GET" })
   .middleware([authMiddleware])
   .validator((input: unknown) => attemptRequestSchema.parse(input))

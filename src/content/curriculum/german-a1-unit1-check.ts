@@ -2,13 +2,16 @@ import type { AssessmentDefinition } from "@/lib/curriculum/assessment";
 import { germanA1 } from "./german-a1";
 
 /** Original unpublished tasks. Functional sampling, not essential-outcome certification.
- * Retakes reuse this exposed prototype family and are explicitly labelled repeats.
+ * Two original observation families; independence is an authoring rule, not validated equivalence.
  * Bump compatibilityVersion for changed item IDs/order, response/grading contracts or target meanings.
  * Copy-only edits keep it stable; the stored definition hash is diagnostic.
  * Common forms/nouns recur by necessity; complete stimuli/tasks differ from lessons.
  */
 export const unit1Check: AssessmentDefinition = {
   id: "DE.A1.U01.CHECK.PROTOTYPE.1",
+  assessmentVersion: 1,
+  formId: "U01.FORM.A",
+  formFamilyId: "U01.FAMILY.A",
   trackId: "de-a1-text-practice-v1",
   releaseId: germanA1.id,
   unitId: "DE.A1.U01",
@@ -114,3 +117,91 @@ export const unit1Check: AssessmentDefinition = {
     },
   ],
 };
+
+/** Alternate tasks stay within the SAME narrow samples as A. No psychometric equivalence claim.
+ * A's existing items/targets are preserved verbatim. B has globally distinct item IDs.
+ */
+export const unit1CheckB: AssessmentDefinition = {
+  ...unit1Check,
+  formId: "U01.FORM.B",
+  formFamilyId: "U01.FAMILY.B",
+  items: [
+    {
+      id: "U01.B.C01",
+      type: "choice",
+      targetId: "U01.person",
+      prompt: "A visitor asks Kai who he is. Which reply identifies Kai himself?",
+      stimulus: "Visitor: Wer bist du?\nKai: …",
+      options: ["Ich bin Kai.", "Du bist Kai.", "Er ist Kai."],
+      acceptedAnswers: ["Ich bin Kai."],
+    },
+    {
+      id: "U01.B.C02",
+      type: "bounded-text",
+      targetId: "U01.articles",
+      prompt:
+        "Repair both articles in this note. Write the two corrected phrases, separated by a comma.",
+      stimulus: "die Telefon, der Büro",
+      acceptedAnswers: ["das Telefon, das Büro"],
+    },
+    {
+      id: "U01.B.C03",
+      type: "construction",
+      targetId: "U01.question",
+      prompt:
+        "You need to check the visitor’s identity. Assemble a yes/no question using all three pieces.",
+      stimulus: "du · bist · Ada",
+      acceptedAnswers: ["Bist du Ada?"],
+    },
+    {
+      id: "U01.B.C04",
+      type: "reading-extraction",
+      targetId: "U01.details",
+      prompt: "How many phones does the person have? Enter digits, not the reference number.",
+      stimulus: "Nummer: 12\nIch habe zwei Telefone.",
+      acceptedAnswers: ["2"],
+    },
+    {
+      id: "U01.B.C05",
+      type: "choice",
+      targetId: "U01.details",
+      prompt: "Select the date from the phone note, not the office note.",
+      stimulus: "Büro — Datum: 03.12.\nTelefon — Datum: 12.03.",
+      options: ["03.12", "12.03", "02.12"],
+      acceptedAnswers: ["12.03"],
+    },
+    {
+      id: "U01.B.C06",
+      type: "bounded-text",
+      targetId: "U01.statements",
+      prompt: "Rewrite the labelled facts as one German sentence about Eva having phones.",
+      stimulus: "Name: Eva\nTelefone: zwei",
+      acceptedAnswers: ["Eva hat zwei Telefone."],
+      caseSensitive: true,
+    },
+    {
+      id: "U01.B.C07",
+      type: "construction",
+      targetId: "U01.statements",
+      prompt:
+        "The office is small, but the phone is large. Build the sentence about the phone using the pieces.",
+      stimulus: "ist · groß · Das Telefon",
+      acceptedAnswers: ["Das Telefon ist groß."],
+      caseSensitive: true,
+    },
+    {
+      id: "U01.B.C08",
+      type: "supported-field",
+      targetId: "U01.form",
+      prompt: "Complete the Name field for the person answering, not the person asking.",
+      stimulus: "Kai: Wer bist du?\nAda: Ich bin Ada.\nName: …",
+      acceptedAnswers: ["Ada"],
+    },
+  ],
+};
+export const unit1CheckForms = [unit1Check, unit1CheckB] as const;
+export function unit1CheckForm(formId: string): AssessmentDefinition {
+  const form = unit1CheckForms.find((definition) => definition.formId === formId);
+  if (!form) throw Error("Unknown check form.");
+  return form;
+}

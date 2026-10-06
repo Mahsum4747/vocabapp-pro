@@ -68,10 +68,15 @@ export function UnitCheckEntry() {
       {state === "ready" && (
         <>
           {latest && (
-            <p className="mt-3 font-medium">
-              Last unit check: {latest.responses.filter((r) => r.correct).length} /{" "}
-              {unit1Check.items.length} correct
-            </p>
+            <div className="mt-3">
+              <p className="font-medium">
+                Last unit check: {latest.responses.filter((r) => r.correct).length} /{" "}
+                {unit1Check.items.length} correct
+              </p>
+              <p className="mt-1 text-sm text-muted">
+                {latest.formId === "U01.FORM.B" ? "Form B" : "Form A"} · Saved attempt
+              </p>
+            </div>
           )}
           <Button asChild variant="outline" className="mt-4 min-h-11">
             <Link to="/learn/check" search={latest ? { attempt: latest.attemptId } : {}}>
