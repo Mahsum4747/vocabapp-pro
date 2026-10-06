@@ -114,6 +114,9 @@ test("direct unavailable lesson and unknown ID remain unavailable", async ({ pag
   await expect(page.getByRole("button", { name: "Check", exact: true })).toHaveCount(0);
   await page.goto("/learn/unknown");
   await expect(page.getByRole("heading", { name: "Lesson not found" })).toBeVisible();
+  await expect(
+    page.getByText("Eight lessons are available across Units 1 and 2. More units are not yet authored."),
+  ).toBeVisible();
 });
 
 test("Learn and lesson dark mode, narrow layout and long writing remain readable", async ({

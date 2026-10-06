@@ -29,7 +29,7 @@ function LearnLesson() {
           {lesson ? "This lesson is not yet authored" : "Lesson not found"}
         </h1>
         <p className="mt-4 text-muted">
-          Two German A1 lessons are available in Unit 1. More are being authored.
+          Eight lessons are available across Units 1 and 2. More units are not yet authored.
         </p>
         <Button asChild className="mt-6">
           <Link to="/learn">Return to Learn</Link>
