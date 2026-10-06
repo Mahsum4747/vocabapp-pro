@@ -1,3 +1,4 @@
+import { lessonHint } from "@/lib/curriculum/lesson-hint";
 import { courseLearningAction, unitProgress } from "@/lib/curriculum/unit-progress";
 import { Link } from "@tanstack/react-router";
 import { ArrowLeft, Check } from "lucide-react";
@@ -61,6 +62,10 @@ export function LessonScreen({
       : startLesson(releaseId, lesson);
   const step = lesson.steps[state.stepIndex];
   const answer = state.responses[step.id] ?? "";
+  const [hint, setHint] = useState<string | null>(null);
+  const bounded = step.kind === "text" || step.kind === "choice";
+  const attempts = state.attempts[step.id] ?? 0;
+  const revealed = bounded && state.feedback?.outcome === "unassessed";
   const passed = state.feedback && state.feedback.outcome !== "incorrect";
   const heading = useRef<HTMLHeadingElement>(null);
   const previousIndex = useRef(state.stepIndex);
@@ -104,7 +109,7 @@ export function LessonScreen({
         <h1 className="mt-3 font-display text-2xl font-semibold tracking-tight sm:text-3xl">
           {lesson.title}
         </h1>
-        <p className="mt-3 text-base leading-relaxed text-muted">
+        <p className="mt-2 text-sm leading-relaxed text-muted">
           {lesson.description ?? lesson.outcome}
         </p>
         <Progress
@@ -222,7 +227,12 @@ export function LessonScreen({
               className="mt-6"
               onSubmit={(event) => {
                 event.preventDefault();
-                dispatch({ type: explaining || passed ? "continue" : "check" });
+                if (state.feedback?.outcome === "incorrect") {
+                  dispatch({ type: "respond", value: answer });
+                  document
+                    .querySelector<HTMLInputElement>("#lesson-answer, input[type=radio]")
+                    ?.focus();
+                } else dispatch({ type: explaining || passed ? "continue" : "check" });
               }}
             >
               <ExerciseResponse
@@ -239,7 +249,7 @@ export function LessonScreen({
                 aria-atomic="true"
                 className={
                   state.feedback
-                    ? `mt-5 rounded-control px-4 py-3 text-sm leading-relaxed ${state.feedback.outcome === "incorrect" ? "bg-danger-soft text-danger" : "bg-primary-soft text-primary-ink"}`
+                    ? `mt-5 rounded-control px-4 py-3 text-sm leading-relaxed ${state.feedback.outcome === "incorrect" ? "bg-danger-soft text-danger" : revealed ? "bg-surface-2 text-fg" : "bg-primary-soft text-primary-ink"}`
                     : "sr-only"
                 }
               >
@@ -248,23 +258,57 @@ export function LessonScreen({
               {state.feedback?.outcome === "incorrect" && (
                 <p className="mt-3 text-sm text-muted">Change your answer, then check again.</p>
               )}
+              {bounded && hint === step.id && !revealed && (
+                <p className="mt-3 text-sm text-muted" role="note">
+                  Hint: {lessonHint(step)}
+                </p>
+              )}
+              {revealed && (
+                <p className="mt-3 text-base font-medium" lang="de">
+                  Answer:{" "}
+                  {step.kind === "text"
+                    ? step.acceptedAnswers[0]
+                    : step.kind === "choice"
+                      ? step.correctAnswer
+                      : ""}
+                </p>
+              )}
+              {bounded && !passed && attempts >= 2 && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    disabled={saving || blocked}
+                    onClick={() => setHint(step.id)}
+                  >
+                    Hint
+                  </Button>
+                  {attempts >= 3 && state.feedback?.outcome === "incorrect" && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      disabled={saving || blocked}
+                      onClick={() => dispatch({ type: "reveal" })}
+                    >
+                      Show answer
+                    </Button>
+                  )}
+                </div>
+              )}
               <Button
                 type="submit"
-                className="mt-7 w-full sm:w-auto sm:min-w-40"
-                disabled={
-                  !ready ||
-                  saving ||
-                  blocked ||
-                  (!explaining && !passed && (!answer.trim() || !!state.feedback))
-                }
+                className="mt-4 w-full sm:w-auto sm:min-w-40"
+                disabled={!ready || saving || blocked || (!explaining && !passed && !answer.trim())}
               >
                 {explaining || passed
                   ? state.stepIndex === lesson.steps.length - 1
                     ? "Finish lesson"
                     : "Continue"
-                  : step.kind === "original"
-                    ? "Record response"
-                    : "Check"}
+                  : state.feedback?.outcome === "incorrect"
+                    ? "Retry"
+                    : step.kind === "original"
+                      ? "Record response"
+                      : "Check"}
               </Button>
             </form>
           </section>

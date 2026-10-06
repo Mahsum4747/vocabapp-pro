@@ -41,6 +41,10 @@ const HomeRecommendedNext = lazy(() =>
   import("@/lib/auth/gates").then((m) => ({ default: m.HomeRecommendedNextGate })),
 );
 
+const HomeCourseContinuation = lazy(() =>
+  import("@/lib/auth/gates").then((m) => ({ default: m.HomeCourseContinuationGate })),
+);
+
 type Search = { view?: "mine" | "public" };
 
 export const Route = createFileRoute("/")({
@@ -214,10 +218,7 @@ function Home() {
     [sets],
   );
 
-  const uncategorizedCount = useMemo(
-    () => sets.filter((s) => !s.folder?.trim()).length,
-    [sets],
-  );
+  const uncategorizedCount = useMemo(() => sets.filter((s) => !s.folder?.trim()).length, [sets]);
   const uncategorizedRatio = sets.length > 0 ? uncategorizedCount / sets.length : 0;
 
   function toggleSelectMode(next: boolean) {
@@ -240,9 +241,7 @@ function Home() {
     if (!target || selectedIds.size === 0) return;
     setMoving(true);
     try {
-      await Promise.all(
-        Array.from(selectedIds).map((id) => updateSetMeta(id, { folder: target })),
-      );
+      await Promise.all(Array.from(selectedIds).map((id) => updateSetMeta(id, { folder: target })));
       toast.success(
         `Moved ${selectedIds.size} set${selectedIds.size === 1 ? "" : "s"} to "${target}".`,
       );
@@ -301,6 +300,10 @@ function Home() {
 
         <Suspense fallback={null}>
           <HomeRecommendedNext refreshVersion={recommendationRefresh} />
+        </Suspense>
+
+        <Suspense fallback={null}>
+          <HomeCourseContinuation />
         </Suspense>
 
         <LibraryProgressPanel className="mt-section" showReview={false} />

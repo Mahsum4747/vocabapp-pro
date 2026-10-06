@@ -168,6 +168,11 @@ export function LearnSessionProvider({ children }: { children: ReactNode }) {
     if (!loaded || blockedLessons.includes(lesson.id) || pending.current[lesson.id]) return;
     const key = sessionKey(germanA1.id, lesson.id);
     const state = sessionRef.current[key] ?? startLesson(germanA1.id, lesson);
+    if (action.type === "reveal") {
+      const next = transitionLesson(lesson, state, action);
+      if (next !== state) setSessions((previous) => ({ ...previous, [key]: next }));
+      return;
+    }
     if (action.type === "respond") {
       const next = transitionLesson(lesson, state, action);
       if (next === state) return;

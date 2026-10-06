@@ -1,3 +1,5 @@
+import { useRef } from "react";
+import { GermanCharacters } from "./german-characters";
 import { Input, Textarea } from "@/components/ui/input";
 import type { LessonStep } from "@/lib/curriculum/types";
 
@@ -15,6 +17,7 @@ export function ExerciseResponse({
   incorrect: boolean;
   onRespond: (value: string) => void;
 }) {
+  const input = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
   if (step.kind === "explanation") return null;
   if (step.kind === "choice")
     return (
@@ -47,6 +50,7 @@ export function ExerciseResponse({
       </label>
       {step.kind === "original" ? (
         <Textarea
+          ref={input as React.RefObject<HTMLTextAreaElement | null>}
           id="lesson-answer"
           lang="de"
           value={answer}
@@ -58,6 +62,7 @@ export function ExerciseResponse({
         />
       ) : (
         <Input
+          ref={input as React.RefObject<HTMLInputElement | null>}
           id="lesson-answer"
           lang="de"
           value={answer}
@@ -70,6 +75,10 @@ export function ExerciseResponse({
           spellCheck={false}
           autoCapitalize="none"
         />
+      )}
+      {(step.kind === "original" ||
+        !step.acceptedAnswers.every((value) => /^[0-9.]+$/.test(value))) && (
+        <GermanCharacters input={input} value={answer} onChange={onRespond} disabled={disabled} />
       )}
       {step.kind === "original" && (
         <p id="response-help" className="mt-2 text-sm text-muted">

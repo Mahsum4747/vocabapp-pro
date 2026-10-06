@@ -14,7 +14,10 @@ export type LessonSession = {
   historicallyFinished?: boolean;
 };
 export type LessonAction =
-  { type: "respond"; value: string } | { type: "check" } | { type: "continue" };
+  | { type: "respond"; value: string }
+  | { type: "check" }
+  | { type: "reveal" }
+  | { type: "continue" };
 export function startLesson(releaseId: string, lesson: LessonDefinition): LessonSession {
   if (lesson.availability !== "prototype" || !lesson.steps.length)
     throw Error("Lesson content is unavailable.");
@@ -30,13 +33,19 @@ export function startLesson(releaseId: string, lesson: LessonDefinition): Lesson
     status: "in-progress",
   };
 }
-function normalize(value: string, caseSensitive = false) {
+export function normalizeLessonAnswer(value: string, caseSensitive = false, german = false) {
   const normalized = value
     .normalize("NFC")
     .trim()
     .replace(/\s+/g, " ")
     .replace(/[.!?]$/, "");
-  return caseSensitive ? normalized : normalized.toLocaleLowerCase("en");
+  const keyboard = german
+    ? normalized.replace(
+        /[äöüÄÖÜß]/g,
+        (c) => ({ ä: "ae", ö: "oe", ü: "ue", Ä: "Ae", Ö: "Oe", Ü: "Ue", ß: "ss" })[c]!,
+      )
+    : normalized;
+  return caseSensitive ? keyboard : keyboard.toLocaleLowerCase("en");
 }
 /** Only exact bounded answers are evaluated. Original writing stays unassessed. */
 export function evaluateStep(step: LessonStep, response: string): StepResult | null {
@@ -55,8 +64,16 @@ export function evaluateStep(step: LessonStep, response: string): StepResult | n
   const answers = step.kind === "choice" ? [step.correctAnswer] : step.acceptedAnswers;
   const correct = answers.some(
     (answer) =>
-      normalize(answer, step.kind === "text" && step.caseSensitive) ===
-      normalize(response, step.kind === "text" && step.caseSensitive),
+      normalizeLessonAnswer(
+        answer,
+        step.kind === "text" && step.caseSensitive,
+        step.kind === "text" && step.answerLanguage === "de",
+      ) ===
+      normalizeLessonAnswer(
+        response,
+        step.kind === "text" && step.caseSensitive,
+        step.kind === "text" && step.answerLanguage === "de",
+      ),
   );
   return {
     outcome: correct ? "correct" : "incorrect",
@@ -76,6 +93,19 @@ export function transitionLesson(
     if (step.kind === "explanation" || (state.feedback && state.feedback.outcome !== "incorrect"))
       return state;
     return { ...state, responses: { ...state.responses, [step.id]: action.value }, feedback: null };
+  }
+  if (action.type === "reveal") {
+    if (
+      (step.kind !== "text" && step.kind !== "choice") ||
+      state.feedback?.outcome !== "incorrect" ||
+      (state.attempts[step.id] ?? 0) < 3
+    )
+      return state;
+    const feedback: StepResult = {
+      outcome: "unassessed",
+      message: "Answer shown for guided practice. You can continue; this was not a correct answer.",
+    };
+    return { ...state, feedback, results: { ...state.results, [step.id]: feedback } };
   }
   if (action.type === "check") {
     if (state.feedback) return state;

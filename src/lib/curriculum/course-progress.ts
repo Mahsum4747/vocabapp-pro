@@ -218,11 +218,14 @@ export function applyProgressCommand(
         attempts: previous.attempts + 1,
       };
     } else {
+      // Guided traversal may continue after repeated checked failures. Keep the actual
+      // failed response; no success, assistance flag, evidence or schema change is stored.
       if (
         step.kind !== "explanation" &&
         (!previous.checked ||
           (step.kind !== "original" &&
-            evaluateStep(step, previous.response ?? "")?.outcome !== "correct"))
+            evaluateStep(step, previous.response ?? "")?.outcome !== "correct" &&
+            previous.attempts < 3))
       )
         throw Error("Check this step before continuing.");
       const completedStepIds = [...previous.completedStepIds, step.id];

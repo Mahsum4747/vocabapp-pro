@@ -1267,3 +1267,41 @@ Final fetch confirms `origin/main` and merge-base remain `d6d87d669ecbd284988fc5
 Reuse section 39's conditional **fast-forward-only** strategy after explicit authorization: refresh/verify remote refs, align local main with `git merge --ff-only origin/main`, then `git merge --ff-only codex/karta-premerge-production-readiness`, retaining phase history. Changed main or a failed fast-forward requires a fresh integration review. Before main push, repeat the documented validation, including these compiled legacy probes. Do not run ordinary build/migrate as local validation. Preserve rollback SHA `d6d87d669ecbd284988fc5d8b51c4c933c342bb5` and verified previous production deployment `dpl_DgTq8vvs8rP4fmBmzrgcupd3FYu3`.
 
 READY is a local merge decision, not permission to push/deploy. Section 39's Vercel Git/build/environment scopes, live Firestore rules/IAM and SQL migration-bookkeeping/build-coupling verification items remain. **Vercel project-level deployment settings require live verification after this pre-merge review.** After an authorized deployment, verify actual static delivery of Grammar's large asset plus Grammar/Lesen/vocabulary and the already documented auth/resume/assessment/isolation/deletion checks on a designated disposable account. No merge, push, migration or deployment occurred here.
+
+
+## 41. Karta Postlaunch Lesson UX
+
+Branch `codex/karta-postlaunch-lesson-ux`, based exactly on deployed main `a77fac171473abc83a80229e0ea7785291ce7a02`. All six repository-local Karta skills are discoverable and applied where relevant. Audited every typed task in all eight authored lessons.
+
+Bounded lesson text now carries explicit `answerLanguage: "de"`; only those inputs use deterministic ä/ae, ö/oe, ü/ue and ß/ss equivalence. NFC, whitespace and terminal punctuation handling remain. Case-sensitive noun tasks still require capitals. Choice answers, other-language/unmarked text, open writing and assessment grading are unchanged. Eleven sentence blanks additionally accept exact completed sentences: Ich bin Emil.; Du bist Lina.; Ich habe ein Telefon.; Du wohnst in Berlin.; Ihr lernt Deutsch.; Sie lernen Deutsch.; Meine Bücher sind groß.; Das sind keine Bücher.; Das ist kein Buch.; Du liest.; Nora schläft. No fuzzy matching, substring grading or AI. Missing-form prompts are explicit; multi-sentence input labels are clarified; the corrected-message field is Adjective and feedback specifies groß/gross.
+
+Guided bounded tasks keep first-failure feedback, expose structural Hint after two failed checks and Show answer after three. Retry returns input focus. Reveal is local, unassessed and visually neutral; it neither changes the learner's wrong response nor writes a synthetic correct answer. The existing server continuation rule permits traversal after three checked failures using existing attempts/checked fields; revisions, receipts, transactions and completion derivation remain unchanged. Reload before continuing restores the real failed response and permits reveal again. No assistance flag or new durable schema/path, collection, migration or index. Authored resume contracts stay stable because old positions/responses remain safely restorable; diagnostic definition hashes naturally change.
+
+The reusable German-character helper inserts/replaces at the cursor/selection, returns focus, supports pointer and keyboard activation and enforces input length. Its four targets are at least 44px. It appears only on relevant lesson text/open-writing controls, never choices, numeric/date fields or Unit Checks. Open writing remains ephemeral/unassessed. Home has one lazy authenticated German A1 start/continue/revisit surface, secondary to Today's work; one owner-scoped course read per Home mount, deduplicated during effect replay, reuses existing course projection/API. Vocabulary recommendation ranking and FSRS are not touched.
+
+Final focused domain validation: 216 passed (lesson/content/normalization, course persistence/receipts, U01/U02 assessment families/privacy). Typecheck passed. Scoped lint: 0 errors, two pre-existing warnings (session-provider Fast Refresh and unused Home cn import). Diff-check, build:compile and generated SSR syntax passed. Final combined compiled UX plus existing U01/U02 assessment smokes: 12/12 passed; additional corrected true-dark-media/44px-target rerun: 2/2 passed. Browser fixtures retain blank credentials, no production database, network seals and migration sealing. Full historical mega-suite, normal build and migrations NOT RUN. No deploy/push.
+
+Visually inspected fresh compiled normal typed, first wrong, structural hint, neutral shown answer, character helper, corrected-message adjective, Home start/continue, 390px mobile and actual dark 320px captures in ignored screenshots/postlaunch-ux. One polish pass removed misleading success coloration from assisted traversal. Capture setup was corrected to wait for hydration and use actual dark media. No demonstrated overflow, target-size or focus issue remains. Remaining debt: deliberately finite accepted sentences, lightweight hints rather than task-authored tutoring, and physical-device/IME/virtual-keyboard behavior not verified. No new proficiency/mastery claim, Unit 3, assessment content or persistence redesign.
+
+Files changed:
+- `CODEX_HANDOFF.md`
+- `e2e/learn-postlaunch-ux.spec.ts`
+- `e2e/support/backend.ts`
+- `src/components/home-course-continuation.tsx`
+- `src/components/learn/exercise-response.tsx`
+- `src/components/learn/german-characters.tsx`
+- `src/components/learn/lesson-screen.tsx`
+- `src/components/learn/session-context.tsx`
+- `src/content/curriculum/german-a1-details.ts`
+- `src/content/curriculum/german-a1-entities.ts`
+- `src/content/curriculum/german-a1-information.ts`
+- `src/content/curriculum/german-a1-lesson.ts`
+- `src/content/curriculum/german-a1-unit2.ts`
+- `src/lib/auth/gates.tsx`
+- `src/lib/curriculum/course-progress.ts`
+- `src/lib/curriculum/home-course.ts`
+- `src/lib/curriculum/lesson-hint.ts`
+- `src/lib/curriculum/lesson-session.ts`
+- `src/lib/curriculum/postlaunch-ux.test.ts`
+- `src/lib/curriculum/types.ts`
+- `src/routes/index.tsx`

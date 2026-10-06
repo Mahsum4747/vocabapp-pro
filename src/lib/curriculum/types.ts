@@ -34,6 +34,8 @@ export type LessonStep = StepBase &
     | { kind: "choice"; options: readonly string[]; correctAnswer: string; feedback: string }
     | {
         kind: "text";
+        /** Keyboard equivalences apply only to explicitly authored target-language input. */
+        answerLanguage?: string;
         inputLabel: string;
         acceptedAnswers: readonly string[];
         caseSensitive?: boolean;

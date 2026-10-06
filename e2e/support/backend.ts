@@ -156,6 +156,11 @@ export class MockBackend {
       getProfile: () => ({ profile: this.profile, today: this.today }),
       recordReview: (data) => this.recordReview(data as RecordedReview),
       // Existing tests stay focused on their own flow; recommendation specs override this.
+      getCourseProgress: () => ({
+        trackId: "de-a1-text-practice-v1",
+        releaseId: "DE.A1.CURRICULUM.PROTOTYPE.1B",
+        lessons: [],
+      }),
       getLearningSignals: () => ({ ...recommendationExamples().strong, generatedAt: NOW }),
       getGrammarProgress: () => ({}),
       getLesenPassageProgress: () => ({}),

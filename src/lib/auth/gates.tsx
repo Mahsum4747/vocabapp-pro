@@ -291,3 +291,17 @@ export function AuthenticatedLearn({ children }: { children: ReactNode }) {
     </Suspense>
   );
 }
+
+const HomeCourseContinuation = lazy(() =>
+  import("@/components/home-course-continuation").then((m) => ({
+    default: m.HomeCourseContinuation,
+  })),
+);
+export function HomeCourseContinuationGate() {
+  const { user, isPending } = useCurrentUserState();
+  return (
+    <Suspense fallback={null}>
+      <HomeCourseContinuation owner={!isPending && user && !user.isDevFallback ? user.id : null} />
+    </Suspense>
+  );
+}
