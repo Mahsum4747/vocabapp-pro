@@ -163,7 +163,7 @@ test("Unit 1 traversal selects Unit 2 without assessment; fresh/mixed/complete s
   if (info.project.name === "mobile") await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/learn");
   await expect(page.getByText("4 lessons planned · Not yet authored", { exact: true })).toHaveCount(
-    8,
+    7,
   );
   await expect(page.getByText("Everyday actions and routine", { exact: true })).toBeVisible();
   await screenshot(page, `overview-unit2-next-${info.project.name}`);
@@ -193,7 +193,10 @@ test("Unit 1 traversal selects Unit 2 without assessment; fresh/mixed/complete s
   ).toBeVisible();
   await screenshot(page, `unit-complete-${info.project.name}`);
   await page.goto("/learn");
-  await expect(page.getByRole("link", { name: "Revisit Unit 2", exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Start lesson", exact: true })).toHaveAttribute(
+    "href",
+    "/learn/DE.A1.U03.L01",
+  );
   await screenshot(page, `overview-complete-${info.project.name}`);
   for (const [path, record] of before) expect(fixture.storage.records.get(path)).toEqual(record);
   expect(fixture.storage.records.size).toBe(8);

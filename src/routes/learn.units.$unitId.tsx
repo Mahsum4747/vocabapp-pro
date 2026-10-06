@@ -1,3 +1,4 @@
+import { unit3Available } from "@/lib/curriculum/unit3-access";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { lazy, Suspense } from "react";
@@ -35,6 +36,23 @@ function LearnUnit() {
         ),
       );
   const number = unit ? germanA1.units.indexOf(unit) + 1 : 0;
+  if (unitId === "DE.A1.U03" && !unit3Available(sessions, blockedLessons, clearedUnits))
+    return (
+      <AppShell>
+        <div className="mx-auto max-w-2xl">
+          <h1 className="font-display text-3xl font-semibold">Continue with Unit 2 first</h1>
+          <p className="mt-4 text-muted">
+            Finish Unit 2’s lessons or clear its challenge to study Shopping and objects. Your
+            lesson status stays separate from challenge clearance.
+          </p>
+          <Button asChild className="mt-5">
+            <Link to="/learn/units/$unitId" params={{ unitId: "DE.A1.U02" }}>
+              Open Unit 2
+            </Link>
+          </Button>
+        </div>
+      </AppShell>
+    );
   return (
     <AppShell>
       <div className="mx-auto max-w-3xl">

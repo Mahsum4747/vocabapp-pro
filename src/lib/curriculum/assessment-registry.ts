@@ -1,15 +1,18 @@
 import type { AssessmentAttempt, AssessmentDefinition } from "./assessment";
 import { germanA1 } from "@/content/curriculum/german-a1";
 import { unit1CheckForms } from "@/content/curriculum/german-a1-unit1-check";
+import { unit3CheckForms } from "@/content/curriculum/german-a1-unit3-check";
 import { unit2CheckForms } from "@/content/curriculum/german-a1-unit2-check";
 
-/** Two published-in-code prototype registrations, not a plugin or persisted registry. */
-export const assessmentRegistry = [unit1CheckForms, unit2CheckForms].map((forms) => ({
-  definition: forms[0],
-  unitNumber: germanA1.units.findIndex((u) => u.id === forms[0].unitId) + 1,
-  forms,
-  lessonIds: germanA1.units.find((u) => u.id === forms[0].unitId)!.lessonIds,
-}));
+/** Three published-in-code prototype registrations, not a plugin or persisted registry. */
+export const assessmentRegistry = [unit1CheckForms, unit2CheckForms, unit3CheckForms].map(
+  (forms) => ({
+    definition: forms[0],
+    unitNumber: germanA1.units.findIndex((u) => u.id === forms[0].unitId) + 1,
+    forms,
+    lessonIds: germanA1.units.find((u) => u.id === forms[0].unitId)!.lessonIds,
+  }),
+);
 export function assessmentForUnit(unitId: string) {
   return assessmentRegistry.find((r) => r.definition.unitId === unitId);
 }

@@ -1,3 +1,4 @@
+import { unit3Available } from "@/lib/curriculum/unit3-access";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { germanA1 } from "@/content/curriculum/german-a1";
 import { LessonScreen } from "@/components/learn/lesson-screen";
@@ -7,7 +8,7 @@ import { Button } from "@/components/ui/button";
 export const Route = createFileRoute("/learn/$lessonId")({ component: LearnLesson });
 function LearnLesson() {
   const { lessonId } = Route.useParams();
-  const { blockedLessons } = useLearnSession();
+  const { sessions, blockedLessons, clearedUnits } = useLearnSession();
   if (blockedLessons.includes(lessonId))
     return (
       <main className="mx-auto max-w-2xl px-page-safe py-12">
@@ -29,10 +30,24 @@ function LearnLesson() {
           {lesson ? "This lesson is not yet authored" : "Lesson not found"}
         </h1>
         <p className="mt-4 text-muted">
-          Eight lessons are available across Units 1 and 2. More units are not yet authored.
+          Twelve lessons are authored across Units 1–3. Unit 4 is not yet authored.
         </p>
         <Button asChild className="mt-6">
           <Link to="/learn">Return to Learn</Link>
+        </Button>
+      </main>
+    );
+  if (lesson.unitId === "DE.A1.U03" && !unit3Available(sessions, blockedLessons, clearedUnits))
+    return (
+      <main className="mx-auto max-w-2xl px-page-safe py-12">
+        <h1 className="text-2xl font-semibold">Continue with Unit 2 first</h1>
+        <p className="mt-4 text-muted">
+          Finish Unit 2’s lessons or clear its challenge before studying Unit 3.
+        </p>
+        <Button asChild className="mt-5">
+          <Link to="/learn/units/$unitId" params={{ unitId: "DE.A1.U02" }}>
+            Open Unit 2
+          </Link>
         </Button>
       </main>
     );

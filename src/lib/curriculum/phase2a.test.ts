@@ -301,7 +301,7 @@ test("three Unit 2 lessons are incomplete; four finish only Unit 2; restart reta
     ),
   );
 });
-test("next guided action follows Unit 1 then Unit 2, independently of assessment; Units 3–10 unavailable", async () => {
+test("next guided action follows Unit 1 then Unit 2, independently of assessment; later unauthored lessons unavailable", async () => {
   const f = fakeProgressDb();
   assert.equal(courseLearningAction(germanA1, {}).lesson?.id, germanA1.lessons[0].id);
   for (const index of [0, 1, 2, 3]) await finish(f, index);
@@ -317,10 +317,10 @@ test("next guided action follows Unit 1 then Unit 2, independently of assessment
   assert.equal(courseLearningAction(germanA1, states).lesson?.id, lessons[0].id);
   assert.ok(
     germanA1.lessons
-      .slice(8)
+      .slice(12)
       .every((lesson) => lesson.availability === "not-authored" && !lesson.steps.length),
   );
-  assert.throws(() => startLesson(germanA1.id, germanA1.lessons[8]));
+  assert.throws(() => startLesson(germanA1.id, germanA1.lessons[12]));
 });
 test("Unit 2 completion does not unlock Unit 1 check or generate assessment evidence", async () => {
   const f = fakeProgressDb();

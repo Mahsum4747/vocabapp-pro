@@ -196,7 +196,7 @@ test("owners, units, release and stored ownership are isolated", async () => {
   s.records.set(path, saved);
   await assert.rejects(readUnitChallenge(s.db, owner, scope(), now), /ownership/);
 });
-test("Unit 1 and 2 clearance moves guided progression without lesson completion or Unit 3", async () => {
+test("Unit 1 and 2 clearance moves guided progression without lesson completion", async () => {
   const s = fakeProgressDb();
   for (const unitId of ["DE.A1.U01", "DE.A1.U02"]) {
     const request = start(unitId);
@@ -204,8 +204,8 @@ test("Unit 1 and 2 clearance moves guided progression without lesson completion 
     await submitChallenge(s.db, owner, { ...request, responses: responses(unitId) }, now + 1);
     const clearances = await readChallengeClearances(s.db, owner, COURSE_SCOPE);
     const action = courseLearningAction(germanA1, {}, [], clearances);
-    assert.equal(action.unit?.id, "DE.A1.U02");
-    assert.equal(action.complete, unitId === "DE.A1.U02");
+    assert.equal(action.unit?.id, unitId === "DE.A1.U01" ? "DE.A1.U02" : "DE.A1.U03");
+    assert.equal(action.complete, false);
     assert.equal(unitProgress(germanA1, germanA1.units[0], {}).finishedCount, 0);
     assert.equal(unitProgress(germanA1, germanA1.units[0], {}).status, "Not started");
     const progress = await readCourseProgress(s.db, owner, COURSE_SCOPE);
@@ -244,7 +244,7 @@ test("historical lesson completion OR challenge clearance advances the authored 
       ]),
   );
   assert.equal(courseLearningAction(germanA1, finished).unit?.id, "DE.A1.U02");
-  assert.equal(courseLearningAction(germanA1, finished, [], ["DE.A1.U02"]).complete, true);
+  assert.equal(courseLearningAction(germanA1, finished, [], ["DE.A1.U02"]).unit?.id, "DE.A1.U03");
   assert.equal(unitProgress(germanA1, germanA1.units[1], finished).finishedCount, 0);
 });
 test("challenge submissions preserve existing course, Unit Check and legacy records byte for byte", async () => {

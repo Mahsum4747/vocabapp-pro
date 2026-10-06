@@ -102,7 +102,7 @@ test("U02 exact identity, initial versions, two families and registry lesson gat
     ],
   );
   assert.deepEqual(assessmentForUnit(A.unitId)?.lessonIds, germanA1.units[1].lessonIds);
-  assert.equal(assessmentForUnit("DE.A1.U03"), undefined);
+  assert.equal(assessmentForUnit("DE.A1.U04"), undefined);
   assert.throws(() => registeredAssessment("unknown"));
   assert.throws(() => assessmentForm(U1.id, A.formId));
 });

@@ -1,4 +1,10 @@
 import {
+  shoppingLessonSteps,
+  replacementLessonSteps,
+  availabilityLessonSteps,
+  preferenceLessonSteps,
+} from "./german-a1-unit3";
+import {
   routineLessonSteps,
   belongingsLessonSteps,
   negationLessonSteps,
@@ -10,7 +16,7 @@ import type { CurriculumRelease } from "@/lib/curriculum/types";
 import { entityLessonSteps } from "./german-a1-entities";
 import { identityLessonSteps } from "./german-a1-lesson";
 
-/** Approved registry metadata; all eight U01/U02 lessons have original prototype content.
+/** Approved registry metadata; all twelve U01/U02/U03 lessons have original prototype content.
  * English support is a placeholder, not a complete source-language overlay. */
 export const germanA1: CurriculumRelease = {
   id: "DE.A1.CURRICULUM.PROTOTYPE.1B",
@@ -1025,6 +1031,8 @@ export const germanA1: CurriculumRelease = {
     {
       id: "DE.A1.U03",
       title: "Shopping and objects",
+      description:
+        "Identify shopping needs, describe available objects and correct a purchase without losing the intended meaning.",
       lessonIds: ["DE.A1.U03.L01", "DE.A1.U03.L02", "DE.A1.U03.L03", "DE.A1.U03.L04"],
     },
     {
@@ -1215,8 +1223,9 @@ export const germanA1: CurriculumRelease = {
         "DE.A1.VOCABULARY.CONTEXT_SENSE",
       ],
       consolidatedSkillIds: [],
-      availability: "not-authored",
-      steps: [],
+      availability: "prototype",
+      resumeContractVersion: 1,
+      steps: shoppingLessonSteps,
     },
     {
       id: "DE.A1.U03.L02",
@@ -1232,8 +1241,9 @@ export const germanA1: CurriculumRelease = {
         "DE.A1.READING.SHORT_MESSAGE",
       ],
       consolidatedSkillIds: [],
-      availability: "not-authored",
-      steps: [],
+      availability: "prototype",
+      resumeContractVersion: 1,
+      steps: replacementLessonSteps,
     },
     {
       id: "DE.A1.U03.L03",
@@ -1247,8 +1257,9 @@ export const germanA1: CurriculumRelease = {
         "DE.A1.WRITING.TASK_FULFILMENT",
       ],
       consolidatedSkillIds: [],
-      availability: "not-authored",
-      steps: [],
+      availability: "prototype",
+      resumeContractVersion: 1,
+      steps: availabilityLessonSteps,
     },
     {
       id: "DE.A1.U03.L04",
@@ -1262,8 +1273,9 @@ export const germanA1: CurriculumRelease = {
         "DE.A1.READING.CONTEXT_WORD",
       ],
       consolidatedSkillIds: [],
-      availability: "not-authored",
-      steps: [],
+      availability: "prototype",
+      resumeContractVersion: 1,
+      steps: preferenceLessonSteps,
     },
     {
       id: "DE.A1.U04.L01",

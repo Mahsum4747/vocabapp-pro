@@ -25,6 +25,8 @@ test("Unit 1 and 2 clearance persists, guides progression and leaves every lesso
   launch,
   isMobile,
 }, info) => {
+  // This case traverses both eight-item challenges, reloads and course/Home navigation.
+  test.setTimeout(60_000);
   if (isMobile) await page.setViewportSize({ width: 390, height: 844 });
   const fixture = challengeFixture();
   const harness = await launch({ sets: [], handlers: fixture.handlers });
@@ -60,8 +62,8 @@ test("Unit 1 and 2 clearance persists, guides progression and leaves every lesso
       ).toHaveAttribute("href", "/learn/units/DE.A1.U02");
     else
       await expect(
-        page.getByText("You’ve cleared the last available unit. More units are not yet authored."),
-      ).toBeVisible();
+        page.getByRole("link", { name: "Continue to next available unit" }),
+      ).toHaveAttribute("href", "/learn/units/DE.A1.U03");
     await page.reload();
     await expect(page.getByRole("heading", { name: "Cleared by challenge" })).toBeVisible();
     await page.getByRole("link", { name: "Study these lessons optionally" }).click();
@@ -74,7 +76,11 @@ test("Unit 1 and 2 clearance persists, guides progression and leaves every lesso
         "href",
         "/learn/DE.A1.U02.L01",
       );
-    else await expect(page.getByText("Available units cleared", { exact: true })).toBeVisible();
+    else
+      await expect(page.getByRole("link", { name: "Start lesson", exact: true })).toHaveAttribute(
+        "href",
+        "/learn/DE.A1.U03.L01",
+      );
     if (unitId === "DE.A1.U01") {
       await page.goto("/");
       await expect(page.getByRole("link", { name: "German A1 course" })).toHaveAttribute(
