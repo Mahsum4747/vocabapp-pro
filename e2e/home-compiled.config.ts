@@ -1,4 +1,6 @@
 import { readFileSync, readdirSync } from "node:fs";
+import { pathToFileURL } from "node:url";
+import { resolve } from "node:path";
 import { defineConfig } from "@playwright/test";
 import base from "../playwright.config";
 
@@ -27,5 +29,9 @@ export default defineConfig({
     ...base.webServer,
     command: "npm run preview -- --host 127.0.0.1 --port 5200 --strictPort",
     url: "http://127.0.0.1:5200",
+    env: {
+      ...base.webServer.env,
+      NODE_OPTIONS: `--import=${pathToFileURL(resolve("e2e/support/compiled-db-seal.mjs")).href}`,
+    },
   },
 });

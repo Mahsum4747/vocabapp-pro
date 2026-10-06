@@ -62,16 +62,33 @@ async function launchApp(page: Page, seed: Seed, leaks: string[]): Promise<Harne
   const backend = new MockBackend(seed);
   const serverFns = new ServerFnMock(backend.handlers());
   await serverFns.install(page);
+  if (process.env.KARTA_E2E_SERVER_FN_NAMES) {
+    // This existing 6 MB chunk stalls in local preview with Brotli negotiation.
+    // Fetch the real compiled HTTP response with gzip; no asset/content mock.
+    // Match localhost only, forbid redirects, and retain API/off-origin seals.
+    await page.route(
+      "http://127.0.0.1:5200/assets/verb-conjugation-extended-data-*.js",
+      async (route) => {
+        const response = await route.fetch({
+          headers: { "accept-encoding": "gzip" },
+          maxRedirects: 0,
+          timeout: 10_000,
+        });
+        expect(response.status(), "compiled conjugation asset response").toBe(200);
+        await route.fulfill({ response });
+      },
+    );
+  }
   return { backend, serverFns };
 }
 
 export const test = base.extend<{ launch: (seed: Seed) => Promise<Harness> }>({
-  launch: async ({ page }, use) => {
+  launch: async ({ page }, provide) => {
     const leaks: string[] = [];
     const runtimeErrors: string[] = [];
     page.on("pageerror", (error) => runtimeErrors.push(error.message));
     const harnesses: Harness[] = [];
-    await use(async (seed) => {
+    await provide(async (seed) => {
       const harness = await launchApp(page, seed, leaks);
       harnesses.push(harness);
       return harness;
