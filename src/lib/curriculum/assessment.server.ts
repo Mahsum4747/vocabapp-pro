@@ -1,12 +1,14 @@
 import { createHash } from "node:crypto";
 import type { Firestore } from "firebase-admin/firestore";
-import { unit1Check, unit1CheckForm } from "@/content/curriculum/german-a1-unit1-check";
-import { germanA1 } from "@/content/curriculum/german-a1";
+import { unit1Check } from "@/content/curriculum/german-a1-unit1-check";
+import { assessmentForm, registeredAssessment, compatibleHistory } from "./assessment-registry";
+import { nextFormLabel } from "./assessment-projection";
 import { userDocumentPaths } from "../user-data-inventory";
 import { readCourseProgress } from "./course-progress.server";
 import {
   assessmentRequestSchema,
   attemptRequestSchema,
+  readAttemptRequestSchema,
   submitAssessmentSchema,
   gradeAssessment,
   validateAttempt,
@@ -15,9 +17,42 @@ import {
   type SubmissionResult,
 } from "./assessment";
 
+function assertRequestedAssessment(
+  attempt: AssessmentAttempt,
+  definition: ReturnType<typeof resolveAssessment>,
+) {
+  if (
+    attempt.assessmentId !== definition.id ||
+    attempt.compatibilityVersion !== definition.compatibilityVersion
+  )
+    throw Error("Saved check belongs to another assessment or compatibility version.");
+}
 function validateStored(raw: unknown, ownerId: string, attemptId?: string) {
   const parsed = storedAttemptSchema.parse(raw);
-  return validateAttempt(parsed, unit1CheckForm(parsed.formId), ownerId, attemptId);
+  return validateAttempt(
+    parsed,
+    assessmentForm(parsed.assessmentId, parsed.formId),
+    ownerId,
+    attemptId,
+  );
+}
+/** Unrelated assessment documents cannot poison this assessment's history. Matching IDs
+ * are validated fail-closed, including stale compatibility and forged provenance. */
+function scopedRows(
+  rows: { docs: { id: string; data(): unknown }[] },
+  definition: ReturnType<typeof resolveAssessment>,
+  ownerId: string,
+) {
+  return compatibleHistory(
+    definition,
+    rows.docs
+      .filter(
+        (row) =>
+          (row.data() as { assessmentId?: unknown } | undefined)?.assessmentId === definition.id,
+      )
+      .map((row) => validateStored(row.data(), ownerId, row.id)),
+    ownerId,
+  );
 }
 /** Prototype-only history scan: no composite index, persisted score or new root.
  * Reads all attempt records, including drafts, inside selection transactions.
@@ -26,11 +61,11 @@ function attemptsCollection(db: Firestore, ownerId: string) {
   userDocumentPaths(ownerId);
   return db.collection(`users/${ownerId}/assessmentAttempts`);
 }
-export function selectAssessmentForm(history: readonly AssessmentAttempt[]) {
-  const latest = [...history]
-    .filter((a) => a.status === "submitted")
-    .sort((a, b) => b.finishedAt! - a.finishedAt! || b.attemptId.localeCompare(a.attemptId))[0];
-  return unit1CheckForm(latest?.formId === unit1Check.formId ? "U01.FORM.B" : unit1Check.formId);
+export function selectAssessmentForm(
+  history: readonly AssessmentAttempt[],
+  definition = unit1Check,
+) {
+  return assessmentForm(definition.id, nextFormLabel(history, definition).formId);
 }
 const hash = (value: unknown) => createHash("sha256").update(JSON.stringify(value)).digest("hex");
 export const ASSESSMENT_REQUEST = {
@@ -40,11 +75,11 @@ export const ASSESSMENT_REQUEST = {
 function resolveAssessment(input: unknown) {
   const request = assessmentRequestSchema.parse(input);
   if (
-    request.assessmentId !== unit1Check.id ||
-    request.compatibilityVersion !== unit1Check.compatibilityVersion
+    request.compatibilityVersion !==
+    registeredAssessment(request.assessmentId).definition.compatibilityVersion
   )
     throw Error("Unknown or incompatible check.");
-  return unit1Check;
+  return registeredAssessment(request.assessmentId).definition;
 }
 export function assessmentAttemptPath(ownerId: string, attemptId: string) {
   userDocumentPaths(ownerId);
@@ -68,7 +103,7 @@ export async function createAssessmentAttempt(
     trackId: definition.trackId,
     releaseId: definition.releaseId,
   });
-  const unitLessonIds = germanA1.units.find((unit) => unit.id === unit1Check.unitId)!.lessonIds;
+  const unitLessonIds = registeredAssessment(definition.id).lessonIds;
   const unitLessons = course.lessons.filter((lesson) => unitLessonIds.includes(lesson.lessonId));
   if (
     unitLessons.length !== unitLessonIds.length ||
@@ -79,13 +114,18 @@ export async function createAssessmentAttempt(
         row.progress?.firstFinishedAt !== undefined,
     )
   )
-    throw Error("Finish the four Unit 1 lessons first.");
+    throw Error(
+      `Finish the four Unit ${registeredAssessment(definition.id).unitNumber} lessons first.`,
+    );
   return db.runTransaction(async (tx) => {
     const raw = (await tx.get(ref)).data();
-    if (raw !== undefined) return validateStored(raw, ownerId, request.attemptId);
+    if (raw !== undefined) {
+      const existing = validateStored(raw, ownerId, request.attemptId);
+      assertRequestedAssessment(existing, definition);
+      return existing;
+    }
     const rows = await tx.get(attemptsCollection(db, ownerId));
-    const history = rows.docs.map((row) => validateStored(row.data(), ownerId, row.id));
-    const form = selectAssessmentForm(history);
+    const form = selectAssessmentForm(scopedRows(rows, definition, ownerId), definition);
     const attempt: AssessmentAttempt = {
       schemaVersion: 2,
       assessmentVersion: form.assessmentVersion,
@@ -116,16 +156,21 @@ export async function readAssessmentAttempt(
   ownerId: string,
   input: unknown,
 ): Promise<AssessmentAttempt> {
-  const request = attemptRequestSchema.parse(input);
-  resolveAssessment({
-    assessmentId: request.assessmentId,
-    compatibilityVersion: request.compatibilityVersion,
-  });
+  const request = readAttemptRequestSchema.parse(input);
+  const requested =
+    "assessmentId" in request
+      ? resolveAssessment({
+          assessmentId: request.assessmentId,
+          compatibilityVersion: request.compatibilityVersion,
+        })
+      : null;
   const raw = (
     await db.getAll(db.doc(assessmentAttemptPath(ownerId, request.attemptId)))
   )[0].data();
   if (raw === undefined) throw Error("Unknown attempt.");
-  return validateStored(raw, ownerId, request.attemptId);
+  const attempt = validateStored(raw, ownerId, request.attemptId);
+  if (requested) assertRequestedAssessment(attempt, requested);
+  return attempt;
 }
 /** Read-only accepted history, newest first with stable document-ID tie-break. */
 export async function readAssessmentHistory(
@@ -133,12 +178,9 @@ export async function readAssessmentHistory(
   ownerId: string,
   input: unknown,
 ): Promise<AssessmentAttempt[]> {
-  resolveAssessment(input);
+  const definition = resolveAssessment(input);
   const rows = await attemptsCollection(db, ownerId).get();
-  return rows.docs
-    .map((row) => validateStored(row.data(), ownerId, row.id))
-    .filter((a) => a.status === "submitted")
-    .sort((a, b) => b.finishedAt! - a.finishedAt! || b.attemptId.localeCompare(a.attemptId));
+  return scopedRows(rows, definition, ownerId);
 }
 export async function readLatestAssessment(
   db: Firestore,
@@ -157,7 +199,7 @@ export async function submitAssessmentAttempt(
   now = Date.now(),
 ): Promise<SubmissionResult> {
   const request = submitAssessmentSchema.parse(input);
-  resolveAssessment({
+  const requested = resolveAssessment({
     assessmentId: request.assessmentId,
     compatibilityVersion: request.compatibilityVersion,
   });
@@ -166,7 +208,8 @@ export async function submitAssessmentAttempt(
     const raw = (await tx.get(ref)).data();
     if (raw === undefined) throw Error("Unknown attempt.");
     const previous = validateStored(raw, ownerId, request.attemptId);
-    const definition = unit1CheckForm(previous.formId);
+    assertRequestedAssessment(previous, requested);
+    const definition = assessmentForm(previous.assessmentId, previous.formId);
     const responses = gradeAssessment(definition, request.responses);
     const ordered = definition.items.map((item) => ({
       itemId: item.id,

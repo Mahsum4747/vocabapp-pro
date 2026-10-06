@@ -9,6 +9,7 @@ const UnitCheckEntry = lazy(() =>
 import { AppShell } from "@/components/app-shell";
 import { useLearnSession } from "@/components/learn/session-context";
 import { germanA1 } from "@/content/curriculum/german-a1";
+import { assessmentForUnit } from "@/lib/curriculum/assessment-registry";
 import { unitProgress } from "@/lib/curriculum/unit-progress";
 import { Button } from "@/components/ui/button";
 import { lessonStatus, sessionKey } from "@/lib/curriculum/lesson-session";
@@ -20,6 +21,7 @@ function LearnUnit() {
   const unit = germanA1.units.find((candidate) => candidate.id === unitId);
   const progress = unit ? unitProgress(germanA1, unit, sessions, blockedLessons) : null;
   const next = progress?.nextLesson ?? progress?.repeatLesson;
+  const assessment = unit ? assessmentForUnit(unit.id) : undefined;
   const number = unit ? germanA1.units.indexOf(unit) + 1 : 0;
   return (
     <AppShell>
@@ -63,9 +65,13 @@ function LearnUnit() {
                 )}
               </section>
             )}
-            {number === 1 && progress?.status === "Unit lessons complete" && (
+            {assessment && progress?.status === "Unit lessons complete" && (
               <Suspense fallback={<p className="mt-6 text-sm text-muted">Loading your check…</p>}>
-                <UnitCheckEntry />
+                <UnitCheckEntry
+                  key={assessment.definition.id}
+                  assessmentId={assessment.definition.id}
+                  unitNumber={number}
+                />
               </Suspense>
             )}
             <ol className="mt-7 divide-y divide-border border-y border-border">

@@ -8,10 +8,10 @@ import {
 import { courseProgressFixture } from "./course-progress";
 import { germanA1 } from "../../src/content/curriculum/german-a1";
 import { USER_ID } from "./backend";
-export async function assessmentFixture(complete = true) {
+export async function assessmentFixture(complete = true, unitNumber = 1) {
   const course = courseProgressFixture();
   if (complete)
-    for (let index = 0; index < 4; index++)
+    for (let index = (unitNumber - 1) * 4; index < unitNumber * 4; index++)
       await course.advanceLesson(index, germanA1.lessons[index].steps.length);
   let failLoad = false;
   let failHistory = false;

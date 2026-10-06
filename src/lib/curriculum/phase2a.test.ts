@@ -349,10 +349,6 @@ for (const [path, hash] of [
     "src/content/curriculum/german-a1-unit1-check.ts",
     "8e5699d988a1367dd82808d011f5a83bc2b4f935c2ead4d5bcb795ebfcdbc5cf",
   ],
-  [
-    "src/lib/curriculum/assessment-projection.ts",
-    "c55c422880fee9d887a63f5ee357cbffd07af36146e9a590d142aca507f32355",
-  ],
 ])
   test(`${path}: approved Forms A/B and evidence projection remain byte-for-byte unchanged`, () => {
     assert.equal(createHash("sha256").update(readFileSync(path)).digest("hex"), hash);

@@ -1,27 +1,39 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { unit1Check } from "@/content/curriculum/german-a1-unit1-check";
+import {
+  registeredAssessment,
+  checkFormLabel,
+  assessmentForm,
+} from "@/lib/curriculum/assessment-registry";
 import type { AssessmentAttempt } from "@/lib/curriculum/assessment";
 import { Button } from "@/components/ui/button";
 
-export function UnitCheckEntry() {
+export function UnitCheckEntry({
+  assessmentId,
+  unitNumber,
+}: {
+  assessmentId: string;
+  unitNumber: number;
+}) {
+  const definition = registeredAssessment(assessmentId).definition;
   const [latest, setLatest] = useState<AssessmentAttempt | null>(null);
   const [state, setState] = useState<"loading" | "ready" | "failed">("loading");
   const [retry, setRetry] = useState(0);
-  const loadRequest = useRef<{ token: number; promise: Promise<AssessmentAttempt | null> } | null>(
+  const loadRequest = useRef<{ token: string; promise: Promise<AssessmentAttempt | null> } | null>(
     null,
   );
   useEffect(() => {
     let alive = true;
     setState("loading");
-    if (loadRequest.current?.token !== retry) {
+    const token = `${definition.id}:${retry}`;
+    if (loadRequest.current?.token !== token) {
       loadRequest.current = {
-        token: retry,
+        token,
         promise: import("@/lib/curriculum/assessment-api").then(({ getLatestUnitCheck }) =>
           getLatestUnitCheck({
             data: {
-              assessmentId: unit1Check.id,
-              compatibilityVersion: unit1Check.compatibilityVersion,
+              assessmentId: definition.id,
+              compatibilityVersion: definition.compatibilityVersion,
             },
           }),
         ),
@@ -40,9 +52,9 @@ export function UnitCheckEntry() {
     return () => {
       alive = false;
     };
-  }, [retry]);
+  }, [retry, definition.id, definition.compatibilityVersion]);
   return (
-    <section className="mt-6 border-y border-border py-5" aria-label="Unit 1 Check">
+    <section className="mt-6 border-y border-border py-5" aria-label={`Unit ${unitNumber} Check`}>
       <h2 className="font-display text-xl font-semibold">Check what you can do</h2>
       <p className="mt-2 text-sm leading-relaxed text-muted">
         Eight short tasks, separate from lesson completion. Results describe only what this check
@@ -71,16 +83,23 @@ export function UnitCheckEntry() {
             <div className="mt-3">
               <p className="font-medium">
                 Last unit check: {latest.responses.filter((r) => r.correct).length} /{" "}
-                {unit1Check.items.length} correct
+                {assessmentForm(latest.assessmentId, latest.formId).items.length} correct
               </p>
               <p className="mt-1 text-sm text-muted">
-                {latest.formId === "U01.FORM.B" ? "Form B" : "Form A"} · Saved attempt
+                {checkFormLabel(latest.formId)} · Saved attempt
               </p>
             </div>
           )}
           <Button asChild variant="outline" className="mt-4 min-h-11">
-            <Link to="/learn/check" search={latest ? { attempt: latest.attemptId } : {}}>
-              {latest ? "Review Unit 1 Check" : "Unit 1 Check"}
+            <Link
+              to="/learn/check"
+              search={
+                latest
+                  ? { assessment: definition.id, attempt: latest.attemptId }
+                  : { assessment: definition.id }
+              }
+            >
+              {latest ? `Review Unit ${unitNumber} Check` : `Unit ${unitNumber} Check`}
             </Link>
           </Button>
         </>

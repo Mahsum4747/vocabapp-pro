@@ -3,6 +3,7 @@ import { authMiddleware } from "../auth/middleware";
 import {
   assessmentRequestSchema,
   attemptRequestSchema,
+  readAttemptRequestSchema,
   submitAssessmentSchema,
 } from "./assessment";
 
@@ -28,7 +29,7 @@ export const getUnitCheckHistory = createServerFn({ method: "GET" })
   });
 export const getUnitCheckAttempt = createServerFn({ method: "GET" })
   .middleware([authMiddleware])
-  .validator((input: unknown) => attemptRequestSchema.parse(input))
+  .validator((input: unknown) => readAttemptRequestSchema.parse(input))
   .handler(async ({ context, data }) => {
     const { requireCourseAuthentication } = await import("./course-progress.server");
     await requireCourseAuthentication();

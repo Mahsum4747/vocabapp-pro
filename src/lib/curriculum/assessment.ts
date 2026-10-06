@@ -33,6 +33,12 @@ export const assessmentRequestSchema = z
 export const attemptRequestSchema = assessmentRequestSchema
   .extend({ attemptId: z.string().uuid() })
   .strict();
+/** UUID-only reads resolve the authoritative stored assessment. Existing scoped callers
+ * remain supported and reject cross-assessment requests. Owner always comes from auth. */
+export const readAttemptRequestSchema = z.union([
+  attemptRequestSchema,
+  z.object({ attemptId: attemptRequestSchema.shape.attemptId }).strict(),
+]);
 export const responseSchema = z
   .object({ itemId: z.string().min(1).max(100), response: z.string().trim().min(1).max(160) })
   .strict();

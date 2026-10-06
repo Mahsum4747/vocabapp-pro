@@ -5,7 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useLearnSession } from "./session-context";
 import { germanA1 } from "@/content/curriculum/german-a1";
-import { unit1Check, unit1CheckForm } from "@/content/curriculum/german-a1-unit1-check";
+import { unit1Check } from "@/content/curriculum/german-a1-unit1-check";
+import {
+  assessmentForm,
+  registeredAssessment,
+  checkFormLabel,
+} from "@/lib/curriculum/assessment-registry";
 import { unitProgress } from "@/lib/curriculum/unit-progress";
 import type { AssessmentAttempt, AssessmentResponse } from "@/lib/curriculum/assessment";
 import {
@@ -13,16 +18,22 @@ import {
   observationKind,
   nextFormLabel,
 } from "@/lib/curriculum/assessment-projection";
-const request = {
-  assessmentId: unit1Check.id,
-  compatibilityVersion: unit1Check.compatibilityVersion,
-};
-
-export function UnitCheckScreen({ attemptId }: { attemptId?: string }) {
+export function UnitCheckScreen(props: { attemptId?: string; assessmentId?: string }) {
+  if (!props.attemptId && props.assessmentId) {
+    try {
+      registeredAssessment(props.assessmentId);
+    } catch {
+      return (
+        <AppShell>
+          <p role="alert">This check is unavailable.</p>
+        </AppShell>
+      );
+    }
+  }
+  return <CheckScreen {...props} />;
+}
+function CheckScreen({ attemptId, assessmentId }: { attemptId?: string; assessmentId?: string }) {
   const { sessions, blockedLessons } = useLearnSession();
-  const complete =
-    unitProgress(germanA1, germanA1.units[0], sessions, blockedLessons).status ===
-    "Unit lessons complete";
   const navigate = useNavigate();
   const [history, setHistory] = useState<AssessmentAttempt[]>([]);
   const [historyLoading, setHistoryLoading] = useState(true);
@@ -43,21 +54,39 @@ export function UnitCheckScreen({ attemptId }: { attemptId?: string }) {
   const alive = useRef(true);
   const heading = useRef<HTMLHeadingElement>(null);
   const loadRequest = useRef<{ token: number; promise: Promise<AssessmentAttempt> } | null>(null);
-  const definition = attempt ? unit1CheckForm(attempt.formId) : unit1Check;
-  const next = nextFormLabel(history);
-  const formLabel = definition.formId === "U01.FORM.A" ? "Form A" : "Form B";
-  const historyRequest = useRef<{ token: number; promise: Promise<AssessmentAttempt[]> } | null>(
+  const definition = attempt
+    ? assessmentForm(attempt.assessmentId, attempt.formId)
+    : registeredAssessment((!attemptId && assessmentId) || unit1Check.id).definition;
+  const unit = germanA1.units.find((u) => u.id === definition.unitId)!;
+  const unitNumber = germanA1.units.indexOf(unit) + 1;
+  const complete =
+    unitProgress(germanA1, unit, sessions, blockedLessons).status === "Unit lessons complete";
+  const request = {
+    assessmentId: definition.id,
+    compatibilityVersion: definition.compatibilityVersion,
+  };
+  const next = nextFormLabel(history, definition, attempt?.learnerId);
+  const formLabel = checkFormLabel(definition.formId);
+  const historyRequest = useRef<{ token: string; promise: Promise<AssessmentAttempt[]> } | null>(
     null,
   );
+  const canReadHistory = !attemptId || Boolean(attempt);
   useEffect(() => {
+    if (!canReadHistory) return;
     let active = true;
     setHistoryFailed(false);
+    const token = `${definition.id}:${historyToken}`;
     setHistoryLoading(true);
-    if (historyRequest.current?.token !== historyToken)
+    if (historyRequest.current?.token !== token)
       historyRequest.current = {
-        token: historyToken,
+        token,
         promise: import("@/lib/curriculum/assessment-api").then(({ getUnitCheckHistory }) =>
-          getUnitCheckHistory({ data: request }),
+          getUnitCheckHistory({
+            data: {
+              assessmentId: definition.id,
+              compatibilityVersion: definition.compatibilityVersion,
+            },
+          }),
         ),
       };
     historyRequest.current.promise
@@ -76,7 +105,7 @@ export function UnitCheckScreen({ attemptId }: { attemptId?: string }) {
     return () => {
       active = false;
     };
-  }, [historyToken]);
+  }, [historyToken, definition, canReadHistory]);
   const dirty = attempt?.status === "in-progress" && Object.values(answers).some(Boolean);
   const blocker = useBlocker({
     shouldBlockFn: () => Boolean(dirty),
@@ -99,7 +128,7 @@ export function UnitCheckScreen({ attemptId }: { attemptId?: string }) {
       loadRequest.current = {
         token: loadToken,
         promise: import("@/lib/curriculum/assessment-api").then(({ getUnitCheckAttempt }) =>
-          getUnitCheckAttempt({ data: { ...request, attemptId } }),
+          getUnitCheckAttempt({ data: { attemptId } }),
         ),
       };
     }
@@ -138,7 +167,10 @@ export function UnitCheckScreen({ attemptId }: { attemptId?: string }) {
       const { startUnitCheck } = await import("@/lib/curriculum/assessment-api");
       const value = await startUnitCheck({ data: { ...request, attemptId: startId.current } });
       if (alive.current)
-        await navigate({ to: "/learn/check", search: { attempt: value.attemptId } });
+        await navigate({
+          to: "/learn/check",
+          search: { assessment: value.assessmentId, attempt: value.attemptId },
+        });
     } catch {
       if (alive.current) setFailure(true);
     } finally {
@@ -178,7 +210,7 @@ export function UnitCheckScreen({ attemptId }: { attemptId?: string }) {
       if (alive.current) setBusy(false);
     }
   }
-  const projections = projectOutcomes(unit1Check, history);
+  const projections = projectOutcomes(definition, history, attempt?.learnerId);
   const item = definition.items[index];
   const submitted = attempt?.status === "submitted";
   return (
@@ -189,19 +221,15 @@ export function UnitCheckScreen({ attemptId }: { attemptId?: string }) {
           params={{ unitId: definition.unitId }}
           className="inline-flex min-h-11 items-center rounded-control text-sm text-muted focus-visible:ring-2 focus-visible:ring-focus"
         >
-          ← Unit 1
+          ← Unit {unitNumber}
         </Link>
         <p className="mt-5 text-sm font-medium text-primary-ink">
-          German A1 · Unit 1 Check · Prototype
+          German A1 · Unit {unitNumber} Check · Prototype
         </p>
         <h1 className="mt-3 font-display text-3xl font-semibold tracking-tight">
           {submitted ? "Your check result" : "Check what you can do"}
         </h1>
-        {!complete ? (
-          <p className="mt-5 text-muted">
-            Finish the four Unit 1 lessons before starting this check.
-          </p>
-        ) : loading ? (
+        {loading ? (
           <p role="status" className="mt-6 text-muted">
             Reading your check…
           </p>
@@ -212,11 +240,15 @@ export function UnitCheckScreen({ attemptId }: { attemptId?: string }) {
               Retry load
             </Button>
           </section>
+        ) : !complete && !attempt ? (
+          <p className="mt-5 text-muted">
+            Finish the four Unit {unitNumber} lessons before starting this check.
+          </p>
         ) : !attempt ? (
           <section className="mt-6 border-t border-border pt-6">
             <p className="leading-relaxed">
-              Eight short tasks using Unit 1 language. Answer all items, then submit once. You can
-              go back to edit before submitting.
+              Eight short tasks using Unit {unitNumber} language. Answer all items, then submit
+              once. You can go back to edit before submitting.
             </p>
             <p className="mt-3 text-sm leading-relaxed text-muted">
               Answers stay in this tab until submission. Refreshing or leaving clears unfinished
@@ -227,7 +259,7 @@ export function UnitCheckScreen({ attemptId }: { attemptId?: string }) {
               is assessed.
             </p>
             <Button className="mt-6 min-h-11" disabled={busy} onClick={() => void start()}>
-              {busy ? "Starting…" : failure ? "Retry start" : "Start Unit 1 Check"}
+              {busy ? "Starting…" : failure ? "Retry start" : `Start Unit ${unitNumber} Check`}
             </Button>
             {failure && (
               <p role="alert" className="mt-3 text-sm">
@@ -292,6 +324,22 @@ export function UnitCheckScreen({ attemptId }: { attemptId?: string }) {
                 Includes repeated observation; no additional independent form.
               </p>
             )}
+            {!historyFailed &&
+              !historyLoading &&
+              projections.some((p) => p.state === "needs more evidence") && (
+                <p className="mt-4 text-sm leading-relaxed text-muted">
+                  Follow-up:{" "}
+                  {definition.targets
+                    .filter((target) =>
+                      projections.some(
+                        (p) => p.targetId === target.id && p.state === "needs more evidence",
+                      ),
+                    )
+                    .map((target) => target.label)
+                    .join("; ")}
+                  . Revisit these tasks before another check.
+                </p>
+              )}
             {!historyFailed && !historyLoading && (
               <ul
                 className="mt-6 divide-y divide-border border-y border-border"
@@ -345,7 +393,7 @@ export function UnitCheckScreen({ attemptId }: { attemptId?: string }) {
               {historyFailed || historyLoading
                 ? "Read the saved history before choosing another check."
                 : next.repeated
-                  ? `Next: ${next.formId === "U01.FORM.A" ? "Form A" : "Form B"} again. A repeated observation, not another independent form.`
+                  ? `Next: ${checkFormLabel(next.formId)} again. A repeated observation, not another independent form.`
                   : "Next: Form B with alternate tasks for an additional independent observation."}{" "}
               These prototype forms have not been validated as equivalent tests.
             </p>
@@ -377,7 +425,7 @@ export function UnitCheckScreen({ attemptId }: { attemptId?: string }) {
                 ? "Saved form"
                 : history.some((a) => a.formId === attempt.formId)
                   ? "Repeated observation"
-                  : attempt.formId === "U01.FORM.B"
+                  : checkFormLabel(attempt.formId) === "Form B"
                     ? "Alternate form"
                     : "First observation"}
             </p>
@@ -388,7 +436,7 @@ export function UnitCheckScreen({ attemptId }: { attemptId?: string }) {
             <h2
               ref={heading}
               tabIndex={-1}
-              className="mt-4 font-display text-2xl font-semibold leading-snug outline-none"
+              className="mt-4 font-display text-xl font-semibold leading-snug outline-none sm:text-2xl"
             >
               {item.prompt}
             </h2>

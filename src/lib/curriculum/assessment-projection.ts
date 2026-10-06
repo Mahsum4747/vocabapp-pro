@@ -1,5 +1,6 @@
 import type { AssessmentAttempt, AssessmentDefinition } from "./assessment";
-import { unit1CheckForms } from "@/content/curriculum/german-a1-unit1-check";
+import { unit1Check } from "@/content/curriculum/german-a1-unit1-check";
+import { compatibleHistory, registeredAssessment } from "./assessment-registry";
 
 export type OutcomeProjection = {
   targetId: string;
@@ -16,23 +17,13 @@ export type OutcomeProjection = {
 export function projectOutcomes(
   definition: AssessmentDefinition,
   input: readonly AssessmentAttempt[] | AssessmentAttempt | null,
+  ownerId?: string,
 ): OutcomeProjection[] {
   const history = (
     Array.isArray(input) ? input : input ? [input] : []
   ) as readonly AssessmentAttempt[];
-  const known = history.filter(
-    (a) =>
-      a.status === "submitted" &&
-      a.assessmentId === definition.id &&
-      a.assessmentVersion === definition.assessmentVersion &&
-      unit1CheckForms.some(
-        (f) =>
-          f.formId === a.formId &&
-          f.formFamilyId === a.formFamilyId &&
-          f.compatibilityVersion === a.compatibilityVersion,
-      ),
-  );
-  const families = unit1CheckForms.map((form) => ({
+  const known = compatibleHistory(definition, history, ownerId);
+  const families = registeredAssessment(definition.id).forms.map((form) => ({
     form,
     attempts: known
       .filter((a) => a.formFamilyId === form.formFamilyId)
@@ -50,6 +41,11 @@ export function projectOutcomes(
             events.some(
               (e) =>
                 e.itemId === item.id &&
+                e.learnerId === attempts[0].learnerId &&
+                e.assessmentAttemptId === attempts[0].attemptId &&
+                e.assessmentId === definition.id &&
+                e.assessmentVersion === definition.assessmentVersion &&
+                e.compatibilityVersion === form.compatibilityVersion &&
                 e.correct &&
                 e.formId === form.formId &&
                 e.formFamilyId === form.formFamilyId,
@@ -72,7 +68,8 @@ export function projectOutcomes(
 }
 /** History-derived exposure wording; never stored as a growing independent-evidence count. */
 export function observationKind(attempt: AssessmentAttempt, history: readonly AssessmentAttempt[]) {
-  const prior = history.filter(
+  const definition = registeredAssessment(attempt.assessmentId).definition;
+  const prior = compatibleHistory(definition, history, attempt.learnerId).filter(
     (a) =>
       a.status === "submitted" &&
       a.attemptId !== attempt.attemptId &&
@@ -82,10 +79,13 @@ export function observationKind(attempt: AssessmentAttempt, history: readonly As
   if (prior.some((a) => a.formFamilyId === attempt.formFamilyId)) return "Repeated observation";
   return prior.length ? "Additional independent observation" : "First observation";
 }
-export function nextFormLabel(history: readonly AssessmentAttempt[]) {
-  const latest = [...history].sort(
-    (a, b) => b.finishedAt! - a.finishedAt! || b.attemptId.localeCompare(a.attemptId),
-  )[0];
-  const next = latest?.formId === "U01.FORM.A" ? "U01.FORM.B" : "U01.FORM.A";
-  return { formId: next, repeated: history.some((a) => a.formId === next) };
+export function nextFormLabel(
+  history: readonly AssessmentAttempt[],
+  definition = unit1Check,
+  ownerId?: string,
+) {
+  const known = compatibleHistory(definition, history, ownerId);
+  const forms = registeredAssessment(definition.id).forms;
+  const next = known[0]?.formFamilyId === forms[0].formFamilyId ? forms[1] : forms[0];
+  return { formId: next.formId, repeated: known.some((a) => a.formFamilyId === next.formFamilyId) };
 }
