@@ -88,7 +88,8 @@ test("reads are reads, empty documents are not created, owner isolation and auth
   await assert.rejects(saveCourseProgress(f.db, "u", { ...command(), userId: "victim" }));
   const api = readFileSync("src/lib/curriculum/course-progress-api.ts", "utf8");
   assert.equal((api.match(/middleware\(\[authMiddleware\]\)/g) ?? []).length, 2);
-  assert.equal((api.match(/context.userId/g) ?? []).length, 2);
+  // The course read also derives separate challenge clearance for this verified owner.
+  assert.equal((api.match(/context.userId/g) ?? []).length, 3);
   assert.equal((api.match(/await requireCourseAuthentication\(\)/g) ?? []).length, 2);
 });
 for (const lesson of germanA1.lessons.slice(0, 4))

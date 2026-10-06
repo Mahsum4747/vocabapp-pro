@@ -74,7 +74,12 @@ export type ProgressDescriptor = {
   progress: DurableProgress | null;
   unavailable: boolean;
 };
-export type CourseProgress = { trackId: string; releaseId: string; lessons: ProgressDescriptor[] };
+export type CourseProgress = {
+  trackId: string;
+  releaseId: string;
+  lessons: ProgressDescriptor[];
+  challengeClearances?: readonly string[];
+};
 export type SaveProgressResult =
   { kind: "saved" | "conflict"; progress: DurableProgress } | { kind: "unavailable" };
 

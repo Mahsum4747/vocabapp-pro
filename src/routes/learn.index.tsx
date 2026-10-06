@@ -9,8 +9,8 @@ import { germanA1 } from "@/content/curriculum/german-a1";
 
 export const Route = createFileRoute("/learn/")({ component: LearnCourse });
 function LearnCourse() {
-  const { sessions, blockedLessons } = useLearnSession();
-  const action = courseLearningAction(germanA1, sessions, blockedLessons);
+  const { sessions, blockedLessons, clearedUnits } = useLearnSession();
+  const action = courseLearningAction(germanA1, sessions, blockedLessons, clearedUnits);
   const complete = action.complete;
   const first = action.lesson;
   const session = sessions[sessionKey(germanA1.id, first?.id ?? "")];
@@ -30,11 +30,17 @@ function LearnCourse() {
         <div className="mt-8 flex flex-col gap-4 border-y border-border py-5 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="font-medium">
-              {complete ? "Available lesson sequences complete" : "Your next lesson"}
+              {complete
+                ? clearedUnits.length
+                  ? "Available units cleared"
+                  : "Available lesson sequences complete"
+                : "Your next lesson"}
             </p>
             <p className="mt-1 text-sm text-muted">
               {complete
-                ? "All available lessons finished. More units are not yet authored."
+                ? clearedUnits.length
+                  ? "Available units cleared. Study any lessons optionally. More units are not yet authored."
+                  : "All available lessons finished. More units are not yet authored."
                 : (first?.title ?? "Saved lessons are currently unavailable")}
             </p>
             {!complete && action.unit && (
@@ -88,7 +94,7 @@ function LearnCourse() {
                       <h3 className="font-medium">{unit.title}</h3>
                       <p className="mt-1 text-sm text-muted">
                         {progress.authoredCount > 0
-                          ? `${progress.authoredCount} lessons available · ${progress.status}`
+                          ? `${progress.authoredCount} lessons available · ${clearedUnits.includes(unit.id) ? "Cleared by challenge" : progress.status}`
                           : "4 lessons planned · Not yet authored"}
                       </p>
                     </div>

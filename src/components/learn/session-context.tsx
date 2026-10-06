@@ -41,6 +41,8 @@ const Context = createContext<{
   acceptSaved: (lesson: LessonDefinition) => void;
   saves: Record<string, SaveState>;
   blockedLessons: readonly string[];
+  clearedUnits: readonly string[];
+  clearUnit: (unitId: string) => void;
 } | null>(null);
 
 /** Owned by an authenticated Learn route instance, remounted when owner changes. */
@@ -56,6 +58,7 @@ export function LearnSessionProvider({ children }: { children: ReactNode }) {
   const [loaded, setLoaded] = useState(false);
   const [loadFailed, setLoadFailed] = useState(false);
   const [saves, setSaves] = useState<Record<string, SaveState>>({});
+  const [clearedUnits, setClearedUnits] = useState<readonly string[]>([]);
   const [blockedLessons, setBlockedLessons] = useState<string[]>([]);
   const setSessions: Dispatch<SetStateAction<LessonSessions>> = useCallback((update) => {
     const next = typeof update === "function" ? update(sessionRef.current) : update;
@@ -91,6 +94,7 @@ export function LearnSessionProvider({ children }: { children: ReactNode }) {
       setBlockedLessons(
         result.lessons.filter((lesson) => lesson.unavailable).map((lesson) => lesson.lessonId),
       );
+      setClearedUnits(result.challengeClearances ?? []);
       setSessions(restored);
       setSaves(states);
       setLoaded(true);
@@ -242,6 +246,11 @@ export function LearnSessionProvider({ children }: { children: ReactNode }) {
         acceptSaved,
         saves,
         blockedLessons,
+        clearedUnits,
+        clearUnit: (unitId) =>
+          setClearedUnits((previous) =>
+            previous.includes(unitId) ? previous : [...previous, unitId],
+          ),
       }}
     >
       {blocker.status === "blocked" && (

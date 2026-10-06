@@ -1305,3 +1305,32 @@ Files changed:
 - `src/lib/curriculum/postlaunch-ux.test.ts`
 - `src/lib/curriculum/types.ts`
 - `src/routes/index.tsx`
+
+## 42. Karta Unit Challenge v1
+
+Base: `c6310dc0363aca03ed3273b4dc28b3ced185ca16` (main). Branch: `codex/karta-unit-challenge-v1`. All six repository-local Karta skills were discoverable and applied where relevant. Scope is authored German A1 Units 1 and 2 only; no Unit 3 content.
+
+Unit pages offer Learn the unit and a secondary Test out of this unit. Challenge purpose is explicitly `unit-challenge`: progression clearance, not lesson completion, Unit Check evidence, mastery or CEFR proficiency. Separate original A/B forms have eight items each. Unit Check items/families and eligibility remain unchanged. Existing authenticated server-function middleware, transaction patterns, bounded German normalization and recursive account deletion are reused; assessment evidence semantics are not overloaded.
+
+Passing rule: **8/8 correct**, so every represented functional outcome must satisfy its deterministic response contract. Existing bounded normalization accepts German keyboard fallbacks, whitespace and terminal punctuation; the Unit 1 article/noun task preserves capitalization. No percentage/mastery language. Failed submissions provide an aggregate count and a link to review the unit's lessons, with no per-item correctness, answer keys or teaching reveals. Server-enforced **24-hour** retry interval, then the next A/B form; an active draft is resumed rather than rerolled. Form B is an alternate arrangement, not a psychometrically calibrated proficiency instrument.
+
+Persistence:
+- `users/{verifiedUid}/unitChallenges/{encoded JSON [trackId, releaseId, unitId]}`: strict schemaVersion 1, contractVersion 1, purpose, owner and scope, revision, attemptCount, clearedAt, activeAttemptId, lastAttemptId, retryAfter.
+- Nested `attempts/{UUID}`: same validated owner/scope/version/purpose, server-assigned form, draft/submitted state, timestamps, passed, aggregate correctCount and submission digest. **No raw response history**, prompts, keys, lesson steps or evidence persisted.
+- Reads create nothing. Start transactions assign one authoritative active attempt even across concurrent tabs or lost acknowledgement. Submission atomically fixes immutable attempt truth and updates the unit summary; identical reordered-payload retries are idempotent, changed-payload retries rejected, competing submissions cannot overwrite the winner. Clearance is not downgraded.
+- Material form/grading/response-contract changes require a challenge contractVersion update; copy changes alone do not. This is a new prototype schema, with no migration or alteration of durable lesson progress.
+- Course response adds derived `challengeClearances`; persisted course records are untouched. No new root/collection outside the owned user subtree, no composite index. Existing recursive user deletion removes summaries and all nested attempts; the canonical inventory now names unitChallenges. Firestore remains deny-by-default, and every challenge API authenticates the server user without a client owner field.
+
+Coverage (eight items per form, 32 authored items overall):
+- U01: identity statement; sein/subject agreement; article+noun capitalization; yes/no question; identity question word; number extraction; date extraction; possession and description.
+- U02: regular verb agreement; group/polite forms; plural noun agreement; possessive reference; description negation; noun-identity negation; stem-changing verbs joined by und; reading a corrected detail and revising a sentence.
+
+Guided course/Home progression considers historical completion of the unit's lessons **OR** successful challenge. U01 clearance advances to U02; clearing U02 ends at the last authored unit and does not expose Unit 3. Lessons remain individually Available/In progress/Finished according to actual acknowledgements and can be studied optionally. A failed challenge leaves study available. Challenge success alone does not enable a lesson-gated Unit Check. No lesson traversal, completion, FSRS, vocabulary, grammarProgress, lesenProgress, Paste or existing Unit Check writes.
+
+Validation:
+- 243 focused curriculum/foundation tests pass, including 16 challenge tests: scoring/pass/fail, payload validation, reload, concurrent start/submit, idempotency, owner/unit/release isolation, cooldown/alternate retry, mixed historical/challenge navigation, unchanged lesson state and pre-existing legacy/check records, recursive deletion.
+- 8 compiled challenge browser tests pass across desktop/mobile: both units, reload, next-unit and Home navigation, unchanged lesson counts and check eligibility, failure without keys, delayed alternate form, lost acknowledgements, 390px mobile and 320px dark viewport. Existing postlaunch UX/check regressions: 8 pass. Browser harness seals backend traffic and credentials and prevents migrations.
+- Typecheck, scoped ESLint (0 errors, one existing session-context Fast Refresh warning), build:compile and compiled SSR `node --check` pass. Fresh task/unit/success/failure/mobile/dark captures visually inspected. Task headings receive keyboard focus; mobile targets and horizontal overflow checks pass. Physical-device keyboards/IME and psychometric validity were not assessed.
+- An initial new browser assertion expected the unit label Not started on individual lessons; corrected to their existing truthful Available status. A static auth test now expects the additional verified-owner clearance read. Final runs are green.
+
+Files: challenge contracts/API/server/grading; server-only authored forms; challenge screen/route and generated route tree; derived course/Home navigation and Learn provider/overview/unit/lesson integration; user deletion inventory; focused challenge/browser fixtures/tests and one course API wiring assertion; this handoff. No normal build, migration, deploy, push or merge performed.

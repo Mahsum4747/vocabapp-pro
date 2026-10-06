@@ -6,13 +6,17 @@ export function courseLearningAction(
   release: CurriculumRelease,
   sessions: LessonSessions,
   blockedLessons: readonly string[] = [],
+  clearedUnits: readonly string[] = [],
 ) {
   const units = release.units.map((unit) => ({
     unit,
     progress: unitProgress(release, unit, sessions, blockedLessons),
   }));
   const unfinished = units.find(
-    ({ progress }) => progress.authoredCount > 0 && progress.status !== "Unit lessons complete",
+    ({ unit, progress }) =>
+      progress.authoredCount > 0 &&
+      progress.status !== "Unit lessons complete" &&
+      !clearedUnits.includes(unit.id),
   );
   // An unavailable saved lesson must not silently skip an unfinished earlier unit.
   if (unfinished)

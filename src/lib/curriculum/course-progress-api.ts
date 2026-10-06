@@ -10,7 +10,13 @@ export const getCourseProgress = createServerFn({ method: "GET" })
       await import("./course-progress.server");
     await requireCourseAuthentication();
     const { getAdminFirestore } = await import("../firebase-admin.server");
-    return readCourseProgress(getAdminFirestore(), context.userId, data);
+    const { readChallengeClearances } = await import("./challenge.server");
+    const db = getAdminFirestore();
+    const [progress, challengeClearances] = await Promise.all([
+      readCourseProgress(db, context.userId, data),
+      readChallengeClearances(db, context.userId, data),
+    ]);
+    return { ...progress, challengeClearances };
   });
 export const acknowledgeCourseProgress = createServerFn({ method: "POST" })
   .middleware([authMiddleware])

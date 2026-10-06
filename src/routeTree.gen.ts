@@ -44,6 +44,7 @@ import { Route as GrammarSubjektiveModalverbenRouteImport } from './routes/gramm
 import { Route as GrammarTrennbareVerbenRouteImport } from './routes/grammar.trennbare-verben'
 import { Route as LearnIndexRouteImport } from './routes/learn.index'
 import { Route as LearnLessonIdRouteImport } from './routes/learn.$lessonId'
+import { Route as LearnChallengeRouteImport } from './routes/learn.challenge'
 import { Route as LearnCheckRouteImport } from './routes/learn.check'
 import { Route as SetsSetIdRouteImport } from './routes/sets.$setId'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
@@ -239,6 +240,11 @@ const LearnLessonIdRoute = LearnLessonIdRouteImport.update({
   path: '/$lessonId',
   getParentRoute: () => LearnRoute,
 } as any)
+const LearnChallengeRoute = LearnChallengeRouteImport.update({
+  id: '/challenge',
+  path: '/challenge',
+  getParentRoute: () => LearnRoute,
+} as any)
 const LearnCheckRoute = LearnCheckRouteImport.update({
   id: '/check',
   path: '/check',
@@ -354,6 +360,7 @@ export interface FileRoutesByFullPath {
   '/grammar/subjektive-modalverben': typeof GrammarSubjektiveModalverbenRoute
   '/grammar/trennbare-verben': typeof GrammarTrennbareVerbenRoute
   '/learn/$lessonId': typeof LearnLessonIdRoute
+  '/learn/challenge': typeof LearnChallengeRoute
   '/learn/check': typeof LearnCheckRoute
   '/sets/$setId': typeof SetsSetIdRouteWithChildren
   '/grammar/': typeof GrammarIndexRoute
@@ -405,6 +412,7 @@ export interface FileRoutesByTo {
   '/grammar/subjektive-modalverben': typeof GrammarSubjektiveModalverbenRoute
   '/grammar/trennbare-verben': typeof GrammarTrennbareVerbenRoute
   '/learn/$lessonId': typeof LearnLessonIdRoute
+  '/learn/challenge': typeof LearnChallengeRoute
   '/learn/check': typeof LearnCheckRoute
   '/grammar': typeof GrammarIndexRoute
   '/learn': typeof LearnIndexRoute
@@ -458,6 +466,7 @@ export interface FileRoutesById {
   '/grammar/subjektive-modalverben': typeof GrammarSubjektiveModalverbenRoute
   '/grammar/trennbare-verben': typeof GrammarTrennbareVerbenRoute
   '/learn/$lessonId': typeof LearnLessonIdRoute
+  '/learn/challenge': typeof LearnChallengeRoute
   '/learn/check': typeof LearnCheckRoute
   '/sets/$setId': typeof SetsSetIdRouteWithChildren
   '/grammar/': typeof GrammarIndexRoute
@@ -513,6 +522,7 @@ export interface FileRouteTypes {
     | '/grammar/subjektive-modalverben'
     | '/grammar/trennbare-verben'
     | '/learn/$lessonId'
+    | '/learn/challenge'
     | '/learn/check'
     | '/sets/$setId'
     | '/grammar/'
@@ -564,6 +574,7 @@ export interface FileRouteTypes {
     | '/grammar/subjektive-modalverben'
     | '/grammar/trennbare-verben'
     | '/learn/$lessonId'
+    | '/learn/challenge'
     | '/learn/check'
     | '/grammar'
     | '/learn'
@@ -616,6 +627,7 @@ export interface FileRouteTypes {
     | '/grammar/subjektive-modalverben'
     | '/grammar/trennbare-verben'
     | '/learn/$lessonId'
+    | '/learn/challenge'
     | '/learn/check'
     | '/sets/$setId'
     | '/grammar/'
@@ -896,6 +908,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LearnLessonIdRouteImport
       parentRoute: typeof LearnRoute
     }
+    '/learn/challenge': {
+      id: '/learn/challenge'
+      path: '/challenge'
+      fullPath: '/learn/challenge'
+      preLoaderRoute: typeof LearnChallengeRouteImport
+      parentRoute: typeof LearnRoute
+    }
     '/learn/check': {
       id: '/learn/check'
       path: '/check'
@@ -1072,6 +1091,7 @@ const GrammarRouteWithChildren =
 
 interface LearnRouteChildren {
   LearnLessonIdRoute: typeof LearnLessonIdRoute
+  LearnChallengeRoute: typeof LearnChallengeRoute
   LearnCheckRoute: typeof LearnCheckRoute
   LearnIndexRoute: typeof LearnIndexRoute
   LearnUnitsUnitIdRoute: typeof LearnUnitsUnitIdRoute
@@ -1079,6 +1099,7 @@ interface LearnRouteChildren {
 
 const LearnRouteChildren: LearnRouteChildren = {
   LearnLessonIdRoute: LearnLessonIdRoute,
+  LearnChallengeRoute: LearnChallengeRoute,
   LearnCheckRoute: LearnCheckRoute,
   LearnIndexRoute: LearnIndexRoute,
   LearnUnitsUnitIdRoute: LearnUnitsUnitIdRoute,

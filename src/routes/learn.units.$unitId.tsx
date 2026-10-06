@@ -17,11 +17,23 @@ import { lessonStatus, sessionKey } from "@/lib/curriculum/lesson-session";
 export const Route = createFileRoute("/learn/units/$unitId")({ component: LearnUnit });
 function LearnUnit() {
   const { unitId } = Route.useParams();
-  const { sessions, blockedLessons } = useLearnSession();
+  const { sessions, blockedLessons, clearedUnits } = useLearnSession();
   const unit = germanA1.units.find((candidate) => candidate.id === unitId);
   const progress = unit ? unitProgress(germanA1, unit, sessions, blockedLessons) : null;
   const next = progress?.nextLesson ?? progress?.repeatLesson;
   const assessment = unit ? assessmentForUnit(unit.id) : undefined;
+  const cleared = clearedUnits.includes(unitId);
+  const nextUnit =
+    unit &&
+    germanA1.units
+      .slice(germanA1.units.indexOf(unit) + 1)
+      .find((candidate) =>
+        candidate.lessonIds.some((id) =>
+          germanA1.lessons.some(
+            (lesson) => lesson.id === id && lesson.availability === "prototype",
+          ),
+        ),
+      );
   const number = unit ? germanA1.units.indexOf(unit) + 1 : 0;
   return (
     <AppShell>
@@ -49,7 +61,8 @@ function LearnUnit() {
                 className="mt-6 border-t border-border pt-5"
                 aria-label="Unit lesson progress"
               >
-                <p className="font-medium">{progress.status}</p>
+                <h2 className="font-medium">Learn the unit</h2>
+                <p className="mt-2">{progress.status}</p>
                 <p className="mt-2 text-sm leading-relaxed text-muted">
                   {progress.finishedCount} of {progress.total} lessons finished
                   {progress.status === "Unit lessons complete" &&
@@ -65,6 +78,45 @@ function LearnUnit() {
                 )}
               </section>
             )}
+            {progress &&
+              progress.authoredCount > 0 &&
+              ["DE.A1.U01", "DE.A1.U02"].includes(unitId) && (
+                <section className="mt-6 border-t border-border pt-5" aria-label="Unit challenge">
+                  {cleared ? (
+                    <>
+                      <h2 className="font-medium">Cleared by challenge</h2>
+                      <p className="mt-2 text-sm text-muted">
+                        Lessons remain available for optional study.
+                      </p>
+                      {nextUnit ? (
+                        <Button asChild className="mt-4 h-auto min-h-11 whitespace-normal py-3">
+                          <Link to="/learn/units/$unitId" params={{ unitId: nextUnit.id }}>
+                            Continue to next available unit
+                          </Link>
+                        </Button>
+                      ) : (
+                        <p className="mt-3 text-sm text-muted">More units are not yet authored.</p>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <Button
+                        asChild
+                        variant="outline"
+                        className="h-auto min-h-11 whitespace-normal py-3"
+                      >
+                        <Link to="/learn/challenge" search={{ unitId }}>
+                          Test out of this unit
+                        </Link>
+                      </Button>
+                      <p className="mt-2 text-sm text-muted">
+                        An independent challenge for progression. All eight answers must meet the
+                        requirements.
+                      </p>
+                    </>
+                  )}
+                </section>
+              )}
             {assessment && progress?.status === "Unit lessons complete" && (
               <Suspense fallback={<p className="mt-6 text-sm text-muted">Loading your check…</p>}>
                 <UnitCheckEntry

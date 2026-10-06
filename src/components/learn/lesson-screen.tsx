@@ -30,6 +30,7 @@ export function LessonScreen({
     acceptSaved,
     saves,
     blockedLessons,
+    clearedUnits,
   } = useLearnSession();
   const releaseId = release.id;
   const session = sessions[sessionKey(releaseId, lesson.id)];
@@ -38,7 +39,7 @@ export function LessonScreen({
   const unitNumber = release.units.indexOf(unit) + 1;
   const progress = unitProgress(release, unit, sessions, blockedLessons);
   const following = nextAuthoredLesson(release.lessons, lesson);
-  const courseNext = courseLearningAction(release, sessions, blockedLessons);
+  const courseNext = courseLearningAction(release, sessions, blockedLessons, clearedUnits);
   const next =
     following && !blockedLessons.includes(following.id)
       ? following
