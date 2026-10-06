@@ -1,5 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, ArrowRight } from "lucide-react";
+import { lazy, Suspense } from "react";
+const UnitCheckEntry = lazy(() =>
+  import("@/components/learn/unit-check-entry").then((module) => ({
+    default: module.UnitCheckEntry,
+  })),
+);
 import { AppShell } from "@/components/app-shell";
 import { useLearnSession } from "@/components/learn/session-context";
 import { germanA1 } from "@/content/curriculum/german-a1";
@@ -57,6 +63,11 @@ function LearnUnit() {
                   </Button>
                 )}
               </section>
+            )}
+            {number === 1 && progress?.status === "Unit lessons complete" && (
+              <Suspense fallback={<p className="mt-6 text-sm text-muted">Loading your check…</p>}>
+                <UnitCheckEntry />
+              </Suspense>
             )}
             <ol className="mt-7 divide-y divide-border border-y border-border">
               {unit.lessonIds.map((id, index) => {

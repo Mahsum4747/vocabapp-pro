@@ -855,3 +855,77 @@ Final checks:
 - First dev pass: **30 passed, 2 failed**; both failures were the same existing 36px New set header target in the new 320px full-page target audit. Existing hit-area utility correction resolved both. Final dev and compiled passes are clean. Initial optional-lesson narrowing/test-object type errors were fixed before the clean typecheck.
 
 No push, merge, migration or deployment. Tracked work contains only Phase 1D content, derived-state/UX integration, focused tests and this implementation handoff section.
+
+## 35. Karta Phase 1E — Unit 1 Check and evidence foundation (2026-10-06)
+
+Base: approved/pushed `codex/karta-phase1d-complete-unit1`, `a4edc4652c17deeffbf32689d68976b265c9305b`. Work branch: `codex/karta-phase1e-unit1-evidence`. All six repository-local Karta skills were discoverable and applied. Approved architecture/blueprint documents, lesson definitions, course-progress persistence, dependencies, migrations and production configuration are unchanged.
+
+### Audit and scope
+
+Audited the four authored U01 lessons, exact 100-skill registry and validated prerequisite graph; blueprint essential/supporting/diagnostic policy and W03 supported-exposure exception; Phase 1C/1D traversal contracts and historical completion; grammar/Lesen practice scoring and `grammar-assessment.ts`; LearningSignals/evidence bands, auth/Firestore boundaries, result components and recursive account deletion. Existing grammar assessment generates AI advice from practice summaries; it is not assessment evidence and is not reused. LearningSignals' sample-size bands and existing vocabulary mastery are not used by this check.
+
+The blueprint specifies course-level essential functional groups but not an exact essential/supporting classification for each U01 skill. The six groups below are **narrow task observations**, not new canonical skills or independently certified essential gates. G01/G02/G03/G08/G09/G10/G12/G13/G14/G15/G50/G52, lexical scaffolding V01–V04, R01–R03 and W01–W03 are not independently certified. In particular the Name field is supported W03 exposure, not R11 independent form interpretation. No general gender/nominative knowledge, free writing, speaking, whole-unit mastery or A1 proficiency is inferred. Independent introduction/open writing remains unassessed.
+
+### Original item plan and exact mapping
+
+`DE.A1.U01.CHECK.PROTOTYPE.1`, release `DE.A1.CURRICULUM.PROTOTYPE.1B`, track `de-a1-text-practice-v1`, Unit `DE.A1.U01`, compatibility version 1, unpublished prototype. Eight original Karta tasks, pending educator/editorial review. No third-party assessment material. Fresh entities, complete prompts/stimuli and task arrangements differ from the lessons: speaker exchange, paired article recognition, intent-to-question construction, contrasting number messages, date selection across descriptions, two controlled sentences and a supported name field. Shared taught forms/nouns necessarily recur; replacing names alone is not claimed as a new task family.
+
+| Items | Type | Evidence target | Actual elicitation |
+| --- | --- | --- | --- |
+| U01.C01 | Single choice | U01.person | Identify Omar as the answering speaker in an exchange |
+| U01.C02 | Single choice | U01.articles | Select the correct articles for Büro and Telefon together |
+| U01.C03 | Construction | U01.question | Produce one yes/no identity question about Sara |
+| U01.C04–C05 | Reading extraction | U01.details | Retrieve Ben's number and the date associated with a small office |
+| U01.C06–C07 | Construction / bounded text | U01.statements | Produce one first-person haben statement and one phone description with ist |
+| U01.C08 | Supported field | U01.form | Enter Timo in a labelled Name field from a fictional message |
+
+Only taught Unit 1 language is scored. Item types and target IDs are declarative; rendering has no lesson-ID cases. Grading is deterministic bounded equivalence: NFC, trimmed/collapsed whitespace and one terminal punctuation mark normalized; declared case-sensitive production checks preserve German capitalization. Numeric date alternatives are explicit. No keyword/free-writing evaluator or AI. Feedback/accepted responses appear only in final item review, with source text for context.
+
+### Contracts, durability and concurrency
+
+`AssessmentDefinition`, `AssessmentItem`, `AssessmentResponse`, `AssessmentAttempt`, `EvidenceEvent` and `OutcomeProjection` are explicit narrow contracts in `assessment.ts`; strict Zod schemas reject unknown fields, IDs, versions, repeated/missing items, non-option choices and responses over 160 characters. Stored attempt/evidence validation also checks owner, scope, exact order, lifecycle and event provenance. `schemaVersion: 1` is new assessment data; course-progress schema 2 remains untouched.
+
+Explicit Start creates an `in-progress` attempt with a client UUID (validated, owner assigned exclusively by verified server auth), server `startedAt`, fixed item order, definition hash and compatibility version. Creation is idempotent for that owner/UUID, and the server reads all four existing course rows to require historical completion. No traversal fields are copied into assessment evidence. The attempt ID is retained in the route URL after creation. No shuffle, draft-answer persistence, keystroke writes or partial-answer resume.
+
+All eight answers remain local until final Submit. Refresh/confirmed navigation clears unfinished answers and restarts the same draft's fixed item order; the screen explains this and guards unsaved navigation. Creation acknowledgement loss may leave a harmless empty draft if the page is closed before its URL is established. Accepted submissions remain recoverable by URL or Unit 1's latest-result read.
+
+Submission validates and grades on the server, then atomically transitions the draft to `submitted`, adds server `finishedAt`, stores classified item responses and embeds eight immutable evidence events. A submitted attempt is never updated. One start write plus one accepted submit write; no writes per answer, on reads, for projection or for retries. A SHA-256 digest of exact trimmed responses in fixed item order identifies the final payload. An identical retry, including reordered transport input, returns the accepted truth with zero writes. Different competing answers return `conflict` plus the winning immutable result; the UI explicitly says another tab's answers won. Double-clicks are guarded locally; transaction retries enforce the same rule server-side. Failed/lost acknowledgements retain and resend exactly the frozen submission; `Check saved result` reads durable truth without resubmitting. Effect re-entry shares one read promise per attempt/explicit retry so an accidental second success cannot hide a load failure. Load/start/submit/retake errors have explicit recovery controls; owner changes/unmounts ignore late responses.
+
+`compatibilityVersion` changes for incompatible item identity/order, response/grading semantics or outcome meaning. Copy/formatting edits keep it stable. `definitionHash` fingerprints the definition at start for diagnostics, not the compatibility gate. A production migration/version archive is not introduced; unknown or incompatible prototype versions are rejected without writes.
+
+### Storage, events and projection
+
+Only new path: `users/{verifiedUid}/assessmentAttempts/{attemptUUID}`. No separate evidence collection/root is necessary: the entire accepted attempt and its bounded events fit one transaction/document. Evidence ID `${attemptUUID}:${itemId}` is deterministic. Each event contains verified learner scope, attempt ID, assessment ID/version, item ID, narrow target, correctness, server timestamp and `provenance: assessment`; no raw response or mastery value. Events are semantically append-only across independently created attempts and immutable within each submitted document.
+
+GET by ID reads one known user-owned document. Unit history reads the latest document by `finishedAt` descending, limit 1; Firestore's implicit document-ID ordering breaks equal-time ties descending. Null-finished drafts sort after submitted attempts and never replace the last accepted result. This single-field query requires no added composite-index configuration. The prototype supports only this one assessment/release in the new subcollection; future multi-assessment/history/version support must be designed deliberately rather than extending this query silently.
+
+`projectOutcomes` is a pure derived read model of the latest accepted compatible attempt. No accepted observations → `no evidence`; all required items for a target correct → `demonstrated in this check`; otherwise → `needs more evidence`. Two-item targets require both, so success in an unrelated target cannot average away a gap. No persisted projection, global mastery, CEFR percentage, completion flag or recommendation write. Raw score is correct items / 8 and remains separate from traversal and outcome labels.
+
+Retakes create a new UUID, preserve all prior attempts/events, and use the latest accepted result rather than best score or averaging. The same eight prototype items repeat; UI explicitly calls this a repeat observation, **not new independent transfer evidence**. Alternate held-out families, exposure-ledger/assistance metadata and delayed rechecks are deferred prerequisites for stronger/public completion claims. This prototype does not grant reviewed curriculum completion credit.
+
+### Privacy, deletion and UX
+
+Bounded submitted text is transmitted only for deterministic grading/digest computation; raw typed responses are not stored. `responses` stores item/target/correctness classes, sufficient for the score and item-result review. No prompts, stimulus snapshots, open writing, keystrokes, AI feedback, unrelated analytics or user-supplied owner IDs are persisted. Thus review shows accepted responses and correctness, not the learner's original typed mistake. The hashed submission digest serves idempotency only.
+
+`assessmentAttempts` is explicitly added to `USER_SUBCOLLECTIONS`. Existing recursive `users/{uid}` account deletion removes drafts, accepted truth and all embedded events, including when the parent user document is absent. No orphan top-level event records. An explicit deletion test preserves another user's subtree while removing the assessed user's data.
+
+Unit 1 shows the Check action only after all four lessons are historically complete (repeating lessons does not revoke it). It shows the last accepted score/review link after submission. Lesson revisits remain available; Unit 2 stays unavailable. `/learn/check?attempt=...` uses the existing authenticated Learn owner/provider boundary with four middleware-protected APIs, verified server ownership and auth-off preview denial before initializing Firestore. No browser-direct Firestore. An incomplete learner cannot create an attempt by bypassing the entry UI.
+
+Quiet Editorial screen: compact item counter, labelled radios/inputs, Previous/Next and a single final Submit; no Discover/Understand stages or teaching explanations during the check. Focus follows item/result changes. Results separate “Unit lessons complete”, a raw check score and cautious six-target evidence. No proficiency celebration. Failure, lost-acknowledgement recovery, competing-tab result and retake states are explicit.
+
+### Validation and visual review
+
+- Focused assessment suite: **20 passed, 0 failed**. Covers definition/count/types/scope/originality, exact mapping, deterministic grading, overclaim boundaries, strict inputs/stored provenance, start gating and idempotency, accepted submit, duplicate/concurrent submit, immutable history/retakes/latest projection, read purity, compatible copy edits/incompatible versions, absent/different-owner attempts, auth-off/API ownership boundary, deletion and course/legacy isolation.
+- Combined curriculum/assessment plus Phase 1C/1D and FSRS/review/foundation/grammar regressions: **136 passed, 0 failed** (20 assessment + 50 existing curriculum/progress + 66 relevant legacy regressions).
+- Browser projection is isolated in `assessment-projection.ts`; new check screen/entry use explicit lazy/Suspense boundaries. An initial compiled-preview startup exposed the existing Nitro/rolldown undefined `ssr_exports` issue; this boundary correction resolves generated SSR syntax without dependency/configuration edits.
+- Typecheck passes. Scoped ESLint passes without errors/warnings. `build:compile` passes; normal `build` and `db:migrate` are not run.
+- Dev browsers: initial full Learn/assessment suite **42 passed, 0 failed**; final polished/lazy-boundary assessment suite **14 passed, 0 failed**, plus final Previous-item keyboard/retake check **2 passed, 0 failed**. The intervening failure-injection pass exposed duplicate effect reads (two failed cases); sharing each explicit read promise resolved it.
+- Final compiled browsers: **46 passed, 0 failed** (14 Phase 1E + 32 existing Learn regressions), desktop and mobile. Includes L01–L04 durable resume, stale/idempotent course writes, legacy vocabulary Learn, all eight items, mixed evidence, result reload/review, retake failure/success, duplicate/double-click submit, lost acknowledgements with read recovery and reload, competing-tab result, signed-out/incomplete gating and narrow/dark/touch/keyboard checks. The initial broken compiled preview started zero browser tests; the final lazy-boundary rebuild passes both generated SSR syntax and the complete compiled suite.
+- Rendered/inspected screenshots under ignored `screenshots/phase1e/`: Unit 1 available entry, desktop check/mid-check, mixed 6/8 result, expanded review, repeat attempt, submit failure/recovery, concurrent result, 390px mobile check/result, dark 320px check/result and scrolled result action. Browser fixtures exercise real assessment/course persistence logic on hermetic in-memory Firestore, seal external APIs and assert no uncaught browser errors or unhandled calls; they do not exercise a live Firestore deployment.
+- Second polish after screenshot review shortened date/form prompts and target descriptions, distinguished follow-up labels with neutral color, included the original short stimulus in result review, clarified saved score/traversal wording, and kept keyboard focus on the question when returning to Item 1. Rechecked mobile touch targets, horizontal overflow and result action visibility above fixed navigation. The read-deduplication fix also prevents an initial load failure being masked by effect re-entry.
+
+### Protected and deferred scope
+
+Lesson completion != evidence. Assessment attempt != mastery. FSRS/CardProgress, grammarProgress, lesenProgress, Paste, course-progress semantics and legacy vocabulary Learn are unchanged. No Progress/Home integration, A1 completion algorithm, placement/exam mode, assessment scheduling, AI/open-writing grading, audio/speaking, Unit 2 content, mass authoring or production migration. Prototype English support and one exposed retake family remain explicit limits; educator review, stronger transfer coverage and live Firestore integration verification remain deferred.
+
+No push, merge, migration or deployment. Commit only Phase 1E contracts/content/UI, focused/browser tests, generated route registration, deletion inventory and this new handoff section; unrelated pre-existing machine-local files remain excluded.

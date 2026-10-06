@@ -148,7 +148,9 @@ for (const index of [2, 3]) {
     ).toBe(true);
     expect(
       h.serverFns.calls.every((call) =>
-        ["getCourseProgress", "acknowledgeCourseProgress"].includes(call.name),
+        ["getCourseProgress", "acknowledgeCourseProgress", "getLatestUnitCheck"].includes(
+          call.name,
+        ),
       ),
     ).toBe(true);
     expect(JSON.stringify([...fixture.storage.records.values()])).not.toContain("PRIVATE_NAME");

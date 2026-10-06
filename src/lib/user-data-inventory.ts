@@ -29,6 +29,7 @@ export const USER_SUBCOLLECTIONS = [
   "lesenPasteTopics",
   "aiFeedbackLog",
   "courseProgress",
+  "assessmentAttempts", // Submitted truth and embedded immutable evidence; no separate root.
 ] as const;
 // Profile fields include preferences, sound settings, setSessions, Today cache,
 // XP, completedSets and achievements. Paste roundReceipts are nested beneath topics.

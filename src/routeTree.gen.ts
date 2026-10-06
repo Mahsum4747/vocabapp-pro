@@ -44,6 +44,7 @@ import { Route as GrammarSubjektiveModalverbenRouteImport } from './routes/gramm
 import { Route as GrammarTrennbareVerbenRouteImport } from './routes/grammar.trennbare-verben'
 import { Route as LearnIndexRouteImport } from './routes/learn.index'
 import { Route as LearnLessonIdRouteImport } from './routes/learn.$lessonId'
+import { Route as LearnCheckRouteImport } from './routes/learn.check'
 import { Route as SetsSetIdRouteImport } from './routes/sets.$setId'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as LearnUnitsUnitIdRouteImport } from './routes/learn.units.$unitId'
@@ -238,6 +239,11 @@ const LearnLessonIdRoute = LearnLessonIdRouteImport.update({
   path: '/$lessonId',
   getParentRoute: () => LearnRoute,
 } as any)
+const LearnCheckRoute = LearnCheckRouteImport.update({
+  id: '/check',
+  path: '/check',
+  getParentRoute: () => LearnRoute,
+} as any)
 const SetsSetIdRoute = SetsSetIdRouteImport.update({
   id: '/sets/$setId',
   path: '/sets/$setId',
@@ -348,6 +354,7 @@ export interface FileRoutesByFullPath {
   '/grammar/subjektive-modalverben': typeof GrammarSubjektiveModalverbenRoute
   '/grammar/trennbare-verben': typeof GrammarTrennbareVerbenRoute
   '/learn/$lessonId': typeof LearnLessonIdRoute
+  '/learn/check': typeof LearnCheckRoute
   '/sets/$setId': typeof SetsSetIdRouteWithChildren
   '/grammar/': typeof GrammarIndexRoute
   '/learn/': typeof LearnIndexRoute
@@ -398,6 +405,7 @@ export interface FileRoutesByTo {
   '/grammar/subjektive-modalverben': typeof GrammarSubjektiveModalverbenRoute
   '/grammar/trennbare-verben': typeof GrammarTrennbareVerbenRoute
   '/learn/$lessonId': typeof LearnLessonIdRoute
+  '/learn/check': typeof LearnCheckRoute
   '/grammar': typeof GrammarIndexRoute
   '/learn': typeof LearnIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -450,6 +458,7 @@ export interface FileRoutesById {
   '/grammar/subjektive-modalverben': typeof GrammarSubjektiveModalverbenRoute
   '/grammar/trennbare-verben': typeof GrammarTrennbareVerbenRoute
   '/learn/$lessonId': typeof LearnLessonIdRoute
+  '/learn/check': typeof LearnCheckRoute
   '/sets/$setId': typeof SetsSetIdRouteWithChildren
   '/grammar/': typeof GrammarIndexRoute
   '/learn/': typeof LearnIndexRoute
@@ -504,6 +513,7 @@ export interface FileRouteTypes {
     | '/grammar/subjektive-modalverben'
     | '/grammar/trennbare-verben'
     | '/learn/$lessonId'
+    | '/learn/check'
     | '/sets/$setId'
     | '/grammar/'
     | '/learn/'
@@ -554,6 +564,7 @@ export interface FileRouteTypes {
     | '/grammar/subjektive-modalverben'
     | '/grammar/trennbare-verben'
     | '/learn/$lessonId'
+    | '/learn/check'
     | '/grammar'
     | '/learn'
     | '/api/auth/$'
@@ -605,6 +616,7 @@ export interface FileRouteTypes {
     | '/grammar/subjektive-modalverben'
     | '/grammar/trennbare-verben'
     | '/learn/$lessonId'
+    | '/learn/check'
     | '/sets/$setId'
     | '/grammar/'
     | '/learn/'
@@ -884,6 +896,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LearnLessonIdRouteImport
       parentRoute: typeof LearnRoute
     }
+    '/learn/check': {
+      id: '/learn/check'
+      path: '/check'
+      fullPath: '/learn/check'
+      preLoaderRoute: typeof LearnCheckRouteImport
+      parentRoute: typeof LearnRoute
+    }
     '/sets/$setId': {
       id: '/sets/$setId'
       path: '/sets/$setId'
@@ -1053,12 +1072,14 @@ const GrammarRouteWithChildren =
 
 interface LearnRouteChildren {
   LearnLessonIdRoute: typeof LearnLessonIdRoute
+  LearnCheckRoute: typeof LearnCheckRoute
   LearnIndexRoute: typeof LearnIndexRoute
   LearnUnitsUnitIdRoute: typeof LearnUnitsUnitIdRoute
 }
 
 const LearnRouteChildren: LearnRouteChildren = {
   LearnLessonIdRoute: LearnLessonIdRoute,
+  LearnCheckRoute: LearnCheckRoute,
   LearnIndexRoute: LearnIndexRoute,
   LearnUnitsUnitIdRoute: LearnUnitsUnitIdRoute,
 }

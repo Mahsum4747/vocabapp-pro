@@ -39,7 +39,31 @@ export function fakeProgressDb(initial: Record<string, unknown> = {}) {
         return result;
       }
     },
-    collection: () => ({ where: () => ({ get: async () => ({ docs: [] }) }) }),
+    collection: (collectionPath: string) => ({
+      where: () => ({ get: async () => ({ docs: [] }) }),
+      orderBy: (field: string, direction: string) => ({
+        limit: (limit: number) => ({
+          get: async () => ({
+            docs: [...records.entries()]
+              .filter(
+                ([path]) =>
+                  path.startsWith(`${collectionPath}/`) &&
+                  !path.slice(collectionPath.length + 1).includes("/"),
+              )
+              .sort(([ap, av], [bp, bv]) => {
+                const a = (av as Record<string, number | null>)[field];
+                const b = (bv as Record<string, number | null>)[field];
+                const delta = (a ?? -1) - (b ?? -1);
+                return direction === "desc"
+                  ? -(delta || ap.localeCompare(bp))
+                  : delta || ap.localeCompare(bp);
+              })
+              .slice(0, limit)
+              .map(([path]) => ({ ...row(path), id: path.split("/").at(-1)! })),
+          }),
+        }),
+      }),
+    }),
     recursiveDelete: async (reference: DocumentReference) => {
       for (const path of records.keys())
         if (path === reference.path || path.startsWith(`${reference.path}/`)) records.delete(path);

@@ -26,6 +26,7 @@ export function courseProgressFixture() {
       loseAck = true;
     },
     handlers: {
+      getLatestUnitCheck: async () => null,
       getCourseProgress: async (input: unknown) => {
         if (failLoad) {
           --failLoad;
