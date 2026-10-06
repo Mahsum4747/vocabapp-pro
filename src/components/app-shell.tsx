@@ -29,7 +29,7 @@ export function AppShell({
             <Button asChild variant="ghost" size="sm" className="hidden md:inline-flex">
               <Link to="/learn">Learn</Link>
             </Button>
-            <Button asChild size="sm">
+            <Button asChild size="sm" className="tap-target">
               <Link to="/create">
                 <Plus />
                 New set

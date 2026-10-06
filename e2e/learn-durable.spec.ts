@@ -33,9 +33,12 @@ test("durable overview/unit/resume and historical completion survive reload and 
   await screenshot(page, `overview-${info.project.name}`);
   await page.getByRole("link", { name: "Open Unit 1" }).click();
   await expect(page.getByText("Finished", { exact: true })).toBeVisible();
-  await expect(page.getByText("In progress", { exact: true })).toBeVisible();
+  await expect(page.locator("main ol").getByText("In progress", { exact: true })).toBeVisible();
   await screenshot(page, `unit-${info.project.name}`);
-  await page.getByRole("link", { name: /Name people and things/ }).click();
+  await page
+    .locator("main ol")
+    .getByRole("link", { name: /Name people and things/ })
+    .click();
   await expect(page.getByText("Lesson 2 · Step 5 of 8", { exact: true })).toBeVisible();
   await screenshot(page, `resume-${info.project.name}`);
   await page.getByLabel("German phrase for a woman").fill("eine Frau");
@@ -47,7 +50,10 @@ test("durable overview/unit/resume and historical completion survive reload and 
   await expect(page.getByRole("status")).toContainText("That fits");
   expect(h.serverFns.callsTo("getCourseProgress")).toHaveLength(reads + 1);
   await page.getByRole("link", { name: "Unit 1", exact: true }).click();
-  await page.getByRole("link", { name: /introduce yourself/ }).click();
+  await page
+    .locator("main ol")
+    .getByRole("link", { name: /introduce yourself/ })
+    .click();
   await expect(page.getByRole("heading", { name: "Lesson finished." })).toBeVisible();
   await page.getByRole("button", { name: "Practice lesson again" }).click();
   await expect(page.getByText("Lesson 1 · Step 1 of 7", { exact: true })).toBeVisible();
@@ -92,7 +98,10 @@ test("load failure, save failure and lost acknowledgement retry retain the same 
   await expect(page.getByRole("heading", { name: "Your answer hasn’t saved." })).toBeVisible();
   await expect(page).toHaveURL(/\/learn\/units\//);
   await page.getByRole("button", { name: "Stay in Learn" }).click();
-  await page.getByRole("link", { name: /Name people and things/ }).click();
+  await page
+    .locator("main ol")
+    .getByRole("link", { name: /Name people and things/ })
+    .click();
   await expect(page.getByLabel("German phrase for a woman")).toHaveValue("eine Frau");
   fixture.loseNextAcknowledgement();
   await page.getByRole("button", { name: "Retry saving" }).click();

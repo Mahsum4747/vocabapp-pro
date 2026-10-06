@@ -1,3 +1,4 @@
+import { unitProgress } from "@/lib/curriculum/unit-progress";
 import { Link } from "@tanstack/react-router";
 import { ArrowLeft, Check } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -27,13 +28,17 @@ export function LessonScreen({
     retry,
     acceptSaved,
     saves,
+    blockedLessons,
   } = useLearnSession();
   const releaseId = release.id;
   const session = sessions[sessionKey(releaseId, lesson.id)];
   const unit = release.units.find((candidate) => candidate.id === lesson.unitId)!;
   const lessonNumber = unit.lessonIds.indexOf(lesson.id) + 1;
   const unitNumber = release.units.indexOf(unit) + 1;
-  const next = nextAuthoredLesson(release.lessons, lesson);
+  const progress = unitProgress(release, unit, sessions, blockedLessons);
+  const following = nextAuthoredLesson(release.lessons, lesson);
+  const next =
+    following && !blockedLessons.includes(following.id) ? following : progress.nextLesson;
   // SSR can render a form before its handlers hydrate. Prevent native submission
   // from reloading the page before an answer can be acknowledged.
   const [ready, setReady] = useState(false);
@@ -163,7 +168,9 @@ export function LessonScreen({
               </Button>
             ) : (
               <p className="mt-6 font-medium">
-                The next lesson is not yet authored. This unit is still in progress.
+                {progress.status === "Unit lessons complete"
+                  ? `Unit ${unitNumber} lessons complete. The next unit is not yet available.`
+                  : "This lesson is finished. Return to the unit to see your remaining lessons."}
               </p>
             )}
             <div className="mt-6 flex flex-col gap-3 sm:flex-row">

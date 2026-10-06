@@ -1,8 +1,10 @@
+import { detailsLessonSteps } from "./german-a1-details";
+import { informationLessonSteps } from "./german-a1-information";
 import type { CurriculumRelease } from "@/lib/curriculum/types";
 import { entityLessonSteps } from "./german-a1-entities";
 import { identityLessonSteps } from "./german-a1-lesson";
 
-/** Approved registry metadata; U01.L01 and U01.L02 have original prototype content.
+/** Approved registry metadata; All four U01 lessons have original prototype content.
  * English support is a placeholder, not a complete source-language overlay. */
 export const germanA1: CurriculumRelease = {
   id: "DE.A1.CURRICULUM.PROTOTYPE.1B",
@@ -1092,8 +1094,10 @@ export const germanA1: CurriculumRelease = {
     },
     {
       id: "DE.A1.U01.L03",
+      resumeContractVersion: 1,
       unitId: "DE.A1.U01",
       title: "Ask for personal details",
+      description: "Ask who someone is, then read a registration number and date.",
       outcome: "Ask a new person's detail and extract number/date",
       introducedSkillIds: [
         "DE.A1.GRAMMAR.QUESTIONS.YES_NO",
@@ -1103,13 +1107,15 @@ export const germanA1: CurriculumRelease = {
         "DE.A1.READING.NUMERIC_DETAILS",
       ],
       consolidatedSkillIds: [],
-      availability: "not-authored",
-      steps: [],
+      availability: "prototype",
+      steps: detailsLessonSteps,
     },
     {
       id: "DE.A1.U01.L04",
+      resumeContractVersion: 1,
       unitId: "DE.A1.U01",
       title: "Give basic information",
+      description: "Read an office note, fill a fictional form, and describe a place.",
       outcome: "Supported registration form and simple description",
       introducedSkillIds: [
         "DE.A1.GRAMMAR.VERBS.HABEN_PRESENT",
@@ -1119,8 +1125,8 @@ export const germanA1: CurriculumRelease = {
         "DE.A1.READING.EXPLICIT_FACT",
       ],
       consolidatedSkillIds: [],
-      availability: "not-authored",
-      steps: [],
+      availability: "prototype",
+      steps: informationLessonSteps,
     },
     {
       id: "DE.A1.U02.L01",

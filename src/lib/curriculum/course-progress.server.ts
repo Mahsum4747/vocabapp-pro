@@ -27,7 +27,7 @@ export function courseProgressPath(
   userDocumentPaths(ownerId); // Same authenticated-owner/path validation as deletion.
   return `users/${ownerId}/courseProgress/${progressDocumentId(scope)}`;
 }
-/** Exactly two known lesson document reads today. Missing rows are not initialized. */
+/** One document read per known authored lesson. Missing rows are not initialized. */
 export async function readCourseProgress(
   db: Firestore,
   ownerId: string,

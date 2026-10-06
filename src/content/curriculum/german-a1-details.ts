@@ -1,0 +1,137 @@
+import type { LessonStep } from "@/lib/curriculum/types";
+
+// Original Karta registration-desk practice; expert publication review remains deferred.
+const G14 = "DE.A1.GRAMMAR.QUESTIONS.YES_NO";
+const G15 = "DE.A1.GRAMMAR.QUESTIONS.WH";
+const G52 = "DE.A1.GRAMMAR.QUANTITY.NUMBER_NOUN";
+const V03 = "DE.A1.VOCABULARY.NUMERIC_TIME";
+const R02 = "DE.A1.READING.NUMERIC_DETAILS";
+const id = "DE.A1.U01.L03";
+export const detailsLessonSteps: readonly LessonStep[] = [
+  {
+    id: `${id}.discover`,
+    stage: "discover",
+    purpose: "teach",
+    kind: "explanation",
+    label: "Meet at the registration desk",
+    prompt: "Turn an introduction into a question.",
+    example: "Du bist Mira. → Bist du Mira?\nWer bist du? — Ich bin Nora.",
+    explanation:
+      "You already know Du bist Mira. To ask ‘Are you Mira?’, move bist before du. Wer means ‘who’: Wer bist du? asks the other person's identity. Use du with someone you address informally.",
+    skillIds: [G14, G15],
+  },
+  {
+    id: `${id}.understand`,
+    stage: "understand",
+    purpose: "teach",
+    kind: "explanation",
+    label: "Two kinds of question",
+    prompt: "A yes/no answer or a detail?",
+    example: "Bist du Nora?\nWer bist du?\nWas ist das? — Das ist ein Telefon.",
+    explanation:
+      "A yes/no question starts with the verb: Bist du Nora? A detail question starts with a question word, then the verb: Wer bist du? Was means ‘what’. These questions use the sein forms from Lesson 1.",
+    skillIds: [G14, G15],
+  },
+  {
+    id: `${id}.recognize`,
+    stage: "recognize",
+    purpose: "practice",
+    kind: "choice",
+    label: "Ask for identity",
+    prompt: "You do not know the other person's name. Which question asks who they are?",
+    options: ["Wer bist du?", "Bist du Nora?", "Was ist das?"],
+    correctAnswer: "Wer bist du?",
+    feedback: "Wer bist du? asks who the person is; Bist du Nora? checks one suggested identity.",
+    skillIds: [G14, G15],
+  },
+  {
+    id: `${id}.recall`,
+    stage: "recall",
+    purpose: "practice",
+    kind: "text",
+    label: "Build a yes/no question",
+    prompt: "Use all three words to ask ‘Are you Mira?’: du · Mira · bist",
+    inputLabel: "Your German question",
+    acceptedAnswers: ["Bist du Mira?"],
+    feedback: "Bist comes first, then du, then Mira: Bist du Mira?",
+    skillIds: [G14],
+  },
+  {
+    id: `${id}.numbers`,
+    stage: "understand",
+    purpose: "teach",
+    kind: "explanation",
+    label: "Read a few numbers",
+    prompt: "A small number set for this desk.",
+    example:
+      "1 — eins · 2 — zwei · 3 — drei · 12 — zwölf\nein Telefon · zwei Telefone\nNummer: 12\nDatum: 12.03.",
+    explanation:
+      "Nummer means number; Datum means date. In this numeric date, the day comes before the month: 12.03. means 12 March. For one telephone use ein Telefon; for two use zwei Telefone. The plural Telefone is supplied here, not a rule for all nouns.",
+    skillIds: [G52, V03],
+  },
+  {
+    id: `${id}.read-number`,
+    stage: "read",
+    purpose: "practice",
+    kind: "text",
+    label: "Read a registration card",
+    prompt: "What is Mira's registration number? Write digits.",
+    example: "Name: Mira\nNummer: 12\nDatum: 12.03.",
+    inputLabel: "Registration number",
+    acceptedAnswers: ["12"],
+    feedback: "The Nummer field says 12. Read that field, rather than the date.",
+    skillIds: [R02, V03],
+  },
+  {
+    id: `${id}.read-date`,
+    stage: "read",
+    purpose: "practice",
+    kind: "text",
+    label: "Find the date",
+    prompt: "Copy the date from Nora's registration card. Use day.month format.",
+    example: "Name: Nora\nNummer: 3\nDatum: 03.12.",
+    inputLabel: "Date from the card",
+    acceptedAnswers: ["03.12.", "3.12."],
+    feedback: "03.12. is 3 December. The day is 03 and the month is 12; do not reverse them.",
+    skillIds: [R02, V03],
+  },
+  {
+    id: `${id}.count`,
+    stage: "produce",
+    purpose: "practice",
+    kind: "text",
+    label: "Say how many",
+    prompt: "Write ‘two telephones’ using the supplied noun form: Telefone.",
+    inputLabel: "Number and noun",
+    acceptedAnswers: ["zwei Telefone"],
+    caseSensitive: true,
+    feedback: "zwei Telefone names two objects. Keep the capital T on the noun.",
+    skillIds: [G52, V03],
+  },
+  {
+    id: `${id}.produce`,
+    stage: "produce",
+    purpose: "practice",
+    kind: "text",
+    label: "Ask a new person",
+    prompt: "Use wer · du · bist to ask ‘Who are you?’",
+    inputLabel: "Question for the other person",
+    acceptedAnswers: ["Wer bist du?"],
+    feedback: "Wer comes first, bist second, then du: Wer bist du?",
+    skillIds: [G15],
+  },
+  {
+    id: `${id}.check`,
+    stage: "check",
+    purpose: "formative-check",
+    kind: "choice",
+    label: "One last card",
+    prompt: "Which registration number belongs to Leo?",
+    example: "Name: Leo\nNummer: 2\nDatum: 12.03.",
+    options: ["12", "3", "2"],
+    correctAnswer: "2",
+    feedback:
+      "Leo's number is 2. This checks one reading detail from practice, not independent proficiency.",
+    skillIds: [R02, V03],
+  },
+];

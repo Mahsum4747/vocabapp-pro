@@ -47,7 +47,10 @@ test("Learn prototype: bounded lesson, retries, session resume and truthful comp
   });
   await noOverflow(page);
   await page.getByRole("link", { name: "Unit 1", exact: true }).click();
-  await page.getByRole("link", { name: /introduce yourself/i }).click();
+  await page
+    .locator("main ol")
+    .getByRole("link", { name: /introduce yourself/i })
+    .click();
   await expect(page.getByLabel("Missing German word")).toHaveValue("bin");
   await expect(page.getByRole("button", { name: "Check", exact: true })).toBeEnabled();
   await page.getByLabel("Missing German word").press("Enter");
@@ -85,7 +88,10 @@ test("Learn prototype: bounded lesson, retries, session resume and truthful comp
   await expect(page.getByText("Lesson 2 · Step 1 of 8", { exact: true })).toBeVisible();
   await page.getByRole("link", { name: "Unit 1", exact: true }).click();
   await expect(page.getByText("Finished", { exact: true })).toBeVisible();
-  await page.getByRole("link", { name: /introduce yourself/i }).click();
+  await page
+    .locator("main ol")
+    .getByRole("link", { name: /introduce yourself/i })
+    .click();
   await page.getByRole("button", { name: "Practice lesson again", exact: true }).click();
   await expect(page.getByText("Lesson 1 · Step 1 of 7", { exact: true })).toBeVisible();
   // Course persistence must remain isolated from every legacy learning server function.
@@ -101,7 +107,7 @@ test("Learn prototype: bounded lesson, retries, session resume and truthful comp
 
 test("direct unavailable lesson and unknown ID remain unavailable", async ({ page, launch }) => {
   await launch({ sets: [], handlers: courseProgressFixture().handlers });
-  await page.goto("/learn/DE.A1.U01.L03");
+  await page.goto("/learn/DE.A1.U02.L01");
   await expect(
     page.getByRole("heading", { name: "This lesson is not yet authored" }),
   ).toBeVisible();

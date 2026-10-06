@@ -91,7 +91,7 @@ test("reads are reads, empty documents are not created, owner isolation and auth
   assert.equal((api.match(/context.userId/g) ?? []).length, 2);
   assert.equal((api.match(/await requireCourseAuthentication\(\)/g) ?? []).length, 2);
 });
-for (const lesson of [first, second])
+for (const lesson of germanA1.lessons.slice(0, 4))
   test(`${lesson.id}: checked-answer reload resume, retry count and exact position`, async () => {
     const f = fakeProgressDb();
     await saveCourseProgress(f.db, "u", command(lesson));
@@ -121,7 +121,7 @@ for (const lesson of [first, second])
       null,
     );
   });
-for (const lesson of [first, second])
+for (const lesson of germanA1.lessons.slice(0, 4))
   test(`${lesson.id}: completion reload and restart preserve historical truth`, async () => {
     const f = fakeProgressDb();
     const revision = await finish(f, lesson);
@@ -186,7 +186,7 @@ test("release/track/lesson rejection and changed/withdrawn content keep old reco
   for (const extra of [
     { releaseId: "unknown" },
     { trackId: "another" },
-    { lessonId: "DE.A1.U01.L03" },
+    { lessonId: "DE.A1.U02.L01" },
     { lessonId: "unknown" },
   ])
     await assert.rejects(saveCourseProgress(f.db, "u", { ...command(), ...extra }));
@@ -228,8 +228,7 @@ test("course writes never touch FSRS, grammar, Lesen, Paste or profile; deletion
     "users/other/courseProgress/private": { retained: true },
     "grammarProgress/u": { untouched: true },
   });
-  await finish(f, first);
-  await finish(f, second);
+  for (const lesson of germanA1.lessons.slice(0, 4)) await finish(f, lesson);
   assert.ok(f.writes.every((path) => path.startsWith("users/u/courseProgress/")));
   assert.deepEqual(f.records.get("grammarProgress/u"), { untouched: true });
   const before = f.writes.length;
@@ -304,7 +303,7 @@ async function checkedChoice(lesson: LessonDefinition) {
   await saveCourseProgress(f.db, "u", check);
   return { f, check, step };
 }
-for (const lesson of [first, second])
+for (const lesson of germanA1.lessons.slice(0, 4))
   test(`${lesson.id}: copy and feedback edits preserve checked resume, completion and receipt retries`, async () => {
     const { f, check, step } = await checkedChoice(lesson);
     const completed = fakeProgressDb();

@@ -3,6 +3,8 @@ import { ArrowLeft, ArrowRight } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { useLearnSession } from "@/components/learn/session-context";
 import { germanA1 } from "@/content/curriculum/german-a1";
+import { unitProgress } from "@/lib/curriculum/unit-progress";
+import { Button } from "@/components/ui/button";
 import { lessonStatus, sessionKey } from "@/lib/curriculum/lesson-session";
 
 export const Route = createFileRoute("/learn/units/$unitId")({ component: LearnUnit });
@@ -10,6 +12,8 @@ function LearnUnit() {
   const { unitId } = Route.useParams();
   const { sessions, blockedLessons } = useLearnSession();
   const unit = germanA1.units.find((candidate) => candidate.id === unitId);
+  const progress = unit ? unitProgress(germanA1, unit, sessions, blockedLessons) : null;
+  const next = progress?.nextLesson ?? progress?.repeatLesson;
   const number = unit ? germanA1.units.indexOf(unit) + 1 : 0;
   return (
     <AppShell>
@@ -31,9 +35,29 @@ function LearnUnit() {
           <>
             <p className="mt-3 max-w-2xl leading-relaxed text-muted">
               {number === 1
-                ? "Introduce yourself, name people and things, then build toward simple exchanges."
+                ? "Introduce yourself, name people and things, ask for details, and give basic information."
                 : "This unit is planned. Its lessons are not yet authored."}
             </p>
+            {progress && progress.authoredCount > 0 && (
+              <section
+                className="mt-6 border-t border-border pt-5"
+                aria-label="Unit lesson progress"
+              >
+                <p className="font-medium">{progress.status}</p>
+                <p className="mt-2 text-sm leading-relaxed text-muted">
+                  {progress.finishedCount} of {progress.total} lessons finished
+                  {progress.status === "Unit lessons complete" && ". Unit 2 is not yet available."}
+                </p>
+                {next && (
+                  <Button asChild className="mt-4 h-auto min-h-11 whitespace-normal py-3">
+                    <Link to="/learn/$lessonId" params={{ lessonId: next.id }}>
+                      {progress.nextLesson ? "Next lesson" : "Continue practice"}: {next.title}
+                      <ArrowRight />
+                    </Link>
+                  </Button>
+                )}
+              </section>
+            )}
             <ol className="mt-7 divide-y divide-border border-y border-border">
               {unit.lessonIds.map((id, index) => {
                 const lesson = germanA1.lessons.find((candidate) => candidate.id === id)!;
@@ -78,23 +102,9 @@ function LearnUnit() {
               })}
             </ol>
             <p className="mt-5 text-sm leading-relaxed text-muted">
-              Checked steps and lesson completion are saved to your account. Open writing stays on
-              this page. Finished lessons are practice milestones, not skill mastery.
+              Finishing these lessons records practice completion, not mastery or A1 proficiency.
+              Open writing stays in the current session and is unassessed.
             </p>
-            {unit.lessonIds.every(
-              (id) =>
-                lessonStatus(
-                  germanA1.id,
-                  germanA1.lessons.find((lesson) => lesson.id === id)!,
-                  sessions,
-                ) === "Finished" ||
-                germanA1.lessons.find((lesson) => lesson.id === id)!.availability ===
-                  "not-authored",
-            ) && (
-              <p className="mt-4 font-medium">
-                The next lesson is not yet authored. This unit is still in progress.
-              </p>
-            )}
           </>
         )}
       </div>

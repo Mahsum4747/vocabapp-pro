@@ -91,8 +91,8 @@ test("multi-lesson responses, retries, completion and restart are isolated", () 
 test("finishing both authored lessons leaves unit incomplete and creates no mastery", () => {
   const sessions = finish(finish({}), second);
   assert.equal(lessonStatus(germanA1.id, second, sessions), "Finished");
-  assert.equal(nextAuthoredLesson(germanA1.lessons, second), undefined);
-  assert.equal(lessonStatus(germanA1.id, germanA1.lessons[2], sessions), "Not yet authored");
+  assert.equal(nextAuthoredLesson(germanA1.lessons, second)?.id, germanA1.lessons[2].id);
+  assert.equal(lessonStatus(germanA1.id, germanA1.lessons[2], sessions), "Available");
   assert.equal(
     germanA1.units[0].lessonIds.every(
       (id) => sessions[sessionKey(germanA1.id, id)]?.status === "finished",

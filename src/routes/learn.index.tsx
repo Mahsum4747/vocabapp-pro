@@ -3,21 +3,16 @@ import { ArrowRight, BookOpen } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { useLearnSession } from "@/components/learn/session-context";
-import { lessonStatus, sessionKey } from "@/lib/curriculum/lesson-session";
+import { sessionKey } from "@/lib/curriculum/lesson-session";
+import { unitProgress } from "@/lib/curriculum/unit-progress";
 import { germanA1 } from "@/content/curriculum/german-a1";
 
 export const Route = createFileRoute("/learn/")({ component: LearnCourse });
 function LearnCourse() {
   const { sessions, blockedLessons } = useLearnSession();
-  const authored = germanA1.lessons.filter(
-    (lesson) => lesson.availability === "prototype" && !blockedLessons.includes(lesson.id),
-  );
-  const first =
-    authored.find(
-      (lesson) => sessions[sessionKey(germanA1.id, lesson.id)]?.status === "in-progress",
-    ) ??
-    authored.find((lesson) => lessonStatus(germanA1.id, lesson, sessions) !== "Finished") ??
-    authored.at(-1);
+  const progress = unitProgress(germanA1, germanA1.units[0], sessions, blockedLessons);
+  const complete = progress.status === "Unit lessons complete";
+  const first = progress.nextLesson ?? progress.repeatLesson;
   const session = sessions[sessionKey(germanA1.id, first?.id ?? "")];
   return (
     <AppShell>
@@ -34,25 +29,33 @@ function LearnCourse() {
         </div>
         <div className="mt-8 flex flex-col gap-4 border-y border-border py-5 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="font-medium">Your next lesson</p>
+            <p className="font-medium">
+              {complete ? "Unit 1 lessons complete" : "Your next lesson"}
+            </p>
             <p className="mt-1 text-sm text-muted">
-              {first?.title ?? "Saved lessons are currently unavailable"}
+              {complete
+                ? "All four lessons finished. Unit 2 is not yet available."
+                : (first?.title ?? "Saved lessons are currently unavailable")}
             </p>
             {session?.status === "finished" && (
               <p className="mt-2 text-sm text-primary-ink">Lesson finished</p>
             )}
           </div>
-          {first && (
+          {complete && !first ? (
             <Button asChild className="shrink-0">
-              <Link to="/learn/$lessonId" params={{ lessonId: first.id }}>
-                {session?.status === "finished"
-                  ? "View finished lesson"
-                  : session
-                    ? "Continue lesson"
-                    : "Start lesson"}
-                <ArrowRight />
+              <Link to="/learn/units/$unitId" params={{ unitId: germanA1.units[0].id }}>
+                Revisit Unit 1<ArrowRight />
               </Link>
             </Button>
+          ) : (
+            first && (
+              <Button asChild className="shrink-0">
+                <Link to="/learn/$lessonId" params={{ lessonId: first.id }}>
+                  {complete ? "Continue practice" : session ? "Continue lesson" : "Start lesson"}
+                  <ArrowRight />
+                </Link>
+              </Button>
+            )
           )}
         </div>
         <section className="mt-9" aria-labelledby="course-units">
@@ -63,8 +66,8 @@ function LearnCourse() {
             </h2>
           </div>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
-            10 units · 40 planned lessons. Two lessons are available in this unpublished prototype.
-            Checked steps and lesson completion are saved to your account.
+            10 units · 40 planned lessons. All four Unit 1 lessons are available in this unpublished
+            prototype. Your checked steps and lesson completion are saved.
           </p>
           <ol className="mt-5 divide-y divide-border">
             {germanA1.units.map((unit, index) => (
@@ -77,7 +80,7 @@ function LearnCourse() {
                     <h3 className="font-medium">{unit.title}</h3>
                     <p className="mt-1 text-sm text-muted">
                       {index === 0
-                        ? "2 lessons available · 2 not yet authored"
+                        ? `4 lessons available · ${progress.status}`
                         : "4 lessons planned · Not yet authored"}
                     </p>
                   </div>

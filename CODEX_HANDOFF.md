@@ -798,3 +798,60 @@ Hardening validation:
 - Compiled desktop/mobile Learn regressions: **24 passed**, including L01/L02 durable reload resume, completion, retries/conflicts and unchanged legacy vocabulary Learn. Resumed desktop/mobile screenshots were inspected.
 - Scoped lint: **0 errors**, existing provider/hook Fast Refresh warning only. `git diff --check`: passed.
 - No migration, production data access, push, merge or deployment.
+
+## 34. Karta Phase 1D — complete authored Unit 1 (2026-10-06)
+
+Base: approved/pushed `codex/karta-phase1c-durable-progress`, `a98019537f8ca7e54385facd2c21f9690ea2c558`. Work branch: `codex/karta-phase1d-complete-unit1`. All six repository-local Karta skills were discoverable and read. This section supersedes the two-authored-lesson limitation in Phase 1C; approved architecture and blueprint documents are unchanged.
+
+### Audit and exact approved metadata
+
+The audit verified curriculum contracts/graph validation, L01/L02 definitions, response controls, pure session transitions, schema-2 durable progress/resume, compatibility rules, Learn/Unit/finished views and existing domain/browser coverage. The response engine and persistence resolver already support any authored lesson. Two-lesson assumptions existed in overview/finished copy, a read comment and fixtures/assertions, not in transaction/storage architecture. Existing Unit copy could imply the unit remained unfinished after its last available lesson; completion must now depend on all four actual historical milestones, never unauthored placeholders.
+
+Exact blueprint registry preserved:
+
+- `DE.A1.U01.L03`: **Ask for personal details**. Outcome: **Ask a new person's detail and extract number/date**. Introduced G14/G15/G52/V03/R02; consolidated list remains empty. Canonical IDs: `DE.A1.GRAMMAR.QUESTIONS.YES_NO`, `DE.A1.GRAMMAR.QUESTIONS.WH`, `DE.A1.GRAMMAR.QUANTITY.NUMBER_NOUN`, `DE.A1.VOCABULARY.NUMERIC_TIME`, `DE.A1.READING.NUMERIC_DETAILS`. Prerequisites: G14→G13; G15→G14; G52→G09/G10; V03→V01; R02→R01/V03.
+- `DE.A1.U01.L04`: **Give basic information**. Outcome: **Supported registration form and simple description**. Introduced G03/G50/V04/W03/R03; consolidated list remains empty. Canonical IDs: `DE.A1.GRAMMAR.VERBS.HABEN_PRESENT`, `DE.A1.GRAMMAR.ADJECTIVES.PREDICATIVE`, `DE.A1.VOCABULARY.NOUN_BUNDLE`, `DE.A1.WRITING.FORM_COMPLETION`, `DE.A1.READING.EXPLICIT_FACT`. Prerequisites: G03→G01; G50→G02/G13; V04→V02; W03→W01/R02; R03→R01/G13. The blueprint expressly permits supported W03 form entry before R11 independent form interpretation.
+
+### Authored content and engine boundaries
+
+`german-a1-details.ts` supplies ten L03 steps: Discover → Understand → Recognize → Recall → Understand (numbers) → Read (number) → Read (date) → Produce (count) → Produce (question) → formative Check. Learners contrast `Bist du…?` with `Wer bist du?`, build bounded questions from supplied words, read fictional registration cards, distinguish date from number and use `ein Telefon / zwei Telefone`. Numbers 1/2/3/12 and explicit day.month support keep lexical/numeric scope controlled. Supplied plurals do not claim general plural instruction. R02 is genuine extraction from visible cards, not translation of the expected answer.
+
+`german-a1-information.ts` supplies eleven L04 steps: Discover → Understand → Recognize → Recall → Read → Produce → Apply (name field) → Apply (date field) → Apply (telephone-count field) → Apply (open writing) → formative Check. Familiar office nouns recur with supplied gender/plural bundles; `ich habe / Nora hat` use bounded telephone phrases, and `Das Büro ist klein/groß` introduces predicative descriptions without adjective declension. A short office note supplies an explicit fact. A fictional registration provides supported fields, one response at a time. The two-sentence original introduction/description is explicitly unassessed, never sent/stored as text; bounded fields are deterministically graded only against their requested supplied details.
+
+All content is original Karta prototype material; no exam-provider items or external datasets were copied. Mira/Nora/Leo, Telefon and Büro recur without requiring later-unit grammar. L01/L02 content, step identity/order, grading and compatibility versions are untouched. No new response/stage types, generic component lesson IDs, grading algorithm or session transition changes were needed. New work uses existing declarative explanation/choice/text/original controls; arbitrary supported sequences already work.
+
+### Persistence, compatibility and derived Unit state
+
+The existing authored registry filter now returns L01–L04. A Learn mount reads four known scoped documents instead of two; no query, initialization or hidden read write was added. Each accepted Check/Continue/Restart still uses the same single-document transaction, expected revision, UUID and bounded receipt digest/window. Correct first-pass L03/L04 traversal uses 17/20 accepted commands respectively; wrong retries/restarts add their existing commands.
+
+Firestore path remains `users/{verifiedUid}/courseProgress/{encodeURIComponent(JSON.stringify([trackId, releaseId, lessonId]))}`. Track remains `de-a1-text-practice-v1`; release remains `DE.A1.CURRICULUM.PROTOTYPE.1B`; prototype publication status is unchanged. Schema 2, revisions, practice runs, first-finished timestamps, receipts, privacy/minimization and auth-off denial are unchanged. No new collection/root, unit-completion record, migration or live backend operation.
+
+L03/L04 declare initial `resumeContractVersion: 1`. L01/L02 retain version 1. Definition hashes remain diagnostics only; copy/feedback/formatting edits retain compatibility. Authors must bump the explicit contract for incompatible step identity/order, task meaning, grading or required responses. This is reviewed metadata, not automatic semantic inference. Schema-1 prototype rows and mismatched contracts remain untouched/unavailable; no conversion was introduced.
+
+`unit-progress.ts` is a pure shared read model used by overview, Unit route and finished view. It counts only authored, available lessons with current finished state or acknowledged historical completion. All four expected lessons must count before **Unit lessons complete**; three finished lessons remain **In progress**. Missing/unauthored/blocked entries cannot complete a unit, and another release's sessions do not count. Restart retains historical completion and can show **Finished · Practicing again** separately. Next lesson is the first unfinished available lesson in registry order; repeat practice does not displace unfinished learning work.
+
+Learn retains all ten units: Unit 1 has four actionable authored rows; Units 2–10 remain not authored, with no fake locks/unlocks. Unit 1 shows finished count and next action; all-four completion clearly says Unit 2 is not yet available. Overview offers Revisit Unit 1, or Continue practice for an active repeat. Finishing L04 alone never falsely completes an unfinished unit. No assessment/score/mastery/proficiency/CEFR/exam-readiness claim or button was added.
+
+### Visual review and second polish
+
+Rendered first and final screenshots cover overview desktop, mixed/all-finished Unit 1 desktop, L03/L04 desktop, both new lessons at 390px, Unit 1 at 390px, dark 320px Unit/reading/form views, durable checked resumes, and final all-lessons-complete/overview state. Ignored local artifacts: `screenshots/phase1d/`. Screenshots were inspected, not inferred from source.
+
+First inspection found repetitive completion wording and a long mobile form explanation. Second pass shortened Unit completion messaging, form support and L04 reading feedback without changing grading/response semantics or compatibility. Practical-target testing exposed the shared New set header link's existing 36px box: the existing `tap-target` utility now expands its invisible hit area to 44px without changing layout or behavior. No global button redesign. Lessons retain semantic forms/radios/labels, visible focus, keyboard Check/Continue, heading focus on step changes, announced feedback, save/recovery controls and disabled-until-ack behavior. Tests wait for enabled acknowledged actions before capturing checked-state screenshots. Narrow/dark views have no horizontal overflow. Physical keyboards/screen readers/real-device/live-backend behavior remain unverified.
+
+### Validation and deferred scope
+
+Final validation results are recorded after the final browser/build checks below. Tests use the real pure/boundary logic with fake document transactions and sealed server-function/auth mocks, with backend credentials disabled. `agent-browser` is unavailable in this local environment; the existing hermetic Playwright suite drives actual browser interactions and captures rendered screenshots. Existing dev warmup may report denied credential/unauthorized diagnostics and the known `streak.ts` import-protection warning; no production backend is accessed.
+
+FSRS scheduler/queue semantics and legacy vocabulary Learn remain unchanged. `grammarProgress`, `lesenProgress`, Paste progress, Home recommendation logic, dependencies and production configuration remain unchanged. No mastery/evidence projection, assessment attempt/unit assessment/checkpoint/placement persistence, AI grading, audio, overlays, Unit 2 content or separately persisted Unit state was introduced. This is four unpublished lessons, not German A1 or CEFR completion. Educator publication review, source-language overlays, remaining units, independent assessments and live-backend verification remain deferred. No offline queue or restoration of discarded unsaved/open writing was added. Unrelated pre-existing untracked files are preserved and excluded. No push, merge or deployment.
+
+Final checks:
+
+- `node --import ./scripts/test-register.mjs --test src/lib/curriculum/*.test.ts`: **50 passed, 0 failed**. Includes exact blueprint IDs/titles/outcomes/skills/prerequisites, distinct stage invariants, bounded grading and unassessed writing, all-four checked reload/completion/restart and copy compatibility, isolation, stale/duplicate writes (including a stale restart after Unit completion), schema/version/release guards, no legacy/FSRS writes and derived Unit truth.
+- `node --import ./scripts/test-register.mjs --test src/lib/srs/scheduler.test.ts src/lib/review-plan.test.ts src/lib/foundation-hardening.test.ts src/lib/grammar-drills.test.ts`: **66 passed, 0 failed**.
+- `npm run typecheck`: passed. Scoped ESLint: **0 errors**, one existing provider/hook Fast Refresh warning. `git diff --check`: passed.
+- `npm run build:compile`: passed. Migration-triggering normal `build` was not run; no migration/deployment command.
+- `npx playwright test e2e/learn-phase1d.spec.ts e2e/learn-durable.spec.ts e2e/learn-prototype.spec.ts e2e/learn-unit1.spec.ts`: **32 passed, 0 failed**, desktop/mobile.
+- Same four files with `--config e2e/home-compiled.config.ts`: **32 passed, 0 failed**, desktop/mobile, against compile-only output. Browser harness also asserts no uncaught runtime errors or unhandled backend requests. L01/L02 and legacy vocabulary Learn remain covered alongside complete L03/L04 traversal, checked reload/open-writing minimization, all-four completion, active repeat history, signed-out/recovery/conflict/idempotency, unavailable/unknown routes, keyboard/focus, targets and narrow/dark layouts.
+- First dev pass: **30 passed, 2 failed**; both failures were the same existing 36px New set header target in the new 320px full-page target audit. Existing hit-area utility correction resolved both. Final dev and compiled passes are clean. Initial optional-lesson narrowing/test-object type errors were fixed before the clean typecheck.
+
+No push, merge, migration or deployment. Tracked work contains only Phase 1D content, derived-state/UX integration, focused tests and this implementation handoff section.
