@@ -38,9 +38,9 @@ test("U6 is open ahead, Perfekt lesson persists and recovers without prior compl
   const h = await launch({ sets: [], handlers: f.handlers });
   await page.goto("/learn");
   await expect(page.getByRole("link", { name: "Open Unit 6", exact: true })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Open Unit 7", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Open Unit 9", exact: true })).toHaveCount(0);
   await expect(
-    page.locator('[data-unit="DE.A1.U07"]').getByText("Not yet authored", { exact: true }),
+    page.locator('[data-unit="DE.A1.U09"]').getByText("Not yet authored", { exact: true }),
   ).toBeVisible();
   await page.getByRole("link", { name: "Open Unit 6", exact: true }).click();
   await expect(
@@ -267,7 +267,7 @@ for (const correct of [5, 6])
     );
     expect(h.serverFns.callsTo("acknowledgeCourseProgress")).toHaveLength(0);
     await page.goto("/learn");
-    await expect(page.getByRole("link", { name: "Open Unit 7", exact: true })).toHaveCount(0);
+    await expect(page.getByRole("link", { name: "Open Unit 9", exact: true })).toHaveCount(0);
   });
 test("CP2 remains unavailable before U6 clearance in dark 320px", async ({
   page,

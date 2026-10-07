@@ -150,13 +150,13 @@ test("U6 frozen blueprint, skill membership, prerequisite DAG and truthful autho
       );
     assert.equal(lesson.steps.at(-1)!.stage, "check");
   }
-  assert.equal(germanA1.lessons.filter((l) => l.availability === "prototype").length, 24);
+  assert.equal(germanA1.lessons.filter((l) => l.availability === "prototype").length, 32);
   assert(
-    germanA1.lessons.slice(24).every((l) => l.availability === "not-authored" && !l.steps.length),
+    germanA1.lessons.slice(32).every((l) => l.availability === "not-authored" && !l.steps.length),
   );
   assert(unitAvailable("DE.A1.U06"));
-  assert(!unitAvailable("DE.A1.U07"));
-  assert.equal(assessmentForUnit("DE.A1.U07"), undefined);
+  assert(!unitAvailable("DE.A1.U09"));
+  assert.equal(assessmentForUnit("DE.A1.U09"), undefined);
 });
 for (const lesson of lessons)
   test(`${lesson.id}: reviewed answers, mixed keyboard equivalence and wrong-answer rejection`, () => {
@@ -304,7 +304,7 @@ for (const count of [5, 6, 7, 8])
       assert(b.result.summary.clearedAt);
     }
   });
-test("U5 clearance recommends U6; clearing all authored units never opens planned U7", async () => {
+test("U5 clearance recommends U6; clearing all authored units now recommends authored U7", async () => {
   const s = fakeProgressDb();
   for (const unit of germanA1.units.slice(0, 4)) await clear(s, unit.id);
   assert.equal(
@@ -325,9 +325,9 @@ test("U5 clearance recommends U6; clearing all authored units never opens planne
     [],
     await readChallengeClearances(s.db, owner, COURSE_SCOPE),
   );
-  assert(next.complete);
-  assert.notEqual(next.unit?.id, "DE.A1.U07");
-  assert(!unitAvailable("DE.A1.U07"));
+  assert(!next.complete);
+  assert.equal(next.unit?.id, "DE.A1.U07");
+  assert(!unitAvailable("DE.A1.U09"));
 });
 test("CP2 exact persistence, message gap remains separate, A/B/repeat families, owner isolation", async () => {
   const s = fakeProgressDb();

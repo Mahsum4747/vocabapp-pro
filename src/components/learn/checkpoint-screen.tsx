@@ -382,8 +382,8 @@ export function CheckpointScreen({
             </details>
             <p className="mt-5 text-sm text-muted">
               {second
-                ? "Retries alternate Form A and Form B. Repeating a family is practice, not independent confirmation. This checkpoint changes no lessons, Unit Checks or challenge clearance. Unit 7 is not yet authored."
-                : "Retries use the same tasks and are repeated practice. This checkpoint changes no lessons, Unit Checks or challenge clearance. Unit 4 is not yet authored."}
+                ? "Retries alternate Form A and Form B. Repeating a family is practice, not independent confirmation. This checkpoint changes no lessons, Unit Checks or challenge clearance. More units are not yet authored."
+                : "Retries use the same tasks and are repeated practice. This checkpoint changes no lessons, Unit Checks or challenge clearance. More units are not yet authored."}
             </p>
             <Button
               variant="outline"

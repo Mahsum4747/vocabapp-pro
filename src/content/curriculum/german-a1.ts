@@ -1,4 +1,16 @@
 import {
+  travelTicketSteps,
+  accommodationSteps,
+  routeChangeSteps,
+  travelMessageSteps,
+} from "./german-a1-unit7";
+import {
+  courseInformationSteps,
+  obligationSteps,
+  practicalInformationSteps,
+  revisionSteps,
+} from "./german-a1-unit8";
+import {
   pastFrameSteps,
   pastActionsSteps,
   changedArrangementSteps,
@@ -1076,11 +1088,15 @@ export const germanA1: CurriculumRelease = {
     {
       id: "DE.A1.U07",
       title: "Travel",
+      description:
+        "Read simple travel updates, ask for tickets or a room and send a useful arrival message.",
       lessonIds: ["DE.A1.U07.L01", "DE.A1.U07.L02", "DE.A1.U07.L03", "DE.A1.U07.L04"],
     },
     {
       id: "DE.A1.U08",
       title: "Work and study",
+      description:
+        "Choose a course, give schedule constraints, ask for practical information and revise a clear reply.",
       lessonIds: ["DE.A1.U08.L01", "DE.A1.U08.L02", "DE.A1.U08.L03", "DE.A1.U08.L04"],
     },
     {
@@ -1502,8 +1518,9 @@ export const germanA1: CurriculumRelease = {
         "DE.A1.GRAMMAR.ORDER.MODAL_BRACKET",
         "DE.A1.VOCABULARY.NUMERIC_TIME",
       ],
-      availability: "not-authored",
-      steps: [],
+      availability: "prototype",
+      resumeContractVersion: 1,
+      steps: travelTicketSteps,
     },
     {
       id: "DE.A1.U07.L02",
@@ -1518,8 +1535,9 @@ export const germanA1: CurriculumRelease = {
         "DE.A1.WRITING.REQUEST_INFORMATION",
         "DE.A1.VOCABULARY.COLLOCATION",
       ],
-      availability: "not-authored",
-      steps: [],
+      availability: "prototype",
+      resumeContractVersion: 1,
+      steps: accommodationSteps,
     },
     {
       id: "DE.A1.U07.L03",
@@ -1535,8 +1553,9 @@ export const germanA1: CurriculumRelease = {
         "DE.A1.WRITING.TIME_PLACE",
         "DE.A1.WRITING.SHORT_MESSAGE",
       ],
-      availability: "not-authored",
-      steps: [],
+      availability: "prototype",
+      resumeContractVersion: 1,
+      steps: routeChangeSteps,
     },
     {
       id: "DE.A1.U07.L04",
@@ -1551,8 +1570,9 @@ export const germanA1: CurriculumRelease = {
         "DE.A1.WRITING.SEQUENCE",
         "DE.A1.GRAMMAR.TRANSFER.CLAUSE_FRAMES",
       ],
-      availability: "not-authored",
-      steps: [],
+      availability: "prototype",
+      resumeContractVersion: 1,
+      steps: travelMessageSteps,
     },
     {
       id: "DE.A1.U08.L01",
@@ -1567,8 +1587,9 @@ export const germanA1: CurriculumRelease = {
         "DE.A1.GRAMMAR.QUESTIONS.WH",
         "DE.A1.VOCABULARY.CONTEXT_SENSE",
       ],
-      availability: "not-authored",
-      steps: [],
+      availability: "prototype",
+      resumeContractVersion: 1,
+      steps: courseInformationSteps,
     },
     {
       id: "DE.A1.U08.L02",
@@ -1583,8 +1604,9 @@ export const germanA1: CurriculumRelease = {
         "DE.A1.GRAMMAR.ORDER.MODAL_BRACKET",
         "DE.A1.WRITING.GIVE_INFORMATION",
       ],
-      availability: "not-authored",
-      steps: [],
+      availability: "prototype",
+      resumeContractVersion: 1,
+      steps: obligationSteps,
     },
     {
       id: "DE.A1.U08.L03",
@@ -1599,8 +1621,9 @@ export const germanA1: CurriculumRelease = {
         "DE.A1.GRAMMAR.MODALS.WANTS_REQUESTS",
         "DE.A1.VOCABULARY.FRAME_USE",
       ],
-      availability: "not-authored",
-      steps: [],
+      availability: "prototype",
+      resumeContractVersion: 1,
+      steps: practicalInformationSteps,
     },
     {
       id: "DE.A1.U08.L04",
@@ -1615,8 +1638,9 @@ export const germanA1: CurriculumRelease = {
         "DE.A1.WRITING.SELF_REVISION",
         "DE.A1.GRAMMAR.NEGATION.FOCUS",
       ],
-      availability: "not-authored",
-      steps: [],
+      availability: "prototype",
+      resumeContractVersion: 1,
+      steps: revisionSteps,
     },
     {
       id: "DE.A1.U09.L01",

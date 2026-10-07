@@ -39,7 +39,7 @@ test("open authored units and study ahead with no invented evidence", async ({
   await expect(
     page.locator('[data-unit="DE.A1.U01"]').getByText("Recommended", { exact: true }),
   ).toBeVisible();
-  for (const n of [3, 4, 5, 6]) {
+  for (const n of [3, 4, 5, 6, 7, 8]) {
     await expect(page.getByRole("link", { name: `Open Unit ${n}`, exact: true })).toBeVisible();
     await expect(
       page.locator(`[data-unit="DE.A1.U0${n}"]`).getByText("Available to explore", { exact: true }),
@@ -50,7 +50,7 @@ test("open authored units and study ahead with no invented evidence", async ({
         .getByText(`Recommended after Unit ${n - 1}`, { exact: true }),
     ).toBeVisible();
   }
-  await expect(page.getByRole("link", { name: "Open Unit 7", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Open Unit 9", exact: true })).toHaveCount(0);
   mkdirSync("screenshots/open-navigation", { recursive: true });
   await page.screenshot({
     path: `screenshots/open-navigation/list-${info.project.name}.png`,
@@ -96,7 +96,7 @@ test("open authored units and study ahead with no invented evidence", async ({
   expect(f.storage.writes.every((path) => path.includes("/courseProgress/"))).toBe(true);
   expect(h.serverFns.callsTo("finishUnitChallenge")).toHaveLength(0);
   expect(h.serverFns.callsTo("finishUnitCheck")).toHaveLength(0);
-  await page.goto("/learn/DE.A1.U07.L01");
+  await page.goto("/learn/DE.A1.U09.L01");
   await expect(
     page.getByRole("heading", { name: "This lesson is not yet authored", exact: true }),
   ).toBeVisible();

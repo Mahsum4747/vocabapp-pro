@@ -144,8 +144,8 @@ function LearnCourse() {
             </h2>
           </div>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
-            10 units · 40 planned lessons. Twenty-four lessons are authored across Units 1–6.
-            Explore any authored unit. Your recommended path follows lesson completion or challenge
+            10 units · 40 planned lessons. Thirty-two lessons are authored across Units 1–8. Explore
+            any authored unit. Your recommended path follows lesson completion or challenge
             clearance. Your checked steps and lesson completion are saved.
           </p>
           <ol className="mt-5 grid gap-3 lg:grid-cols-2">

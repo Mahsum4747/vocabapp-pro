@@ -1,3 +1,5 @@
+import { unit7CheckForms } from "@/content/curriculum/german-a1-unit7-check";
+import { unit8CheckForms } from "@/content/curriculum/german-a1-unit8-check";
 import { unit6CheckForms } from "@/content/curriculum/german-a1-unit6-check";
 import { cp2Forms } from "@/content/curriculum/german-a1-cp2";
 import { unit4CheckForms } from "@/content/curriculum/german-a1-unit4-check";
@@ -9,7 +11,7 @@ import { unit1CheckForms } from "@/content/curriculum/german-a1-unit1-check";
 import { unit3CheckForms } from "@/content/curriculum/german-a1-unit3-check";
 import { unit2CheckForms } from "@/content/curriculum/german-a1-unit2-check";
 
-/** Six published-in-code prototype registrations, not a plugin or persisted registry. */
+/** Eight published-in-code prototype registrations, not a plugin or persisted registry. */
 const unitRegistrations = [
   unit1CheckForms,
   unit2CheckForms,
@@ -17,6 +19,8 @@ const unitRegistrations = [
   unit4CheckForms,
   unit5CheckForms,
   unit6CheckForms,
+  unit7CheckForms,
+  unit8CheckForms,
 ].map((forms) => ({
   kind: "unit-check" as const,
   definition: forms[0],

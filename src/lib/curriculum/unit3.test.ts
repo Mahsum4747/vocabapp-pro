@@ -169,10 +169,10 @@ test("Unit 3 exact frozen blueprint, ten steps each, meaningful recall/read/prod
   );
   assert.ok(
     germanA1.lessons
-      .slice(24)
+      .slice(32)
       .every((lesson) => lesson.availability === "not-authored" && lesson.steps.length === 0),
   );
-  assert.equal(assessmentForUnit("DE.A1.U07"), undefined);
+  assert.equal(assessmentForUnit("DE.A1.U09"), undefined);
 });
 test("Unit 3 typed answer shapes accept full-sentence equivalents and German keyboard fallback without changing meaning", () => {
   const article = lessons[0].steps.find((step) => step.id.endsWith(".known"))!;
@@ -304,7 +304,7 @@ test("challenge-cleared Units 1/2 guide Unit 3; all four lessons finish truthful
   assert.equal(unitProgress(germanA1, germanA1.units[1], local).finishedCount, 0);
   assert.equal(courseLearningAction(germanA1, local, [], cleared).complete, false);
   assert.equal(courseLearningAction(germanA1, local, [], cleared).unit?.id, "DE.A1.U04");
-  assert.equal(assessmentForUnit("DE.A1.U07"), undefined);
+  assert.equal(assessmentForUnit("DE.A1.U09"), undefined);
   assert.throws(() => assessmentForm("DE.A1.CP1", "U03.FORM.A"));
 });
 test("U03 A/B IDs, eight narrow targets, distinct elicitation structures and deterministic bounded grading", () => {

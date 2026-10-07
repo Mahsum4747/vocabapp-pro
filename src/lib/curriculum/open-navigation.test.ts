@@ -85,12 +85,12 @@ async function clear(f: ReturnType<typeof courseProgressFixture>, unitId: string
   );
 }
 test("authored access is independent of sequential recommendation; planned units stay closed", () => {
-  for (const unit of germanA1.units.slice(0, 6)) assert.equal(unitAvailable(unit.id), true);
-  for (const unit of germanA1.units.slice(6)) assert.equal(unitAvailable(unit.id), false);
+  for (const unit of germanA1.units.slice(0, 8)) assert.equal(unitAvailable(unit.id), true);
+  for (const unit of germanA1.units.slice(8)) assert.equal(unitAvailable(unit.id), false);
   assert.equal(unitAvailable("missing"), false);
   assert.equal(unitAheadOfPath("DE.A1.U04", {}, [], []), true);
   assert.equal(unitAheadOfPath("DE.A1.U05", {}, [], []), true);
-  assert.equal(unitAheadOfPath("DE.A1.U07", {}, [], []), false);
+  assert.equal(unitAheadOfPath("DE.A1.U09", {}, [], []), false);
   assert.equal(courseLearningAction(germanA1, {}).unit?.id, "DE.A1.U01");
 });
 test("opening and fully studying U4/U5 ahead creates only actual lesson milestones", async () => {
