@@ -58,6 +58,7 @@ const input = (extra: Partial<LearningSignalsInput> = {}): LearningSignalsInput 
   grammarPaste: [],
   lesenPaste: [],
   writing: [],
+  diagnostics: [],
   totalWritingSubmissions: 0,
   dailyStats: [],
   profile: {},
