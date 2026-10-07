@@ -2,6 +2,10 @@ import { useState } from "react";
 import { Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { generatePersonalGrammarNote, type PersonalGrammarNote } from "@/lib/personal-grammar-note";
+import {
+  generatePersonalGrammarPractice,
+  type PersonalGrammarPractice,
+} from "@/lib/personal-grammar-practice";
 import type { GrammarRuleTopic } from "@/content/grammar-rules";
 
 const LANGUAGES = ["English", "Turkish", "Kurdish"] as const;
@@ -14,6 +18,9 @@ export function PersonalGrammarNoteGenerator({ topic }: { topic: GrammarRuleTopi
   const [note, setNote] = useState<PersonalGrammarNote | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [practiceLoading, setPracticeLoading] = useState(false);
+  const [practice, setPractice] = useState<PersonalGrammarPractice | null>(null);
+  const [practiceAnswers, setPracticeAnswers] = useState<Record<string, string>>({});
 
   async function generate() {
     setLoading(true);
@@ -36,6 +43,30 @@ export function PersonalGrammarNoteGenerator({ topic }: { topic: GrammarRuleTopi
       setError("Couldn't generate the grammar note, try again.");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function generatePractice() {
+    setPracticeLoading(true);
+    setError(null);
+    try {
+      const result = await generatePersonalGrammarPractice({
+        data: {
+          topic,
+          count: 5,
+          ...(focus.trim() ? { focus: focus.trim() } : {}),
+        },
+      });
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+      setPractice(result.practice);
+      setPracticeAnswers({});
+    } catch {
+      setError("Couldn't generate grammar practice, try again.");
+    } finally {
+      setPracticeLoading(false);
     }
   }
 
@@ -137,7 +168,68 @@ export function PersonalGrammarNoteGenerator({ topic }: { topic: GrammarRuleTopi
           <p className="mt-5 rounded-control bg-primary-soft px-3 py-2 text-sm text-primary-ink">
             {note.memoryTip}
           </p>
+          <div className="mt-5 border-t border-border pt-5">
+            <p className="text-sm font-medium">Practice this exact topic</p>
+            <p className="mt-1 text-sm text-muted">
+              Generate fresh bounded questions from the same reviewed grammar rule. This practice does not create mastery or completion evidence.
+            </p>
+            <Button
+              type="button"
+              variant="secondary"
+              className="mt-3"
+              disabled={practiceLoading}
+              onClick={() => void generatePractice()}
+            >
+              <Sparkles className="size-4" aria-hidden="true" />
+              {practiceLoading ? "Creating practice…" : practice ? "Generate new practice" : "Generate 5 questions"}
+            </Button>
+          </div>
         </article>
+      ) : null}
+
+      {practice ? (
+        <section className="mt-5 rounded-card bg-surface p-5 shadow-[var(--elevation-1)]" aria-label="Personal grammar practice">
+          <h3 className="font-display text-xl font-medium">{practice.title}</h3>
+          <p className="mt-2 text-sm text-muted">
+            Personal practice only. Your answers here do not change course completion or assessment evidence.
+          </p>
+          <div className="mt-5 space-y-5">
+            {practice.items.map((item, index) => {
+              const selected = practiceAnswers[item.id];
+              const checked = Boolean(selected);
+              const correct = selected === item.correctAnswer;
+              return (
+                <fieldset key={item.id} className="rounded-control border border-border p-4">
+                  <legend className="px-1 text-sm font-medium">
+                    {index + 1}. {item.prompt}
+                  </legend>
+                  <div className="mt-3 space-y-2">
+                    {item.options.map((option) => (
+                      <label key={option} className="flex min-h-11 cursor-pointer items-center gap-3 rounded-control bg-surface-2 px-3 py-2 text-sm">
+                        <input
+                          type="radio"
+                          name={item.id}
+                          value={option}
+                          checked={selected === option}
+                          onChange={() =>
+                            setPracticeAnswers((previous) => ({ ...previous, [item.id]: option }))
+                          }
+                        />
+                        <span lang="de">{option}</span>
+                      </label>
+                    ))}
+                  </div>
+                  {checked ? (
+                    <p className={`mt-3 text-sm ${correct ? "text-primary-ink" : "text-danger"}`}>
+                      {correct ? "Correct. " : `Not quite. Correct answer: ${item.correctAnswer}. `}
+                      <span className="text-muted">{item.explanation}</span>
+                    </p>
+                  ) : null}
+                </fieldset>
+              );
+            })}
+          </div>
+        </section>
       ) : null}
     </section>
   );
