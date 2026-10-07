@@ -2,12 +2,12 @@ import { useState } from "react";
 import { Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { generatePersonalGrammarNote, type PersonalGrammarNote } from "@/lib/personal-grammar-note";
-import { savePersonalGrammarNote } from "@/lib/personal-grammar-notes.server";
+import { savePersonalGrammarNote } from "@/lib/personal-grammar-notes";
 import {
   generatePersonalGrammarPractice,
   type PersonalGrammarPractice,
 } from "@/lib/personal-grammar-practice";
-import { recordGrammarRemediation } from "@/lib/grammar-remediation.server";
+import { recordGrammarRemediation } from "@/lib/grammar-remediation-api";
 import { DIAGNOSTIC_TARGET_TOPICS } from "@/lib/grammar-remediation";
 import type { GrammarRuleTopic } from "@/content/grammar-rules";
 
