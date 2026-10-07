@@ -1,5 +1,5 @@
 import { checkpointAvailable } from "@/lib/curriculum/checkpoint-access";
-import { unitAvailable, priorUnitFor } from "@/lib/curriculum/unit-access";
+import { unitAheadOfPath, unitAvailable } from "@/lib/curriculum/unit-access";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { lazy, Suspense } from "react";
@@ -29,34 +29,9 @@ function LearnUnit() {
     unit &&
     germanA1.units
       .slice(germanA1.units.indexOf(unit) + 1)
-      .find((candidate) =>
-        candidate.lessonIds.some((id) =>
-          germanA1.lessons.some(
-            (lesson) => lesson.id === id && lesson.availability === "prototype",
-          ),
-        ),
-      );
+      .find((candidate) => unitAvailable(candidate.id));
   const number = unit ? germanA1.units.indexOf(unit) + 1 : 0;
-  const prior = priorUnitFor(unitId);
-  if (prior && !unitAvailable(unitId, sessions, blockedLessons, clearedUnits))
-    return (
-      <AppShell>
-        <div className="mx-auto max-w-2xl">
-          <h1 className="font-display text-3xl font-semibold">
-            Continue with Unit {number - 1} first
-          </h1>
-          <p className="mt-4 text-muted">
-            Finish Unit {number - 1}’s lessons or clear its challenge to study {unit?.title}. Your
-            lesson status stays separate from challenge clearance.
-          </p>
-          <Button asChild className="mt-5">
-            <Link to="/learn/units/$unitId" params={{ unitId: prior.id }}>
-              Open Unit {number - 1}
-            </Link>
-          </Button>
-        </div>
-      </AppShell>
-    );
+  const ahead = unitAheadOfPath(unitId, sessions, blockedLessons, clearedUnits);
   return (
     <AppShell>
       <div className="mx-auto max-w-3xl">
@@ -78,6 +53,11 @@ function LearnUnit() {
             <p className="mt-3 max-w-2xl leading-relaxed text-muted">
               {unit.description ?? "This unit is planned. Its lessons are not yet authored."}
             </p>
+            {ahead && (
+              <p className="mt-4 text-sm text-muted">
+                You're studying ahead of your recommended path.
+              </p>
+            )}
             {progress && progress.authoredCount > 0 && (
               <section
                 className="mt-6 border-t border-border pt-5"
@@ -102,9 +82,14 @@ function LearnUnit() {
             )}
             {progress && progress.authoredCount > 0 && !!assessment && (
               <section className="mt-6 border-t border-border pt-5" aria-label="Unit challenge">
+                <h2 className="font-medium">Unit Challenge · Test out</h2>
+                <p className="mt-2 text-sm text-muted">
+                  No lesson completion required. Clearance updates your recommended path; it does
+                  not complete lessons or unlock a Unit Check.
+                </p>
                 {cleared ? (
                   <>
-                    <h2 className="font-medium">Cleared by challenge</h2>
+                    <p className="mt-3 font-medium">Cleared by challenge</p>
                     <p className="mt-2 text-sm text-muted">
                       Lessons remain available for optional study.
                     </p>
@@ -123,7 +108,7 @@ function LearnUnit() {
                     <Button
                       asChild
                       variant="outline"
-                      className="h-auto min-h-11 whitespace-normal py-3"
+                      className="mt-4 h-auto min-h-11 whitespace-normal py-3"
                     >
                       <Link to="/learn/challenge" search={{ unitId }}>
                         Test out of this unit

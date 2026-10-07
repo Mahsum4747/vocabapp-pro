@@ -87,14 +87,24 @@ function LearnCourse() {
             </h2>
           </div>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
-            10 units · 40 planned lessons. Twenty lessons are authored across Units 1–5. Units 3–5
-            follow the previous unit’s lesson completion or challenge clearance. Your checked steps
-            and lesson completion are saved.
+            10 units · 40 planned lessons. Twenty lessons are authored across Units 1–5. Explore any
+            authored unit. Your recommended path follows lesson completion or challenge clearance.
+            Your checked steps and lesson completion are saved.
           </p>
           <ol className="mt-5 divide-y divide-border">
             {germanA1.units.map((unit, index) => {
               const progress = unitProgress(germanA1, unit, sessions, blockedLessons);
-              const ready = unitAvailable(unit.id, sessions, blockedLessons, clearedUnits);
+              const ready = unitAvailable(unit.id);
+              const recommended = !action.complete && action.unit?.id === unit.id;
+              const ahead =
+                !action.complete && !!action.unit && index > germanA1.units.indexOf(action.unit);
+              const label = clearedUnits.includes(unit.id)
+                ? "Cleared by challenge"
+                : progress.status === "Unit lessons complete"
+                  ? "Completed"
+                  : recommended
+                    ? "Recommended"
+                    : "Available to explore";
               return (
                 <li key={unit.id} className="py-5">
                   <div className="flex items-baseline gap-4">
@@ -105,9 +115,7 @@ function LearnCourse() {
                       <h3 className="font-medium">{unit.title}</h3>
                       <p className="mt-1 text-sm text-muted">
                         {progress.authoredCount > 0
-                          ? !ready
-                            ? `4 lessons authored · Available after Unit ${index}`
-                            : `${progress.authoredCount} lessons available · ${clearedUnits.includes(unit.id) ? "Cleared by challenge" : progress.status}`
+                          ? `${progress.authoredCount} lessons available · ${label}${ahead ? ` · Recommended after Unit ${index}` : ""}`
                           : "4 lessons planned · Not yet authored"}
                       </p>
                     </div>

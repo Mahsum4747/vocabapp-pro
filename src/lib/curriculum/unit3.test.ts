@@ -25,7 +25,7 @@ import { startChallenge, submitChallenge, readChallengeClearances } from "./chal
 import { validateCurriculum } from "./validate";
 import { evaluateStep, sessionKey, type LessonSessions } from "./lesson-session";
 import { unitProgress, courseLearningAction } from "./unit-progress";
-import { unit3Available, unit3PrerequisiteMet } from "./unit3-access";
+import { unitAvailable } from "./unit-access";
 import { fakeProgressDb } from "./testing/fake-progress-db";
 import { deleteLearningData } from "../account-deletion.server";
 import type { LessonDefinition } from "./types";
@@ -255,20 +255,14 @@ for (const lesson of lessons)
     );
     assert.ok(s.writes.every((path) => path.startsWith(`users/${owner}/courseProgress/`)));
   });
-test("Unit 3 denies premature or foreign-owner writes, permits historical Unit 2 or challenge without fabricating completion", async () => {
+test("Unit 3 allows ahead study without fabricating prior completion or Check eligibility", async () => {
   const s = fakeProgressDb(),
     lesson = lessons[0],
     input = command(lesson, 0, { type: "continue", stepId: lesson.steps[0].id });
-  assert.equal(unit3Available({}, [], []), false);
-  await assert.rejects(saveCourseProgress(s.db, owner, input), /Unit 2/);
+  assert.equal(unitAvailable("DE.A1.U03"), true);
   assert.equal(s.writes.length, 0);
   await clear(s, "DE.A1.U02", "another-owner");
-  await assert.rejects(saveCourseProgress(s.db, owner, input), /Unit 2/);
-  await clear(s, "DE.A1.U02");
-  assert.equal(
-    unit3PrerequisiteMet([], await readChallengeClearances(s.db, owner, COURSE_SCOPE)),
-    true,
-  );
+  assert.deepEqual(await readChallengeClearances(s.db, owner, COURSE_SCOPE), []);
   const result = await saveCourseProgress(s.db, owner, input, 102);
   assert.equal(result.kind, "saved");
   const loaded = await readCourseProgress(s.db, owner, COURSE_SCOPE);
@@ -303,7 +297,7 @@ test("challenge-cleared Units 1/2 guide Unit 3; all four lessons finish truthful
   await clear(s, "DE.A1.U02");
   const cleared = await readChallengeClearances(s.db, owner, COURSE_SCOPE);
   assert.equal(courseLearningAction(germanA1, {}, [], cleared).lesson?.id, lessons[0].id);
-  assert.equal(unit3Available({}, [], cleared), true);
+  assert.equal(unitAvailable("DE.A1.U03"), true);
   for (const lesson of lessons) await finish(s, lesson);
   const local = await sessions(s);
   assert.equal(unitProgress(germanA1, unit, local).status, "Unit lessons complete");

@@ -195,7 +195,8 @@ for (const [number, forms] of [
     await page.getByRole("link", { name: `Unit ${number} Check`, exact: true }).click();
     await page.getByRole("button", { name: `Start Unit ${number} Check`, exact: true }).click();
     for (const [j, form] of forms.entries()) {
-      if (j) await page.getByRole("button", { name: "Try the alternate form", exact: true }).click();
+      if (j)
+        await page.getByRole("button", { name: "Try the alternate form", exact: true }).click();
       for (const [n, item] of form.items.entries()) {
         await expect(page.getByRole("heading", { name: item.prompt, exact: true })).toBeVisible();
         await expect(page.getByRole("button", { name: "Hint", exact: true })).toHaveCount(0);
@@ -221,7 +222,7 @@ for (const [number, forms] of [
     for (const [path, value] of before) expect(f.storage.records.get(path)).toEqual(value);
   });
 for (const correct of [5, 6])
-  test(`U4 challenge ${correct}/8: truthful clearance, U5 access, optional skipped lessons and U6 unavailable`, async ({
+  test(`U4 challenge ${correct}/8: truthful clearance, open U5 exploration and U6 unavailable`, async ({
     page,
     launch,
     isMobile,
@@ -269,7 +270,7 @@ for (const correct of [5, 6])
       ).toHaveCount(0);
       await page.goto("/learn/units/DE.A1.U05");
       await expect(
-        page.getByRole("heading", { name: "Continue with Unit 4 first", exact: true }),
+        page.getByText("You're studying ahead of your recommended path.", { exact: true }),
       ).toBeVisible();
     }
     await shot(page, `challenge-${correct}-${info.project.name}`);
@@ -284,19 +285,13 @@ for (const correct of [5, 6])
       ),
     ).toBe(false);
   });
-test("Direct U4/U5 links require the previous unit and U6 remains unauthored", async ({
-  page,
-  launch,
-}) => {
+test("Direct U4/U5 links allow exploration and U6 remains unauthored", async ({ page, launch }) => {
   await launch({ sets: [], handlers: courseProgressFixture().handlers });
-  for (const [unit, prior] of [
-    [4, 3],
-    [5, 4],
-  ]) {
+  for (const unit of [4, 5]) {
     for (const path of [`/learn/units/DE.A1.U0${unit}`, `/learn/DE.A1.U0${unit}.L01`]) {
       await page.goto(path);
       await expect(
-        page.getByRole("heading", { name: `Continue with Unit ${prior} first`, exact: true }),
+        page.getByText("You're studying ahead of your recommended path.", { exact: true }),
       ).toBeVisible();
     }
   }

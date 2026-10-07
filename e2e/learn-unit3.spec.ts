@@ -215,10 +215,10 @@ test("all-four Unit 3 completion enables Check A/B and exact own-form review; CP
   }
   for (const [path, value] of before) expect(f.storage.records.get(path)).toEqual(value);
   await page.goto("/learn");
-  await expect(page.getByRole("link", { name: "Open Unit 4", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Open Unit 4", exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: "Open Checkpoint 1", exact: true })).toBeVisible();
 });
-test("Unit 3 access requires own Unit 2 completion or valid challenge; challenged lessons remain untouched", async ({
+test("Unit 3 is open ahead of the path; challenged lessons remain untouched", async ({
   page,
   launch,
   isMobile,
@@ -228,11 +228,11 @@ test("Unit 3 access requires own Unit 2 completion or valid challenge; challenge
   await launch({ sets: [], handlers: f.handlers });
   await page.goto("/learn/units/DE.A1.U03");
   await expect(
-    page.getByRole("heading", { name: "Continue with Unit 2 first", exact: true }),
+    page.getByText("You're studying ahead of your recommended path.", { exact: true }),
   ).toBeVisible();
   await page.goto("/learn/DE.A1.U03.L01");
   await expect(
-    page.getByRole("heading", { name: "Continue with Unit 2 first", exact: true }),
+    page.getByText("You're studying ahead of your recommended path.", { exact: true }),
   ).toBeVisible();
   for (const unitId of ["DE.A1.U01", "DE.A1.U02"]) {
     const req = { ...COURSE_SCOPE, unitId, attemptId: crypto.randomUUID() };
@@ -266,9 +266,7 @@ test("Unit 3 access requires own Unit 2 completion or valid challenge; challenge
   await expect(page.getByText("Progress saved", { exact: true })).toBeVisible();
   await page.goto("/learn/units/DE.A1.U02");
   await expect(page.getByText("0 of 4 lessons finished")).toBeVisible();
-  await expect(
-    page.getByRole("heading", { name: "Cleared by challenge", exact: true }),
-  ).toBeVisible();
+  await expect(page.getByText("Cleared by challenge", { exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: "Unit 2 Check", exact: true })).toHaveCount(0);
   expect(
     [...f.storage.records.keys()]

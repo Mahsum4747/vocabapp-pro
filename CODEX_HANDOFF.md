@@ -1397,3 +1397,41 @@ completion or validated clearance; Check eligibility still requires actual lesso
 No new persistence contracts, migrations, U6, CP2 or changes to U1–U3/CP1 content.
 See `KARTA_BATCH_A_U4_U5.md` for lexical boundaries, editorial corrections, precise
 validation evidence and repeatable commands. Local commit only; no push/deployment.
+
+## Open authored-unit navigation (2026-10-07)
+
+Branch `codex/karta-open-unit-navigation`, based on main
+`5d1419ac9a2f82bab8153b3e4ef646de723cc483`.
+
+Authored Units 1–5 and their lessons are open for voluntary exploration regardless
+of prior-unit completion. `unitAvailable` is now an authorship-only predicate;
+unit/lesson pages and owner-scoped lesson writes no longer enforce the previous
+unit gate. Retired the unused Unit 3 gate. Existing `courseLearningAction` and
+`unitProgress` remain the authoritative sequential recommendation and historical
+lesson-completion helpers. Opening or studying ahead cannot fabricate prior-unit
+milestones, challenge clearance or Unit Check evidence.
+
+The unit list distinguishes Recommended, Available to explore, Completed and
+Cleared by challenge. Units ahead show “Available to explore · Recommended after
+Unit X”; unauthored units retain planned, non-interactive rows. Unit and lesson
+pages show one quiet inline note, “You're studying ahead of your recommended
+path.” No modal, toast, warning styling or per-step announcement is added.
+Unit Challenge is labeled as a test-out option with no lesson prerequisite.
+Challenge clearance at >=75% changes recommendation only; Unit Check still
+requires all four compatible historical lesson completions. CP1 eligibility and
+semantics, content, grading, schemas, challenge persistence, FSRS/CardProgress,
+auth and build/deployment configuration are unchanged.
+
+Validation: 79 focused domain tests cover open access, ahead-of-path saves and
+owner isolation, unchanged actual lesson gates, 6/8 U3→U4→U5 recommendation,
+historical completion/restarts, incompatible rows and CP1. Fourteen unique compiled desktop and
+mobile cases cover opening U4/U5 before earlier clearance, persistent
+lesson study without invented evidence, real 6/8 challenge flows, and the
+three-versus-four actual lesson Check gate. Existing affected U3 and Batch A
+navigation/5–6 out of 8 challenge regressions are also checked. Typecheck,
+scoped ESLint, safe `build:compile`, generated SSR syntax and diff-check pass.
+Desktop/mobile screenshots reviewed; no horizontal overflow or uncaught browser
+errors. An old U3 browser selector expected clearance to be a heading; updated
+it to match the explicit status text under the Unit Challenge heading and reran
+the affected desktop/mobile cases. No full historical suite, normal build,
+migration, deployment or push.

@@ -1,4 +1,4 @@
-import { unitAvailable, priorUnitFor } from "@/lib/curriculum/unit-access";
+import { unitAheadOfPath } from "@/lib/curriculum/unit-access";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { germanA1 } from "@/content/curriculum/german-a1";
 import { LessonScreen } from "@/components/learn/lesson-screen";
@@ -37,21 +37,12 @@ function LearnLesson() {
         </Button>
       </main>
     );
-  const prior = priorUnitFor(lesson.unitId);
-  const priorNumber = prior ? germanA1.units.indexOf(prior) + 1 : 0;
-  if (prior && !unitAvailable(lesson.unitId, sessions, blockedLessons, clearedUnits))
-    return (
-      <main className="mx-auto max-w-2xl px-page-safe py-12">
-        <h1 className="text-2xl font-semibold">Continue with Unit {priorNumber} first</h1>
-        <p className="mt-4 text-muted">
-          Finish Unit {priorNumber}’s lessons or clear its challenge before studying this unit.
-        </p>
-        <Button asChild className="mt-5">
-          <Link to="/learn/units/$unitId" params={{ unitId: prior.id }}>
-            Open Unit {priorNumber}
-          </Link>
-        </Button>
-      </main>
-    );
-  return <LessonScreen key={`${germanA1.id}:${lesson.id}`} release={germanA1} lesson={lesson} />;
+  return (
+    <LessonScreen
+      key={`${germanA1.id}:${lesson.id}`}
+      release={germanA1}
+      lesson={lesson}
+      aheadOfPath={unitAheadOfPath(lesson.unitId, sessions, blockedLessons, clearedUnits)}
+    />
+  );
 }

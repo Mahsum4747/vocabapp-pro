@@ -7,8 +7,8 @@ import { unit4CheckForms } from "@/content/curriculum/german-a1-unit4-check";
 import { unit5CheckForms } from "@/content/curriculum/german-a1-unit5-check";
 import { challengeForms } from "@/content/curriculum/german-a1-challenges.server";
 import { validateCurriculum } from "./validate";
-import { evaluateStep, normalizeLessonAnswer, startLesson, sessionKey } from "./lesson-session";
-import { unitPrerequisiteMet, unitAvailable } from "./unit-access";
+import { evaluateStep, normalizeLessonAnswer } from "./lesson-session";
+import { unitAvailable } from "./unit-access";
 import { gradeAssessment } from "./assessment";
 import { assessmentForUnit, assessmentForm, registeredAssessment } from "./assessment-registry";
 import {
@@ -342,32 +342,13 @@ for (const unitId of ["DE.A1.U04", "DE.A1.U05"]) {
     }
   });
 }
-test("U3→U4→U5: completion or validated clearance, incompatible rows excluded; U6 and CP2 absent", () => {
+test("Authored U4/U5 are open regardless of clearance; U6 and CP2 absent", () => {
   for (const unitId of ["DE.A1.U04", "DE.A1.U05"]) {
-    const index = Number(unitId.slice(-2)) - 1,
-      prior = germanA1.units[index - 1];
-    assert.equal(unitPrerequisiteMet(unitId, [], []), false);
-    assert.equal(unitPrerequisiteMet(unitId, prior.lessonIds, []), true);
-    assert.equal(unitPrerequisiteMet(unitId, prior.lessonIds.slice(0, 3), []), false);
-    assert.equal(unitAvailable(unitId, {}, [], [prior.id]), true);
-    const finished = Object.fromEntries(
-      prior.lessonIds.map((id) => {
-        const lesson = germanA1.lessons.find((l) => l.id === id)!;
-        return [
-          sessionKey(germanA1.id, id),
-          {
-            ...startLesson(germanA1.id, lesson),
-            historicallyFinished: true,
-            status: "finished" as const,
-          },
-        ];
-      }),
-    );
-    assert.equal(unitAvailable(unitId, finished, [], []), true);
-    assert.equal(unitAvailable(unitId, finished, [prior.lessonIds[0]], []), false);
+    const index = Number(unitId.slice(-2)) - 1;
+    assert.equal(unitAvailable(unitId), true);
     assert.equal(unitProgress(germanA1, germanA1.units[index], {}).finishedCount, 0);
   }
-  assert.equal(unitAvailable("DE.A1.U06", {}, [], ["DE.A1.U05"]), false);
+  assert.equal(unitAvailable("DE.A1.U06"), false);
   assert.equal(checkpointAvailable({}, [], ["DE.A1.U03"]), true);
   assert.equal(checkpointAvailable({}, [], ["DE.A1.U04"]), false);
   assert.equal(
@@ -389,7 +370,7 @@ test("U3→U4→U5: completion or validated clearance, incompatible rows exclude
     "DE.A1.U06",
   );
 });
-test("All eight lessons save and reload through existing owned contracts; server rejects bypasses", async () => {
+test("All eight lessons save and reload through existing owned contracts; ahead study stays owner-scoped", async () => {
   const f = courseProgressFixture();
   const USER_ID = owner;
   for (const lesson of [lessons[0], lessons[4]]) {
@@ -401,7 +382,7 @@ test("All eight lessons save and reload through existing owned contracts; server
       operationId: randomUUID(),
       action: { type: "continue", stepId: lesson.steps[0].id },
     };
-    await assert.rejects(saveCourseProgress(f.storage.db, USER_ID, input), /Finish Unit/);
+    assert.equal((await saveCourseProgress(f.storage.db, USER_ID, input)).kind, "saved");
   }
   await clear(f.storage, "DE.A1.U03", 8, 100, USER_ID);
   for (let n = 12; n < 20; n++) await f.advanceLesson(n, germanA1.lessons[n].steps.length);

@@ -19,9 +19,11 @@ import { useLearnSession } from "./session-context";
 export function LessonScreen({
   release,
   lesson,
+  aheadOfPath = false,
 }: {
   release: CurriculumRelease;
   lesson: LessonDefinition;
+  aheadOfPath?: boolean;
 }) {
   const {
     sessions,
@@ -87,6 +89,11 @@ export function LessonScreen({
   const complete = state.status === "finished";
   return (
     <div className="min-h-dvh bg-bg text-fg">
+      {aheadOfPath && (
+        <p className="mx-auto max-w-3xl px-page-safe pt-4 text-sm text-muted">
+          You're studying ahead of your recommended path.
+        </p>
+      )}
       <header className="border-b border-border pt-safe-top">
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 px-page-safe py-4">
           <Link

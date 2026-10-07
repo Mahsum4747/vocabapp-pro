@@ -1,4 +1,3 @@
-import { priorUnitFor, unitPrerequisiteMet } from "./unit-access";
 import { createHash } from "node:crypto";
 import type { Firestore } from "firebase-admin/firestore";
 import { userDocumentPaths } from "../user-data-inventory";
@@ -79,27 +78,6 @@ export async function saveCourseProgress(
   const definitionHash = lessonDefinitionHash(lesson);
   const resumeContractVersion = lessonResumeContractVersion(lesson);
   if (command.resumeContractVersion !== resumeContractVersion) return { kind: "unavailable" };
-  const prior = priorUnitFor(lesson.unitId);
-  if (prior) {
-    const scope = { trackId: command.trackId, releaseId: command.releaseId };
-    const course = await readCourseProgress(db, ownerId, scope);
-    const finished = course.lessons
-      .filter(
-        (row) =>
-          !row.unavailable &&
-          row.progress?.firstFinishedAt !== null &&
-          row.progress?.firstFinishedAt !== undefined,
-      )
-      .map((row) => row.lessonId);
-    if (!unitPrerequisiteMet(lesson.unitId, finished, [])) {
-      const { readChallengeClearances } = await import("./challenge.server");
-      const clearances = await readChallengeClearances(db, ownerId, scope);
-      if (!unitPrerequisiteMet(lesson.unitId, finished, clearances))
-        throw Error(
-          `Finish Unit ${Number(prior.id.slice(-2))} lessons or clear its challenge before Unit ${Number(lesson.unitId.slice(-2))}.`,
-        );
-    }
-  }
   const ref = db.doc(courseProgressPath(ownerId, command));
   const digest = hash(command);
   return db.runTransaction(async (tx) => {
