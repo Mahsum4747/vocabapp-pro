@@ -11,7 +11,7 @@ const inputSchema = z.object({
   learnerExample: z.string().trim().max(500).optional(),
 });
 
-const noteSchema = z.object({
+export const personalGrammarNoteSchema = z.object({
   title: z.string().trim().min(1).max(140),
   explanation: z.string().trim().min(1).max(1600),
   keyPoints: z.array(z.string().trim().min(1).max(300)).min(2).max(6),
@@ -20,7 +20,7 @@ const noteSchema = z.object({
   memoryTip: z.string().trim().min(1).max(400),
 });
 
-export type PersonalGrammarNote = z.infer<typeof noteSchema>;
+export type PersonalGrammarNote = z.infer<typeof personalGrammarNoteSchema>;
 
 const GEMINI_MODEL = "gemini-3.6-flash";
 
@@ -133,7 +133,7 @@ export const generatePersonalGrammarNote = createServerFn({ method: "POST" })
     }
 
     try {
-      return { ok: true as const, note: noteSchema.parse(JSON.parse(text)) };
+      return { ok: true as const, note: personalGrammarNoteSchema.parse(JSON.parse(text)) };
     } catch {
       logOperationFailure("grammar-note.parse", new Error("Invalid AI note"));
       return { ok: false as const, error: "Couldn't read the AI grammar note, try again." };

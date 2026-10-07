@@ -1,4 +1,4 @@
-import { ArrowLeft, ChevronDown, ChevronRight, Search } from "lucide-react";
+import { ArrowLeft, BookOpenText, ChevronDown, ChevronRight, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/app-shell";
@@ -84,10 +84,22 @@ function GrammarRulesPage() {
         Grammar
       </Link>
 
-      <h1 className="mt-5 font-display text-3xl font-medium tracking-tight">Rule library</h1>
-      <p className="mt-2 text-muted">
-        Every grammar rule from Karta's drills, in one browsable list — no drill required.
-      </p>
+      <div className="mt-5 flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <p className="text-sm font-medium text-primary-ink">Reviewed reference</p>
+          <h1 className="mt-1 font-display text-3xl font-medium tracking-tight">Grammar Reference</h1>
+          <p className="mt-2 text-muted">
+            Reviewed Karta explanations, linked to personal notes and targeted practice.
+          </p>
+        </div>
+        <Link
+          to="/grammar/notes"
+          className="tap-target inline-flex items-center gap-2 rounded-control bg-surface-2 px-3 py-2 text-sm font-medium"
+        >
+          <BookOpenText className="size-4" />
+          My Grammar Notes
+        </Link>
+      </div>
 
       <div className="relative mt-4">
         <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-subtle" />
@@ -132,7 +144,8 @@ function GrammarRulesPage() {
                       </button>
                       {!isCollapsed ? (
                         <div className="mt-2 pl-[22px]">
-                          <GrammarRuleContent rule={rule} />\n                          <PersonalGrammarNoteGenerator topic={topic} />
+                          <GrammarRuleContent rule={rule} />
+                          <PersonalGrammarNoteGenerator topic={topic} />
                         </div>
                       ) : null}
                     </div>

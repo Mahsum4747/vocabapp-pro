@@ -60,6 +60,16 @@ export type WritingErrorSignal = {
   severity: { minor: number; major: number };
   lastSeenAt: number | null;
 };
+export type GrammarRemediationSignal = {
+  id: string;
+  topic: string;
+  diagnosticTargetId?: string;
+  correctCount: number;
+  totalCount: number;
+  completedAt: number;
+  nextReviewAt: number;
+};
+
 export type DrillSignal = {
   /** Existing vocabulary-row miss counter; independent of drill attempts. */
   reviewMissCount: number;
@@ -90,6 +100,7 @@ export type LearningSignals = {
   };
   grammar: { topics: GrammarTopicSignal[]; pasteTopics: GrammarTopicSignal[] };
   diagnostics: { gaps: LearnerGapState[]; observationCount: number };
+  remediation: { recent: GrammarRemediationSignal[] };
   reading: {
     levels: Record<ReadingLevel, ReadingLevelSignal>;
     overallBundledAccuracy: AccuracySignal;
@@ -132,6 +143,7 @@ export type LearningSignalsInput = {
   lesenPaste: (Record<string, unknown> & { id: string })[];
   writing: { id: string; createdAt?: unknown; errorTags?: unknown }[];
   diagnostics: DiagnosticObservation[];
+  remediation: GrammarRemediationSignal[];
   totalWritingSubmissions: number;
   dailyStats: { date: string; data: unknown }[];
   profile: unknown;
@@ -358,6 +370,12 @@ export function buildLearningSignals(input: LearningSignalsInput): LearningSigna
     },
     grammar: { topics, pasteTopics: input.grammarPaste.map((p) => topic(p.id, p, "paste")) },
     diagnostics: { gaps: diagnosticGaps, observationCount: input.diagnostics.length },
+    remediation: {
+      recent: input.remediation
+        .filter((row) => row.completedAt <= now && row.totalCount >= 3 && row.correctCount <= row.totalCount)
+        .sort((a, b) => b.completedAt - a.completedAt || a.id.localeCompare(b.id))
+        .slice(0, 100),
+    },
     reading: {
       levels,
       overallBundledAccuracy: accuracySignal(input.grammar.lesen),

@@ -2,10 +2,13 @@ import { useState } from "react";
 import { Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { generatePersonalGrammarNote, type PersonalGrammarNote } from "@/lib/personal-grammar-note";
+import { savePersonalGrammarNote } from "@/lib/personal-grammar-notes.server";
 import {
   generatePersonalGrammarPractice,
   type PersonalGrammarPractice,
 } from "@/lib/personal-grammar-practice";
+import { recordGrammarRemediation } from "@/lib/grammar-remediation.server";
+import { DIAGNOSTIC_TARGET_TOPICS } from "@/lib/grammar-remediation";
 import type { GrammarRuleTopic } from "@/content/grammar-rules";
 
 const LANGUAGES = ["English", "Turkish", "Kurdish"] as const;
@@ -21,6 +24,11 @@ export function PersonalGrammarNoteGenerator({ topic }: { topic: GrammarRuleTopi
   const [practiceLoading, setPracticeLoading] = useState(false);
   const [practice, setPractice] = useState<PersonalGrammarPractice | null>(null);
   const [practiceAnswers, setPracticeAnswers] = useState<Record<string, string>>({});
+  const [savingNote, setSavingNote] = useState(false);
+  const [savedNoteId, setSavedNoteId] = useState<string | null>(null);
+  const [practiceSessionId, setPracticeSessionId] = useState<string | null>(null);
+  const [practiceRecorded, setPracticeRecorded] = useState(false);
+  const [recordingPractice, setRecordingPractice] = useState(false);
 
   async function generate() {
     setLoading(true);
@@ -39,6 +47,7 @@ export function PersonalGrammarNoteGenerator({ topic }: { topic: GrammarRuleTopi
         return;
       }
       setNote(result.note);
+      setSavedNoteId(null);
     } catch {
       setError("Couldn't generate the grammar note, try again.");
     } finally {
@@ -63,10 +72,73 @@ export function PersonalGrammarNoteGenerator({ topic }: { topic: GrammarRuleTopi
       }
       setPractice(result.practice);
       setPracticeAnswers({});
+      setPracticeSessionId(crypto.randomUUID());
+      setPracticeRecorded(false);
     } catch {
       setError("Couldn't generate grammar practice, try again.");
     } finally {
       setPracticeLoading(false);
+    }
+  }
+
+  async function saveNote() {
+    if (!note || savedNoteId) return;
+    setSavingNote(true);
+    setError(null);
+    try {
+      const operationId = crypto.randomUUID();
+      const result = await savePersonalGrammarNote({
+        data: {
+          operationId,
+          topic,
+          explanationLanguage: language,
+          note,
+          ...(focus.trim() ? { focus: focus.trim() } : {}),
+          ...(learnerExample.trim() ? { learnerExample: learnerExample.trim() } : {}),
+        },
+      });
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+      setSavedNoteId(result.id);
+    } catch {
+      setError("Couldn't save the grammar note, try again.");
+    } finally {
+      setSavingNote(false);
+    }
+  }
+
+  async function finishPractice() {
+    if (!practice || !practiceSessionId || practiceRecorded) return;
+    if (Object.keys(practiceAnswers).length !== practice.items.length) return;
+    setRecordingPractice(true);
+    setError(null);
+    try {
+      const diagnosticTargetId = Object.entries(DIAGNOSTIC_TARGET_TOPICS).find(
+        ([, mappedTopic]) => mappedTopic === topic,
+      )?.[0];
+      const correctCount = practice.items.filter(
+        (item) => practiceAnswers[item.id] === item.correctAnswer,
+      ).length;
+      const result = await recordGrammarRemediation({
+        data: {
+          operationId: practiceSessionId,
+          topic,
+          ...(diagnosticTargetId ? { diagnosticTargetId } : {}),
+          correctCount,
+          totalCount: practice.items.length,
+        },
+      });
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+      setPracticeRecorded(true);
+    } catch {
+      setError("Couldn't record this practice session. Your answers are still here.");
+    } finally {
+      setRecordingPractice(false);
     }
   }
 
@@ -168,6 +240,21 @@ export function PersonalGrammarNoteGenerator({ topic }: { topic: GrammarRuleTopi
           <p className="mt-5 rounded-control bg-primary-soft px-3 py-2 text-sm text-primary-ink">
             {note.memoryTip}
           </p>
+          <div className="mt-5 flex flex-wrap items-center gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              disabled={savingNote || Boolean(savedNoteId)}
+              onClick={() => void saveNote()}
+            >
+              {savingNote ? "Saving…" : savedNoteId ? "Saved to My Notes" : "Save to My Notes"}
+            </Button>
+            {savedNoteId ? (
+              <span className="text-sm text-muted">
+                Saved. You can reopen it from My Grammar Notes.
+              </span>
+            ) : null}
+          </div>
           <div className="mt-5 border-t border-border pt-5">
             <p className="text-sm font-medium">Practice this exact topic</p>
             <p className="mt-1 text-sm text-muted">
@@ -229,6 +316,26 @@ export function PersonalGrammarNoteGenerator({ topic }: { topic: GrammarRuleTopi
               );
             })}
           </div>
+          {Object.keys(practiceAnswers).length === practice.items.length ? (
+            <div className="mt-5 border-t border-border pt-4">
+              <Button
+                type="button"
+                disabled={recordingPractice || practiceRecorded}
+                onClick={() => void finishPractice()}
+              >
+                {recordingPractice
+                  ? "Recording…"
+                  : practiceRecorded
+                    ? "Practice recorded"
+                    : "Finish practice"}
+              </Button>
+              <p className="mt-2 text-xs text-muted">
+                {practiceRecorded
+                  ? "Karta will wait before suggesting a fresh recheck. This does not mark the grammar as mastered."
+                  : "Finishing records only that you practised this topic, not mastery or course completion."}
+              </p>
+            </div>
+          ) : null}
         </section>
       ) : null}
     </section>

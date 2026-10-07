@@ -1,6 +1,7 @@
 import { evidenceLevel } from "./learning-evidence";
 import type { EvidenceLevel, LearningSignals, GrammarTopicSignal } from "./learning-signals";
 import { shouldRecommendRemediation } from "./learner-diagnostics";
+import { DIAGNOSTIC_TARGET_TOPICS } from "./grammar-remediation";
 import {
   practiceDestination,
   RECOMMENDATION_ROUTES,
@@ -32,7 +33,7 @@ export type StudyRecommendation = {
   evidence: {
     level: EvidenceLevel;
     sources: (
-      "schedule" | "vocabulary" | "drill" | "grammar" | "reading" | "writing" | "diagnostic" | "exploration"
+      "schedule" | "vocabulary" | "drill" | "grammar" | "reading" | "writing" | "diagnostic" | "remediation" | "exploration"
     )[];
     metrics: Record<string, number | string | null>;
   };
@@ -269,26 +270,46 @@ export function buildAdaptiveStudyPlan(signals: LearningSignals): AdaptiveStudyP
     if (!shouldRecommendRemediation(gap) || !gap.targetId) continue;
     const dest = practiceDestination(gap.targetId, signals);
     if (!dest) continue;
+
+    const mappedTopic =
+      DIAGNOSTIC_TARGET_TOPICS[gap.targetId as keyof typeof DIAGNOSTIC_TARGET_TOPICS];
+    const lastRemediation = signals.remediation.recent.find(
+      (row) =>
+        row.diagnosticTargetId === gap.targetId ||
+        (mappedTopic !== undefined && row.topic === mappedTopic),
+    );
+    // A completed targeted practice gets breathing room. Repetition immediately
+    // after remediation would feel like nagging and provides little transfer evidence.
+    if (lastRemediation && lastRemediation.nextReviewAt > now) continue;
+
+    const recheckDue = Boolean(lastRemediation && lastRemediation.nextReviewAt <= now);
     const score =
       66 +
       Math.round(gap.confidence * 14) +
       Math.min(8, gap.independentObservationCount * 2) +
-      recency(now, gap.lastSeenAt);
+      recency(now, gap.lastSeenAt) +
+      (recheckDue ? 2 : 0);
     push(`diagnostic:${gap.targetId}`, score, {
       domain: gap.domain === "reading" ? "reading" : gap.domain === "writing" ? "writing" : "grammar",
-      title: `Review ${gap.targetLabel ?? "this pattern"}`,
-      reason: `Karta noticed ${gap.independentObservationCount} independent difficulty${gap.independentObservationCount === 1 ? "" : "ies"} with ${gap.targetLabel ?? "this pattern"}. Review the exact pattern before doing broader practice.`,
+      title: recheckDue
+        ? `Recheck ${gap.targetLabel ?? "this pattern"}`
+        : `Review ${gap.targetLabel ?? "this pattern"}`,
+      reason: recheckDue
+        ? `You reviewed ${gap.targetLabel ?? "this pattern"} earlier. Try a fresh set now to see whether it transfers to new examples.`
+        : `Karta noticed ${gap.independentObservationCount} independent difficult${gap.independentObservationCount === 1 ? "y" : "ies"} with ${gap.targetLabel ?? "this pattern"}. Review the exact pattern before doing broader practice.`,
       route: dest.route,
       action: { type: "grammar_practice", targetId: gap.targetId },
       evidence: {
         level: evidenceLevel(gap.independentObservationCount),
-        sources: ["diagnostic"],
+        sources: recheckDue ? ["diagnostic", "remediation"] : ["diagnostic"],
         metrics: {
           diagnosticCategory: gap.category,
           diagnosticConfidence: Math.round(gap.confidence * 100),
           diagnosticObservations: gap.observationCount,
           diagnosticIndependent: gap.independentObservationCount,
           diagnosticLastSeenAt: gap.lastSeenAt,
+          remediationCompletedAt: lastRemediation?.completedAt ?? null,
+          remediationNextReviewAt: lastRemediation?.nextReviewAt ?? null,
         },
       },
     });
