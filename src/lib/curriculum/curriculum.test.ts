@@ -112,10 +112,10 @@ test("U01.L01 retains its authored and its bounded content/stage contract is com
   ]);
   assert.deepEqual(
     lesson.steps.map((s) => s.stage),
-    ["discover", "understand", "recognize", "recall", "produce", "apply", "check"],
+    ["discover", "understand", "recognize", "recall", "produce", "understand", "produce", "apply", "check"],
   );
   assert.equal(lesson.steps.at(-1)?.purpose, "formative-check");
-  assert.equal(lesson.steps[5].kind, "original");
+  assert.equal(lesson.steps[7].kind, "original");
   assert.ok(
     germanA1.lessons.slice(40).every((l) => l.availability === "not-authored" && !l.steps.length),
   );
@@ -131,10 +131,10 @@ test("bounded evaluation distinguishes blank, incorrect, equivalent and unassess
   assert.equal(evaluateStep(lesson.steps[4], "  Ich   bin Leo. ")?.outcome, "correct");
   assert.equal(evaluateStep(lesson.steps[4], "Du bist Leo")?.outcome, "incorrect");
   assert.equal(
-    evaluateStep(lesson.steps[5], "This meaning has not been judged")?.outcome,
+    evaluateStep(lesson.steps[7], "This meaning has not been judged")?.outcome,
     "unassessed",
   );
-  assert.equal(evaluateStep(lesson.steps[5], "x".repeat(161))?.outcome, "incorrect");
+  assert.equal(evaluateStep(lesson.steps[7], "x".repeat(161))?.outcome, "incorrect");
 });
 test("session cannot skip tasks; retry, completion and restart never imply mastery", () => {
   let state = startLesson(germanA1.id, lesson);
@@ -167,7 +167,7 @@ test("session cannot skip tasks; retry, completion and restart never imply maste
     state.completedStepIds,
     lesson.steps.map((s) => s.id),
   );
-  assert.equal(state.results[lesson.steps[5].id].outcome, "unassessed");
+  assert.equal(state.results[lesson.steps[7].id].outcome, "unassessed");
   assert.equal(state.attempts[lesson.steps[3].id], 2);
   assert.equal("mastery" in state, false);
   assert.equal(transitionLesson(lesson, state, { type: "continue" }), state);
