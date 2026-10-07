@@ -50,7 +50,7 @@ test("open authored units and study ahead with no invented evidence", async ({
         .getByText(`Recommended after Unit ${n - 1}`, { exact: true }),
     ).toBeVisible();
   }
-  await expect(page.getByRole("link", { name: "Open Unit 9", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Open Unit 9", exact: true })).toBeVisible();
   mkdirSync("screenshots/open-navigation", { recursive: true });
   await page.screenshot({
     path: `screenshots/open-navigation/list-${info.project.name}.png`,
@@ -98,7 +98,7 @@ test("open authored units and study ahead with no invented evidence", async ({
   expect(h.serverFns.callsTo("finishUnitCheck")).toHaveLength(0);
   await page.goto("/learn/DE.A1.U09.L01");
   await expect(
-    page.getByRole("heading", { name: "This lesson is not yet authored", exact: true }),
+    page.getByRole("heading", { name: germanA1.lessons[32].steps[0].prompt, exact: true }),
   ).toBeVisible();
 });
 test("U3 and U4 6/8 challenge clearance advances only recommendation", async ({

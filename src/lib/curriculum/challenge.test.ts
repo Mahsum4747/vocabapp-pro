@@ -185,7 +185,7 @@ test("owners, units, release and stored ownership are isolated", async () => {
   assert.equal((await readUnitChallenge(s.db, "another-owner", scope(), now)).attempt, null);
   assert.equal((await readUnitChallenge(s.db, owner, scope("DE.A1.U02"), now)).attempt, null);
   for (const altered of [
-    { ...scope(), unitId: "DE.A1.U09" },
+    { ...scope(), unitId: "DE.A1.U11" },
     { ...scope(), releaseId: "other" },
     { ...scope(), trackId: "other" },
   ])

@@ -1,11 +1,18 @@
-import { CP2_ID } from "@/lib/curriculum/checkpoint-identity";
+import { projectTextPortfolio } from "@/lib/curriculum/checkpoint3";
+import { TextPortfolioResult } from "./text-portfolio-result";
+import { CP3_ID, CP2_ID } from "@/lib/curriculum/checkpoint-identity";
 import {
   registeredAssessment,
+  assessmentRegistry,
   assessmentForm,
   checkFormLabel,
 } from "@/lib/curriculum/assessment-registry";
 import { projectCheckpoint2 } from "@/lib/curriculum/checkpoint2";
-import { checkpointAvailable, checkpoint2Available } from "@/lib/curriculum/checkpoint-access";
+import {
+  checkpointAvailable,
+  checkpoint2Available,
+  checkpoint3Available,
+} from "@/lib/curriculum/checkpoint-access";
 import { Link, useBlocker, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AppShell } from "@/components/app-shell";
@@ -27,6 +34,7 @@ export function CheckpointScreen({
   attemptId?: string;
   assessmentId?: string;
 }) {
+  const final = assessmentId === CP3_ID;
   const second = assessmentId === CP2_ID;
   const registration = registeredAssessment(assessmentId);
   const compatibilityVersion = registration.definition.compatibilityVersion;
@@ -34,19 +42,18 @@ export function CheckpointScreen({
     () => ({ assessmentId, compatibilityVersion }),
     [assessmentId, compatibilityVersion],
   );
-  const checkpoint = second ? 2 : 1;
-  const eligibilityUnit = second ? 6 : 3;
+  const checkpoint = final ? 3 : second ? 2 : 1;
+  const eligibilityUnit = final ? 10 : second ? 6 : 3;
   const { sessions, blockedLessons, clearedUnits } = useLearnSession();
-  const available = (second ? checkpoint2Available : checkpointAvailable)(
-    sessions,
-    blockedLessons,
-    clearedUnits,
-  );
+  const available = (
+    final ? checkpoint3Available : second ? checkpoint2Available : checkpointAvailable
+  )(sessions, blockedLessons, clearedUnits);
   const navigate = useNavigate();
   const [attempt, setAttempt] = useState<AssessmentAttempt | null>(null);
   const definition = attempt
     ? assessmentForm(assessmentId, attempt.formId)
     : registration.definition;
+  const [portfolioHistory, setPortfolioHistory] = useState<AssessmentAttempt[]>([]);
   const [history, setHistory] = useState<AssessmentAttempt[]>([]);
   const [loading, setLoading] = useState(Boolean(attemptId));
   const [loadFailed, setLoadFailed] = useState(false);
@@ -85,6 +92,21 @@ export function CheckpointScreen({
               : Promise.resolve(null),
             api.getUnitCheckHistory({ data: request }),
           ]);
+          if (final) {
+            const all = await Promise.all(
+              assessmentRegistry
+                .filter((r) => r.definition.id !== assessmentId)
+                .map((r) =>
+                  api.getUnitCheckHistory({
+                    data: {
+                      assessmentId: r.definition.id,
+                      compatibilityVersion: r.definition.compatibilityVersion,
+                    },
+                  }),
+                ),
+            );
+            if (active) setPortfolioHistory(all.flat());
+          }
           if (record)
             validateAttempt(
               record,
@@ -115,7 +137,7 @@ export function CheckpointScreen({
     return () => {
       active = false;
     };
-  }, [attemptId, loadToken, assessmentId, request]);
+  }, [attemptId, loadToken, assessmentId, request, final]);
   const submitted = attempt?.status === "submitted";
   useEffect(() => {
     if (!loading) heading.current?.focus();
@@ -180,9 +202,11 @@ export function CheckpointScreen({
   }
   const groups =
     submitted && attempt
-      ? second
-        ? projectCheckpoint2(attempt, attempt.learnerId)
-        : projectCheckpoint(attempt, attempt.learnerId)
+      ? final
+        ? []
+        : second
+          ? projectCheckpoint2(attempt, attempt.learnerId)
+          : projectCheckpoint(attempt, attempt.learnerId)
       : [];
   const item = definition.items[index];
   const repeated = Boolean(
@@ -207,7 +231,11 @@ export function CheckpointScreen({
           German A1 · Units 1–{eligibilityUnit} · Checkpoint {checkpoint}
         </p>
         <h1 className="mt-3 font-display text-3xl font-semibold tracking-tight">
-          {submitted ? "Your checkpoint result" : "Bring the foundations together"}
+          {final
+            ? "Your final text portfolio"
+            : submitted
+              ? "Your checkpoint result"
+              : "Bring the foundations together"}
         </h1>
         <p className="mt-3 text-sm leading-relaxed text-muted">
           Cumulative practice and bounded evidence. This does not certify A1 proficiency, speaking,
@@ -231,19 +259,40 @@ export function CheckpointScreen({
                 <p>
                   {definition.items.length} short tasks: fictional details, practical notes, bounded
                   sentences and{" "}
-                  {second ? "an original three-point message" : "a targeted correction"}. Answer
-                  every task, then submit once. You can go back to edit.
+                  {final
+                    ? "independent practical messages"
+                    : second
+                      ? "an original three-point message"
+                      : "a targeted correction"}
+                  . Answer every task, then submit once. You can go back to edit.
                 </p>
                 <p className="mt-3 text-sm leading-relaxed text-muted">
                   Use only the fictional details supplied. Answers stay in this tab; leaving or
                   refreshing clears unfinished answers. Saved results contain correctness, not your
                   typed text. German keyboard fallbacks ae, oe, ue and ss are accepted.
                 </p>
-                {second && (
+                {(second || final) && (
                   <p className="mt-3 text-sm text-muted">
                     Insufficient evidence until you submit. Each result group describes only its
                     graded tasks; a message gap stays visible independently of the total.
                   </p>
+                )}
+                {final && (
+                  <>
+                    <p className="mt-3 text-sm text-muted">
+                      Sitting A and Sitting B each have 14 tasks from different scenarios. Both are
+                      needed. For delayed follow-up, start the alternate sitting at least 24 hours
+                      after finishing the earlier one.
+                    </p>
+                    <TextPortfolioResult
+                      result={projectTextPortfolio(
+                        [...portfolioHistory, ...history],
+                        history[0]?.learnerId ?? portfolioHistory[0]?.learnerId ?? "",
+                        sessions,
+                        blockedLessons,
+                      )}
+                    />
+                  </>
                 )}
                 <Button className="mt-6 min-h-11" disabled={busy} onClick={() => void start()}>
                   {busy ? "Starting…" : failure ? "Retry start" : `Start Checkpoint ${checkpoint}`}
@@ -263,7 +312,7 @@ export function CheckpointScreen({
                 <Button asChild className="mt-4 min-h-11">
                   <Link
                     to="/learn/units/$unitId"
-                    params={{ unitId: second ? "DE.A1.U06" : "DE.A1.U03" }}
+                    params={{ unitId: final ? "DE.A1.U10" : second ? "DE.A1.U06" : "DE.A1.U03" }}
                   >
                     Return to Unit {eligibilityUnit}
                   </Link>
@@ -273,14 +322,38 @@ export function CheckpointScreen({
           </section>
         ) : submitted ? (
           <section className="mt-6 border-t border-border pt-6">
-            <h2
-              ref={heading}
-              tabIndex={-1}
-              className="font-display text-2xl font-semibold outline-none"
-            >
-              Checkpoint saved: {attempt.responses.filter((row) => row.correct).length} /{" "}
-              {definition.items.length} correct
-            </h2>
+            {!final && (
+              <h2
+                ref={heading}
+                tabIndex={-1}
+                className="font-display text-2xl font-semibold outline-none"
+              >
+                Checkpoint saved: {attempt.responses.filter((row) => row.correct).length} /{" "}
+                {definition.items.length} correct
+              </h2>
+            )}
+            {final && (
+              <>
+                <TextPortfolioResult
+                  headingRef={heading}
+                  result={projectTextPortfolio(
+                    [
+                      ...portfolioHistory,
+                      ...history.filter((a) => a.attemptId !== attempt.attemptId),
+                      attempt,
+                    ],
+                    attempt.learnerId,
+                    sessions,
+                    blockedLessons,
+                  )}
+                />
+                <p className="mt-4 text-sm text-muted">
+                  {definition.formId.endsWith("A") ? "Sitting A" : "Sitting B"} saved:{" "}
+                  {attempt.responses.filter((r) => r.correct).length} / {definition.items.length}{" "}
+                  correct.
+                </p>
+              </>
+            )}
             {second &&
               groups.some((group) => group.id === "CP2.message" && !group.demonstrated) && (
                 <p className="mt-3 text-sm font-medium text-primary-ink">
@@ -296,66 +369,73 @@ export function CheckpointScreen({
               {repeated
                 ? "Repeated practice with the same tasks; not independent confirmation."
                 : "One bounded observation with these tasks."}{" "}
-              This summary describes this saved attempt only. Earlier results stay separate.
+              {final
+                ? "The portfolio combines accepted observations across your Checks and checkpoints. Saved attempts remain unchanged."
+                : "This summary describes this saved attempt only. Earlier results stay separate."}
             </p>
-            <h3 className="mt-6 font-display text-xl font-semibold">
-              {second ? "Demonstrated" : "Demonstrated foundational outcomes"}
-            </h3>
-            {groups.every((group) => !group.demonstrated) && (
-              <p className="mt-3 text-muted">
-                No complete outcome group was demonstrated in this attempt. Review the named tasks
-                below.
-              </p>
+            {!final && (
+              <>
+                <h3 className="mt-6 font-display text-xl font-semibold">
+                  {second ? "Demonstrated" : "Demonstrated foundational outcomes"}
+                </h3>
+                {groups.every((group) => !group.demonstrated) && (
+                  <p className="mt-3 text-muted">
+                    No complete outcome group was demonstrated in this attempt. Review the named
+                    tasks below.
+                  </p>
+                )}
+                <ul className="mt-3 divide-y divide-border">
+                  {groups
+                    .filter((group) => group.demonstrated)
+                    .map((group) => (
+                      <li key={group.id} className="py-4">
+                        <p className="font-medium">{group.label}</p>
+                        <p className="mt-2 text-sm text-muted">{group.scope}</p>
+                      </li>
+                    ))}
+                </ul>
+                <h3 className="mt-6 font-display text-xl font-semibold">
+                  {second ? "Follow-up needed" : "Follow-up gaps"}
+                </h3>
+                <p className="mt-2 text-sm text-muted">
+                  A gap means at least one required task needs another look in this attempt; it is
+                  not a diagnosis of your overall ability.
+                </p>
+                {groups.every((group) => group.demonstrated) && (
+                  <p className="mt-3">
+                    No follow-up gaps in this sample. Optional practice remains available in Units
+                    1–
+                    {eligibilityUnit}.
+                  </p>
+                )}
+                <ul className="mt-3 divide-y divide-border">
+                  {groups
+                    .filter((group) => !group.demonstrated)
+                    .map((group) => (
+                      <li key={group.id} className="py-4">
+                        <p className="font-medium">{group.label}</p>
+                        <p className="mt-2 text-sm text-muted">{group.scope}</p>
+                        <p className="mt-3 text-sm font-medium">Recommended lessons to revisit</p>
+                        <div className="mt-2 flex flex-col gap-1">
+                          {group.lessonIds.map((id) => {
+                            const lesson = germanA1.lessons.find((row) => row.id === id)!;
+                            return (
+                              <Link
+                                key={id}
+                                to="/learn/$lessonId"
+                                params={{ lessonId: id }}
+                                className="inline-flex min-h-11 items-center rounded-control text-sm text-primary-ink underline underline-offset-4 focus-visible:ring-2 focus-visible:ring-focus"
+                              >
+                                Unit {Number(id.split(".")[2].slice(1))} · {lesson.title}
+                              </Link>
+                            );
+                          })}
+                        </div>
+                      </li>
+                    ))}
+                </ul>
+              </>
             )}
-            <ul className="mt-3 divide-y divide-border">
-              {groups
-                .filter((group) => group.demonstrated)
-                .map((group) => (
-                  <li key={group.id} className="py-4">
-                    <p className="font-medium">{group.label}</p>
-                    <p className="mt-2 text-sm text-muted">{group.scope}</p>
-                  </li>
-                ))}
-            </ul>
-            <h3 className="mt-6 font-display text-xl font-semibold">
-              {second ? "Follow-up needed" : "Follow-up gaps"}
-            </h3>
-            <p className="mt-2 text-sm text-muted">
-              A gap means at least one required task needs another look in this attempt; it is not a
-              diagnosis of your overall ability.
-            </p>
-            {groups.every((group) => group.demonstrated) && (
-              <p className="mt-3">
-                No follow-up gaps in this sample. Optional practice remains available in Units 1–
-                {eligibilityUnit}.
-              </p>
-            )}
-            <ul className="mt-3 divide-y divide-border">
-              {groups
-                .filter((group) => !group.demonstrated)
-                .map((group) => (
-                  <li key={group.id} className="py-4">
-                    <p className="font-medium">{group.label}</p>
-                    <p className="mt-2 text-sm text-muted">{group.scope}</p>
-                    <p className="mt-3 text-sm font-medium">Recommended lessons to revisit</p>
-                    <div className="mt-2 flex flex-col gap-1">
-                      {group.lessonIds.map((id) => {
-                        const lesson = germanA1.lessons.find((row) => row.id === id)!;
-                        return (
-                          <Link
-                            key={id}
-                            to="/learn/$lessonId"
-                            params={{ lessonId: id }}
-                            className="inline-flex min-h-11 items-center rounded-control text-sm text-primary-ink underline underline-offset-4 focus-visible:ring-2 focus-visible:ring-focus"
-                          >
-                            Unit {Number(id.split(".")[2].slice(1))} · {lesson.title}
-                          </Link>
-                        );
-                      })}
-                    </div>
-                  </li>
-                ))}
-            </ul>
             <details className="mt-5">
               <summary className="min-h-11 cursor-pointer py-3 font-medium focus-visible:ring-2 focus-visible:ring-focus">
                 Review checkpoint tasks
@@ -381,9 +461,11 @@ export function CheckpointScreen({
               </ol>
             </details>
             <p className="mt-5 text-sm text-muted">
-              {second
-                ? "Retries alternate Form A and Form B. Repeating a family is practice, not independent confirmation. This checkpoint changes no lessons, Unit Checks or challenge clearance. More units are not yet authored."
-                : "Retries use the same tasks and are repeated practice. This checkpoint changes no lessons, Unit Checks or challenge clearance. More units are not yet authored."}
+              {final
+                ? "Sittings alternate A and B. A repeated family replaces its own earlier observation; it does not add independence. A later alternate sitting can record delayed follow-up. No lesson or Unit Check completion is created."
+                : second
+                  ? "Retries alternate Form A and Form B. Repeating a family is practice, not independent confirmation. This checkpoint changes no lessons, Unit Checks or challenge clearance. Final text portfolio remains separate."
+                  : "Retries use the same tasks and are repeated practice. This checkpoint changes no lessons, Unit Checks or challenge clearance. Final text portfolio remains separate."}
             </p>
             <Button
               variant="outline"
@@ -412,7 +494,7 @@ export function CheckpointScreen({
                         className="inline-flex min-h-11 items-center rounded-control text-sm underline focus-visible:ring-2 focus-visible:ring-focus"
                       >
                         {new Date(row.finishedAt!).toLocaleString()} ·{" "}
-                        {second ? `${checkFormLabel(row.formId)} · ` : ""}{" "}
+                        {second || final ? `${checkFormLabel(row.formId)} · ` : ""}{" "}
                         {row.responses.filter((r) => r.correct).length} / {definition.items.length}{" "}
                         correct
                       </Link>
@@ -425,7 +507,7 @@ export function CheckpointScreen({
         ) : (
           <section className="mt-6 border-t border-border pt-6">
             <p className="text-sm text-muted">
-              {second ? `${checkFormLabel(definition.formId)} · ` : ""}Task {index + 1} of{" "}
+              {second || final ? `${checkFormLabel(definition.formId)} · ` : ""}Task {index + 1} of{" "}
               {definition.items.length} ·{" "}
               {Object.values(answers).filter((value) => value.trim()).length} answered
               {repeated ? " · Repeated practice" : ""}
@@ -456,7 +538,7 @@ export function CheckpointScreen({
             >
               <label htmlFor="checkpoint-answer" className="mb-2 block text-sm font-medium">
                 {item.type === "supported-field"
-                  ? second
+                  ? second || final
                     ? "Form field"
                     : "Name field"
                   : "Your response"}

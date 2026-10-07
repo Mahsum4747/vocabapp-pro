@@ -8,15 +8,15 @@ import { challengeFixture } from "./support/challenge";
 import { USER_ID, NOW } from "./support/backend";
 import { undersizedTargets } from "./support/touch";
 import { germanA1 } from "../src/content/curriculum/german-a1";
-import { unit7CheckForms } from "../src/content/curriculum/german-a1-unit7-check";
-import { unit8CheckForms } from "../src/content/curriculum/german-a1-unit8-check";
+import { unit9CheckForms } from "../src/content/curriculum/german-a1-unit9-check";
+import { unit10CheckForms } from "../src/content/curriculum/german-a1-unit10-check";
 import { challengeForms } from "../src/content/curriculum/german-a1-challenges.server";
 import { startChallenge, submitChallenge } from "../src/lib/curriculum/challenge.server";
 import { COURSE_SCOPE } from "../src/lib/curriculum/course-progress";
 async function shot(page: Page, name: string) {
-  mkdirSync("screenshots/batch-c", { recursive: true });
+  mkdirSync("screenshots/batch-d", { recursive: true });
   await page.evaluate(() => window.scrollTo(0, 0));
-  await page.screenshot({ path: `screenshots/batch-c/${name}.png`, fullPage: true });
+  await page.screenshot({ path: `screenshots/batch-d/${name}.png`, fullPage: true });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   if ((page.viewportSize()?.width ?? 1280) < 768) expect(await undersizedTargets(page)).toEqual([]);
 }
@@ -24,7 +24,7 @@ async function noSupport(page: Page) {
   await expect(page.getByRole("button", { name: /^Hint$|^Show answer$/ })).toHaveCount(0);
   await expect(page.getByText(/Accepted response:/)).toHaveCount(0);
 }
-for (const index of [24, 27, 28, 31])
+for (const index of [32, 39])
   test(`${germanA1.lessons[index].id}: open exploration, truthful completion, reload and teaching support`, async ({
     page,
     launch,
@@ -36,11 +36,11 @@ for (const index of [24, 27, 28, 31])
     const h = await launch({ sets: [], handlers: f.handlers });
     const lesson = germanA1.lessons[index];
     await page.goto("/learn");
-    for (const unit of [7, 8])
+    for (const unit of [9, 10])
       await expect(
         page.getByRole("link", { name: `Open Unit ${unit}`, exact: true }),
       ).toBeVisible();
-    await expect(page.getByRole("link", { name: "Open Unit 9", exact: true })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Open Unit 11", exact: true })).toHaveCount(0);
     await page.goto(`/learn/units/${lesson.unitId}`);
     await expect(
       page.getByText("You're studying ahead of your recommended path.", { exact: true }),
@@ -49,14 +49,14 @@ for (const index of [24, 27, 28, 31])
       page.getByRole("link", { name: "Take Unit Challenge", exact: true }),
     ).toBeVisible();
     await expect(
-      page.getByRole("link", { name: `Unit ${index < 28 ? 7 : 8} Check`, exact: true }),
+      page.getByRole("link", { name: `Unit ${index < 36 ? 9 : 10} Check`, exact: true }),
     ).toHaveCount(0);
     await shot(page, `unit-${index}-${info.project.name}`);
     await page.goto(`/learn/${lesson.id}`);
     let reloaded = false;
     for (const [n, step] of lesson.steps.entries()) {
       await expect(page.getByRole("heading", { name: step.prompt, exact: true })).toBeVisible();
-      if (index === 31 && n === 6) {
+      if (index === 39 && n === 5) {
         const input = page.getByLabel("Your German response", { exact: true });
         await input.fill("d");
         await page.getByRole("button", { name: "Insert ü", exact: true }).click();
@@ -139,8 +139,8 @@ for (const index of [24, 27, 28, 31])
     expect(h.serverFns.callsTo("finishUnitChallenge")).toHaveLength(0);
   });
 for (const [number, forms] of [
-  [7, unit7CheckForms],
-  [8, unit8CheckForms],
+  [9, unit9CheckForms],
+  [10, unit10CheckForms],
 ] as const)
   test(`Unit ${number} real completions enable Check A/B with exact result review`, async ({
     page,
@@ -153,7 +153,7 @@ for (const [number, forms] of [
     const before = structuredClone([...f.storage.records.entries()]);
     const writes = f.storage.writes.length;
     await launch({ sets: [], handlers: f.handlers });
-    await page.goto(`/learn/units/DE.A1.U0${number}`);
+    await page.goto(`/learn/units/DE.A1.U${String(number).padStart(2, "0")}`);
     await page.getByRole("link", { name: `Unit ${number} Check`, exact: true }).click();
     await page.getByRole("button", { name: `Start Unit ${number} Check`, exact: true }).click();
     for (const [trial, form] of forms.entries()) {
@@ -196,7 +196,7 @@ for (const [number, forms] of [
       true,
     );
   });
-for (const number of [7, 8])
+for (const number of [9, 10])
   for (const correct of [5, 6])
     test(`Unit ${number} challenge ${correct}/8 keeps lessons separate and recommends the next authored unit`, async ({
       page,
@@ -207,7 +207,7 @@ for (const number of [7, 8])
       if (isMobile) await page.setViewportSize({ width: 390, height: 844 });
       const f = challengeFixture();
       for (let unit = 1; unit < number; unit++) {
-        const unitId = `DE.A1.U0${unit}`;
+        const unitId = `DE.A1.U${String(unit).padStart(2, "0")}`;
         const req = { ...COURSE_SCOPE, unitId, attemptId: randomUUID() };
         await startChallenge(f.storage.db, USER_ID, req, NOW);
         await submitChallenge(
@@ -226,7 +226,7 @@ for (const number of [7, 8])
       const before = structuredClone([...f.storage.records.entries()]);
       const writes = f.storage.writes.length;
       const h = await launch({ sets: [], handlers: f.handlers });
-      const unitId = `DE.A1.U0${number}`;
+      const unitId = `DE.A1.U${String(number).padStart(2, "0")}`;
       await page.goto("/learn");
       await expect(
         page
@@ -274,11 +274,18 @@ for (const number of [7, 8])
         await expect(page.locator(`main ol a[href="/learn/${id}"]`)).toBeVisible();
       await page.goto("/learn");
       const action = page.getByRole("region", { name: "Recommended learning action" });
-      await expect(action.getByRole("link", { name: "Start lesson", exact: true })).toHaveAttribute(
-        "href",
-        `/learn/DE.A1.U0${correct === 6 ? number + 1 : number}.L01`,
-      );
-      await expect(page.getByRole("link", { name: "Open Unit 9", exact: true })).toBeVisible();
+      if (correct === 6 && number === 10)
+        await expect(
+          action.getByRole("link", { name: "Continue to final portfolio", exact: true }),
+        ).toBeVisible();
+      else
+        await expect(
+          action.getByRole("link", { name: "Start lesson", exact: true }),
+        ).toHaveAttribute(
+          "href",
+          `/learn/DE.A1.U${String(correct === 6 ? number + 1 : number).padStart(2, "0")}.L01`,
+        );
+      await expect(page.getByRole("link", { name: "Open Unit 11", exact: true })).toHaveCount(0);
       for (const [path, value] of before) expect(f.storage.records.get(path)).toEqual(value);
       expect(f.storage.writes.slice(writes).every((p) => p.includes("/unitChallenges/"))).toBe(
         true,

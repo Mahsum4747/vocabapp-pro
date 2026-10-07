@@ -1,6 +1,11 @@
+import { CP3_ID } from "@/lib/curriculum/checkpoint-identity";
 import { lazy, Suspense } from "react";
 
-import { checkpointAvailable, checkpoint2Available } from "@/lib/curriculum/checkpoint-access";
+import {
+  checkpointAvailable,
+  checkpoint2Available,
+  checkpoint3Available,
+} from "@/lib/curriculum/checkpoint-access";
 import { unitAvailable } from "@/lib/curriculum/unit-access";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
@@ -75,8 +80,8 @@ function LearnCourse() {
               <p className="mt-2 font-display text-xl font-semibold leading-snug sm:text-2xl">
                 {complete
                   ? clearedUnits.length
-                    ? "Available units cleared. Study any lessons optionally. More units are not yet authored."
-                    : "All available lessons finished. More units are not yet authored."
+                    ? "Available units cleared. Continue to the final text portfolio; missing lessons and Checks remain separate."
+                    : "All lessons finished. Continue to the final text portfolio."
                   : (first?.title ?? "Saved lessons are currently unavailable")}
               </p>
               {!complete && action.unit && (
@@ -109,8 +114,8 @@ function LearnCourse() {
             </div>
             {complete && !first && action.unit ? (
               <Button asChild className="h-auto min-h-11 shrink-0 whitespace-normal py-3">
-                <Link to="/learn/units/$unitId" params={{ unitId: action.unit.id }}>
-                  Revisit Unit {germanA1.units.indexOf(action.unit) + 1}
+                <Link to="/learn/check" search={{ assessment: CP3_ID }}>
+                  Continue to final portfolio
                   <ArrowRight />
                 </Link>
               </Button>
@@ -126,6 +131,11 @@ function LearnCourse() {
             )}
           </div>
         </section>
+        {checkpoint3Available(sessions, blockedLessons, clearedUnits) && (
+          <Suspense fallback={<p className="mt-6 text-sm text-muted">Loading portfolio…</p>}>
+            <CheckpointEntry checkpoint={3} />
+          </Suspense>
+        )}
         {checkpoint2Available(sessions, blockedLessons, clearedUnits) && (
           <Suspense fallback={<p className="mt-6 text-sm text-muted">Loading checkpoint…</p>}>
             <CheckpointEntry checkpoint={2} />
@@ -144,9 +154,9 @@ function LearnCourse() {
             </h2>
           </div>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
-            10 units · 40 planned lessons. Thirty-two lessons are authored across Units 1–8. Explore
-            any authored unit. Your recommended path follows lesson completion or challenge
-            clearance. Your checked steps and lesson completion are saved.
+            10 units · 40 authored lessons across Units 1–10. Explore any authored unit. Your
+            recommended path follows lesson completion or challenge clearance. Your checked steps
+            and lesson completion are saved.
           </p>
           <ol className="mt-5 grid gap-3 lg:grid-cols-2">
             {germanA1.units.map((unit, index) => {

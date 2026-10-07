@@ -1,3 +1,4 @@
+import { batchDChallengeForms } from "./german-a1-batch-d-challenges.server";
 import { batchCChallengeForms } from "./german-a1-batch-c-challenges.server";
 import { unit6ChallengeForms } from "./german-a1-unit6-challenges.server";
 import { batchAChallengeForms } from "./german-a1-batch-a-challenges.server";
@@ -22,6 +23,7 @@ const choice = (
 export const challengeForms: Record<string, Record<"A" | "B", readonly ChallengeItem[]>> = {
   ...batchAChallengeForms,
   ...batchCChallengeForms,
+  ...batchDChallengeForms,
   ...unit6ChallengeForms,
   "DE.A1.U01": {
     A: [

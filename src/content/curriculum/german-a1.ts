@@ -1,4 +1,16 @@
 import {
+  unit9Lesson1Steps,
+  unit9Lesson2Steps,
+  unit9Lesson3Steps,
+  unit9Lesson4Steps,
+} from "./german-a1-unit9";
+import {
+  unit10Lesson1Steps,
+  unit10Lesson2Steps,
+  unit10Lesson3Steps,
+  unit10Lesson4Steps,
+} from "./german-a1-unit10";
+import {
   travelTicketSteps,
   accommodationSteps,
   routeChangeSteps,
@@ -1655,8 +1667,9 @@ export const germanA1: CurriculumRelease = {
         "DE.A1.GRAMMAR.PAST.WAR_HATTE",
         "DE.A1.VOCABULARY.NOUN_BUNDLE",
       ],
-      availability: "not-authored",
-      steps: [],
+      availability: "prototype",
+      resumeContractVersion: 1,
+      steps: unit9Lesson1Steps,
     },
     {
       id: "DE.A1.U09.L02",
@@ -1671,8 +1684,9 @@ export const germanA1: CurriculumRelease = {
         "DE.A1.GRAMMAR.IMPERATIVE.DU",
         "DE.A1.GRAMMAR.IMPERATIVE.SIE",
       ],
-      availability: "not-authored",
-      steps: [],
+      availability: "prototype",
+      resumeContractVersion: 1,
+      steps: unit9Lesson2Steps,
     },
     {
       id: "DE.A1.U09.L03",
@@ -1687,8 +1701,9 @@ export const germanA1: CurriculumRelease = {
         "DE.A1.GRAMMAR.CONNECTORS.ABER_ODER",
         "DE.A1.VOCABULARY.TRANSFER_SELECTION",
       ],
-      availability: "not-authored",
-      steps: [],
+      availability: "prototype",
+      resumeContractVersion: 1,
+      steps: unit9Lesson3Steps,
     },
     {
       id: "DE.A1.U09.L04",
@@ -1703,8 +1718,9 @@ export const germanA1: CurriculumRelease = {
         "DE.A1.WRITING.APOLOGY_CHANGE",
         "DE.A1.READING.MAIN_PURPOSE",
       ],
-      availability: "not-authored",
-      steps: [],
+      availability: "prototype",
+      resumeContractVersion: 1,
+      steps: unit9Lesson4Steps,
     },
     {
       id: "DE.A1.U10.L01",
@@ -1719,8 +1735,9 @@ export const germanA1: CurriculumRelease = {
         "DE.A1.READING.CONTEXT_WORD",
         "DE.A1.READING.SELECT_RELEVANT_TEXT",
       ],
-      availability: "not-authored",
-      steps: [],
+      availability: "prototype",
+      resumeContractVersion: 1,
+      steps: unit10Lesson1Steps,
     },
     {
       id: "DE.A1.U10.L02",
@@ -1736,8 +1753,9 @@ export const germanA1: CurriculumRelease = {
         "DE.A1.GRAMMAR.TRANSFER.CLAUSE_FRAMES",
         "DE.A1.VOCABULARY.ACTIVE_RETRIEVAL",
       ],
-      availability: "not-authored",
-      steps: [],
+      availability: "prototype",
+      resumeContractVersion: 1,
+      steps: unit10Lesson2Steps,
     },
     {
       id: "DE.A1.U10.L03",
@@ -1753,8 +1771,9 @@ export const germanA1: CurriculumRelease = {
         "DE.A1.WRITING.SEQUENCE",
         "DE.A1.VOCABULARY.TRANSFER_SELECTION",
       ],
-      availability: "not-authored",
-      steps: [],
+      availability: "prototype",
+      resumeContractVersion: 1,
+      steps: unit10Lesson3Steps,
     },
     {
       id: "DE.A1.U10.L04",
@@ -1768,8 +1787,9 @@ export const germanA1: CurriculumRelease = {
         "DE.A1.READING.MAIN_PURPOSE",
         "DE.A1.VOCABULARY.TRANSFER_SELECTION",
       ],
-      availability: "not-authored",
-      steps: [],
+      availability: "prototype",
+      resumeContractVersion: 1,
+      steps: unit10Lesson4Steps,
     },
   ],
 };

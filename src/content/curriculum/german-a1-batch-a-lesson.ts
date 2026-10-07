@@ -4,7 +4,7 @@ export const G = "DE.A1.GRAMMAR.",
   R = "DE.A1.READING.",
   W = "DE.A1.WRITING.",
   V = "DE.A1.VOCABULARY.";
-export function lessonAuthor(unit: "04" | "05" | "06" | "07" | "08", lesson: number) {
+export function lessonAuthor(unit: "04" | "05" | "06" | "07" | "08" | "09" | "10", lesson: number) {
   const base = (
     id: string,
     stage: LessonStage,

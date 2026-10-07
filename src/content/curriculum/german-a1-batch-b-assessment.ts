@@ -13,7 +13,7 @@ function keyboardVariants(value: string): string[] {
   );
 }
 export function batchBAuthor(
-  scope: "U06" | "U07" | "U08" | "CP2",
+  scope: "U06" | "U07" | "U08" | "U09" | "U10" | "CP2" | "CP3",
   targets: readonly { id: string; label: string; scope: string }[],
 ) {
   return {
@@ -37,7 +37,9 @@ export function batchBAuthor(
       ...(options ? { options } : {}),
     }),
     form: (form: "A" | "B", items: AssessmentItem[]): AssessmentDefinition => ({
-      id: scope === "CP2" ? "DE.A1.CP2.PROTOTYPE.1" : `DE.A1.${scope}.CHECK.PROTOTYPE.1`,
+      id: scope.startsWith("CP")
+        ? `DE.A1.${scope}.PROTOTYPE.1`
+        : `DE.A1.${scope}.CHECK.PROTOTYPE.1`,
       assessmentVersion: 1,
       compatibilityVersion: 1,
       formId: `${scope}.FORM.${form}`,

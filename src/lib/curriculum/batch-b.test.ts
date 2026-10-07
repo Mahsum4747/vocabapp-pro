@@ -150,13 +150,13 @@ test("U6 frozen blueprint, skill membership, prerequisite DAG and truthful autho
       );
     assert.equal(lesson.steps.at(-1)!.stage, "check");
   }
-  assert.equal(germanA1.lessons.filter((l) => l.availability === "prototype").length, 32);
+  assert.equal(germanA1.lessons.filter((l) => l.availability === "prototype").length, 40);
   assert(
-    germanA1.lessons.slice(32).every((l) => l.availability === "not-authored" && !l.steps.length),
+    germanA1.lessons.slice(40).every((l) => l.availability === "not-authored" && !l.steps.length),
   );
   assert(unitAvailable("DE.A1.U06"));
-  assert(!unitAvailable("DE.A1.U09"));
-  assert.equal(assessmentForUnit("DE.A1.U09"), undefined);
+  assert(!unitAvailable("DE.A1.U11"));
+  assert.equal(assessmentForUnit("DE.A1.U11"), undefined);
 });
 for (const lesson of lessons)
   test(`${lesson.id}: reviewed answers, mixed keyboard equivalence and wrong-answer rejection`, () => {
@@ -327,7 +327,7 @@ test("U5 clearance recommends U6; clearing all authored units now recommends aut
   );
   assert(!next.complete);
   assert.equal(next.unit?.id, "DE.A1.U07");
-  assert(!unitAvailable("DE.A1.U09"));
+  assert(!unitAvailable("DE.A1.U11"));
 });
 test("CP2 exact persistence, message gap remains separate, A/B/repeat families, owner isolation", async () => {
   const s = fakeProgressDb();

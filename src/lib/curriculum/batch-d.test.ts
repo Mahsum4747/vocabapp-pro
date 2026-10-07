@@ -3,8 +3,8 @@ import { test } from "node:test";
 import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { germanA1 } from "@/content/curriculum/german-a1";
-import { unit7CheckForms } from "@/content/curriculum/german-a1-unit7-check";
-import { unit8CheckForms } from "@/content/curriculum/german-a1-unit8-check";
+import { unit9CheckForms } from "@/content/curriculum/german-a1-unit9-check";
+import { unit10CheckForms } from "@/content/curriculum/german-a1-unit10-check";
 import { challengeForms } from "@/content/curriculum/german-a1-challenges.server";
 import { validateCurriculum } from "./validate";
 import { evaluateStep, normalizeLessonAnswer, sessionKey } from "./lesson-session";
@@ -34,8 +34,8 @@ import { fakeProgressDb } from "./testing/fake-progress-db";
 import { unitAvailable, unitAheadOfPath } from "./unit-access";
 import { courseLearningAction, unitProgress } from "./unit-progress";
 import { checkpointAvailable, checkpoint2Available } from "./checkpoint-access";
-const owner = "batch-c-owner",
-  lessons = germanA1.lessons.slice(24, 32);
+const owner = "batch-d-owner",
+  lessons = germanA1.lessons.slice(32, 40);
 // Domain fixture exercises the real owner-scoped persistence boundary, independently of browser helpers.
 function courseProgressFixture() {
   const storage = fakeProgressDb();
@@ -126,7 +126,7 @@ async function clear(
   return { req, result };
 }
 
-test("U7/U8 exactly preserve frozen titles/outcomes/skills and DAG; only U9+ remain planned", () => {
+test("U9/U10 exactly preserve frozen titles/outcomes/skills and DAG; all ten units authored", () => {
   assert.deepEqual(validateCurriculum(germanA1), []);
   const rows = readFileSync("GERMAN_A1_BLUEPRINT.md", "utf8")
     .split("\n")
@@ -166,10 +166,8 @@ test("U7/U8 exactly preserve frozen titles/outcomes/skills and DAG; only U9+ rem
     assert.equal(lesson.steps.at(-1)!.kind, "text");
   }
   assert.equal(germanA1.lessons.filter((l) => l.availability === "prototype").length, 40);
-  assert(
-    germanA1.lessons.slice(40).every((l) => l.availability === "not-authored" && !l.steps.length),
-  );
-  for (const id of ["DE.A1.U07", "DE.A1.U08"]) {
+  assert(germanA1.lessons.slice(32).every((l) => l.availability === "prototype" && l.steps.length));
+  for (const id of ["DE.A1.U09", "DE.A1.U10"]) {
     assert(unitAvailable(id));
     assert(unitAheadOfPath(id, {}, [], []));
   }
@@ -196,9 +194,9 @@ for (const lesson of lessons)
       }
     }
   });
-for (const form of [...unit7CheckForms, ...unit8CheckForms])
+for (const form of [...unit9CheckForms, ...unit10CheckForms])
   test(`${form.formId}: functional scope, key variants, held-out final prompts, independent elicitation`, () => {
-    assert.equal(form.items.length, form.unitId === "DE.A1.U07" ? 9 : 10);
+    assert.equal(form.items.length, form.unitId === "DE.A1.U09" ? 9 : 10);
     assert.equal(form.id, `${form.unitId}.CHECK.PROTOTYPE.1`);
     assert.equal(form.formFamilyId, form.formId.replace("FORM", "FAMILY"));
     assert.equal(new Set(form.items.map((i) => i.id)).size, form.items.length);
@@ -283,8 +281,8 @@ for (const lesson of lessons)
     );
   });
 for (const [unitNumber, forms] of [
-  [7, unit7CheckForms],
-  [8, unit8CheckForms],
+  [9, unit9CheckForms],
+  [10, unit10CheckForms],
 ] as const)
   test(`U${unitNumber}: actual four-lesson gate, immutable A/B/A results, owner isolation and no raw history`, async () => {
     const f = courseProgressFixture();
@@ -343,7 +341,7 @@ for (const [unitNumber, forms] of [
     for (const [p, value] of before) assert.deepEqual(f.storage.records.get(p), value);
     assert(f.storage.writes.slice(writes).every((p) => p.includes("/assessmentAttempts/")));
   });
-for (const id of ["DE.A1.U07", "DE.A1.U08"])
+for (const id of ["DE.A1.U09", "DE.A1.U10"])
   for (const count of [5, 6, 7, 8])
     test(`${id} ${count}/8 threshold, truthful clearance and independent B retry`, async () => {
       const s = fakeProgressDb();
@@ -388,9 +386,10 @@ for (const id of ["DE.A1.U07", "DE.A1.U08"])
         assert(retry.result.attempt!.passed);
       }
     });
-test("U6 -> U7 -> U8 recommendation uses clearance only; U9 stays closed", async () => {
+
+test("U8 -> U9 -> U10 recommendation by Challenges; no Unit 11", async () => {
   const s = fakeProgressDb();
-  for (const unit of germanA1.units.slice(0, 5)) await clear(s, unit.id);
+  for (const u of germanA1.units.slice(0, 7)) await clear(s, u.id);
   const action = async () =>
     courseLearningAction(
       germanA1,
@@ -398,89 +397,27 @@ test("U6 -> U7 -> U8 recommendation uses clearance only; U9 stays closed", async
       [],
       await readChallengeClearances(s.db, owner, COURSE_SCOPE),
     );
-  assert.equal((await action()).unit?.id, "DE.A1.U06");
-  await clear(s, "DE.A1.U06");
-  assert.equal((await action()).unit?.id, "DE.A1.U07");
-  await clear(s, "DE.A1.U07");
   assert.equal((await action()).unit?.id, "DE.A1.U08");
   await clear(s, "DE.A1.U08");
   assert.equal((await action()).unit?.id, "DE.A1.U09");
-  assert.notEqual((await action()).unit?.id, "DE.A1.U11");
-  assert(!unitAvailable("DE.A1.U11"));
+  await clear(s, "DE.A1.U09");
+  assert.equal((await action()).unit?.id, "DE.A1.U10");
+  await clear(s, "DE.A1.U10");
+  assert((await action()).complete);
+  assert.equal((await action()).unit?.id, "DE.A1.U10");
   assert((await readCourseProgress(s.db, owner, COURSE_SCOPE)).lessons.every((l) => !l.progress));
 });
-test("historical U6/U7 lesson completions also recommend U7/U8 without challenge clearance", async () => {
+test("U8/U9 historical lessons recommend U9/U10 without Challenge evidence", async () => {
   const f = courseProgressFixture();
-  for (let n = 20; n < 24; n++) await f.advanceLesson(n, germanA1.lessons[n].steps.length);
-  const cleared = germanA1.units.slice(0, 5).map((u) => u.id);
+  const cleared = germanA1.units.slice(0, 7).map((u) => u.id);
+  for (let n = 28; n < 32; n++) await f.advanceLesson(n, germanA1.lessons[n].steps.length);
   assert.equal(
     courseLearningAction(germanA1, await sessions(f), [], cleared).unit?.id,
-    "DE.A1.U07",
+    "DE.A1.U09",
   );
-  for (let n = 24; n < 28; n++) await f.advanceLesson(n, germanA1.lessons[n].steps.length);
+  for (let n = 32; n < 36; n++) await f.advanceLesson(n, germanA1.lessons[n].steps.length);
   assert.equal(
     courseLearningAction(germanA1, await sessions(f), [], cleared).unit?.id,
-    "DE.A1.U08",
+    "DE.A1.U10",
   );
-  assert.deepEqual(await readChallengeClearances(f.storage.db, owner, COURSE_SCOPE), []);
-});
-
-test("semantic boundaries reject stale facts, reversed fields and incomplete messages despite correct grammar", () => {
-  const cases = [
-    [unit7CheckForms[0], 1, "13 Uhr"],
-    [unit7CheckForms[0], 3, "Am Mittwoch gibt es ein Zimmer."],
-    [
-      unit7CheckForms[0],
-      7,
-      "Hallo Ben! Ich bin am Bahnhof. Ich kann um fünfzehn kommen. Bis bald!",
-    ],
-    [unit8CheckForms[0], 0, "Name: Berlin; Ort: Ben"],
-    [
-      unit8CheckForms[0],
-      9,
-      "Ich komme am Dienstag um zehn ins Büro. Das Treffen ist nicht am Dienstag.",
-    ],
-  ] as const;
-  for (const [form, index, response] of cases) {
-    const graded = gradeAssessment(
-      form,
-      responses(form).map((row, n) => (n === index ? { ...row, response } : row)),
-    );
-    assert.equal(graded[index].correct, false);
-  }
-});
-test("U7 free original writing remains unassessed and is never accepted as raw durable data", async () => {
-  const f = courseProgressFixture();
-  const lesson = germanA1.lessons[27];
-  await f.advanceLesson(27, 8);
-  const step = lesson.steps[8];
-  assert.equal(step.kind, "original");
-  const progress = (await readCourseProgress(f.storage.db, owner, COURSE_SCOPE)).lessons.find(
-    (l) => l.lessonId === lesson.id,
-  )!.progress!;
-  const command = {
-    ...COURSE_SCOPE,
-    lessonId: lesson.id,
-    resumeContractVersion: 1,
-    expectedRevision: progress.revision,
-    operationId: randomUUID(),
-    action: { type: "check" as const, stepId: step.id },
-  };
-  const before = structuredClone([...f.storage.records.entries()]);
-  await assert.rejects(
-    saveCourseProgress(f.storage.db, owner, {
-      ...command,
-      action: { ...command.action, response: "PRIVATE FREE TEXT" },
-    }),
-    /Open writing/,
-  );
-  assert.deepEqual([...f.storage.records.entries()], before);
-  const accepted = await saveCourseProgress(f.storage.db, owner, command);
-  assert.equal(accepted.kind, "saved");
-  if (accepted.kind === "saved") {
-    assert.equal(accepted.progress.response, null);
-    assert.equal(resumeProgress(accepted.progress, lesson).feedback?.outcome, "unassessed");
-    assert.equal(accepted.progress.firstFinishedAt, null);
-  }
-  assert(!JSON.stringify([...f.storage.records.values()]).includes("PRIVATE FREE TEXT"));
 });

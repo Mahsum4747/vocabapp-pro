@@ -135,11 +135,11 @@ test("Batch A exactly preserves the frozen registry, prerequisite DAG and skill 
       );
     assert.equal(lesson.steps.at(-1)!.stage, "check");
   }
-  assert.equal(germanA1.lessons.filter((l) => l.availability === "prototype").length, 32);
+  assert.equal(germanA1.lessons.filter((l) => l.availability === "prototype").length, 40);
   assert(
-    germanA1.lessons.slice(32).every((l) => l.availability === "not-authored" && !l.steps.length),
+    germanA1.lessons.slice(40).every((l) => l.availability === "not-authored" && !l.steps.length),
   );
-  assert.equal(assessmentForUnit("DE.A1.U09"), undefined);
+  assert.equal(assessmentForUnit("DE.A1.U11"), undefined);
   assert.throws(() => registeredAssessment("DE.A1.CP2"));
 });
 for (const lesson of lessons)
@@ -348,7 +348,7 @@ test("Authored U4/U5 are open regardless of clearance; U7 remains planned", () =
     assert.equal(unitAvailable(unitId), true);
     assert.equal(unitProgress(germanA1, germanA1.units[index], {}).finishedCount, 0);
   }
-  assert.equal(unitAvailable("DE.A1.U09"), false);
+  assert.equal(unitAvailable("DE.A1.U11"), false);
   assert.equal(checkpointAvailable({}, [], ["DE.A1.U03"]), true);
   assert.equal(checkpointAvailable({}, [], ["DE.A1.U04"]), false);
   assert.equal(

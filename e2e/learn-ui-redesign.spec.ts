@@ -44,13 +44,9 @@ test("Learn cards retain next lesson and all authored unit actions", async ({
     "href",
     "/learn/DE.A1.U01.L01",
   );
-  for (let n = 1; n <= 8; n++)
+  for (let n = 1; n <= 10; n++)
     await expect(page.getByRole("link", { name: `Open Unit ${n}`, exact: true })).toBeVisible();
-  for (let n = 9; n <= 10; n++) {
-    const row = page.locator(`[data-unit="DE.A1.U${String(n).padStart(2, "0")}"]`);
-    await expect(row.getByText("Not yet authored", { exact: true })).toBeVisible();
-    await expect(row.getByRole("link")).toHaveCount(0);
-  }
+  await expect(page.getByRole("link", { name: "Open Unit 11", exact: true })).toHaveCount(0);
   await shot(page, `fresh-${info.project.name}`);
   expect(f.storage.writes).toHaveLength(0);
   await action.getByRole("link", { name: "Start lesson", exact: true }).click();
@@ -159,16 +155,15 @@ test("cleared course keeps revisit action without synthetic lesson progress", as
       ...f.handlers,
       getCourseProgress: async (input: unknown) => ({
         ...(await f.handlers.getCourseProgress(input)),
-        challengeClearances: germanA1.units.slice(0, 8).map((unit) => unit.id),
+        challengeClearances: germanA1.units.slice(0, 10).map((unit) => unit.id),
       }),
     },
   });
   await page.goto("/learn");
   const action = page.getByRole("region", { name: "Recommended learning action" });
-  await expect(action.getByRole("link", { name: "Revisit Unit 8", exact: true })).toHaveAttribute(
-    "href",
-    "/learn/units/DE.A1.U08",
-  );
+  await expect(
+    action.getByRole("link", { name: "Continue to final portfolio", exact: true }),
+  ).toHaveAttribute("href", "/learn/check?assessment=DE.A1.CP3.PROTOTYPE.1");
   await expect(action.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "0");
   await shot(page, `cleared-${info.project.name}`);
   expect(f.storage.writes).toHaveLength(0);

@@ -1,4 +1,8 @@
-import { checkpointAvailable, checkpoint2Available } from "@/lib/curriculum/checkpoint-access";
+import {
+  checkpointAvailable,
+  checkpoint2Available,
+  checkpoint3Available,
+} from "@/lib/curriculum/checkpoint-access";
 import { unitAheadOfPath, unitAvailable } from "@/lib/curriculum/unit-access";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
@@ -260,6 +264,12 @@ function LearnUnit() {
                 />
               </Suspense>
             )}
+            {unitId === "DE.A1.U10" &&
+              checkpoint3Available(sessions, blockedLessons, clearedUnits) && (
+                <Suspense fallback={<p className="mt-6 text-sm text-muted">Loading portfolio…</p>}>
+                  <CheckpointEntry checkpoint={3} />
+                </Suspense>
+              )}
             {unitId === "DE.A1.U06" &&
               checkpoint2Available(sessions, blockedLessons, clearedUnits) && (
                 <Suspense fallback={<p className="mt-6 text-sm text-muted">Loading checkpoint…</p>}>
