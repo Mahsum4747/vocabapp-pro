@@ -1,8 +1,9 @@
+import { checkpointAvailable } from "@/lib/curriculum/checkpoint-access";
 import { lessonHint } from "@/lib/curriculum/lesson-hint";
 import { courseLearningAction, unitProgress } from "@/lib/curriculum/unit-progress";
 import { Link } from "@tanstack/react-router";
 import { ArrowLeft, Check } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { ExerciseResponse } from "./exercise-response";
@@ -185,6 +186,12 @@ export function LessonScreen({
                   : "This lesson is finished. Return to the unit to see your remaining lessons."}
               </p>
             )}
+            {lesson.unitId === "DE.A1.U03" &&
+              checkpointAvailable(sessions, blockedLessons) && (
+                <Suspense fallback={<p className="mt-6 text-sm text-muted">Loading checkpoint…</p>}>
+                  <CheckpointEntry />
+                </Suspense>
+              )}
             <div className="mt-6 flex flex-col gap-3 sm:flex-row">
               <Button asChild variant="secondary">
                 <Link to="/learn/units/$unitId" params={{ unitId: unit.id }}>
@@ -318,3 +325,9 @@ export function LessonScreen({
     </div>
   );
 }
+
+const CheckpointEntry = lazy(() =>
+  import("@/components/learn/checkpoint-entry").then((module) => ({
+    default: module.CheckpointEntry,
+  })),
+);

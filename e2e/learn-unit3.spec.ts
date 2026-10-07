@@ -159,7 +159,7 @@ test("Unit 3 German helper, fallback, hint and show-answer recovery at 390px and
   await page.getByRole("button", { name: "Continue", exact: true }).click();
   await expect(page.getByLabel("Description sentence", { exact: true })).toBeVisible();
 });
-test("all-four Unit 3 completion enables Check A/B and exact own-form review; no Unit 4 or CP1", async ({
+test("all-four Unit 3 completion enables Check A/B and exact own-form review; CP1 available, no Unit 4", async ({
   page,
   launch,
   isMobile,
@@ -216,7 +216,7 @@ test("all-four Unit 3 completion enables Check A/B and exact own-form review; no
   for (const [path, value] of before) expect(f.storage.records.get(path)).toEqual(value);
   await page.goto("/learn");
   await expect(page.getByRole("link", { name: "Open Unit 4", exact: true })).toHaveCount(0);
-  await expect(page.getByRole("link", { name: /CP1|Checkpoint/ })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Open Checkpoint 1", exact: true })).toBeVisible();
 });
 test("Unit 3 access requires own Unit 2 completion or valid challenge; challenged lessons remain untouched", async ({
   page,

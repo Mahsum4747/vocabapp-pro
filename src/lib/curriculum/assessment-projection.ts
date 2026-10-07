@@ -86,6 +86,6 @@ export function nextFormLabel(
 ) {
   const known = compatibleHistory(definition, history, ownerId);
   const forms = registeredAssessment(definition.id).forms;
-  const next = known[0]?.formFamilyId === forms[0].formFamilyId ? forms[1] : forms[0];
+  const next = known[0]?.formFamilyId === forms[0].formFamilyId ? (forms[1] ?? forms[0]) : forms[0];
   return { formId: next.formId, repeated: known.some((a) => a.formFamilyId === next.formFamilyId) };
 }

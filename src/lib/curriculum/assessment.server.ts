@@ -115,7 +115,9 @@ export async function createAssessmentAttempt(
     )
   )
     throw Error(
-      `Finish the four Unit ${registeredAssessment(definition.id).unitNumber} lessons first.`,
+      registeredAssessment(definition.id).kind === "checkpoint"
+        ? "Finish the four Unit 3 lessons before Checkpoint 1."
+        : `Finish the four Unit ${registeredAssessment(definition.id).unitNumber} lessons first.`,
     );
   return db.runTransaction(async (tx) => {
     const raw = (await tx.get(ref)).data();

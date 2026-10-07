@@ -1,3 +1,4 @@
+import { checkpointAvailable } from "@/lib/curriculum/checkpoint-access";
 import { unit3Available } from "@/lib/curriculum/unit3-access";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, ArrowRight } from "lucide-react";
@@ -144,6 +145,12 @@ function LearnUnit() {
                 />
               </Suspense>
             )}
+            {unitId === "DE.A1.U03" &&
+              checkpointAvailable(sessions, blockedLessons) && (
+                <Suspense fallback={<p className="mt-6 text-sm text-muted">Loading checkpoint…</p>}>
+                  <CheckpointEntry />
+                </Suspense>
+              )}
             <ol className="mt-7 divide-y divide-border border-y border-border">
               {unit.lessonIds.map((id, index) => {
                 const lesson = germanA1.lessons.find((candidate) => candidate.id === id)!;
@@ -197,3 +204,9 @@ function LearnUnit() {
     </AppShell>
   );
 }
+
+const CheckpointEntry = lazy(() =>
+  import("@/components/learn/checkpoint-entry").then((module) => ({
+    default: module.CheckpointEntry,
+  })),
+);

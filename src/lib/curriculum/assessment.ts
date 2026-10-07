@@ -44,7 +44,7 @@ export const responseSchema = z
   .strict();
 export type AssessmentResponse = z.infer<typeof responseSchema>;
 export const submitAssessmentSchema = attemptRequestSchema
-  .extend({ responses: z.array(responseSchema).min(6).max(10) })
+  .extend({ responses: z.array(responseSchema).min(6).max(16) })
   .strict();
 const resultSchema = z
   .object({ itemId: z.string(), targetId: z.string(), correct: z.boolean() })
@@ -101,7 +101,9 @@ const currentAttemptSchema = legacyAttemptSchema
   .extend({
     schemaVersion: z.literal(2),
     ...formIdentity,
-    evidence: z.array(eventSchema).max(10),
+    itemOrder: z.array(z.string()).min(6).max(16),
+    responses: z.array(resultSchema).max(16),
+    evidence: z.array(eventSchema).max(16),
   })
   .strict();
 /** Read-only interpretation of known Phase 1E records. Never writes/migrates legacy data. */

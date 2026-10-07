@@ -1,3 +1,6 @@
+import { lazy, Suspense } from "react";
+
+import { checkpointAvailable } from "@/lib/curriculum/checkpoint-access";
 import { unit3Available } from "@/lib/curriculum/unit3-access";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight, BookOpen } from "lucide-react";
@@ -72,6 +75,11 @@ function LearnCourse() {
             )
           )}
         </div>
+        {checkpointAvailable(sessions, blockedLessons) && (
+          <Suspense fallback={<p className="mt-6 text-sm text-muted">Loading checkpoint…</p>}>
+            <CheckpointEntry />
+          </Suspense>
+        )}
         <section className="mt-9" aria-labelledby="course-units">
           <div className="flex items-center gap-2">
             <BookOpen className="size-5 text-primary-ink" aria-hidden="true" />
@@ -128,3 +136,9 @@ function LearnCourse() {
     </AppShell>
   );
 }
+
+const CheckpointEntry = lazy(() =>
+  import("@/components/learn/checkpoint-entry").then((module) => ({
+    default: module.CheckpointEntry,
+  })),
+);

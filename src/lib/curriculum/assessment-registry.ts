@@ -1,3 +1,4 @@
+import { cp1Forms } from "@/content/curriculum/german-a1-cp1";
 import type { AssessmentAttempt, AssessmentDefinition } from "./assessment";
 import { germanA1 } from "@/content/curriculum/german-a1";
 import { unit1CheckForms } from "@/content/curriculum/german-a1-unit1-check";
@@ -5,16 +6,26 @@ import { unit3CheckForms } from "@/content/curriculum/german-a1-unit3-check";
 import { unit2CheckForms } from "@/content/curriculum/german-a1-unit2-check";
 
 /** Three published-in-code prototype registrations, not a plugin or persisted registry. */
-export const assessmentRegistry = [unit1CheckForms, unit2CheckForms, unit3CheckForms].map(
-  (forms) => ({
-    definition: forms[0],
-    unitNumber: germanA1.units.findIndex((u) => u.id === forms[0].unitId) + 1,
-    forms,
-    lessonIds: germanA1.units.find((u) => u.id === forms[0].unitId)!.lessonIds,
-  }),
-);
+const unitRegistrations = [unit1CheckForms, unit2CheckForms, unit3CheckForms].map((forms) => ({
+  kind: "unit-check" as const,
+  definition: forms[0],
+  unitNumber: germanA1.units.findIndex((u) => u.id === forms[0].unitId) + 1,
+  forms,
+  lessonIds: germanA1.units.find((u) => u.id === forms[0].unitId)!.lessonIds,
+}));
+/** CP1 has its own scope identity; it is never returned by unit lookup. */
+export const assessmentRegistry = [
+  ...unitRegistrations,
+  {
+    kind: "checkpoint" as const,
+    definition: cp1Forms[0],
+    forms: cp1Forms,
+    unitNumber: 0,
+    lessonIds: germanA1.units[2].lessonIds,
+  },
+];
 export function assessmentForUnit(unitId: string) {
-  return assessmentRegistry.find((r) => r.definition.unitId === unitId);
+  return unitRegistrations.find((r) => r.definition.unitId === unitId);
 }
 export function registeredAssessment(id: string) {
   const registration = assessmentRegistry.find((r) => r.definition.id === id);

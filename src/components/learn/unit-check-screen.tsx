@@ -21,7 +21,8 @@ import {
 export function UnitCheckScreen(props: { attemptId?: string; assessmentId?: string }) {
   if (!props.attemptId && props.assessmentId) {
     try {
-      registeredAssessment(props.assessmentId);
+      if (registeredAssessment(props.assessmentId).kind !== "unit-check")
+        throw Error("Not a Unit Check.");
     } catch {
       return (
         <AppShell>
@@ -134,6 +135,8 @@ function CheckScreen({ attemptId, assessmentId }: { attemptId?: string; assessme
     }
     loadRequest.current.promise
       .then((value) => {
+        if (registeredAssessment(value.assessmentId).kind !== "unit-check")
+          throw Error("Not a Unit Check.");
         if (active) {
           setAttempt(value);
           if (value.status === "submitted" && pending.current) {

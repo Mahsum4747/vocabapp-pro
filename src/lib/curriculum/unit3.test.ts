@@ -297,7 +297,7 @@ test("Unit 3 stale revisions/idempotency preserve the existing durable schema an
   assert.equal(row.resumeContractVersion, 1);
   assert.ok(Array.isArray(row.receipts));
 });
-test("challenge-cleared Units 1/2 guide Unit 3; all four lessons finish truthfully and Unit 4/CP1 stay unavailable", async () => {
+test("challenge-cleared Units 1/2 guide Unit 3; all four lessons finish truthfully, Unit 4 unavailable, CP1 has separate identity", async () => {
   const s = fakeProgressDb();
   await clear(s, "DE.A1.U01");
   await clear(s, "DE.A1.U02");
