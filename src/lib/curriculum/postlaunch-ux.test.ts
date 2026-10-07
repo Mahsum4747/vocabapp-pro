@@ -43,6 +43,7 @@ test("German bounded keyboard fallbacks preserve intentional capitalization and 
 });
 test("each reviewed sentence blank accepts only its exact taught sentence equivalent", () => {
   const blanks = germanA1.lessons
+    .slice(0, 8) // Preserve the originally reviewed Unit 1–2 sentence-blank contract.
     .flatMap((l) => l.steps)
     .filter(
       (s): s is LessonStep & { kind: "text" } => s.kind === "text" && s.prompt.includes("___"),

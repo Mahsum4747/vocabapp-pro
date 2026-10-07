@@ -1,3 +1,5 @@
+import { unit4CheckForms } from "@/content/curriculum/german-a1-unit4-check";
+import { unit5CheckForms } from "@/content/curriculum/german-a1-unit5-check";
 import { cp1Forms } from "@/content/curriculum/german-a1-cp1";
 import type { AssessmentAttempt, AssessmentDefinition } from "./assessment";
 import { germanA1 } from "@/content/curriculum/german-a1";
@@ -5,8 +7,14 @@ import { unit1CheckForms } from "@/content/curriculum/german-a1-unit1-check";
 import { unit3CheckForms } from "@/content/curriculum/german-a1-unit3-check";
 import { unit2CheckForms } from "@/content/curriculum/german-a1-unit2-check";
 
-/** Three published-in-code prototype registrations, not a plugin or persisted registry. */
-const unitRegistrations = [unit1CheckForms, unit2CheckForms, unit3CheckForms].map((forms) => ({
+/** Five published-in-code prototype registrations, not a plugin or persisted registry. */
+const unitRegistrations = [
+  unit1CheckForms,
+  unit2CheckForms,
+  unit3CheckForms,
+  unit4CheckForms,
+  unit5CheckForms,
+].map((forms) => ({
   kind: "unit-check" as const,
   definition: forms[0],
   unitNumber: germanA1.units.findIndex((u) => u.id === forms[0].unitId) + 1,

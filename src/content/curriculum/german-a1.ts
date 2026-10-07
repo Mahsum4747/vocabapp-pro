@@ -1,4 +1,16 @@
 import {
+  timeLessonSteps,
+  prefixLessonSteps,
+  requestLessonSteps,
+  ruleLessonSteps,
+} from "./german-a1-unit4";
+import {
+  townLessonSteps,
+  helpLessonSteps,
+  arrivalLessonSteps,
+  invitationLessonSteps,
+} from "./german-a1-unit5";
+import {
   shoppingLessonSteps,
   replacementLessonSteps,
   availabilityLessonSteps,
@@ -16,7 +28,7 @@ import type { CurriculumRelease } from "@/lib/curriculum/types";
 import { entityLessonSteps } from "./german-a1-entities";
 import { identityLessonSteps } from "./german-a1-lesson";
 
-/** Approved registry metadata; all twelve U01/U02/U03 lessons have original prototype content.
+/** Approved registry metadata; all twenty U01–U05 lessons have original prototype content.
  * English support is a placeholder, not a complete source-language overlay. */
 export const germanA1: CurriculumRelease = {
   id: "DE.A1.CURRICULUM.PROTOTYPE.1B",
@@ -1038,11 +1050,14 @@ export const germanA1: CurriculumRelease = {
     {
       id: "DE.A1.U04",
       title: "Time and plans",
+      description:
+        "Read changed times, arrange activities, ask about services and offer workable alternatives.",
       lessonIds: ["DE.A1.U04.L01", "DE.A1.U04.L02", "DE.A1.U04.L03", "DE.A1.U04.L04"],
     },
     {
       id: "DE.A1.U05",
       title: "Town and services",
+      description: "Find places, ask for help, send arrival notes and handle invitations politely.",
       lessonIds: ["DE.A1.U05.L01", "DE.A1.U05.L02", "DE.A1.U05.L03", "DE.A1.U05.L04"],
     },
     {
@@ -1290,8 +1305,9 @@ export const germanA1: CurriculumRelease = {
         "DE.A1.READING.TIME_SEQUENCE",
       ],
       consolidatedSkillIds: [],
-      availability: "not-authored",
-      steps: [],
+      availability: "prototype",
+      resumeContractVersion: 1,
+      steps: timeLessonSteps,
     },
     {
       id: "DE.A1.U04.L02",
@@ -1306,8 +1322,9 @@ export const germanA1: CurriculumRelease = {
         "DE.A1.WRITING.TIME_PLACE",
       ],
       consolidatedSkillIds: [],
-      availability: "not-authored",
-      steps: [],
+      availability: "prototype",
+      resumeContractVersion: 1,
+      steps: prefixLessonSteps,
     },
     {
       id: "DE.A1.U04.L03",
@@ -1321,8 +1338,9 @@ export const germanA1: CurriculumRelease = {
         "DE.A1.WRITING.REQUEST_INFORMATION",
       ],
       consolidatedSkillIds: [],
-      availability: "not-authored",
-      steps: [],
+      availability: "prototype",
+      resumeContractVersion: 1,
+      steps: requestLessonSteps,
     },
     {
       id: "DE.A1.U04.L04",
@@ -1336,8 +1354,9 @@ export const germanA1: CurriculumRelease = {
         "DE.A1.READING.PERMISSION_NOTICE",
       ],
       consolidatedSkillIds: [],
-      availability: "not-authored",
-      steps: [],
+      availability: "prototype",
+      resumeContractVersion: 1,
+      steps: ruleLessonSteps,
     },
     {
       id: "DE.A1.U05.L01",
@@ -1351,8 +1370,9 @@ export const germanA1: CurriculumRelease = {
         "DE.A1.READING.SIMPLE_INSTRUCTION",
       ],
       consolidatedSkillIds: [],
-      availability: "not-authored",
-      steps: [],
+      availability: "prototype",
+      resumeContractVersion: 1,
+      steps: townLessonSteps,
     },
     {
       id: "DE.A1.U05.L02",
@@ -1365,8 +1385,9 @@ export const germanA1: CurriculumRelease = {
         "DE.A1.WRITING.REGISTER",
       ],
       consolidatedSkillIds: [],
-      availability: "not-authored",
-      steps: [],
+      availability: "prototype",
+      resumeContractVersion: 1,
+      steps: helpLessonSteps,
     },
     {
       id: "DE.A1.U05.L03",
@@ -1379,8 +1400,9 @@ export const germanA1: CurriculumRelease = {
         "DE.A1.WRITING.SHORT_MESSAGE",
       ],
       consolidatedSkillIds: [],
-      availability: "not-authored",
-      steps: [],
+      availability: "prototype",
+      resumeContractVersion: 1,
+      steps: arrivalLessonSteps,
     },
     {
       id: "DE.A1.U05.L04",
@@ -1394,8 +1416,9 @@ export const germanA1: CurriculumRelease = {
         "DE.A1.WRITING.INVITATION_RESPONSE",
       ],
       consolidatedSkillIds: [],
-      availability: "not-authored",
-      steps: [],
+      availability: "prototype",
+      resumeContractVersion: 1,
+      steps: invitationLessonSteps,
     },
     {
       id: "DE.A1.U06.L01",

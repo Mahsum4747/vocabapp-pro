@@ -1,5 +1,5 @@
 import { checkpointAvailable } from "@/lib/curriculum/checkpoint-access";
-import { unit3Available } from "@/lib/curriculum/unit3-access";
+import { unitAvailable, priorUnitFor } from "@/lib/curriculum/unit-access";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { lazy, Suspense } from "react";
@@ -37,18 +37,21 @@ function LearnUnit() {
         ),
       );
   const number = unit ? germanA1.units.indexOf(unit) + 1 : 0;
-  if (unitId === "DE.A1.U03" && !unit3Available(sessions, blockedLessons, clearedUnits))
+  const prior = priorUnitFor(unitId);
+  if (prior && !unitAvailable(unitId, sessions, blockedLessons, clearedUnits))
     return (
       <AppShell>
         <div className="mx-auto max-w-2xl">
-          <h1 className="font-display text-3xl font-semibold">Continue with Unit 2 first</h1>
+          <h1 className="font-display text-3xl font-semibold">
+            Continue with Unit {number - 1} first
+          </h1>
           <p className="mt-4 text-muted">
-            Finish Unit 2’s lessons or clear its challenge to study Shopping and objects. Your
+            Finish Unit {number - 1}’s lessons or clear its challenge to study {unit?.title}. Your
             lesson status stays separate from challenge clearance.
           </p>
           <Button asChild className="mt-5">
-            <Link to="/learn/units/$unitId" params={{ unitId: "DE.A1.U02" }}>
-              Open Unit 2
+            <Link to="/learn/units/$unitId" params={{ unitId: prior.id }}>
+              Open Unit {number - 1}
             </Link>
           </Button>
         </div>
@@ -97,45 +100,43 @@ function LearnUnit() {
                 )}
               </section>
             )}
-            {progress &&
-              progress.authoredCount > 0 &&
-              ["DE.A1.U01", "DE.A1.U02", "DE.A1.U03"].includes(unitId) && (
-                <section className="mt-6 border-t border-border pt-5" aria-label="Unit challenge">
-                  {cleared ? (
-                    <>
-                      <h2 className="font-medium">Cleared by challenge</h2>
-                      <p className="mt-2 text-sm text-muted">
-                        Lessons remain available for optional study.
-                      </p>
-                      {nextUnit ? (
-                        <Button asChild className="mt-4 h-auto min-h-11 whitespace-normal py-3">
-                          <Link to="/learn/units/$unitId" params={{ unitId: nextUnit.id }}>
-                            Continue to next available unit
-                          </Link>
-                        </Button>
-                      ) : (
-                        <p className="mt-3 text-sm text-muted">More units are not yet authored.</p>
-                      )}
-                    </>
-                  ) : (
-                    <>
-                      <Button
-                        asChild
-                        variant="outline"
-                        className="h-auto min-h-11 whitespace-normal py-3"
-                      >
-                        <Link to="/learn/challenge" search={{ unitId }}>
-                          Test out of this unit
+            {progress && progress.authoredCount > 0 && !!assessment && (
+              <section className="mt-6 border-t border-border pt-5" aria-label="Unit challenge">
+                {cleared ? (
+                  <>
+                    <h2 className="font-medium">Cleared by challenge</h2>
+                    <p className="mt-2 text-sm text-muted">
+                      Lessons remain available for optional study.
+                    </p>
+                    {nextUnit ? (
+                      <Button asChild className="mt-4 h-auto min-h-11 whitespace-normal py-3">
+                        <Link to="/learn/units/$unitId" params={{ unitId: nextUnit.id }}>
+                          Continue to next available unit
                         </Link>
                       </Button>
-                      <p className="mt-2 text-sm text-muted">
-                        An independent challenge for progression. At least 75% of answers must meet
-                        the requirements (six of eight).
-                      </p>
-                    </>
-                  )}
-                </section>
-              )}
+                    ) : (
+                      <p className="mt-3 text-sm text-muted">More units are not yet authored.</p>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <Button
+                      asChild
+                      variant="outline"
+                      className="h-auto min-h-11 whitespace-normal py-3"
+                    >
+                      <Link to="/learn/challenge" search={{ unitId }}>
+                        Test out of this unit
+                      </Link>
+                    </Button>
+                    <p className="mt-2 text-sm text-muted">
+                      An independent challenge for progression. At least 75% of answers must meet
+                      the requirements (six of eight).
+                    </p>
+                  </>
+                )}
+              </section>
+            )}
             {assessment && progress?.status === "Unit lessons complete" && (
               <Suspense fallback={<p className="mt-6 text-sm text-muted">Loading your check…</p>}>
                 <UnitCheckEntry

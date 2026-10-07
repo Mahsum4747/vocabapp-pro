@@ -169,10 +169,10 @@ test("Unit 3 exact frozen blueprint, ten steps each, meaningful recall/read/prod
   );
   assert.ok(
     germanA1.lessons
-      .slice(12)
+      .slice(20)
       .every((lesson) => lesson.availability === "not-authored" && lesson.steps.length === 0),
   );
-  assert.equal(assessmentForUnit("DE.A1.U04"), undefined);
+  assert.equal(assessmentForUnit("DE.A1.U06"), undefined);
 });
 test("Unit 3 typed answer shapes accept full-sentence equivalents and German keyboard fallback without changing meaning", () => {
   const article = lessons[0].steps.find((step) => step.id.endsWith(".known"))!;
@@ -297,7 +297,7 @@ test("Unit 3 stale revisions/idempotency preserve the existing durable schema an
   assert.equal(row.resumeContractVersion, 1);
   assert.ok(Array.isArray(row.receipts));
 });
-test("challenge-cleared Units 1/2 guide Unit 3; all four lessons finish truthfully, Unit 4 unavailable, CP1 has separate identity", async () => {
+test("challenge-cleared Units 1/2 guide Unit 3; all four lessons finish truthfully, Unit 4 is next, CP1 has separate identity", async () => {
   const s = fakeProgressDb();
   await clear(s, "DE.A1.U01");
   await clear(s, "DE.A1.U02");
@@ -308,9 +308,9 @@ test("challenge-cleared Units 1/2 guide Unit 3; all four lessons finish truthful
   const local = await sessions(s);
   assert.equal(unitProgress(germanA1, unit, local).status, "Unit lessons complete");
   assert.equal(unitProgress(germanA1, germanA1.units[1], local).finishedCount, 0);
-  assert.equal(courseLearningAction(germanA1, local, [], cleared).complete, true);
-  assert.equal(courseLearningAction(germanA1, local, [], cleared).unit?.id, unit.id);
-  assert.equal(assessmentForUnit("DE.A1.U04"), undefined);
+  assert.equal(courseLearningAction(germanA1, local, [], cleared).complete, false);
+  assert.equal(courseLearningAction(germanA1, local, [], cleared).unit?.id, "DE.A1.U04");
+  assert.equal(assessmentForUnit("DE.A1.U06"), undefined);
   assert.throws(() => assessmentForm("DE.A1.CP1", "U03.FORM.A"));
 });
 test("U03 A/B IDs, eight narrow targets, distinct elicitation structures and deterministic bounded grading", () => {

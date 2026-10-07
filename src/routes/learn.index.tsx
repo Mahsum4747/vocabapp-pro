@@ -1,7 +1,7 @@
 import { lazy, Suspense } from "react";
 
 import { checkpointAvailable } from "@/lib/curriculum/checkpoint-access";
-import { unit3Available } from "@/lib/curriculum/unit3-access";
+import { unitAvailable } from "@/lib/curriculum/unit-access";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight, BookOpen } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
@@ -15,7 +15,6 @@ export const Route = createFileRoute("/learn/")({ component: LearnCourse });
 function LearnCourse() {
   const { sessions, blockedLessons, clearedUnits } = useLearnSession();
   const action = courseLearningAction(germanA1, sessions, blockedLessons, clearedUnits);
-  const unit3Ready = unit3Available(sessions, blockedLessons, clearedUnits);
   const complete = action.complete;
   const first = action.lesson;
   const session = sessions[sessionKey(germanA1.id, first?.id ?? "")];
@@ -88,14 +87,14 @@ function LearnCourse() {
             </h2>
           </div>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
-            10 units · 40 planned lessons. Twelve lessons are authored across Units 1–3. Unit 3
-            follows Unit 2 lesson completion or challenge clearance. Your checked steps and lesson
-            completion are saved.
+            10 units · 40 planned lessons. Twenty lessons are authored across Units 1–5. Units 3–5
+            follow the previous unit’s lesson completion or challenge clearance. Your checked steps
+            and lesson completion are saved.
           </p>
           <ol className="mt-5 divide-y divide-border">
             {germanA1.units.map((unit, index) => {
               const progress = unitProgress(germanA1, unit, sessions, blockedLessons);
-              const ready = unit.id !== "DE.A1.U03" || unit3Ready;
+              const ready = unitAvailable(unit.id, sessions, blockedLessons, clearedUnits);
               return (
                 <li key={unit.id} className="py-5">
                   <div className="flex items-baseline gap-4">
@@ -107,7 +106,7 @@ function LearnCourse() {
                       <p className="mt-1 text-sm text-muted">
                         {progress.authoredCount > 0
                           ? !ready
-                            ? "4 lessons authored · Available after Unit 2"
+                            ? `4 lessons authored · Available after Unit ${index}`
                             : `${progress.authoredCount} lessons available · ${clearedUnits.includes(unit.id) ? "Cleared by challenge" : progress.status}`
                           : "4 lessons planned · Not yet authored"}
                       </p>

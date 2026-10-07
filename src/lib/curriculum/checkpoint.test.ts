@@ -213,7 +213,7 @@ test("Unit 2 challenge then actual U3 completion permits CP1, without fake U1/U2
   assert.equal(checkpointAvailable(sessionRecords, []), true);
   assert.equal(
     courseLearningAction(germanA1, sessionRecords, [], ["DE.A1.U01", "DE.A1.U02"]).unit!.id,
-    "DE.A1.U03",
+    "DE.A1.U04",
   );
 });
 test("durable submission, exact review, latest result gaps, same-family retry, owner/version/assessment isolation and atomic conflicts", async () => {
@@ -378,8 +378,8 @@ for (const correctCount of [5, 6, 7, 8])
       ),
     );
     assert.equal(
-      courseLearningAction(germanA1, {}, [], ["DE.A1.U01", "DE.A1.U02", ...clearances]).complete,
-      correctCount >= 6,
+      courseLearningAction(germanA1, {}, [], ["DE.A1.U01", "DE.A1.U02", ...clearances]).unit?.id,
+      correctCount >= 6 ? "DE.A1.U04" : "DE.A1.U03",
     );
     assert.notEqual(courseLearningAction(germanA1, {}, [], clearances).unit?.id, "DE.A1.U04");
     // Challenge clearance never bypasses Unit Check's historical traversal gate.

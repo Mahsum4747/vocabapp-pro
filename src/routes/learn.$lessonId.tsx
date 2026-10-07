@@ -1,4 +1,4 @@
-import { unit3Available } from "@/lib/curriculum/unit3-access";
+import { unitAvailable, priorUnitFor } from "@/lib/curriculum/unit-access";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { germanA1 } from "@/content/curriculum/german-a1";
 import { LessonScreen } from "@/components/learn/lesson-screen";
@@ -30,23 +30,25 @@ function LearnLesson() {
           {lesson ? "This lesson is not yet authored" : "Lesson not found"}
         </h1>
         <p className="mt-4 text-muted">
-          Twelve lessons are authored across Units 1–3. Unit 4 is not yet authored.
+          Twenty lessons are authored across Units 1–5. Unit 6 is not yet authored.
         </p>
         <Button asChild className="mt-6">
           <Link to="/learn">Return to Learn</Link>
         </Button>
       </main>
     );
-  if (lesson.unitId === "DE.A1.U03" && !unit3Available(sessions, blockedLessons, clearedUnits))
+  const prior = priorUnitFor(lesson.unitId);
+  const priorNumber = prior ? germanA1.units.indexOf(prior) + 1 : 0;
+  if (prior && !unitAvailable(lesson.unitId, sessions, blockedLessons, clearedUnits))
     return (
       <main className="mx-auto max-w-2xl px-page-safe py-12">
-        <h1 className="text-2xl font-semibold">Continue with Unit 2 first</h1>
+        <h1 className="text-2xl font-semibold">Continue with Unit {priorNumber} first</h1>
         <p className="mt-4 text-muted">
-          Finish Unit 2’s lessons or clear its challenge before studying Unit 3.
+          Finish Unit {priorNumber}’s lessons or clear its challenge before studying this unit.
         </p>
         <Button asChild className="mt-5">
-          <Link to="/learn/units/$unitId" params={{ unitId: "DE.A1.U02" }}>
-            Open Unit 2
+          <Link to="/learn/units/$unitId" params={{ unitId: prior.id }}>
+            Open Unit {priorNumber}
           </Link>
         </Button>
       </main>

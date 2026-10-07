@@ -1,3 +1,4 @@
+import { batchAChallengeForms } from "./german-a1-batch-a-challenges.server";
 import type { ChallengeItem } from "@/lib/curriculum/challenge";
 // Original challenge arrangements, separate from Unit Check items and evidence families.
 // Keys remain server-only; only public prompts/options are returned to the browser.
@@ -17,6 +18,7 @@ const choice = (
   stimulus?: string,
 ): ChallengeItem => ({ ...text(id, outcome, prompt, answer, stimulus), options });
 export const challengeForms: Record<string, Record<"A" | "B", readonly ChallengeItem[]>> = {
+  ...batchAChallengeForms,
   "DE.A1.U01": {
     A: [
       text(

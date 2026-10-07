@@ -1386,3 +1386,14 @@ CP1 is available after either all four compatible historical U03 lesson mileston
 Persistence remains `users/{verifiedUid}/unitChallenges/{encoded [trackId,releaseId,unitId]}` with nested `attempts/{UUID}`. CP1's 14 items, existing assessmentAttempts schema/path and outcome projection are unchanged. Clearance does not complete any lesson, enable the traversal-gated Unit 3 Check, alter Unit Check evidence, write FSRS/legacy/Paste progress or unlock Unit 4. No infrastructure, dependency, migration or production configuration changes.
 
 Validation: 79 focused challenge/CP1/Unit 3/assessment-family domain tests pass, including 5/6/7/8 scores on all challenge forms, general ratio bounds, old 6/7 scores and earlier qualifying history without writes, cooldown/alternate retry, immutable submissions/concurrency, owner isolation, U03 clearance eligibility, truthful lessons and unchanged Unit Check/legacy evidence, and recursive deletion including U03. Sixteen unique compiled desktop/mobile cases pass: eight challenge regressions (now exercising 6/8), six CP1 regressions and two new real U03 6/8-to-CP1 flows. Desktop/mobile screenshots were inspected; overflow/touch-target and browser/backend/migration seals pass. Typecheck, scoped ESLint, compile-only build, generated SSR syntax and diff-check pass. The first new browser fixture omitted its saved-attempt read handler; completed the fixture and reran both affected cases successfully. No full historical mega-suite, normal build, migration, deployment, merge or push.
+
+## German A1 Batch A — U4/U5 (2026-10-07)
+
+Branch `codex/karta-batch-a-u4-u5`, based on fetched main `b275aefc4261bebd6537079d157d181bdfd8622c`.
+Twenty authored lessons now cover Units 1–5. U4/U5 each add four original lessons,
+eight-item Check A/B and eight-item server-only Challenge A/B, preserving the 75%
+clearance rule. UI entry and durable lesson writes follow prior-unit historical
+completion or validated clearance; Check eligibility still requires actual lessons.
+No new persistence contracts, migrations, U6, CP2 or changes to U1–U3/CP1 content.
+See `KARTA_BATCH_A_U4_U5.md` for lexical boundaries, editorial corrections, precise
+validation evidence and repeatable commands. Local commit only; no push/deployment.

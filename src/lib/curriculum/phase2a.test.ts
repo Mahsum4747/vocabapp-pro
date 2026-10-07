@@ -317,10 +317,10 @@ test("next guided action follows Unit 1 then Unit 2, independently of assessment
   assert.equal(courseLearningAction(germanA1, states).lesson?.id, lessons[0].id);
   assert.ok(
     germanA1.lessons
-      .slice(12)
+      .slice(20)
       .every((lesson) => lesson.availability === "not-authored" && !lesson.steps.length),
   );
-  assert.throws(() => startLesson(germanA1.id, germanA1.lessons[12]));
+  assert.throws(() => startLesson(germanA1.id, germanA1.lessons[20]));
 });
 test("Unit 2 completion does not unlock Unit 1 check or generate assessment evidence", async () => {
   const f = fakeProgressDb();

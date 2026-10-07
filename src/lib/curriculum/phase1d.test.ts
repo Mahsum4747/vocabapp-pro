@@ -166,7 +166,7 @@ test("four durable lesson records derive unit completion; every write is isolate
   assert.equal(unitProgress(germanA1, unit, sessions).status, "Not started");
   const read = async () => {
     const rows = (await readCourseProgress(f.db, "u", COURSE_SCOPE)).lessons;
-    assert.equal(rows.length, 8);
+    assert.equal(rows.length, 20);
     sessions = Object.fromEntries(
       rows
         .filter((row) => row.progress)
