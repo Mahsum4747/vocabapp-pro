@@ -36,14 +36,18 @@ test("open authored units and study ahead with no invented evidence", async ({
   const f = courseProgressFixture();
   const h = await launch({ sets: [], handlers: f.handlers });
   await page.goto("/learn");
-  await expect(page.getByText("4 lessons available · Recommended", { exact: true })).toBeVisible();
+  await expect(
+    page.locator('[data-unit="DE.A1.U01"]').getByText("Recommended", { exact: true }),
+  ).toBeVisible();
   for (const n of [3, 4, 5]) {
     await expect(page.getByRole("link", { name: `Open Unit ${n}`, exact: true })).toBeVisible();
     await expect(
-      page.getByText(
-        `4 lessons available · Available to explore · Recommended after Unit ${n - 1}`,
-        { exact: true },
-      ),
+      page.locator(`[data-unit="DE.A1.U0${n}"]`).getByText("Available to explore", { exact: true }),
+    ).toBeVisible();
+    await expect(
+      page
+        .locator(`[data-unit="DE.A1.U0${n}"]`)
+        .getByText(`Recommended after Unit ${n - 1}`, { exact: true }),
     ).toBeVisible();
   }
   await expect(page.getByRole("link", { name: "Open Unit 6", exact: true })).toHaveCount(0);
@@ -86,7 +90,7 @@ test("open authored units and study ahead with no invented evidence", async ({
     ).toBeVisible();
     await page.goto("/learn");
     await expect(
-      page.getByText("4 lessons available · Recommended", { exact: true }),
+      page.locator('[data-unit="DE.A1.U01"]').getByText("Recommended", { exact: true }),
     ).toBeVisible();
   }
   expect(f.storage.writes.every((path) => path.includes("/courseProgress/"))).toBe(true);

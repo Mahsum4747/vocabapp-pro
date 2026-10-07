@@ -1435,3 +1435,36 @@ errors. An old U3 browser selector expected clearance to be a heading; updated
 it to match the explicit status text under the Unit Challenge heading and reran
 the affected desktop/mobile cases. No full historical suite, normal build,
 migration, deployment or push.
+
+## Learn presentation redesign (2026-10-07)
+
+Branch `codex/karta-learn-ui-redesign`, based on main
+`8fe7447f7acb68daba9f1d2f4603f5c7c2809504` (open-unit navigation merged).
+
+Learn now uses the existing serif token on a compact soft-green hero, a raised
+next-lesson card with saved-step progress and the existing primary CTA, and a
+two-column desktop/single-column mobile unit-card layout. Meaningful Lucide
+icons, status chips, warm surfaces and existing elevation tokens replace the
+flat document rows. Authored units remain open; planned units stay subdued and
+non-interactive. Desktop card actions align at the bottom. Header presentation
+adds an active Learn state, quieter New set action, and a search shortcut to the
+existing My Library destination; existing navigation destinations and account
+behavior remain unchanged. Mobile retains the existing bottom navigation.
+
+Recommendation, lesson history, challenge clearance, Unit Check, CP1, content,
+grading, schemas, auth and FSRS are untouched. Progress is actual saved lesson
+steps (or historical lessons for the revisit state), never synthetic completion
+from challenge clearance. No photos, illustrations, generated/decorative assets,
+new framework, migrations or build/Vercel configuration changes.
+
+Validation: 12 unique compiled desktop/mobile cases pass: six existing open-unit
+navigation/6-of-8 challenge/lesson-gated Check cases and six focused presentation
+cases covering start/continue/revisit CTAs, actual saved steps, completed and
+challenge-cleared chips, authored vs planned actions, 390px and dark 320px.
+The final visual polish was rechecked with the six affected presentation cases.
+Desktop, 390px and settled dark 320px screenshots inspected; no horizontal
+overflow, undersized mobile controls, unhandled server calls or uncaught browser
+errors. Typecheck, scoped ESLint, safe build:compile, generated SSR syntax and
+git diff --check pass. No full historical suite or manual deployment. Source and
+main pushes are authorized for this task, using fast-forward only after green
+validation and verification that origin/main remains the recorded base.
