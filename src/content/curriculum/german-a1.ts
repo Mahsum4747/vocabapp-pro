@@ -57,6 +57,7 @@ import { informationLessonSteps } from "./german-a1-information";
 import type { CurriculumRelease } from "@/lib/curriculum/types";
 import { entityLessonSteps } from "./german-a1-entities";
 import { identityLessonSteps } from "./german-a1-lesson";
+import { withPedagogyTransfer } from "./a1-pedagogy-transfer";
 
 /** Approved registry metadata; all twenty U01–U05 lessons have original prototype content.
  * English support is a placeholder, not a complete source-language overlay. */
@@ -1275,8 +1276,8 @@ export const germanA1: CurriculumRelease = {
       ],
       consolidatedSkillIds: [],
       availability: "prototype",
-      resumeContractVersion: 1,
-      steps: shoppingLessonSteps,
+      resumeContractVersion: 2,
+      steps: withPedagogyTransfer("DE.A1.U03.L01", shoppingLessonSteps),
     },
     {
       id: "DE.A1.U03.L02",
@@ -1293,8 +1294,8 @@ export const germanA1: CurriculumRelease = {
       ],
       consolidatedSkillIds: [],
       availability: "prototype",
-      resumeContractVersion: 1,
-      steps: replacementLessonSteps,
+      resumeContractVersion: 2,
+      steps: withPedagogyTransfer("DE.A1.U03.L02", replacementLessonSteps),
     },
     {
       id: "DE.A1.U03.L03",
@@ -1309,8 +1310,8 @@ export const germanA1: CurriculumRelease = {
       ],
       consolidatedSkillIds: [],
       availability: "prototype",
-      resumeContractVersion: 1,
-      steps: availabilityLessonSteps,
+      resumeContractVersion: 2,
+      steps: withPedagogyTransfer("DE.A1.U03.L03", availabilityLessonSteps),
     },
     {
       id: "DE.A1.U03.L04",
@@ -1325,8 +1326,8 @@ export const germanA1: CurriculumRelease = {
       ],
       consolidatedSkillIds: [],
       availability: "prototype",
-      resumeContractVersion: 1,
-      steps: preferenceLessonSteps,
+      resumeContractVersion: 2,
+      steps: withPedagogyTransfer("DE.A1.U03.L04", preferenceLessonSteps),
     },
     {
       id: "DE.A1.U04.L01",
@@ -1342,8 +1343,8 @@ export const germanA1: CurriculumRelease = {
       ],
       consolidatedSkillIds: [],
       availability: "prototype",
-      resumeContractVersion: 1,
-      steps: timeLessonSteps,
+      resumeContractVersion: 2,
+      steps: withPedagogyTransfer("DE.A1.U04.L01", timeLessonSteps),
     },
     {
       id: "DE.A1.U04.L02",
@@ -1359,8 +1360,8 @@ export const germanA1: CurriculumRelease = {
       ],
       consolidatedSkillIds: [],
       availability: "prototype",
-      resumeContractVersion: 1,
-      steps: prefixLessonSteps,
+      resumeContractVersion: 2,
+      steps: withPedagogyTransfer("DE.A1.U04.L02", prefixLessonSteps),
     },
     {
       id: "DE.A1.U04.L03",
@@ -1375,8 +1376,8 @@ export const germanA1: CurriculumRelease = {
       ],
       consolidatedSkillIds: [],
       availability: "prototype",
-      resumeContractVersion: 1,
-      steps: requestLessonSteps,
+      resumeContractVersion: 2,
+      steps: withPedagogyTransfer("DE.A1.U04.L03", requestLessonSteps),
     },
     {
       id: "DE.A1.U04.L04",
@@ -1391,8 +1392,8 @@ export const germanA1: CurriculumRelease = {
       ],
       consolidatedSkillIds: [],
       availability: "prototype",
-      resumeContractVersion: 1,
-      steps: ruleLessonSteps,
+      resumeContractVersion: 2,
+      steps: withPedagogyTransfer("DE.A1.U04.L04", ruleLessonSteps),
     },
     {
       id: "DE.A1.U05.L01",
@@ -1407,8 +1408,8 @@ export const germanA1: CurriculumRelease = {
       ],
       consolidatedSkillIds: [],
       availability: "prototype",
-      resumeContractVersion: 1,
-      steps: townLessonSteps,
+      resumeContractVersion: 2,
+      steps: withPedagogyTransfer("DE.A1.U05.L01", townLessonSteps),
     },
     {
       id: "DE.A1.U05.L02",
@@ -1422,8 +1423,8 @@ export const germanA1: CurriculumRelease = {
       ],
       consolidatedSkillIds: [],
       availability: "prototype",
-      resumeContractVersion: 1,
-      steps: helpLessonSteps,
+      resumeContractVersion: 2,
+      steps: withPedagogyTransfer("DE.A1.U05.L02", helpLessonSteps),
     },
     {
       id: "DE.A1.U05.L03",
@@ -1437,8 +1438,8 @@ export const germanA1: CurriculumRelease = {
       ],
       consolidatedSkillIds: [],
       availability: "prototype",
-      resumeContractVersion: 1,
-      steps: arrivalLessonSteps,
+      resumeContractVersion: 2,
+      steps: withPedagogyTransfer("DE.A1.U05.L03", arrivalLessonSteps),
     },
     {
       id: "DE.A1.U05.L04",
@@ -1453,8 +1454,8 @@ export const germanA1: CurriculumRelease = {
       ],
       consolidatedSkillIds: [],
       availability: "prototype",
-      resumeContractVersion: 1,
-      steps: invitationLessonSteps,
+      resumeContractVersion: 2,
+      steps: withPedagogyTransfer("DE.A1.U05.L04", invitationLessonSteps),
     },
     {
       id: "DE.A1.U06.L01",
@@ -1468,8 +1469,8 @@ export const germanA1: CurriculumRelease = {
       ],
       consolidatedSkillIds: [],
       availability: "prototype",
-      resumeContractVersion: 1,
-      steps: pastFrameSteps,
+      resumeContractVersion: 2,
+      steps: withPedagogyTransfer("DE.A1.U06.L01", pastFrameSteps),
     },
     {
       id: "DE.A1.U06.L02",
@@ -1483,8 +1484,8 @@ export const germanA1: CurriculumRelease = {
       ],
       consolidatedSkillIds: [],
       availability: "prototype",
-      resumeContractVersion: 1,
-      steps: pastActionsSteps,
+      resumeContractVersion: 2,
+      steps: withPedagogyTransfer("DE.A1.U06.L02", pastActionsSteps),
     },
     {
       id: "DE.A1.U06.L03",
@@ -1499,8 +1500,8 @@ export const germanA1: CurriculumRelease = {
       ],
       consolidatedSkillIds: [],
       availability: "prototype",
-      resumeContractVersion: 1,
-      steps: changedArrangementSteps,
+      resumeContractVersion: 2,
+      steps: withPedagogyTransfer("DE.A1.U06.L03", changedArrangementSteps),
     },
     {
       id: "DE.A1.U06.L04",
@@ -1514,8 +1515,8 @@ export const germanA1: CurriculumRelease = {
         "DE.A1.WRITING.TASK_FULFILMENT",
       ],
       availability: "prototype",
-      resumeContractVersion: 1,
-      steps: usefulMessageSteps,
+      resumeContractVersion: 2,
+      steps: withPedagogyTransfer("DE.A1.U06.L04", usefulMessageSteps),
     },
     {
       id: "DE.A1.U07.L01",
@@ -1531,8 +1532,8 @@ export const germanA1: CurriculumRelease = {
         "DE.A1.VOCABULARY.NUMERIC_TIME",
       ],
       availability: "prototype",
-      resumeContractVersion: 1,
-      steps: travelTicketSteps,
+      resumeContractVersion: 2,
+      steps: withPedagogyTransfer("DE.A1.U07.L01", travelTicketSteps),
     },
     {
       id: "DE.A1.U07.L02",
@@ -1548,8 +1549,8 @@ export const germanA1: CurriculumRelease = {
         "DE.A1.VOCABULARY.COLLOCATION",
       ],
       availability: "prototype",
-      resumeContractVersion: 1,
-      steps: accommodationSteps,
+      resumeContractVersion: 2,
+      steps: withPedagogyTransfer("DE.A1.U07.L02", accommodationSteps),
     },
     {
       id: "DE.A1.U07.L03",
@@ -1566,8 +1567,8 @@ export const germanA1: CurriculumRelease = {
         "DE.A1.WRITING.SHORT_MESSAGE",
       ],
       availability: "prototype",
-      resumeContractVersion: 1,
-      steps: routeChangeSteps,
+      resumeContractVersion: 2,
+      steps: withPedagogyTransfer("DE.A1.U07.L03", routeChangeSteps),
     },
     {
       id: "DE.A1.U07.L04",
@@ -1584,7 +1585,7 @@ export const germanA1: CurriculumRelease = {
       ],
       availability: "prototype",
       resumeContractVersion: 1,
-      steps: travelMessageSteps,
+      steps: withPedagogyTransfer("DE.A1.U07.L04", travelMessageSteps),
     },
     {
       id: "DE.A1.U08.L01",
@@ -1600,8 +1601,8 @@ export const germanA1: CurriculumRelease = {
         "DE.A1.VOCABULARY.CONTEXT_SENSE",
       ],
       availability: "prototype",
-      resumeContractVersion: 1,
-      steps: courseInformationSteps,
+      resumeContractVersion: 2,
+      steps: withPedagogyTransfer("DE.A1.U08.L01", courseInformationSteps),
     },
     {
       id: "DE.A1.U08.L02",
@@ -1617,8 +1618,8 @@ export const germanA1: CurriculumRelease = {
         "DE.A1.WRITING.GIVE_INFORMATION",
       ],
       availability: "prototype",
-      resumeContractVersion: 1,
-      steps: obligationSteps,
+      resumeContractVersion: 2,
+      steps: withPedagogyTransfer("DE.A1.U08.L02", obligationSteps),
     },
     {
       id: "DE.A1.U08.L03",
@@ -1634,8 +1635,8 @@ export const germanA1: CurriculumRelease = {
         "DE.A1.VOCABULARY.FRAME_USE",
       ],
       availability: "prototype",
-      resumeContractVersion: 1,
-      steps: practicalInformationSteps,
+      resumeContractVersion: 2,
+      steps: withPedagogyTransfer("DE.A1.U08.L03", practicalInformationSteps),
     },
     {
       id: "DE.A1.U08.L04",
@@ -1651,8 +1652,8 @@ export const germanA1: CurriculumRelease = {
         "DE.A1.GRAMMAR.NEGATION.FOCUS",
       ],
       availability: "prototype",
-      resumeContractVersion: 1,
-      steps: revisionSteps,
+      resumeContractVersion: 2,
+      steps: withPedagogyTransfer("DE.A1.U08.L04", revisionSteps),
     },
     {
       id: "DE.A1.U09.L01",
@@ -1668,8 +1669,8 @@ export const germanA1: CurriculumRelease = {
         "DE.A1.VOCABULARY.NOUN_BUNDLE",
       ],
       availability: "prototype",
-      resumeContractVersion: 1,
-      steps: unit9Lesson1Steps,
+      resumeContractVersion: 2,
+      steps: withPedagogyTransfer("DE.A1.U09.L01", unit9Lesson1Steps),
     },
     {
       id: "DE.A1.U09.L02",
@@ -1685,8 +1686,8 @@ export const germanA1: CurriculumRelease = {
         "DE.A1.GRAMMAR.IMPERATIVE.SIE",
       ],
       availability: "prototype",
-      resumeContractVersion: 1,
-      steps: unit9Lesson2Steps,
+      resumeContractVersion: 2,
+      steps: withPedagogyTransfer("DE.A1.U09.L02", unit9Lesson2Steps),
     },
     {
       id: "DE.A1.U09.L03",
@@ -1702,8 +1703,8 @@ export const germanA1: CurriculumRelease = {
         "DE.A1.VOCABULARY.TRANSFER_SELECTION",
       ],
       availability: "prototype",
-      resumeContractVersion: 1,
-      steps: unit9Lesson3Steps,
+      resumeContractVersion: 2,
+      steps: withPedagogyTransfer("DE.A1.U09.L03", unit9Lesson3Steps),
     },
     {
       id: "DE.A1.U09.L04",
@@ -1719,8 +1720,8 @@ export const germanA1: CurriculumRelease = {
         "DE.A1.READING.MAIN_PURPOSE",
       ],
       availability: "prototype",
-      resumeContractVersion: 1,
-      steps: unit9Lesson4Steps,
+      resumeContractVersion: 2,
+      steps: withPedagogyTransfer("DE.A1.U09.L04", unit9Lesson4Steps),
     },
     {
       id: "DE.A1.U10.L01",
@@ -1736,8 +1737,8 @@ export const germanA1: CurriculumRelease = {
         "DE.A1.READING.SELECT_RELEVANT_TEXT",
       ],
       availability: "prototype",
-      resumeContractVersion: 1,
-      steps: unit10Lesson1Steps,
+      resumeContractVersion: 2,
+      steps: withPedagogyTransfer("DE.A1.U10.L01", unit10Lesson1Steps),
     },
     {
       id: "DE.A1.U10.L02",
@@ -1754,8 +1755,8 @@ export const germanA1: CurriculumRelease = {
         "DE.A1.VOCABULARY.ACTIVE_RETRIEVAL",
       ],
       availability: "prototype",
-      resumeContractVersion: 1,
-      steps: unit10Lesson2Steps,
+      resumeContractVersion: 2,
+      steps: withPedagogyTransfer("DE.A1.U10.L02", unit10Lesson2Steps),
     },
     {
       id: "DE.A1.U10.L03",
@@ -1772,8 +1773,8 @@ export const germanA1: CurriculumRelease = {
         "DE.A1.VOCABULARY.TRANSFER_SELECTION",
       ],
       availability: "prototype",
-      resumeContractVersion: 1,
-      steps: unit10Lesson3Steps,
+      resumeContractVersion: 2,
+      steps: withPedagogyTransfer("DE.A1.U10.L03", unit10Lesson3Steps),
     },
     {
       id: "DE.A1.U10.L04",
@@ -1788,8 +1789,8 @@ export const germanA1: CurriculumRelease = {
         "DE.A1.VOCABULARY.TRANSFER_SELECTION",
       ],
       availability: "prototype",
-      resumeContractVersion: 1,
-      steps: unit10Lesson4Steps,
+      resumeContractVersion: 2,
+      steps: withPedagogyTransfer("DE.A1.U10.L04", unit10Lesson4Steps),
     },
   ],
 };

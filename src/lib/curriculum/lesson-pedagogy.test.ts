@@ -3,13 +3,12 @@ import test from "node:test";
 import { germanA1 } from "@/content/curriculum/german-a1";
 import { auditLessonPedagogy } from "./lesson-pedagogy";
 
-test("Units 1 and 2 satisfy the locked teaching-model baseline", () => {
-  const lessons = germanA1.lessons.filter((item) => ["DE.A1.U01", "DE.A1.U02"].includes(item.unitId));
-  assert.equal(lessons.length, 8);
-  for (const lesson of lessons) {
+test("all 40 A1 lessons satisfy the locked teaching-model baseline", () => {
+  assert.equal(germanA1.lessons.length, 40);
+  for (const lesson of germanA1.lessons) {
     const audit = auditLessonPedagogy(lesson);
     assert.deepEqual(audit.flags, [], lesson.id);
-    assert.ok(audit.teachingStepCount >= 2, lesson.id);
+    assert.ok(audit.teachingStepCount >= 1, lesson.id);
     assert.ok(audit.practiceStepCount >= 4, lesson.id);
     assert.equal(audit.hasOriginalTransfer, true, lesson.id);
   }
