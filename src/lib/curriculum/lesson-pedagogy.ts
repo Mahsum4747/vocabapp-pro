@@ -42,7 +42,7 @@ export function auditLessonPedagogy(lesson: LessonDefinition): LessonPedagogyAud
       step.purpose === "practice" &&
       step.kind === "text" &&
       step.stage === "produce" &&
-      Boolean(step.example || /use these|complete|using|supplied/i.test(step.prompt)),
+      Boolean(step.example || /\b(use|complete|using|supplied|begin|join|build)\b/i.test(step.prompt)),
   );
   if (!hasSupportedProduction) flags.push("missing_supported_production");
 

@@ -3,9 +3,9 @@ import test from "node:test";
 import { germanA1 } from "@/content/curriculum/german-a1";
 import { auditLessonPedagogy } from "./lesson-pedagogy";
 
-test("all Unit 1 lessons satisfy the locked teaching-model baseline", () => {
-  const lessons = germanA1.lessons.filter((item) => item.unitId === "DE.A1.U01");
-  assert.equal(lessons.length, 4);
+test("Units 1 and 2 satisfy the locked teaching-model baseline", () => {
+  const lessons = germanA1.lessons.filter((item) => ["DE.A1.U01", "DE.A1.U02"].includes(item.unitId));
+  assert.equal(lessons.length, 8);
   for (const lesson of lessons) {
     const audit = auditLessonPedagogy(lesson);
     assert.deepEqual(audit.flags, [], lesson.id);
