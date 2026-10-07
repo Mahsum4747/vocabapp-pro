@@ -2,13 +2,11 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { authMiddleware } from "./auth/middleware";
 import { GRAMMAR_RULES, type GrammarRuleTopic } from "@/content/grammar-rules";
-
-export const DIAGNOSTIC_TARGET_TOPICS = {
-  "DE.GRAMMAR.LEXICAL.HELFEN_DAT": "helfen-dativ",
-  "DE.GRAMMAR.PREPOSITION.MIT_DAT": "mit-dativ",
-} as const satisfies Record<string, GrammarRuleTopic>;
-
-export type DiagnosticTargetId = keyof typeof DIAGNOSTIC_TARGET_TOPICS;
+import {
+  DIAGNOSTIC_TARGET_TOPICS,
+  remediationNextReviewAt,
+  type DiagnosticTargetId,
+} from "./grammar-remediation";
 
 const recordSchema = z.object({
   operationId: z.string().uuid(),
@@ -30,10 +28,6 @@ export type GrammarRemediationRecord = {
 
 function isRuleTopic(value: string): value is GrammarRuleTopic {
   return Object.prototype.hasOwnProperty.call(GRAMMAR_RULES, value);
-}
-
-export function remediationNextReviewAt(completedAt: number): number {
-  return completedAt + 24 * 60 * 60 * 1000;
 }
 
 export const recordGrammarRemediation = createServerFn({ method: "POST" })
