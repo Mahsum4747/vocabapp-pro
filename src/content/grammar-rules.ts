@@ -24,7 +24,9 @@ export type GrammarRuleTopic =
   | "modalpartikeln"
   | "konjunktiv1"
   | "subjektive-modalverben"
-  | "passiversatzformen"\n  | "helfen-dativ"\n  | "mit-dativ";
+  | "passiversatzformen"
+  | "helfen-dativ"
+  | "mit-dativ";
 
 export interface GrammarRule {
   topic: GrammarRuleTopic;
