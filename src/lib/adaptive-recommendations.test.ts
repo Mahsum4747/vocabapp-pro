@@ -470,6 +470,83 @@ test("routing capability computed from current active German content, determinis
     undefined,
   );
 });
+
+test("repeated narrow diagnostic recommends exact reviewed pattern", () => {
+  const s = experiencedSignals();
+  s.diagnostics.gaps = [{
+    key: "grammar:lexical_government:DE.GRAMMAR.LEXICAL.HELFEN_DAT",
+    domain: "grammar",
+    category: "lexical_government",
+    targetId: "DE.GRAMMAR.LEXICAL.HELFEN_DAT",
+    targetLabel: "helfen + Dativ",
+    observationCount: 2,
+    independentObservationCount: 2,
+    confidence: 0.92,
+    firstSeenAt: NOW - 3 * DAY,
+    lastSeenAt: NOW - 2 * DAY,
+  }];
+  const r = plan(s).primary!;
+  assert.equal(r.title, "Review helfen + Dativ");
+  assert.equal(r.route, "/grammar/rules#helfen-dativ");
+  assert.ok(r.evidence.sources.includes("diagnostic"));
+});
+
+test("fresh completed remediation suppresses immediate diagnostic nagging", () => {
+  const s = experiencedSignals();
+  s.diagnostics.gaps = [{
+    key: "grammar:lexical_government:DE.GRAMMAR.LEXICAL.HELFEN_DAT",
+    domain: "grammar",
+    category: "lexical_government",
+    targetId: "DE.GRAMMAR.LEXICAL.HELFEN_DAT",
+    targetLabel: "helfen + Dativ",
+    observationCount: 3,
+    independentObservationCount: 3,
+    confidence: 0.95,
+    firstSeenAt: NOW - 4 * DAY,
+    lastSeenAt: NOW - DAY,
+  }];
+  s.remediation.recent = [{
+    id: "practice-1",
+    topic: "helfen-dativ",
+    diagnosticTargetId: "DE.GRAMMAR.LEXICAL.HELFEN_DAT",
+    correctCount: 4,
+    totalCount: 5,
+    completedAt: NOW - 60_000,
+    nextReviewAt: NOW + DAY - 60_000,
+  }];
+  assert.equal(plan(s).primary, null);
+});
+
+test("due remediation becomes a delayed recheck, never a mastery claim", () => {
+  const s = experiencedSignals();
+  s.diagnostics.gaps = [{
+    key: "grammar:case_form:DE.GRAMMAR.PREPOSITION.MIT_DAT",
+    domain: "grammar",
+    category: "case_form",
+    targetId: "DE.GRAMMAR.PREPOSITION.MIT_DAT",
+    targetLabel: "mit + Dativ",
+    observationCount: 2,
+    independentObservationCount: 2,
+    confidence: 0.88,
+    firstSeenAt: NOW - 5 * DAY,
+    lastSeenAt: NOW - 3 * DAY,
+  }];
+  s.remediation.recent = [{
+    id: "practice-2",
+    topic: "mit-dativ",
+    diagnosticTargetId: "DE.GRAMMAR.PREPOSITION.MIT_DAT",
+    correctCount: 5,
+    totalCount: 5,
+    completedAt: NOW - 2 * DAY,
+    nextReviewAt: NOW - DAY,
+  }];
+  const r = plan(s).primary!;
+  assert.equal(r.title, "Recheck mit + Dativ");
+  assert.match(r.reason, /fresh set/i);
+  assert.doesNotMatch(r.reason, /master|resolved|proficient/i);
+  assert.deepEqual(new Set(r.evidence.sources), new Set(["diagnostic", "remediation"]));
+});
+
 test("engine imports no storage, auth, AI, runtime clock or random API", () => {
   const source = readFileSync(new URL("./adaptive-recommendations.ts", import.meta.url), "utf8");
   assert.doesNotMatch(
