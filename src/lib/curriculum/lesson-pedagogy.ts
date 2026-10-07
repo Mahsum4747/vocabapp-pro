@@ -38,11 +38,11 @@ export function auditLessonPedagogy(lesson: LessonDefinition): LessonPedagogyAud
   }
 
   const hasSupportedProduction = lesson.steps.some(
-    (step) =>
+    (step, index) =>
       step.purpose === "practice" &&
       step.kind === "text" &&
       step.stage === "produce" &&
-      Boolean(step.example || /\b(use|complete|using|supplied|begin|join|build)\b/i.test(step.prompt)),
+      lesson.steps.slice(0, index).some((earlier) => earlier.purpose === "teach"),
   );
   if (!hasSupportedProduction) flags.push("missing_supported_production");
 
