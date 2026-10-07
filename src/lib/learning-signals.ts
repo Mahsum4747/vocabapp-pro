@@ -19,6 +19,11 @@ import { readStreak, todayUTC, type StoredStreak } from "./streak-rules";
 import { CURRICULUM_TOPIC_IDS, CEFR_LEVEL } from "./grammar-curriculum";
 import { RECENT_WINDOW } from "./progress-window";
 import { ERROR_CATEGORIES, type ErrorCategory } from "./write-feedback-types";
+import {
+  buildLearnerGapStates,
+  type DiagnosticObservation,
+  type LearnerGapState,
+} from "./learner-diagnostics";
 
 export const WRITING_SIGNAL_WINDOW = 20;
 export const REVIEW_SIGNAL_WINDOW = 100;
@@ -84,6 +89,7 @@ export type LearningSignals = {
     dominantWeaknesses: { article: DrillSignal; case: DrillSignal };
   };
   grammar: { topics: GrammarTopicSignal[]; pasteTopics: GrammarTopicSignal[] };
+  diagnostics: { gaps: LearnerGapState[]; observationCount: number };
   reading: {
     levels: Record<ReadingLevel, ReadingLevelSignal>;
     overallBundledAccuracy: AccuracySignal;
@@ -125,6 +131,7 @@ export type LearningSignalsInput = {
   grammarPaste: (Record<string, unknown> & { id: string })[];
   lesenPaste: (Record<string, unknown> & { id: string })[];
   writing: { id: string; createdAt?: unknown; errorTags?: unknown }[];
+  diagnostics: DiagnosticObservation[];
   totalWritingSubmissions: number;
   dailyStats: { date: string; data: unknown }[];
   profile: unknown;
@@ -322,6 +329,7 @@ export function buildLearningSignals(input: LearningSignalsInput): LearningSigna
       lastSeenAt: latest(times),
     };
   }).filter((e) => e.count > 0);
+  const diagnosticGaps = buildLearnerGapStates(input.diagnostics.filter((row) => row.occurredAt <= now));
   const settings = readUserSettings(input.profile);
   const calendar = signalDayKeys(now, settings.timeZone);
   const days = new Map(input.dailyStats.map((r) => [r.date, readDailyStats(r.date, r.data)]));
@@ -349,6 +357,7 @@ export function buildLearningSignals(input: LearningSignalsInput): LearningSigna
       dominantWeaknesses: { article: drill("article"), case: drill("case") },
     },
     grammar: { topics, pasteTopics: input.grammarPaste.map((p) => topic(p.id, p, "paste")) },
+    diagnostics: { gaps: diagnosticGaps, observationCount: input.diagnostics.length },
     reading: {
       levels,
       overallBundledAccuracy: accuracySignal(input.grammar.lesen),
