@@ -4,7 +4,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/app-shell";
 import { AuthGate } from "@/components/auth-gate";
 import { EmptyState } from "@/components/empty-state";
-import { GrammarRuleContent } from "@/components/grammar-rule-content";
+import { GrammarRuleContent } from "@/components/grammar-rule-content";\nimport { PersonalGrammarNoteGenerator } from "@/components/personal-grammar-note-generator";
 import { Input } from "@/components/ui/input";
 import { GRAMMAR_RULES, type GrammarRuleTopic } from "@/content/grammar-rules";
 
@@ -130,7 +130,7 @@ function GrammarRulesPage() {
                       </button>
                       {!isCollapsed ? (
                         <div className="mt-2 pl-[22px]">
-                          <GrammarRuleContent rule={rule} />
+                          <GrammarRuleContent rule={rule} />\n                          <PersonalGrammarNoteGenerator topic={topic} />
                         </div>
                       ) : null}
                     </div>
