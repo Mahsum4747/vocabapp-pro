@@ -49,6 +49,7 @@ export function fixtureSignals(): LearningSignals {
     },
     grammar: { topics: CURRICULUM_TOPIC_IDS.map((id) => fixtureTopic(id)), pasteTopics: [] },
     diagnostics: { gaps: [], observationCount: 0 },
+    remediation: { recent: [] },
     reading: {
       levels: Object.fromEntries(
         (["A1", "A2", "B1", "B2"] as ReadingLevel[]).map((level, i) => [
