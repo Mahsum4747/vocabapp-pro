@@ -1,5 +1,6 @@
 import { evidenceLevel } from "./learning-evidence";
 import type { EvidenceLevel, LearningSignals, GrammarTopicSignal } from "./learning-signals";
+import { shouldRecommendRemediation } from "./learner-diagnostics";
 import {
   practiceDestination,
   RECOMMENDATION_ROUTES,
@@ -31,7 +32,7 @@ export type StudyRecommendation = {
   evidence: {
     level: EvidenceLevel;
     sources: (
-      "schedule" | "vocabulary" | "drill" | "grammar" | "reading" | "writing" | "exploration"
+      "schedule" | "vocabulary" | "drill" | "grammar" | "reading" | "writing" | "diagnostic" | "exploration"
     )[];
     metrics: Record<string, number | string | null>;
   };
@@ -264,6 +265,35 @@ export function buildAdaptiveStudyPlan(signals: LearningSignals): AdaptiveStudyP
       );
     }
   }
+  for (const gap of signals.diagnostics.gaps) {
+    if (!shouldRecommendRemediation(gap) || !gap.targetId) continue;
+    const dest = practiceDestination(gap.targetId, signals);
+    if (!dest) continue;
+    const score =
+      66 +
+      Math.round(gap.confidence * 14) +
+      Math.min(8, gap.independentObservationCount * 2) +
+      recency(now, gap.lastSeenAt);
+    push(`diagnostic:${gap.targetId}`, score, {
+      domain: gap.domain === "reading" ? "reading" : gap.domain === "writing" ? "writing" : "grammar",
+      title: `Review ${gap.targetLabel ?? "this pattern"}`,
+      reason: `Karta noticed ${gap.independentObservationCount} independent difficulty${gap.independentObservationCount === 1 ? "" : "ies"} with ${gap.targetLabel ?? "this pattern"}. Review the exact pattern before doing broader practice.`,
+      route: dest.route,
+      action: { type: "grammar_practice", targetId: gap.targetId },
+      evidence: {
+        level: evidenceLevel(gap.independentObservationCount),
+        sources: ["diagnostic"],
+        metrics: {
+          diagnosticCategory: gap.category,
+          diagnosticConfidence: Math.round(gap.confidence * 100),
+          diagnosticObservations: gap.observationCount,
+          diagnosticIndependent: gap.independentObservationCount,
+          diagnosticLastSeenAt: gap.lastSeenAt,
+        },
+      },
+    });
+  }
+
   for (const error of [...signals.writing.recentErrorCategories].sort((x, y) =>
     x.category.localeCompare(y.category),
   )) {
