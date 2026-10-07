@@ -10,7 +10,7 @@ import { GRAMMAR_RULES } from "@/content/grammar-rules";
 import {
   listPersonalGrammarNotes,
   type SavedPersonalGrammarNote,
-} from "@/lib/personal-grammar-notes.server";
+} from "@/lib/personal-grammar-notes";
 
 export const Route = createFileRoute("/grammar/notes")({
   component: PersonalGrammarNotesRoute,
