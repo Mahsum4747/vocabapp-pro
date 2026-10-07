@@ -5,10 +5,10 @@ import { challengeFixture } from "./support/challenge";
 import { challengeForms } from "../src/content/curriculum/german-a1-challenges.server";
 import { CHALLENGE_RETRY_MS } from "../src/lib/curriculum/challenge";
 import { undersizedTargets } from "./support/touch";
-async function fill(page: Page, unitId: string, formId: "A" | "B" = "A", fail = false) {
+async function fill(page: Page, unitId: string, formId: "A" | "B" = "A", wrongCount = 0) {
   for (const [index, item] of challengeForms[unitId][formId].entries()) {
     await expect(page.getByRole("heading", { name: item.prompt, exact: true })).toBeVisible();
-    const answer = fail && index === 0 ? "wrong" : item.acceptedAnswers[0];
+    const answer = index < wrongCount ? "wrong" : item.acceptedAnswers[0];
     if (item.options) await page.getByRole("radio", { name: answer, exact: true }).check();
     else
       await page
@@ -20,7 +20,7 @@ async function fill(page: Page, unitId: string, formId: "A" | "B" = "A", fail = 
 async function fits(page: Page) {
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 }
-test("Unit 1 and 2 clearance persists, guides progression and leaves every lesson untouched", async ({
+test("6/8 Unit 1 and 2 clearance persists, guides progression and leaves every lesson untouched", async ({
   page,
   launch,
   isMobile,
@@ -48,7 +48,7 @@ test("Unit 1 and 2 clearance persists, guides progression and leaves every lesso
       path: `screenshots/challenge-${unitId}-${info.project.name}.png`,
       fullPage: true,
     });
-    await fill(page, unitId);
+    await fill(page, unitId, "A", 2);
     await page.getByRole("button", { name: "Submit challenge", exact: true }).click();
     await expect(page.getByRole("heading", { name: "Cleared by challenge" })).toBeVisible();
     await page.evaluate(() => window.scrollTo(0, 0));
@@ -103,7 +103,7 @@ test("failed challenge reveals no keys, permits study and a delayed alternate re
   await launch({ sets: [], handlers: fixture.handlers });
   await page.goto("/learn/challenge?unitId=DE.A1.U02");
   await page.getByRole("button", { name: "Start unit challenge", exact: true }).click();
-  await fill(page, "DE.A1.U02", "A", true);
+  await fill(page, "DE.A1.U02", "A", 3);
   await page.getByRole("button", { name: "Submit challenge", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Review these lessons" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Try again later" })).toBeVisible();

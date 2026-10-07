@@ -187,7 +187,7 @@ export function LessonScreen({
               </p>
             )}
             {lesson.unitId === "DE.A1.U03" &&
-              checkpointAvailable(sessions, blockedLessons) && (
+              checkpointAvailable(sessions, blockedLessons, clearedUnits) && (
                 <Suspense fallback={<p className="mt-6 text-sm text-muted">Loading checkpoint…</p>}>
                   <CheckpointEntry />
                 </Suspense>

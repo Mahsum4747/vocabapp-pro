@@ -99,7 +99,7 @@ function LearnUnit() {
             )}
             {progress &&
               progress.authoredCount > 0 &&
-              ["DE.A1.U01", "DE.A1.U02"].includes(unitId) && (
+              ["DE.A1.U01", "DE.A1.U02", "DE.A1.U03"].includes(unitId) && (
                 <section className="mt-6 border-t border-border pt-5" aria-label="Unit challenge">
                   {cleared ? (
                     <>
@@ -129,8 +129,8 @@ function LearnUnit() {
                         </Link>
                       </Button>
                       <p className="mt-2 text-sm text-muted">
-                        An independent challenge for progression. All eight answers must meet the
-                        requirements.
+                        An independent challenge for progression. At least 75% of answers must meet
+                        the requirements (six of eight).
                       </p>
                     </>
                   )}
@@ -146,7 +146,7 @@ function LearnUnit() {
               </Suspense>
             )}
             {unitId === "DE.A1.U03" &&
-              checkpointAvailable(sessions, blockedLessons) && (
+              checkpointAvailable(sessions, blockedLessons, clearedUnits) && (
                 <Suspense fallback={<p className="mt-6 text-sm text-muted">Loading checkpoint…</p>}>
                   <CheckpointEntry />
                 </Suspense>

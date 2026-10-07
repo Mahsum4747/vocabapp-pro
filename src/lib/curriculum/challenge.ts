@@ -69,3 +69,16 @@ export type ChallengeView = {
   serverNow: number;
 };
 export const CHALLENGE_RETRY_MS = 24 * 60 * 60 * 1000;
+
+/** Progression clearance only; this is not a mastery or proficiency measure. */
+export const CHALLENGE_CLEARANCE_RATIO = 0.75;
+export function challengeScoreClears(correctCount: number, total: number): boolean {
+  return (
+    Number.isInteger(total) &&
+    total > 0 &&
+    Number.isInteger(correctCount) &&
+    correctCount >= 0 &&
+    correctCount <= total &&
+    correctCount / total >= CHALLENGE_CLEARANCE_RATIO
+  );
+}

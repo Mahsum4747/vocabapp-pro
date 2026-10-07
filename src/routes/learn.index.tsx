@@ -75,7 +75,7 @@ function LearnCourse() {
             )
           )}
         </div>
-        {checkpointAvailable(sessions, blockedLessons) && (
+        {checkpointAvailable(sessions, blockedLessons, clearedUnits) && (
           <Suspense fallback={<p className="mt-6 text-sm text-muted">Loading checkpoint…</p>}>
             <CheckpointEntry />
           </Suspense>

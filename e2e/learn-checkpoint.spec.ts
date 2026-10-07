@@ -157,7 +157,7 @@ test("CP1 eligibility, unfinished refresh privacy, leave warning and dark 320px"
   await page.goto("/learn");
   await expect(page.getByRole("link", { name: "Open Checkpoint 1" })).toHaveCount(0);
   await page.goto("/learn/check?assessment=DE.A1.CP1.PROTOTYPE.1");
-  await expect(page.getByText(/Finish the four Unit 3 lessons before Checkpoint 1/)).toBeVisible();
+  await expect(page.getByText(/Finish the four Unit 3 lessons or clear Unit 3 by challenge/)).toBeVisible();
   await expect(page.getByRole("button", { name: "Start Checkpoint 1" })).toHaveCount(0);
   for (let i = 0; i < 12; i++) await f.course.advanceLesson(i, germanA1.lessons[i].steps.length);
   await page.reload();

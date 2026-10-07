@@ -1,11 +1,12 @@
 import { createHash } from "node:crypto";
-import type { Firestore } from "firebase-admin/firestore";
+import type { Firestore, Transaction } from "firebase-admin/firestore";
 import { challengeForms } from "@/content/curriculum/german-a1-challenges.server";
 import { userDocumentPaths } from "../user-data-inventory";
 import { normalizeLessonAnswer } from "./lesson-session";
 import { COURSE_SCOPE } from "./course-progress-session";
 import {
   CHALLENGE_RETRY_MS,
+  challengeScoreClears,
   challengeScopeSchema,
   challengeStartSchema,
   challengeSubmitSchema,
@@ -73,7 +74,15 @@ function attempt(raw: unknown, owner: string, scope: ChallengeScope, id: string)
     (value.status === "submitted"
       ? value.submittedAt === null ||
         value.correctCount === null ||
-        value.passed !== (value.correctCount === 8) ||
+        value.passed === null ||
+        // Accepted historical 6/8 and 7/8 failures retain their original verdict.
+        (value.passed &&
+          !challengeScoreClears(
+            value.correctCount,
+            challengeForms[scope.unitId][value.formId].length,
+          )) ||
+        (!value.passed &&
+          value.correctCount === challengeForms[scope.unitId][value.formId].length) ||
         value.submissionDigest === null
       : value.submittedAt !== null ||
         value.passed !== null ||
@@ -82,6 +91,31 @@ function attempt(raw: unknown, owner: string, scope: ChallengeScope, id: string)
   )
     throw Error("Invalid challenge attempt.");
   return value;
+}
+/** Read-only projection: earlier qualifying attempts also keep clearance monotonic. */
+async function clearanceSummary(
+  db: Firestore,
+  owner: string,
+  scope: ChallengeScope,
+  saved: ChallengeSummary,
+  tx?: Transaction,
+): Promise<ChallengeSummary> {
+  if (saved.clearedAt !== null || saved.attemptCount === 0) return saved;
+  const collection = db.collection(`${challengePath(owner, scope)}/attempts`);
+  const rows = tx ? await tx.get(collection) : await collection.get();
+  const qualifying = rows.docs
+    .map((row) => attempt(row.data(), owner, scope, row.id))
+    .filter(
+      (row) =>
+        row.status === "submitted" &&
+        challengeScoreClears(row.correctCount!, challengeForms[scope.unitId][row.formId].length),
+    );
+  if (!qualifying.length) return saved;
+  return {
+    ...saved,
+    clearedAt: Math.min(...qualifying.map((row) => row.submittedAt!)),
+    retryAfter: null,
+  };
 }
 function view(
   summary: ChallengeSummary,
@@ -105,7 +139,7 @@ export async function readUnitChallenge(
   const scope = scopeOf(input),
     path = challengePath(owner, scope);
   const row = (await db.getAll(db.doc(path)))[0];
-  const saved = summary(row.data(), owner, scope);
+  const saved = await clearanceSummary(db, owner, scope, summary(row.data(), owner, scope));
   const id = saved.activeAttemptId ?? saved.lastAttemptId;
   const savedAttempt = id
     ? attempt((await db.getAll(db.doc(`${path}/attempts/${id}`)))[0].data(), owner, scope, id)
@@ -121,7 +155,7 @@ export async function readChallengeClearances(
     Object.keys(challengeForms).map(async (unitId) => {
       const requested = scopeOf({ ...scope, unitId });
       const row = (await db.getAll(db.doc(challengePath(owner, requested))))[0];
-      return summary(row.data(), owner, requested);
+      return clearanceSummary(db, owner, requested, summary(row.data(), owner, requested));
     }),
   );
   return results.filter((row) => row.clearedAt !== null).map((row) => row.unitId);
@@ -142,7 +176,13 @@ export async function startChallenge(
   return db.runTransaction(async (tx) => {
     const ref = db.doc(path),
       requestedRef = db.doc(`${path}/attempts/${request.attemptId}`);
-    const saved = summary((await tx.get(ref)).data(), owner, scope);
+    const saved = await clearanceSummary(
+      db,
+      owner,
+      scope,
+      summary((await tx.get(ref)).data(), owner, scope),
+      tx,
+    );
     const existing = (await tx.get(requestedRef)).data();
     const authoritativeId =
       saved.activeAttemptId ?? (saved.clearedAt !== null ? saved.lastAttemptId : null);
@@ -193,8 +233,8 @@ export function scoreChallenge(
   scopeOf(scope);
   const items = challengeForms[scope.unitId][formId];
   if (
-    responses.length !== 8 ||
-    new Set(responses.map((r) => r.itemId)).size !== 8 ||
+    responses.length !== items.length ||
+    new Set(responses.map((r) => r.itemId)).size !== items.length ||
     responses.some((r) => !items.some((i) => i.id === r.itemId) || !r.response.trim())
   )
     throw Error("Answer each challenge item exactly once.");
@@ -208,7 +248,7 @@ export function scoreChallenge(
             normalizeLessonAnswer(ordered[index].response, item.caseSensitive, true),
         ),
   ).length;
-  return { correctCount, passed: correctCount === 8, ordered };
+  return { correctCount, passed: challengeScoreClears(correctCount, items.length), ordered };
 }
 export async function submitChallenge(
   db: Firestore,
@@ -226,7 +266,13 @@ export async function submitChallenge(
   return db.runTransaction(async (tx) => {
     const ref = db.doc(path),
       attemptRef = db.doc(`${path}/attempts/${request.attemptId}`);
-    const saved = summary((await tx.get(ref)).data(), owner, scope);
+    const saved = await clearanceSummary(
+      db,
+      owner,
+      scope,
+      summary((await tx.get(ref)).data(), owner, scope),
+      tx,
+    );
     const draft = attempt((await tx.get(attemptRef)).data(), owner, scope, request.attemptId);
     const scored = scoreChallenge(scope, draft.formId, request.responses);
     const digest = createHash("sha256")

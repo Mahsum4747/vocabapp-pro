@@ -1,3 +1,4 @@
+import { readChallengeClearances } from "./challenge.server";
 import { createHash } from "node:crypto";
 import type { Firestore } from "firebase-admin/firestore";
 import { unit1Check } from "@/content/curriculum/german-a1-unit1-check";
@@ -105,7 +106,7 @@ export async function createAssessmentAttempt(
   });
   const unitLessonIds = registeredAssessment(definition.id).lessonIds;
   const unitLessons = course.lessons.filter((lesson) => unitLessonIds.includes(lesson.lessonId));
-  if (
+  const lessonsFinished = !(
     unitLessons.length !== unitLessonIds.length ||
     !unitLessons.every(
       (row) =>
@@ -113,10 +114,20 @@ export async function createAssessmentAttempt(
         row.progress?.firstFinishedAt !== null &&
         row.progress?.firstFinishedAt !== undefined,
     )
-  )
+  );
+  const checkpointCleared =
+    !lessonsFinished &&
+    registeredAssessment(definition.id).kind === "checkpoint" &&
+    (
+      await readChallengeClearances(db, ownerId, {
+        trackId: definition.trackId,
+        releaseId: definition.releaseId,
+      })
+    ).includes("DE.A1.U03");
+  if (!lessonsFinished && !checkpointCleared)
     throw Error(
       registeredAssessment(definition.id).kind === "checkpoint"
-        ? "Finish the four Unit 3 lessons before Checkpoint 1."
+        ? "Finish the four Unit 3 lessons or clear Unit 3 by challenge before Checkpoint 1."
         : `Finish the four Unit ${registeredAssessment(definition.id).unitNumber} lessons first.`,
     );
   return db.runTransaction(async (tx) => {

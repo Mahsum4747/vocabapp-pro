@@ -20,7 +20,7 @@ import {
 } from "./assessment.server";
 import { assessmentForUnit, registeredAssessment } from "./assessment-registry";
 import { COURSE_SCOPE } from "./course-progress";
-import { startChallenge, submitChallenge } from "./challenge.server";
+import { startChallenge, submitChallenge, readChallengeClearances } from "./challenge.server";
 import { sessionKey } from "./lesson-session";
 import { courseLearningAction } from "./unit-progress";
 import { deleteLearningData } from "../account-deletion.server";
@@ -142,7 +142,7 @@ test("deterministic scoring accepts bounded variants/keyboard, rejects wrong mea
     }),
   );
 });
-test("eligibility requires actual all-four Unit 3; challenge alone or foreign completion is insufficient; reads create nothing", async () => {
+test("historical Unit 3 eligibility still requires all four lessons; foreign completion cannot grant access", async () => {
   const f = courseProgressFixture();
   const r = attemptRequest();
   assert.deepEqual(await readAssessmentHistory(f.storage.db, USER_ID, CP1_REQUEST), []);
@@ -340,3 +340,55 @@ test("checkpoint adapters bind CP1 identity; generic assessment APIs authenticat
   const screen = readFileSync("src/components/learn/unit-check-screen.tsx", "utf8");
   assert(screen.includes('registeredAssessment(value.assessmentId).kind !== "unit-check"'));
 });
+
+for (const correctCount of [5, 6, 7, 8])
+  test(`Unit 3 ${correctCount}/8 challenge controls CP1 without changing lessons, Checks or legacy evidence`, async () => {
+    const s = fakeProgressDb({
+      [`users/${USER_ID}/assessmentAttempts/existing-check`]: { sentinel: "Unit Check evidence" },
+      [`users/${USER_ID}/cardProgress/existing`]: { sentinel: "FSRS" },
+      [`grammarProgress/${USER_ID}`]: { sentinel: "legacy" },
+    });
+    const unitId = "DE.A1.U03",
+      request = { ...COURSE_SCOPE, unitId, attemptId: randomUUID() };
+    await startChallenge(s.db, USER_ID, request, 1000);
+    const answers = challengeForms[unitId].A.map((item, index) => ({
+      itemId: item.id,
+      response: index < correctCount ? item.acceptedAnswers[0] : "wrong",
+    }));
+    await submitChallenge(s.db, USER_ID, { ...request, responses: answers }, 1001);
+    const before = structuredClone(s.records),
+      writes = s.writes.length;
+    const clearances = await readChallengeClearances(s.db, USER_ID, COURSE_SCOPE);
+    assert.equal(checkpointAvailable({}, [], clearances), correctCount >= 6);
+    assert.equal(checkpointAvailable({}, [], ["DE.A1.U01", "DE.A1.U02"]), false);
+    assert.equal(checkpointAvailable({}, [], []), false);
+    if (correctCount >= 6) {
+      await createAssessmentAttempt(s.db, USER_ID, attemptRequest());
+      assert.equal(s.writes.length, writes + 1);
+      assert(s.writes.at(-1)!.includes("/assessmentAttempts/"));
+    } else {
+      await assert.rejects(createAssessmentAttempt(s.db, USER_ID, attemptRequest()), /Unit 3/);
+      assert.equal(s.writes.length, writes);
+    }
+    await assert.rejects(createAssessmentAttempt(s.db, "other-owner", attemptRequest()), /Unit 3/);
+    for (const [path, record] of before) assert.deepEqual(s.records.get(path), record);
+    assert(
+      (await readCourseProgress(s.db, USER_ID, COURSE_SCOPE)).lessons.every(
+        (row) => row.progress === null,
+      ),
+    );
+    assert.equal(
+      courseLearningAction(germanA1, {}, [], ["DE.A1.U01", "DE.A1.U02", ...clearances]).complete,
+      correctCount >= 6,
+    );
+    assert.notEqual(courseLearningAction(germanA1, {}, [], clearances).unit?.id, "DE.A1.U04");
+    // Challenge clearance never bypasses Unit Check's historical traversal gate.
+    await assert.rejects(
+      createAssessmentAttempt(s.db, USER_ID, {
+        assessmentId: unit3CheckForms[0].id,
+        compatibilityVersion: 1,
+        attemptId: randomUUID(),
+      }),
+      /four Unit 3 lessons/,
+    );
+  });

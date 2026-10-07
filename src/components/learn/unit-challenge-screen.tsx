@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
+import { CheckpointEntry } from "./checkpoint-entry";
 import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { germanA1 } from "@/content/curriculum/german-a1";
@@ -125,9 +126,8 @@ export function UnitChallengeScreen({ unitId }: { unitId: string }) {
           {unit?.title ?? "Unit challenge"}
         </h1>
         <p className="mt-4 leading-relaxed text-muted">
-          Eight independent tasks. Answer all eight correctly to clear this unit for progression.
-          This does not establish mastery or A1 proficiency. Your lessons stay available for
-          optional study.
+          Eight independent tasks. Answer at least 75% correctly (six of eight) to clear this unit
+          for progression. Your lessons stay available for optional study.
         </p>
         {error && (
           <div role="alert" className="mt-5">
@@ -162,6 +162,7 @@ export function UnitChallengeScreen({ unitId }: { unitId: string }) {
                 You’ve cleared the last available unit. More units are not yet authored.
               </p>
             )}
+            {unitId === "DE.A1.U03" && <CheckpointEntry />}
             <Link
               to="/learn/units/$unitId"
               params={{ unitId }}

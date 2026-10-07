@@ -14,8 +14,8 @@ import {
 } from "@/lib/curriculum/assessment";
 import { useLearnSession } from "./session-context";
 export function CheckpointScreen({ attemptId }: { attemptId?: string }) {
-  const { sessions, blockedLessons } = useLearnSession();
-  const available = checkpointAvailable(sessions, blockedLessons);
+  const { sessions, blockedLessons, clearedUnits } = useLearnSession();
+  const available = checkpointAvailable(sessions, blockedLessons, clearedUnits);
   const navigate = useNavigate();
   const [attempt, setAttempt] = useState<AssessmentAttempt | null>(null);
   const [history, setHistory] = useState<AssessmentAttempt[]>([]);
@@ -207,8 +207,7 @@ export function CheckpointScreen({ attemptId }: { attemptId?: string }) {
             ) : (
               <>
                 <p>
-                  Finish the four Unit 3 lessons before Checkpoint 1. Earlier units may be cleared
-                  by challenge.
+                  Finish the four Unit 3 lessons or clear Unit 3 by challenge before Checkpoint 1.
                 </p>
                 <Button asChild className="mt-4 min-h-11">
                   <Link to="/learn/units/$unitId" params={{ unitId: "DE.A1.U03" }}>
