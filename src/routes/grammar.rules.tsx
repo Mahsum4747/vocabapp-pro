@@ -24,7 +24,7 @@ export const Route = createFileRoute("/grammar/rules")({
  */
 const RULE_CATEGORIES: { title: string; topics: GrammarRuleTopic[] }[] = [
   { title: "Basics", topics: ["plural", "nicht-kein"] },
-  { title: "Cases & Pronouns", topics: ["possessive", "pronomen", "adjektivendungen"] },
+  { title: "Cases & Pronouns", topics: ["possessive", "pronomen", "helfen-dativ", "mit-dativ", "adjektivendungen"] },
   { title: "Verbs", topics: ["trennbare-verben", "modalverben", "imperativ", "passiv", "konjunktiv"] },
   { title: "Sentences", topics: ["steigerung", "relativsaetze"] },
   {
