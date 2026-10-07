@@ -1,3 +1,4 @@
+import { unit6ChallengeForms } from "./german-a1-unit6-challenges.server";
 import { batchAChallengeForms } from "./german-a1-batch-a-challenges.server";
 import type { ChallengeItem } from "@/lib/curriculum/challenge";
 // Original challenge arrangements, separate from Unit Check items and evidence families.
@@ -19,6 +20,7 @@ const choice = (
 ): ChallengeItem => ({ ...text(id, outcome, prompt, answer, stimulus), options });
 export const challengeForms: Record<string, Record<"A" | "B", readonly ChallengeItem[]>> = {
   ...batchAChallengeForms,
+  ...unit6ChallengeForms,
   "DE.A1.U01": {
     A: [
       text(

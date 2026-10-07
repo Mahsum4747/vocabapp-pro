@@ -335,8 +335,8 @@ test("checkpoint adapters bind CP1 identity; generic assessment APIs authenticat
   assert.equal((api.match(/context.userId/g) ?? []).length, 5);
   assert(!api.includes("data.userId"));
   const checkpoint = readFileSync("src/components/learn/checkpoint-screen.tsx", "utf8");
-  assert(checkpoint.includes("...CP1_REQUEST"));
-  assert(checkpoint.includes("validateAttempt(record, cp1"));
+  assert(checkpoint.includes("...request"));
+  assert(checkpoint.includes("assessmentForm(assessmentId, record.formId)"));
   const screen = readFileSync("src/components/learn/unit-check-screen.tsx", "utf8");
   assert(screen.includes('registeredAssessment(value.assessmentId).kind !== "unit-check"'));
 });

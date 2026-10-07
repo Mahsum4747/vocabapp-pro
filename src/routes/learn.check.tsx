@@ -1,4 +1,4 @@
-import { CP1_ID } from "@/lib/curriculum/checkpoint-identity";
+import { CP1_ID, CP2_ID } from "@/lib/curriculum/checkpoint-identity";
 import { createFileRoute } from "@tanstack/react-router";
 import { lazy, Suspense } from "react";
 const UnitCheckScreen = lazy(() =>
@@ -23,8 +23,12 @@ function UnitCheckRoute() {
   const { attempt, assessment } = Route.useSearch();
   return (
     <Suspense fallback={<p className="px-page-safe py-12 text-muted">Loading your check…</p>}>
-      {assessment === CP1_ID ? (
-        <CheckpointScreen key={attempt ?? "cp1-intro"} attemptId={attempt} />
+      {assessment === CP1_ID || assessment === CP2_ID ? (
+        <CheckpointScreen
+          key={attempt ?? assessment}
+          attemptId={attempt}
+          assessmentId={assessment}
+        />
       ) : (
         <UnitCheckScreen
           key={attempt ?? assessment ?? "intro"}

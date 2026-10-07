@@ -1,3 +1,5 @@
+import { unit6CheckForms } from "@/content/curriculum/german-a1-unit6-check";
+import { cp2Forms } from "@/content/curriculum/german-a1-cp2";
 import { unit4CheckForms } from "@/content/curriculum/german-a1-unit4-check";
 import { unit5CheckForms } from "@/content/curriculum/german-a1-unit5-check";
 import { cp1Forms } from "@/content/curriculum/german-a1-cp1";
@@ -7,13 +9,14 @@ import { unit1CheckForms } from "@/content/curriculum/german-a1-unit1-check";
 import { unit3CheckForms } from "@/content/curriculum/german-a1-unit3-check";
 import { unit2CheckForms } from "@/content/curriculum/german-a1-unit2-check";
 
-/** Five published-in-code prototype registrations, not a plugin or persisted registry. */
+/** Six published-in-code prototype registrations, not a plugin or persisted registry. */
 const unitRegistrations = [
   unit1CheckForms,
   unit2CheckForms,
   unit3CheckForms,
   unit4CheckForms,
   unit5CheckForms,
+  unit6CheckForms,
 ].map((forms) => ({
   kind: "unit-check" as const,
   definition: forms[0],
@@ -30,6 +33,17 @@ export const assessmentRegistry = [
     forms: cp1Forms,
     unitNumber: 0,
     lessonIds: germanA1.units[2].lessonIds,
+    clearanceUnitId: "DE.A1.U03",
+    checkpointNumber: 1,
+  },
+  {
+    kind: "checkpoint" as const,
+    definition: cp2Forms[0],
+    forms: cp2Forms,
+    unitNumber: 0,
+    lessonIds: germanA1.units[5].lessonIds,
+    clearanceUnitId: "DE.A1.U06",
+    checkpointNumber: 2,
   },
 ];
 export function assessmentForUnit(unitId: string) {

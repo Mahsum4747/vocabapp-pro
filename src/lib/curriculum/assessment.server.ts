@@ -104,7 +104,8 @@ export async function createAssessmentAttempt(
     trackId: definition.trackId,
     releaseId: definition.releaseId,
   });
-  const unitLessonIds = registeredAssessment(definition.id).lessonIds;
+  const registration = registeredAssessment(definition.id);
+  const unitLessonIds = registration.lessonIds;
   const unitLessons = course.lessons.filter((lesson) => unitLessonIds.includes(lesson.lessonId));
   const lessonsFinished = !(
     unitLessons.length !== unitLessonIds.length ||
@@ -117,17 +118,17 @@ export async function createAssessmentAttempt(
   );
   const checkpointCleared =
     !lessonsFinished &&
-    registeredAssessment(definition.id).kind === "checkpoint" &&
+    registration.kind === "checkpoint" &&
     (
       await readChallengeClearances(db, ownerId, {
         trackId: definition.trackId,
         releaseId: definition.releaseId,
       })
-    ).includes("DE.A1.U03");
+    ).includes(registration.kind === "checkpoint" ? registration.clearanceUnitId : "");
   if (!lessonsFinished && !checkpointCleared)
     throw Error(
-      registeredAssessment(definition.id).kind === "checkpoint"
-        ? "Finish the four Unit 3 lessons or clear Unit 3 by challenge before Checkpoint 1."
+      registration.kind === "checkpoint"
+        ? `Finish the four Unit ${Number(registration.clearanceUnitId.slice(-2))} lessons or clear Unit ${Number(registration.clearanceUnitId.slice(-2))} by challenge before Checkpoint ${registration.checkpointNumber}.`
         : `Finish the four Unit ${registeredAssessment(definition.id).unitNumber} lessons first.`,
     );
   return db.runTransaction(async (tx) => {

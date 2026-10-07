@@ -117,11 +117,11 @@ test("U01.L01 retains its authored and its bounded content/stage contract is com
   assert.equal(lesson.steps.at(-1)?.purpose, "formative-check");
   assert.equal(lesson.steps[5].kind, "original");
   assert.ok(
-    germanA1.lessons.slice(20).every((l) => l.availability === "not-authored" && !l.steps.length),
+    germanA1.lessons.slice(24).every((l) => l.availability === "not-authored" && !l.steps.length),
   );
-  assert.throws(() => startLesson(germanA1.id, germanA1.lessons[20]));
+  assert.throws(() => startLesson(germanA1.id, germanA1.lessons[24]));
   const c = clone();
-  c.lessons[20].steps = lesson.steps;
+  c.lessons[24].steps = lesson.steps;
   assert.ok(validateCurriculum(c).some((e) => e.includes("Unauthored lesson")));
 });
 test("bounded evaluation distinguishes blank, incorrect, equivalent and unassessed writing", () => {

@@ -135,11 +135,11 @@ test("Batch A exactly preserves the frozen registry, prerequisite DAG and skill 
       );
     assert.equal(lesson.steps.at(-1)!.stage, "check");
   }
-  assert.equal(germanA1.lessons.filter((l) => l.availability === "prototype").length, 20);
+  assert.equal(germanA1.lessons.filter((l) => l.availability === "prototype").length, 24);
   assert(
-    germanA1.lessons.slice(20).every((l) => l.availability === "not-authored" && !l.steps.length),
+    germanA1.lessons.slice(24).every((l) => l.availability === "not-authored" && !l.steps.length),
   );
-  assert.equal(assessmentForUnit("DE.A1.U06"), undefined);
+  assert.equal(assessmentForUnit("DE.A1.U07"), undefined);
   assert.throws(() => registeredAssessment("DE.A1.CP2"));
 });
 for (const lesson of lessons)
@@ -342,13 +342,13 @@ for (const unitId of ["DE.A1.U04", "DE.A1.U05"]) {
     }
   });
 }
-test("Authored U4/U5 are open regardless of clearance; U6 and CP2 absent", () => {
+test("Authored U4/U5 are open regardless of clearance; U7 remains planned", () => {
   for (const unitId of ["DE.A1.U04", "DE.A1.U05"]) {
     const index = Number(unitId.slice(-2)) - 1;
     assert.equal(unitAvailable(unitId), true);
     assert.equal(unitProgress(germanA1, germanA1.units[index], {}).finishedCount, 0);
   }
-  assert.equal(unitAvailable("DE.A1.U06"), false);
+  assert.equal(unitAvailable("DE.A1.U07"), false);
   assert.equal(checkpointAvailable({}, [], ["DE.A1.U03"]), true);
   assert.equal(checkpointAvailable({}, [], ["DE.A1.U04"]), false);
   assert.equal(
@@ -358,9 +358,9 @@ test("Authored U4/U5 are open regardless of clearance; U6 and CP2 absent", () =>
       [],
       germanA1.units.slice(0, 5).map((u) => u.id),
     ).complete,
-    true,
+    false,
   );
-  assert.notEqual(
+  assert.equal(
     courseLearningAction(
       germanA1,
       {},

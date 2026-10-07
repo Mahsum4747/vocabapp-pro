@@ -1,4 +1,10 @@
 import {
+  pastFrameSteps,
+  pastActionsSteps,
+  changedArrangementSteps,
+  usefulMessageSteps,
+} from "./german-a1-unit6";
+import {
   timeLessonSteps,
   prefixLessonSteps,
   requestLessonSteps,
@@ -1063,6 +1069,8 @@ export const germanA1: CurriculumRelease = {
     {
       id: "DE.A1.U06",
       title: "Recent experiences",
+      description:
+        "Share recent everyday events, read short messages and change an arrangement with a clear next step.",
       lessonIds: ["DE.A1.U06.L01", "DE.A1.U06.L02", "DE.A1.U06.L03", "DE.A1.U06.L04"],
     },
     {
@@ -1431,8 +1439,9 @@ export const germanA1: CurriculumRelease = {
         "DE.A1.READING.SHORT_EMAIL",
       ],
       consolidatedSkillIds: [],
-      availability: "not-authored",
-      steps: [],
+      availability: "prototype",
+      resumeContractVersion: 1,
+      steps: pastFrameSteps,
     },
     {
       id: "DE.A1.U06.L02",
@@ -1445,8 +1454,9 @@ export const germanA1: CurriculumRelease = {
         "DE.A1.WRITING.SEQUENCE",
       ],
       consolidatedSkillIds: [],
-      availability: "not-authored",
-      steps: [],
+      availability: "prototype",
+      resumeContractVersion: 1,
+      steps: pastActionsSteps,
     },
     {
       id: "DE.A1.U06.L03",
@@ -1460,8 +1470,9 @@ export const germanA1: CurriculumRelease = {
         "DE.A1.WRITING.APOLOGY_CHANGE",
       ],
       consolidatedSkillIds: [],
-      availability: "not-authored",
-      steps: [],
+      availability: "prototype",
+      resumeContractVersion: 1,
+      steps: changedArrangementSteps,
     },
     {
       id: "DE.A1.U06.L04",
@@ -1474,8 +1485,9 @@ export const germanA1: CurriculumRelease = {
         "DE.A1.VOCABULARY.TRANSFER_SELECTION",
         "DE.A1.WRITING.TASK_FULFILMENT",
       ],
-      availability: "not-authored",
-      steps: [],
+      availability: "prototype",
+      resumeContractVersion: 1,
+      steps: usefulMessageSteps,
     },
     {
       id: "DE.A1.U07.L01",

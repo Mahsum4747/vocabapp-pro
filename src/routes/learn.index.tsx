@@ -1,6 +1,6 @@
 import { lazy, Suspense } from "react";
 
-import { checkpointAvailable } from "@/lib/curriculum/checkpoint-access";
+import { checkpointAvailable, checkpoint2Available } from "@/lib/curriculum/checkpoint-access";
 import { unitAvailable } from "@/lib/curriculum/unit-access";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
@@ -126,6 +126,11 @@ function LearnCourse() {
             )}
           </div>
         </section>
+        {checkpoint2Available(sessions, blockedLessons, clearedUnits) && (
+          <Suspense fallback={<p className="mt-6 text-sm text-muted">Loading checkpoint…</p>}>
+            <CheckpointEntry checkpoint={2} />
+          </Suspense>
+        )}
         {checkpointAvailable(sessions, blockedLessons, clearedUnits) && (
           <Suspense fallback={<p className="mt-6 text-sm text-muted">Loading checkpoint…</p>}>
             <CheckpointEntry />
@@ -139,9 +144,9 @@ function LearnCourse() {
             </h2>
           </div>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
-            10 units · 40 planned lessons. Twenty lessons are authored across Units 1–5. Explore any
-            authored unit. Your recommended path follows lesson completion or challenge clearance.
-            Your checked steps and lesson completion are saved.
+            10 units · 40 planned lessons. Twenty-four lessons are authored across Units 1–6.
+            Explore any authored unit. Your recommended path follows lesson completion or challenge
+            clearance. Your checked steps and lesson completion are saved.
           </p>
           <ol className="mt-5 grid gap-3 lg:grid-cols-2">
             {germanA1.units.map((unit, index) => {
