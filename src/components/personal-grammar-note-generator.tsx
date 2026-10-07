@@ -7,6 +7,10 @@ import {
   generatePersonalGrammarPractice,
   type PersonalGrammarPractice,
 } from "@/lib/personal-grammar-practice";
+import {
+  DIAGNOSTIC_TARGET_TOPICS,
+  recordGrammarRemediation,
+} from "@/lib/grammar-remediation.server";
 import type { GrammarRuleTopic } from "@/content/grammar-rules";
 
 const LANGUAGES = ["English", "Turkish", "Kurdish"] as const;
@@ -24,6 +28,9 @@ export function PersonalGrammarNoteGenerator({ topic }: { topic: GrammarRuleTopi
   const [practiceAnswers, setPracticeAnswers] = useState<Record<string, string>>({});
   const [savingNote, setSavingNote] = useState(false);
   const [savedNoteId, setSavedNoteId] = useState<string | null>(null);
+  const [practiceSessionId, setPracticeSessionId] = useState<string | null>(null);
+  const [practiceRecorded, setPracticeRecorded] = useState(false);
+  const [recordingPractice, setRecordingPractice] = useState(false);
 
   async function generate() {
     setLoading(true);
@@ -67,6 +74,8 @@ export function PersonalGrammarNoteGenerator({ topic }: { topic: GrammarRuleTopi
       }
       setPractice(result.practice);
       setPracticeAnswers({});
+      setPracticeSessionId(crypto.randomUUID());
+      setPracticeRecorded(false);
     } catch {
       setError("Couldn't generate grammar practice, try again.");
     } finally {
@@ -99,6 +108,39 @@ export function PersonalGrammarNoteGenerator({ topic }: { topic: GrammarRuleTopi
       setError("Couldn't save the grammar note, try again.");
     } finally {
       setSavingNote(false);
+    }
+  }
+
+  async function finishPractice() {
+    if (!practice || !practiceSessionId || practiceRecorded) return;
+    if (Object.keys(practiceAnswers).length !== practice.items.length) return;
+    setRecordingPractice(true);
+    setError(null);
+    try {
+      const diagnosticTargetId = Object.entries(DIAGNOSTIC_TARGET_TOPICS).find(
+        ([, mappedTopic]) => mappedTopic === topic,
+      )?.[0];
+      const correctCount = practice.items.filter(
+        (item) => practiceAnswers[item.id] === item.correctAnswer,
+      ).length;
+      const result = await recordGrammarRemediation({
+        data: {
+          operationId: practiceSessionId,
+          topic,
+          ...(diagnosticTargetId ? { diagnosticTargetId } : {}),
+          correctCount,
+          totalCount: practice.items.length,
+        },
+      });
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+      setPracticeRecorded(true);
+    } catch {
+      setError("Couldn't record this practice session. Your answers are still here.");
+    } finally {
+      setRecordingPractice(false);
     }
   }
 
@@ -276,6 +318,26 @@ export function PersonalGrammarNoteGenerator({ topic }: { topic: GrammarRuleTopi
               );
             })}
           </div>
+          {Object.keys(practiceAnswers).length === practice.items.length ? (
+            <div className="mt-5 border-t border-border pt-4">
+              <Button
+                type="button"
+                disabled={recordingPractice || practiceRecorded}
+                onClick={() => void finishPractice()}
+              >
+                {recordingPractice
+                  ? "Recording…"
+                  : practiceRecorded
+                    ? "Practice recorded"
+                    : "Finish practice"}
+              </Button>
+              <p className="mt-2 text-xs text-muted">
+                {practiceRecorded
+                  ? "Karta will wait before suggesting a fresh recheck. This does not mark the grammar as mastered."
+                  : "Finishing records only that you practised this topic, not mastery or course completion."}
+              </p>
+            </div>
+          ) : null}
         </section>
       ) : null}
     </section>
