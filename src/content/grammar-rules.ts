@@ -24,7 +24,7 @@ export type GrammarRuleTopic =
   | "modalpartikeln"
   | "konjunktiv1"
   | "subjektive-modalverben"
-  | "passiversatzformen";
+  | "passiversatzformen"\n  | "helfen-dativ"\n  | "mit-dativ";
 
 export interface GrammarRule {
   topic: GrammarRuleTopic;
@@ -38,6 +38,42 @@ export interface GrammarRule {
 }
 
 export const GRAMMAR_RULES: Record<GrammarRuleTopic, GrammarRule> = {
+  "helfen-dativ": {
+    topic: "helfen-dativ",
+    title: "helfen + Dativ",
+    intro:
+      "When helfen names the person receiving help, that person is in the dative: mir, dir, ihm, ihr, uns, euch, Ihnen. Learn helfen together with this pattern rather than as a generic 'Dative rule'.",
+    table: {
+      headers: ["Person", "Dative with helfen"],
+      rows: [
+        ["ich", "mir"],
+        ["du", "dir"],
+        ["er", "ihm"],
+        ["sie", "ihr"],
+        ["wir", "uns"],
+        ["ihr", "euch"],
+        ["Sie", "Ihnen"],
+      ],
+    },
+    examples: [
+      "Kannst du mir helfen?",
+      "Ich helfe dir.",
+      "Können Sie uns helfen?",
+      "Ich helfe meiner Mutter.",
+    ],
+  },
+  "mit-dativ": {
+    topic: "mit-dativ",
+    title: "mit + Dativ",
+    intro:
+      "The preposition mit is followed by the dative. In common A1 chunks, der/das become dem, die becomes der, and plural die becomes den (often with -n on the noun where required).",
+    examples: [
+      "mit dem Bus",
+      "mit der Bahn",
+      "mit dem Kind",
+      "mit den Freunden",
+    ],
+  },
   "trennbare-verben": {
     topic: "trennbare-verben",
     title: "Trennbare Verben",
