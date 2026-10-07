@@ -54,7 +54,10 @@ export function UnitCheckEntry({
     };
   }, [retry, definition.id, definition.compatibilityVersion]);
   return (
-    <section className="mt-6 border-y border-border py-5" aria-label={`Unit ${unitNumber} Check`}>
+    <section
+      className="mt-6 rounded-card border border-border bg-surface p-5 shadow-[var(--elevation-1)] sm:p-6"
+      aria-label={`Unit ${unitNumber} Check`}
+    >
       <h2 className="font-display text-xl font-semibold">Check what you can do</h2>
       <p className="mt-2 text-sm leading-relaxed text-muted">
         Eight short tasks, separate from lesson completion. Results describe only what this check

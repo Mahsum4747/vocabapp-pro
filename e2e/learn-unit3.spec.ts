@@ -258,7 +258,7 @@ test("Unit 3 is open ahead of the path; challenged lessons remain untouched", as
   await page.getByRole("link", { name: "Open Unit 3", exact: true }).click();
   await expect(page.getByText("0 of 4 lessons finished")).toBeVisible();
   await shot(page, `challenge-unlocked-${info.project.name}`);
-  await page.getByRole("link", { name: /Next lesson: Shopping/ }).click();
+  await page.getByRole("link", { name: /Start Unit|Continue Unit/ }).click();
   await expect(
     page.getByRole("heading", { name: germanA1.lessons[8].steps[0].prompt, exact: true }),
   ).toBeVisible();
@@ -266,7 +266,11 @@ test("Unit 3 is open ahead of the path; challenged lessons remain untouched", as
   await expect(page.getByText("Progress saved", { exact: true })).toBeVisible();
   await page.goto("/learn/units/DE.A1.U02");
   await expect(page.getByText("0 of 4 lessons finished")).toBeVisible();
-  await expect(page.getByText("Cleared by challenge", { exact: true })).toBeVisible();
+  await expect(
+    page
+      .getByRole("region", { name: "Unit challenge", exact: true })
+      .getByText("Cleared by challenge", { exact: true }),
+  ).toBeVisible();
   await expect(page.getByRole("link", { name: "Unit 2 Check", exact: true })).toHaveCount(0);
   expect(
     [...f.storage.records.keys()]

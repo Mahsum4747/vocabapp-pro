@@ -234,7 +234,7 @@ for (const correct of [5, 6])
     const h = await launch({ sets: [], handlers: f.handlers });
     await page.goto("/learn/units/DE.A1.U04");
     await expect(page.getByText("0 of 4 lessons finished")).toBeVisible();
-    await page.getByRole("link", { name: "Test out of this unit", exact: true }).click();
+    await page.getByRole("link", { name: "Take Unit Challenge", exact: true }).click();
     await page.getByRole("button", { name: "Start unit challenge", exact: true }).click();
     for (const [n, item] of challengeForms["DE.A1.U04"].A.entries()) {
       await expect(page.getByRole("heading", { name: item.prompt, exact: true })).toBeVisible();

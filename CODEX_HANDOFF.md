@@ -1468,3 +1468,43 @@ errors. Typecheck, scoped ESLint, safe build:compile, generated SSR syntax and
 git diff --check pass. No full historical suite or manual deployment. Source and
 main pushes are authorized for this task, using fast-forward only after green
 validation and verification that origin/main remains the recorded base.
+
+## Shared Unit Detail presentation (2026-10-07)
+
+Branch `codex/karta-unit-detail-ui-redesign`, based on main
+`4c7d5c504b1d18a714edb792f0031f702b31a3cd`.
+
+The shared `/learn/units/$unitId` template now matches Learn overview: compact
+serif header, unit/status badges and quiet ahead-of-path information; a raised
+lesson-progress card with actual historical completion, progress bar and
+Start Unit / Continue Unit CTA; a secondary Unit Challenge card with eight-task
+and 75% labels, test-out explanation and Take Unit Challenge CTA. Destinations
+and next-lesson selection still use the existing helpers. Challenge-clearance
+continuation retains its destination with secondary button styling.
+
+Lessons use compact numbered interactive rows and actual Completed/In progress/
+Available display statuses. Unit Check follows the lesson list: the existing
+lazy entry is styled as a card when eligible, otherwise a non-interactive muted
+callout states that all four lessons are required. Challenge clearance does not
+satisfy that gate. The practice-completion/open-writing note is a quiet info
+card. Desktop progress/challenge cards sit side by side, mobile stacks them.
+The existing theme and elevation tokens support dark mode; no visual assets,
+new dependencies or configuration changes were introduced.
+
+Only the shared route presentation and UnitCheckEntry card styling changed in
+production code. Curriculum, progression/recommendation, assessment eligibility,
+CP1/CP2, grading, auth, FSRS, schemas and challenge persistence are untouched.
+CTA selectors in the affected browser tests follow the intended new UI labels.
+
+Validation: 14 unique compiled desktop/mobile cases cover shared U1/U3/U4 detail, start and
+continue lesson destinations, lesson rows, Challenge entry without lesson
+completion, locked/available Check, actual completion and CP1, 6/8 clearance,
+open exploration, 390px and dark 320px. Desktop/mobile screenshots are inspected,
+including cleared-with-zero-lessons and completed-with-Check states. Browser
+fixtures enforce no unhandled backend calls or uncaught errors; overflow and
+mobile touch targets are checked. Typecheck, scoped ESLint, build:compile,
+generated SSR syntax and diff-check pass. Final CTA visual polish is rechecked
+with the affected presentation cases; completed cards avoid empty stretched
+space and their Check/CP1 states are rechecked. No full historical suite, migration or
+manual deployment; source/main integration uses fast-forward only after green
+validation and unchanged origin/main verification.

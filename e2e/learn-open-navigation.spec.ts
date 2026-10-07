@@ -60,7 +60,7 @@ test("open authored units and study ahead with no invented evidence", async ({
     await page.getByRole("link", { name: `Open Unit ${n}`, exact: true }).click();
     await expect(page.getByText(note, { exact: true })).toHaveCount(1);
     await expect(
-      page.getByRole("link", { name: "Test out of this unit", exact: true }),
+      page.getByRole("link", { name: "Take Unit Challenge", exact: true }),
     ).toBeVisible();
     await expect(page.getByRole("link", { name: `Unit ${n} Check`, exact: true })).toHaveCount(0);
     await page.screenshot({
@@ -70,7 +70,7 @@ test("open authored units and study ahead with no invented evidence", async ({
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
       true,
     );
-    await page.getByRole("link", { name: /Next lesson:/ }).click();
+    await page.getByRole("link", { name: /Start Unit|Continue Unit/ }).click();
     await expect(page.getByText(note, { exact: true })).toHaveCount(1);
     expect(f.storage.writes).toHaveLength(n === 4 ? 0 : 1);
     await page.getByRole("button", { name: "Continue", exact: true }).click();
@@ -119,7 +119,7 @@ test("U3 and U4 6/8 challenge clearance advances only recommendation", async ({
     await page.getByRole("link", { name: `Open Unit ${n}`, exact: true }).click();
     await expect(page.getByText(note, { exact: true })).toHaveCount(0);
     await expect(page.getByText("0 of 4 lessons finished", { exact: true })).toBeVisible();
-    await page.getByRole("link", { name: "Test out of this unit", exact: true }).click();
+    await page.getByRole("link", { name: "Take Unit Challenge", exact: true }).click();
     await page.getByRole("button", { name: "Start unit challenge", exact: true }).click();
     for (const [index, item] of challengeForms[`DE.A1.U0${n}`].A.entries()) {
       await expect(page.getByRole("heading", { name: item.prompt, exact: true })).toBeVisible();
