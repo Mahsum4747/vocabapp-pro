@@ -4,7 +4,8 @@ import {
   Check,
   ChevronDown,
   ChevronRight,
-  ListOrdered,
+  BookOpenText,
+  Dumbbell,
   Plus,
   Search,
   Sparkles,
@@ -270,61 +271,84 @@ function Home() {
           />
         </Suspense>
         <section className="stagger-in">
-          <TodayCta
-            isLoaded={isLoaded && todaySummarySettled}
-            libraryEmpty={sets.length === 0}
-            today={todayQueue}
-            onLoadSamples={() => restoreSeeds()}
-          />
+          <p className="text-sm font-medium text-primary-ink">Your German learning path</p>
+          <h1 className="mt-1 font-display text-3xl font-medium tracking-tight">
+            Keep learning with Karta
+          </h1>
+          <p className="mt-2 max-w-2xl text-muted">
+            Continue your course, strengthen what Karta noticed, then use vocabulary review when it is due.
+          </p>
 
-          <LearningPrefsPrompt />
+          <Suspense fallback={null}>
+            <HomeCourseContinuation />
+          </Suspense>
 
-          {/* Frequent, but secondary to today's actual work above — a visitor
-            with a full library still reaches for these often enough that
-            they stay one tap away, just lighter than the CTA. */}
+          <Suspense fallback={null}>
+            <HomeRecommendedNext refreshVersion={recommendationRefresh} />
+          </Suspense>
+        </section>
+
+        <LearningPrefsPrompt />
+
+        <section className="mt-section" aria-labelledby="practice-review-heading">
+          <h2 id="practice-review-heading" className="font-display text-xl font-medium">
+            Practice & review
+          </h2>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            <Link
+              to="/grammar/rules"
+              className="flex min-h-11 items-center justify-between gap-3 rounded-card bg-surface p-card shadow-[var(--elevation-1)] transition-shadow hover:shadow-[var(--elevation-2)]"
+            >
+              <div className="flex items-center gap-3">
+                <BookOpenText className="size-5 shrink-0 text-primary-ink" />
+                <div>
+                  <p className="font-medium">Grammar Reference</p>
+                  <p className="text-sm text-muted">Reviewed rules, personal notes and targeted practice</p>
+                </div>
+              </div>
+              <ChevronRight className="size-4 shrink-0 text-subtle" />
+            </Link>
+            <Link
+              to="/grammar"
+              className="flex min-h-11 items-center justify-between gap-3 rounded-card bg-surface p-card shadow-[var(--elevation-1)] transition-shadow hover:shadow-[var(--elevation-2)]"
+            >
+              <div className="flex items-center gap-3">
+                <Dumbbell className="size-5 shrink-0 text-primary-ink" />
+                <div>
+                  <p className="font-medium">Focused practice</p>
+                  <p className="text-sm text-muted">Grammar, reading and writing practice tools</p>
+                </div>
+              </div>
+              <ChevronRight className="size-4 shrink-0 text-subtle" />
+            </Link>
+          </div>
+
+          <div className="mt-4">
+            <TodayCta
+              isLoaded={isLoaded && todaySummarySettled}
+              libraryEmpty={sets.length === 0}
+              today={todayQueue}
+              onLoadSamples={() => restoreSeeds()}
+            />
+          </div>
+
           <div className="mt-3 flex flex-wrap gap-2">
             <Button asChild variant="ghost" size="sm">
               <Link to="/create">
                 <Plus />
-                New set
+                New vocabulary set
               </Link>
             </Button>
             <Button asChild variant="ghost" size="sm">
               <Link to="/create" search={{ ai: true }}>
                 <Sparkles />
-                Generate from topic
+                Generate vocabulary set
               </Link>
             </Button>
           </div>
         </section>
 
-        <Suspense fallback={null}>
-          <HomeRecommendedNext refreshVersion={recommendationRefresh} />
-        </Suspense>
-
-        <Suspense fallback={null}>
-          <HomeCourseContinuation />
-        </Suspense>
-
         <LibraryProgressPanel className="mt-section" showReview={false} />
-
-        {/* Extra entry point into the German grammar-mode hub (Articles,
-          Cases, Conjugation, Satzbau, Cloze grouped by category) — set-
-          independent, so it lives here rather than inside any one set's own
-          mode grid, which stays exactly as it was. */}
-        <Link
-          to="/grammar"
-          className="mt-section flex items-center justify-between gap-3 rounded-card bg-surface p-card shadow-[var(--elevation-1)] transition-shadow hover:shadow-[var(--elevation-2)]"
-        >
-          <div className="flex items-center gap-3">
-            <ListOrdered className="size-5 shrink-0 text-primary-ink" />
-            <div>
-              <p className="font-medium">Grammar practice</p>
-              <p className="text-sm text-muted">Articles, cases, verbs and sentence drills</p>
-            </div>
-          </div>
-          <ChevronRight className="size-4 shrink-0 text-subtle" />
-        </Link>
 
         {continueSet ? (
           <Link

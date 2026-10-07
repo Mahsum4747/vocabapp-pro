@@ -21,7 +21,7 @@ export const Route = createRootRoute({
         content: "width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content",
       },
       { title: APP_NAME },
-      { name: "description", content: "Learn with flashcards — your personal study sets." },
+      { name: "description", content: "Learn German with structured lessons, adaptive practice, reading, writing, grammar and vocabulary." },
     ],
     links: [
       { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
