@@ -7,6 +7,11 @@ export const RECOMMENDATION_ROUTES = {
   weakReview: "/review?filter=weak",
   reading: "/grammar/lesen",
 } as const;
+
+export const REFERENCE_PRACTICE_ROUTES: Record<string, string> = {
+  "DE.GRAMMAR.LEXICAL.HELFEN_DAT": "/grammar/rules#helfen-dativ",
+  "DE.GRAMMAR.PREPOSITION.MIT_DAT": "/grammar/rules#mit-dativ",
+};
 export const WRITING_PRACTICE_MAP: Record<ErrorCategory, string | null> = {
   article_gender: "articles",
   case: "cases",
@@ -36,6 +41,9 @@ export function practiceDestination(
     };
   }
   if (topicId === "lesen") return { key: "lesen", route: RECOMMENDATION_ROUTES.reading, topicId };
+  if (REFERENCE_PRACTICE_ROUTES[topicId]) {
+    return { key: topicId, route: REFERENCE_PRACTICE_ROUTES[topicId]!, topicId };
+  }
   if (!CURRICULUM_TOPIC_IDS.includes(topicId)) return null;
   return { key: topicId, route: `/grammar/${topicId}`, topicId };
 }

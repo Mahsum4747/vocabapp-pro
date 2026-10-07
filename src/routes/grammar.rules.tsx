@@ -4,7 +4,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/app-shell";
 import { AuthGate } from "@/components/auth-gate";
 import { EmptyState } from "@/components/empty-state";
-import { GrammarRuleContent } from "@/components/grammar-rule-content";
+import { GrammarRuleContent } from "@/components/grammar-rule-content";\nimport { PersonalGrammarNoteGenerator } from "@/components/personal-grammar-note-generator";
 import { Input } from "@/components/ui/input";
 import { GRAMMAR_RULES, type GrammarRuleTopic } from "@/content/grammar-rules";
 
@@ -24,7 +24,7 @@ export const Route = createFileRoute("/grammar/rules")({
  */
 const RULE_CATEGORIES: { title: string; topics: GrammarRuleTopic[] }[] = [
   { title: "Basics", topics: ["plural", "nicht-kein"] },
-  { title: "Cases & Pronouns", topics: ["possessive", "pronomen", "adjektivendungen"] },
+  { title: "Cases & Pronouns", topics: ["possessive", "pronomen", "helfen-dativ", "mit-dativ", "adjektivendungen"] },
   { title: "Verbs", topics: ["trennbare-verben", "modalverben", "imperativ", "passiv", "konjunktiv"] },
   { title: "Sentences", topics: ["steigerung", "relativsaetze"] },
   {
@@ -114,7 +114,8 @@ function GrammarRulesPage() {
                   return (
                     <div
                       key={topic}
-                      className="rounded-card bg-surface p-4 shadow-[var(--elevation-1)]"
+                      id={topic}
+                      className="scroll-mt-24 rounded-card bg-surface p-4 shadow-[var(--elevation-1)]"
                     >
                       <button
                         type="button"
@@ -130,7 +131,7 @@ function GrammarRulesPage() {
                       </button>
                       {!isCollapsed ? (
                         <div className="mt-2 pl-[22px]">
-                          <GrammarRuleContent rule={rule} />
+                          <GrammarRuleContent rule={rule} />\n                          <PersonalGrammarNoteGenerator topic={topic} />
                         </div>
                       ) : null}
                     </div>

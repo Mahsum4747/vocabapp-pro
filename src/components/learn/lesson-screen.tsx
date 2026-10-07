@@ -281,7 +281,7 @@ export function LessonScreen({
               )}
               {bounded && hint === step.id && !revealed && (
                 <p className="mt-3 text-sm text-muted" role="note">
-                  Hint: {lessonHint(step)}
+                  Hint: {lessonHint(step, answer)}
                 </p>
               )}
               {revealed && (

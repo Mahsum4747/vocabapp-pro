@@ -189,7 +189,32 @@ export function LearnSessionProvider({ children }: { children: ReactNode }) {
       const next = transitionLesson(lesson, state, action);
       if (next === state) return;
       // Check feedback is local immediately; traversal/completion waits for acknowledgement.
-      if (action.type === "check") setSessions((previous) => ({ ...previous, [key]: next }));
+      if (action.type === "check") {
+        setSessions((previous) => ({ ...previous, [key]: next }));
+        // The first incorrect bounded attempt is the cleanest observation:
+        // hints are not yet available, so it is independent learner evidence.
+        // Diagnostic logging is deliberately best-effort and separate from
+        // durable lesson progress; it can never block traversal or completion.
+        if (
+          next.feedback?.outcome === "incorrect" &&
+          (state.attempts[step.id] ?? 0) === 0 &&
+          step.kind !== "original"
+        ) {
+          void import("@/lib/curriculum/lesson-diagnostic-api")
+            .then(({ recordLessonDiagnostic }) =>
+              recordLessonDiagnostic({
+                data: {
+                  lessonId: lesson.id,
+                  stepId: step.id,
+                  response: state.responses[step.id] ?? "",
+                  operationId: crypto.randomUUID(),
+                  attemptNumber: 1,
+                },
+              }),
+            )
+            .catch(() => undefined);
+        }
+      }
     }
     const command: ProgressCommand = {
       ...COURSE_SCOPE,

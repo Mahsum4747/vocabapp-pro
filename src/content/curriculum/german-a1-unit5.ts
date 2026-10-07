@@ -107,7 +107,7 @@ export const helpLessonSteps: readonly LessonStep[] = [
     "Ask for help at a service desk",
     "Compare how you address a friend and a member of staff.",
     "Hallo Ada! Kannst du mir helfen?\nGuten Tag! Können Sie mir helfen?",
-    "helfen = help; mir = to me in this frame. A friend is du; a member of staff you do not know is Sie. Hallo and Guten Tag are supplied greetings. Use Tschüss when saying goodbye to a friend. For a short written service request, the supplied closing Vielen Dank! means many thanks. These closings are supported here.",
+    "helfen = help. In German, when helfen names the person receiving help, that person is in the dative: ich becomes mir here. So Kannst du mir helfen? literally has the pattern ‘can you help me?’. Learn helfen together with its person pattern, not as a random pronoun swap. A friend is du; a member of staff you do not know is Sie. Hallo and Guten Tag are supplied greetings. Use Tschüss when saying goodbye to a friend. For a short written service request, the supplied closing Vielen Dank! means many thanks.",
     [pronouns, help, register],
   ),
   b.choice(
@@ -125,7 +125,7 @@ export const helpLessonSteps: readonly LessonStep[] = [
     "Who receives the help?",
     "Read the whole useful frame, not a pronoun table.",
     "Ich helfe dir. → one friend\nKönnen Sie uns helfen? → help us\nIch helfe euch. → a familiar group\nIch danke Ihnen. → polite thanks\nWie geht es dir? / Wie geht es Ihnen?",
-    "dir = to you (du); uns = to us; euch = to you (ihr); Ihnen = to you (polite Sie). danken means thank: Ich danke dir / Ich danke Ihnen are complete natural sentences. Wie geht es …? asks how someone is; it is not a route question.",
+    "With helfen, the person receiving help uses the dative form: ich → mir, du → dir, wir → uns, ihr → euch, polite Sie → Ihnen. Do not choose these forms because of English word order; learn the verb together with the pattern jemandem helfen. danken uses the same kind of person form here: Ich danke dir / Ich danke Ihnen. Wie geht es …? also uses a dative person and asks how someone is; it is not a route question.",
     [pronouns, help, register],
   ),
   b.choice(
