@@ -1125,7 +1125,7 @@ export const germanA1: CurriculumRelease = {
   lessons: [
     {
       id: "DE.A1.U01.L01",
-      resumeContractVersion: 1,
+      resumeContractVersion: 2,
       unitId: "DE.A1.U01",
       title: "Meet and identify: introduce yourself",
       outcome: "One original identity statement; guided production",
