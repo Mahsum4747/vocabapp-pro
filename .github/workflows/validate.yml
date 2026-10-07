@@ -30,6 +30,8 @@ jobs:
         run: npm run lint 2>&1 | tee validation.log
       - name: Tests
         run: npm test 2>&1 | tee validation.log
+      - name: Production-like Vite build
+        run: npx vite build 2>&1 | tee validation.log
       - name: Compile-only production build
         run: npm run build:compile 2>&1 | tee validation.log
       - name: Report validation failure
