@@ -31,6 +31,7 @@ export async function readLearningSignalsFor(
     grammarPaste,
     lesenPaste,
     writing,
+    diagnostics,
     writingCount,
     days,
     streak,
@@ -55,6 +56,12 @@ export async function readLearningSignalsFor(
       .limit(WRITING_SIGNAL_WINDOW)
       .select("createdAt", "errorTags")
       .get(),
+    user
+      .collection("learningDiagnostics")
+      .orderBy("occurredAt", "desc")
+      .limit(100)
+      .select("domain", "category", "targetId", "targetLabel", "context", "occurredAt", "confidence", "independent", "support")
+      .get(),
     user.collection("aiFeedbackLog").count().get(),
     db.getAll(...dates.map((date) => user.collection("dailyStats").doc(date))),
     db.collection("user_streaks").doc(userId).get(),
@@ -78,6 +85,7 @@ export async function readLearningSignalsFor(
     grammarPaste: grammarPaste.docs.map((d) => ({ ...d.data(), id: d.id })),
     lesenPaste: lesenPaste.docs.map((d) => ({ ...d.data(), id: d.id })),
     writing: writing.docs.map((d) => ({ ...d.data(), id: d.id })),
+    diagnostics: diagnostics.docs.map((d) => ({ ...d.data(), id: d.id })) as LearningSignalsInput["diagnostics"],
     totalWritingSubmissions: writingCount.data().count,
     dailyStats: dates.map((date, i) => ({ date, data: days[i]?.data() ?? null })),
     streak: (streak.data() ?? null) as LearningSignalsInput["streak"],
