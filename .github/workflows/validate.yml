@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: read
+  pull-requests: write
 
 jobs:
   validate:
@@ -24,10 +25,24 @@ jobs:
       - name: Install
         run: npm ci
       - name: Typecheck
-        run: npm run typecheck
+        run: npm run typecheck 2>&1 | tee validation.log
       - name: Lint
-        run: npm run lint
+        run: npm run lint 2>&1 | tee validation.log
       - name: Tests
-        run: npm test
+        run: npm test 2>&1 | tee validation.log
       - name: Compile-only production build
-        run: npm run build:compile
+        run: npm run build:compile 2>&1 | tee validation.log
+      - name: Report validation failure
+        if: failure() && github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          {
+            echo 'Validation failed. Last output:'
+            echo
+            echo '```'
+            tail -n 120 validation.log
+            echo '```'
+          } > validation-comment.md
+          gh pr comment "$PR_NUMBER" --body-file validation-comment.md
