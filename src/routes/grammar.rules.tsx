@@ -114,7 +114,8 @@ function GrammarRulesPage() {
                   return (
                     <div
                       key={topic}
-                      className="rounded-card bg-surface p-4 shadow-[var(--elevation-1)]"
+                      id={topic}
+                      className="scroll-mt-24 rounded-card bg-surface p-4 shadow-[var(--elevation-1)]"
                     >
                       <button
                         type="button"
