@@ -154,6 +154,20 @@ export const routineLessonSteps: readonly LessonStep[] = [
     skillIds: [singular, plural, agreement, sentence, V + "ACTION_SENSE"],
   },
   {
+    id: "U02.L01.transfer",
+    stage: "apply",
+    purpose: "practice",
+    kind: "original",
+    label: "Make the routine yours",
+    prompt:
+      "Write two short German sentences about a fictional routine: one about one person and one about a group or polite Sie.",
+    explanation:
+      "Reuse the verbs and subject patterns from this lesson, but choose your own fictional names/details. This open response is unassessed practice.",
+    inputLabel: "Your two routine sentences",
+    maxLength: 180,
+    skillIds: [singular, plural, agreement, sentence, V + "ACTION_SENSE"],
+  },
+  {
     id: "U02.L01.check",
     stage: "check",
     purpose: "formative-check",
@@ -279,6 +293,20 @@ export const belongingsLessonSteps: readonly LessonStep[] = [
     feedback:
       "Ihre refers to Nora; Sein refers to Leo. Sie in Nora's line refers to Bücher, which requires sind.",
     skillIds: [reference, possessive, nouns],
+  },
+  {
+    id: "U02.L02.transfer",
+    stage: "apply",
+    purpose: "practice",
+    kind: "original",
+    label: "Describe fictional belongings",
+    prompt:
+      "Write two short German sentences about fictional belongings. Use one singular noun phrase and one plural noun phrase with a possessive.",
+    explanation:
+      "Choose from the nouns and possessives taught in this lesson. This open response is unassessed practice and does not create mastery evidence.",
+    inputLabel: "Your two belongings sentences",
+    maxLength: 180,
+    skillIds: [possessive, nouns, reference],
   },
   {
     id: "U02.L02.check",
