@@ -21,6 +21,7 @@
     "test:scripts": "node --test 'scripts/**/*.test.mjs'",
     "test:ts": "node scripts/test-ts.mjs",
     "test:e2e": "playwright test",
+    "test:compat": "playwright test --config=playwright.compat.config.ts",
     "lint": "eslint .",
     "format": "prettier --write .",
     "build:compile": "node scripts/compile-safe.mjs"
