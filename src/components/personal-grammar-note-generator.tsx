@@ -7,10 +7,8 @@ import {
   generatePersonalGrammarPractice,
   type PersonalGrammarPractice,
 } from "@/lib/personal-grammar-practice";
-import {
-  DIAGNOSTIC_TARGET_TOPICS,
-  recordGrammarRemediation,
-} from "@/lib/grammar-remediation.server";
+import { recordGrammarRemediation } from "@/lib/grammar-remediation.server";
+import { DIAGNOSTIC_TARGET_TOPICS } from "@/lib/grammar-remediation";
 import type { GrammarRuleTopic } from "@/content/grammar-rules";
 
 const LANGUAGES = ["English", "Turkish", "Kurdish"] as const;
