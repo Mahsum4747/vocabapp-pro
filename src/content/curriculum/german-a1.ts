@@ -1199,7 +1199,7 @@ export const germanA1: CurriculumRelease = {
     },
     {
       id: "DE.A1.U02.L01",
-      resumeContractVersion: 1,
+      resumeContractVersion: 2,
       unitId: "DE.A1.U02",
       title: "Everyday actions and routine",
       outcome: "Produce simple routine statements with different subjects",
@@ -1216,7 +1216,7 @@ export const germanA1: CurriculumRelease = {
     },
     {
       id: "DE.A1.U02.L02",
-      resumeContractVersion: 1,
+      resumeContractVersion: 2,
       unitId: "DE.A1.U02",
       title: "People, belongings and plurals",
       outcome: "Explain whose objects they are; resolve simple reference",
