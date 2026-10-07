@@ -66,4 +66,18 @@ jobs:
       - name: Install browser engines
         run: npx playwright install --with-deps chromium firefox webkit
       - name: Cross-browser smoke
-        run: npm run test:compat
+        run: npm run test:compat 2>&1 | tee compatibility.log
+      - name: Report compatibility failure
+        if: failure() && github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          {
+            echo 'Compatibility smoke failed. Last output:'
+            echo
+            echo '```'
+            tail -n 160 compatibility.log
+            echo '```'
+          } > compatibility-comment.md
+          gh pr comment "$PR_NUMBER" --body-file compatibility-comment.md
