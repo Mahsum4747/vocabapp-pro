@@ -1143,7 +1143,7 @@ export const germanA1: CurriculumRelease = {
     },
     {
       id: "DE.A1.U01.L02",
-      resumeContractVersion: 1,
+      resumeContractVersion: 2,
       unitId: "DE.A1.U01",
       title: "Name people and things",
       outcome: "Match pictured/labeled entities then write a familiar noun phrase",
@@ -1163,7 +1163,7 @@ export const germanA1: CurriculumRelease = {
     },
     {
       id: "DE.A1.U01.L03",
-      resumeContractVersion: 1,
+      resumeContractVersion: 2,
       unitId: "DE.A1.U01",
       title: "Ask for personal details",
       description: "Ask who someone is, then read a registration number and date.",
@@ -1181,7 +1181,7 @@ export const germanA1: CurriculumRelease = {
     },
     {
       id: "DE.A1.U01.L04",
-      resumeContractVersion: 1,
+      resumeContractVersion: 2,
       unitId: "DE.A1.U01",
       title: "Give basic information",
       description: "Read an office note, fill a fictional form, and describe a place.",
