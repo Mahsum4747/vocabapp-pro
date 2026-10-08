@@ -3,9 +3,8 @@ import { z } from "zod";
 import { authMiddleware } from "./auth/middleware";
 import { GRAMMAR_RULES, type GrammarRuleTopic } from "@/content/grammar-rules";
 import {
-  DIAGNOSTIC_TARGET_TOPICS,
+  isDiagnosticTargetForTopic,
   remediationNextReviewAt,
-  type DiagnosticTargetId,
 } from "./grammar-remediation";
 
 const recordSchema = z.object({
@@ -37,10 +36,7 @@ export const recordGrammarRemediation = createServerFn({ method: "POST" })
     if (!isRuleTopic(data.topic) || data.correctCount > data.totalCount) {
       return { ok: false as const, error: "Invalid grammar practice result." };
     }
-    const expectedTopic = data.diagnosticTargetId
-      ? DIAGNOSTIC_TARGET_TOPICS[data.diagnosticTargetId as DiagnosticTargetId]
-      : undefined;
-    if (expectedTopic && expectedTopic !== data.topic) {
+    if (data.diagnosticTargetId && !isDiagnosticTargetForTopic(data.diagnosticTargetId, data.topic)) {
       return { ok: false as const, error: "Practice target does not match the diagnosed topic." };
     }
 
@@ -70,6 +66,26 @@ export const recordGrammarRemediation = createServerFn({ method: "POST" })
           ? String((error as { code?: unknown }).code)
           : "";
       if (code !== "6" && code !== "already-exists") throw error;
+
+      // A network retry must preserve the first session's spacing anchor.
+      // Reusing an operation ID for a different result is a conflict, not success.
+      const saved = (await ref.get()).data();
+      if (
+        !saved ||
+        saved.topic !== data.topic ||
+        saved.diagnosticTargetId !== data.diagnosticTargetId ||
+        saved.correctCount !== data.correctCount ||
+        saved.totalCount !== data.totalCount ||
+        !Number.isFinite(saved.completedAt) ||
+        !Number.isFinite(saved.nextReviewAt)
+      ) {
+        return { ok: false as const, error: "This practice result was already recorded with different details." };
+      }
+      return {
+        ok: true as const,
+        completedAt: saved.completedAt as number,
+        nextReviewAt: saved.nextReviewAt as number,
+      };
     }
 
     return { ok: true as const, completedAt, nextReviewAt };

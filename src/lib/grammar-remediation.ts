@@ -7,6 +7,14 @@ export const DIAGNOSTIC_TARGET_TOPICS = {
 
 export type DiagnosticTargetId = keyof typeof DIAGNOSTIC_TARGET_TOPICS;
 
+/** Never accept an arbitrary or mismatched diagnostic target as reviewed remediation. */
+export function isDiagnosticTargetForTopic(targetId: string, topic: GrammarRuleTopic): boolean {
+  return (
+    Object.prototype.hasOwnProperty.call(DIAGNOSTIC_TARGET_TOPICS, targetId) &&
+    DIAGNOSTIC_TARGET_TOPICS[targetId as DiagnosticTargetId] === topic
+  );
+}
+
 export const REMEDIATION_RECHECK_DELAY_MS = 24 * 60 * 60 * 1000;
 
 export function remediationNextReviewAt(completedAt: number): number {
