@@ -1,4 +1,5 @@
 import type { LessonDefinition, LessonStep } from "./types";
+import { lessonHint } from "./lesson-hint";
 
 export type StepResult = { outcome: "correct" | "incorrect" | "unassessed"; message: string };
 export type LessonSession = {
@@ -77,7 +78,9 @@ export function evaluateStep(step: LessonStep, response: string): StepResult | n
   );
   return {
     outcome: correct ? "correct" : "incorrect",
-    message: correct ? `That fits. ${step.feedback}` : `Try again. ${step.feedback}`,
+    message: correct
+      ? `That fits. ${step.feedback}`
+      : `Not quite. ${lessonHint(step, response)}`,
   };
 }
 /** In-memory lesson traversal only; no evidence, memory ratings or persistence. */
