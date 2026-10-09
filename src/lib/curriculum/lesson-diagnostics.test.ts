@@ -57,3 +57,38 @@ test("mit article mismatch maps to narrow mit + Dativ pattern", () => {
   assert.equal(result?.category, "case_form");
   assert.equal(result?.targetLabel, "mit + Dativ");
 });
+
+test("diagnoses a bounded object-pronoun substitution without broad case claims", () => {
+  const step: Extract<LessonStep, { kind: "text" }> = {
+    ...helpStep,
+    id: "pronoun",
+    prompt: "Complete the taught sentence.",
+    acceptedAnswers: ["Ich sehe ihn"],
+    skillIds: ["DE.A1.GRAMMAR.PRONOUNS.ACCUSATIVE"],
+  };
+  const result = diagnoseLessonResponse(lesson, step, "Ich sehe ihm");
+  assert.equal(result?.category, "pronoun_form");
+  assert.equal(result?.targetLabel, "Object pronoun in this sentence");
+});
+
+test("detects a word-order permutation only on an authored V2 target", () => {
+  const step: Extract<LessonStep, { kind: "text" }> = {
+    ...helpStep,
+    id: "v2",
+    prompt: "State the time first.",
+    acceptedAnswers: ["Heute gehe ich einkaufen"],
+    skillIds: ["DE.A1.GRAMMAR.ORDER.FRONTED_TIME"],
+  };
+  assert.equal(diagnoseLessonResponse(lesson, step, "Heute ich gehe einkaufen")?.category, "word_order");
+  assert.equal(diagnoseLessonResponse(lesson, { ...step, skillIds: [] }, "Heute ich gehe einkaufen"), null);
+});
+
+test("does not infer a narrow diagnosis from an unrelated wrong sentence", () => {
+  const step: Extract<LessonStep, { kind: "text" }> = {
+    ...helpStep,
+    id: "unrelated",
+    acceptedAnswers: ["Ich sehe ihn"],
+    skillIds: ["DE.A1.GRAMMAR.PRONOUNS.ACCUSATIVE"],
+  };
+  assert.equal(diagnoseLessonResponse(lesson, step, "Ich kaufe Brot"), null);
+});
