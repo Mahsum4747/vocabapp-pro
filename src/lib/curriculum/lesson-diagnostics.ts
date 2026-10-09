@@ -63,7 +63,9 @@ export function diagnoseLessonResponse(
       DATIVE_PRONOUNS.includes(token as (typeof DATIVE_PRONOUNS)[number]),
     );
     const hasHelpVerb = actualTokens.some((token) => /^helf|^hilf/.test(token));
-    if (expectedPronoun && hasHelpVerb && !actualTokens.includes(expectedPronoun)) {
+    const omittedRecipient = expectedPronoun && expectedTokens.length === actualTokens.length + 1 &&
+      expectedTokens.filter((token, index) => index !== expectedTokens.indexOf(expectedPronoun)).join(" ") === actualTokens.join(" ");
+    if (omittedRecipient && hasHelpVerb && expectedTokens.includes("helfen")) {
       return {
         domain: "grammar",
         category: "lexical_government",
@@ -79,7 +81,11 @@ export function diagnoseLessonResponse(
   if (context.includes("mit ") || expectedTokens[0] === "mit") {
     const expectedArticle = expectedTokens.find((token) => ["dem", "der", "den"].includes(token));
     const hasMit = actualTokens.includes("mit");
-    if (expectedArticle && hasMit && !actualTokens.includes(expectedArticle)) {
+    const articleIndex = expectedTokens.indexOf(expectedArticle ?? "");
+    const onlyArticleChanged = articleIndex >= 0 && expectedTokens.length === actualTokens.length &&
+      expectedTokens.every((token, index) => index === articleIndex || token === actualTokens[index]) &&
+      actualTokens[articleIndex] !== expectedArticle;
+    if (expectedArticle && hasMit && onlyArticleChanged && expectedTokens.includes("mit")) {
       return {
         domain: "grammar",
         category: "case_form",
