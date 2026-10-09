@@ -92,3 +92,32 @@ test("does not infer a narrow diagnosis from an unrelated wrong sentence", () =>
   };
   assert.equal(diagnoseLessonResponse(lesson, step, "Ich kaufe Brot"), null);
 });
+
+
+test("curated dative government diagnoses a verified infinitive frame", () => {
+  const step: Extract<LessonStep, { kind: "text" }> = {
+    ...helpStep, acceptedAnswers: ["Ich will ihm helfen"],
+    skillIds: ["DE.A1.GRAMMAR.PRONOUNS.DATIVE"],
+  };
+  const result = diagnoseLessonResponse(lesson, step, "Ich will ihn helfen");
+  assert.equal(result?.category, "lexical_government");
+  assert.match(result?.targetLabel ?? "", /Dativ object with helfen/);
+});
+
+test("curated prepositional government diagnoses a verified infinitive frame", () => {
+  const step: Extract<LessonStep, { kind: "text" }> = {
+    ...helpStep, acceptedAnswers: ["Ich will mit ihm sprechen"],
+    skillIds: ["DE.A1.GRAMMAR.PRONOUNS.DATIVE"],
+  };
+  const result = diagnoseLessonResponse(lesson, step, "Ich will mit ihn sprechen");
+  assert.equal(result?.category, "lexical_government");
+  assert.equal(result?.targetLabel, "sprechen + mit + Dativ");
+});
+
+test("unknown verb is not assigned a case rule from expected-answer contrast", () => {
+  const step: Extract<LessonStep, { kind: "text" }> = {
+    ...helpStep, acceptedAnswers: ["Ich blorfe ihn"],
+    skillIds: ["DE.A1.GRAMMAR.PRONOUNS.ACCUSATIVE"],
+  };
+  assert.equal(diagnoseLessonResponse(lesson, step, "Ich blorfe ihm"), null);
+});
