@@ -135,6 +135,17 @@ export function diagnoseLessonResponse(
     }
   }
 
+  // A case mismatch without a verified government frame is not proof of a rule.
+  // Do not let the generic pronoun heuristic turn it into a confident diagnosis.
+  if (expectedTokens.length === actualTokens.length &&
+      expectedTokens.filter((token, index) => token !== actualTokens[index]).length === 1) {
+    const i = expectedTokens.findIndex((token, index) => token !== actualTokens[index]);
+    const a = expectedTokens[i], b = actualTokens[i];
+    const acc = ["mich", "dich", "ihn", "es"];
+    const dat = ["mir", "dir", "ihm", "ihr", "ihnen"];
+    if ((acc.includes(a) && dat.includes(b)) || (dat.includes(a) && acc.includes(b))) return null;
+  }
+
   // Diagnose only when the authored expected response provides a reliable contrast.
   // Never treat a generic wrong answer as proof of a broad grammar weakness.
   const accusativePronouns = ["mich", "dich", "ihn", "sie", "es", "uns", "euch"];
