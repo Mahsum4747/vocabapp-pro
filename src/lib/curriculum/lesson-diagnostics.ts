@@ -90,6 +90,55 @@ export function diagnoseLessonResponse(
     }
   }
 
+  // Diagnose only when the authored expected response provides a reliable contrast.
+  // Never treat a generic wrong answer as proof of a broad grammar weakness.
+  const accusativePronouns = ["mich", "dich", "ihn", "sie", "es", "uns", "euch"];
+  const dativePronouns = ["mir", "dir", "ihm", "ihr", "uns", "euch", "ihnen"];
+  const pronounSkills = new Set([
+    "DE.A1.GRAMMAR.PRONOUNS.ACCUSATIVE",
+    "DE.A1.GRAMMAR.PRONOUNS.DATIVE",
+  ]);
+  if (step.skillIds.some((id) => pronounSkills.has(id))) {
+    const expectedPronoun = expectedTokens.find((token) =>
+      [...accusativePronouns, ...dativePronouns].includes(token),
+    );
+    const suppliedPronoun = actualTokens.find((token) =>
+      [...accusativePronouns, ...dativePronouns].includes(token),
+    );
+    if (expectedPronoun && suppliedPronoun && expectedPronoun !== suppliedPronoun &&
+        expectedTokens.length === actualTokens.length &&
+        expectedTokens.filter((token) => token !== expectedPronoun).every((token) =>
+          actualTokens.includes(token))) {
+      return {
+        domain: "grammar",
+        category: "pronoun_form",
+        targetLabel: "Object pronoun in this sentence",
+        confidence: 0.76,
+        independent,
+        support,
+      };
+    }
+  }
+
+  const orderSkills = new Set([
+    "DE.A1.GRAMMAR.ORDER.DECLARATIVE_V2",
+    "DE.A1.GRAMMAR.ORDER.FRONTED_TIME",
+  ]);
+  if (step.skillIds.some((id) => orderSkills.has(id)) &&
+      expectedTokens.length >= 3 &&
+      expectedTokens.length === actualTokens.length &&
+      expectedTokens[1] !== actualTokens[1] &&
+      [...expectedTokens].sort().join(" ") === [...actualTokens].sort().join(" ")) {
+    return {
+      domain: "grammar",
+      category: "word_order",
+      targetLabel: "Main-clause word order",
+      confidence: 0.7,
+      independent,
+      support,
+    };
+  }
+
   const dativeSkills = new Set([
     "DE.A1.GRAMMAR.PRONOUNS.DATIVE",
     "DE.A1.GRAMMAR.VERBS.DATIVE_FRAMES",
