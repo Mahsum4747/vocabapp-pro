@@ -66,7 +66,7 @@ test("diagnoses a bounded object-pronoun substitution without broad case claims"
     acceptedAnswers: ["Ich sehe ihn"],
     skillIds: ["DE.A1.GRAMMAR.PRONOUNS.ACCUSATIVE"],
   };
-  const result = diagnoseLessonResponse(lesson, step, "Ich sehe ihm");
+  const result = diagnoseLessonResponse(lesson, step, "Ich sehe mich");
   assert.equal(result?.category, "pronoun_form");
   assert.equal(result?.targetLabel, "Object pronoun in this sentence");
 });
