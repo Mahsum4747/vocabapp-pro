@@ -1,3 +1,5 @@
+import { DATIVE_VERB_DATA } from "../german/dative-verbs-data";
+import { VERB_GOVERNMENT_DATA } from "../german/verb-government-data";
 import { normalizeLessonAnswer } from "./lesson-session";
 import type { LessonDefinition, LessonStep } from "./types";
 import type { DiagnosticCategory, DiagnosticDomain } from "../learner-diagnostics";
@@ -87,6 +89,49 @@ export function diagnoseLessonResponse(
         independent,
         support,
       };
+    }
+  }
+
+  // Verified government: diagnose only a single case-form substitution in an
+  // otherwise identical authored sentence. Never infer from a wrong sentence alone.
+  const caseForms: Record<string, "akkusativ" | "dativ" | "ambiguous"> = {
+    mich: "akkusativ", dich: "akkusativ", ihn: "akkusativ", es: "akkusativ",
+    mir: "dativ", dir: "dativ", ihm: "dativ", ihr: "dativ", ihnen: "dativ",
+    uns: "ambiguous", euch: "ambiguous", sie: "ambiguous",
+  };
+  if (expectedTokens.length === actualTokens.length) {
+    const changes = expectedTokens.flatMap((token, index) =>
+      token === actualTokens[index] ? [] : [{ index, expected: token, actual: actualTokens[index] }],
+    );
+    if (changes.length === 1) {
+      const change = changes[0];
+      const expectedCase = caseForms[change.expected];
+      const actualCase = caseForms[change.actual];
+      if (expectedCase && actualCase && expectedCase !== "ambiguous" &&
+          actualCase !== "ambiguous" && expectedCase !== actualCase) {
+        const preceding = expectedTokens[change.index - 1];
+        const prepFrames = VERB_GOVERNMENT_DATA.filter((entry) =>
+          entry.preposition === preceding && entry.case === expectedCase &&
+          // Only a visible infinitive: conjugation/lemma resolution is not reliable here.
+          expectedTokens.includes(entry.verb) && !entry.verb.includes(" "),
+        );
+        const dativeFrame = expectedCase === "dativ" &&
+          DATIVE_VERB_DATA.some((entry) =>
+            expectedTokens.includes(entry.verb) &&
+            // Ditransitives have both Dativ and Akkusativ objects: do not guess roles.
+            !["geben", "bringen", "schenken", "sagen", "schreiben", "zeigen", "schicken", "verkaufen", "erklären", "erzählen"].includes(entry.verb),
+          );
+        if (prepFrames.length === 1 || dativeFrame) {
+          const frame = prepFrames[0];
+          const targetLabel = frame
+            ? `${frame.verb} + ${frame.preposition} + ${expectedCase === "dativ" ? "Dativ" : "Akkusativ"}`
+            : `Dativ object with ${expectedTokens.find((token) => DATIVE_VERB_DATA.some((entry) => entry.verb === token))}`;
+          return {
+            domain: "grammar", category: "lexical_government", targetLabel,
+            confidence: 0.88, independent, support,
+          };
+        }
+      }
     }
   }
 
