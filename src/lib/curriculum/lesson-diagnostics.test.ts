@@ -121,3 +121,17 @@ test("unknown verb is not assigned a case rule from expected-answer contrast", (
   };
   assert.equal(diagnoseLessonResponse(lesson, step, "Ich blorfe ihm"), null);
 });
+
+
+test("unrelated response containing helfen does not masquerade as omitted dative", () => {
+  assert.equal(diagnoseLessonResponse(lesson, helpStep, "Ich helfe heute"), null);
+});
+
+test("mit rule does not diagnose unrelated changes as an article error", () => {
+  const step: Extract<LessonStep, { kind: "text" }> = {
+    ...helpStep, acceptedAnswers: ["mit dem Bus"],
+    skillIds: ["DE.A1.GRAMMAR.CASES.DATIVE_ARTICLES"],
+  };
+  const result = diagnoseLessonResponse(lesson, step, "mit der Bahn");
+  assert.notEqual(result?.targetId, "DE.GRAMMAR.PREPOSITION.MIT_DAT");
+});
