@@ -43,4 +43,15 @@ const report = {
 if (!conjugatedLemmas.size || !governmentRows.length || !extractedFrames.frames.length) {
   throw new Error("Verb source parsing failed; audit numbers would be misleading");
 }
+if (process.argv.includes("--full")) {
+  // Machine-readable queue for source review; no guessed valency assignments.
+  report.lemmaInventory = [...conjugatedLemmas].sort().map((lemma) => ({
+    lemma,
+    curatedDative: dativeLemmas.has(lemma),
+    curatedGovernment: governmentLemmas.has(lemma),
+    extractedKaikki: extractedLemmas.has(lemma),
+    wiktionaryTransitive: transitiveLemmas.has(lemma),
+    sourceStatus: knownLemmas.has(lemma) ? "evidence-present" : "unresolved",
+  }));
+}
 console.log(JSON.stringify(report, null, 2));
