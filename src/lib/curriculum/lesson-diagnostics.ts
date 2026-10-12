@@ -33,9 +33,15 @@ function hasVerifiedVerbForm(sentenceTokens: readonly string[], lemma: string): 
     .filter((form): form is string => Boolean(form));
   // A stripped separable-prefix form (e.g. geht for fremdgehen) is not
   // independent evidence for that prefixed verb without the prefix.
-  const prefix = SEPARABLE_PREFIXES.find((candidate) => lemma.startsWith(candidate) && lemma.length > candidate.length + 3);
+  // Prefix spelling alone is not enough: antworten begins with "an" but
+  // is not separable. A sourced finite form that keeps the prefix confirms
+  // the verb is not being used as a stripped separable form.
+  const prefixCandidate = [...SEPARABLE_PREFIXES].sort((a, b) => b.length - a.length)
+    .find((candidate) => lemma.startsWith(candidate) && lemma.length > candidate.length + 3);
+  const prefix = prefixCandidate && !paradigm.er.toLowerCase().startsWith(prefixCandidate)
+    ? prefixCandidate : null;
   return forms.some((form) => sentenceTokens.includes(form) &&
-    (!prefix || form.includes(prefix) || sentenceTokens.includes(prefix)));
+    (!prefix || form.toLowerCase().includes(prefix) || sentenceTokens.includes(prefix)));
 }
 
 function tokens(value: string) {
