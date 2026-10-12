@@ -6,22 +6,23 @@ import { diagnoseLessonResponse } from "../src/lib/curriculum/lesson-diagnostics
 test("Karta home, grammar reference and lesson shell remain usable", async ({ page, launch }) => {
   await launch({ sets: [], handlers: courseProgressFixture().handlers });
 
-  await page.goto("/");
+  // Let route hydration and module requests settle before the next full navigation.
+  await page.goto("/", { waitUntil: "networkidle" });
   await expect(page.getByRole("heading", { name: "Keep learning with Karta" })).toBeVisible();
   await expect(page.getByRole("link", { name: /Grammar Reference/i })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 
-  await page.goto("/grammar/rules");
+  await page.goto("/grammar/rules", { waitUntil: "networkidle" });
   await expect(page.getByRole("heading", { name: "Grammar Reference" })).toBeVisible();
   const search = page.getByPlaceholder("Search rules by topic…");
   await search.fill("helfen");
   await expect(page.getByText("helfen + Dativ", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Create personal AI note" })).toBeVisible();
 
-  await page.goto("/learn/DE.A1.U01.L01");
+  await page.goto("/learn/DE.A1.U01.L01", { waitUntil: "networkidle" });
   await expect(page.getByRole("heading", { name: /You meet someone in a German course/i })).toBeVisible();
   await page.getByRole("button", { name: "Continue", exact: true }).click();
-  await expect(page.getByText("Ich bin Mira.", { exact: false })).toBeVisible();
+  await expect(page.getByText("Ich bin Mira.", { exact: true })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 
   const viewport = page.viewportSize();
