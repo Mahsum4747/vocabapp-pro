@@ -1,5 +1,6 @@
 import { DATIVE_VERB_DATA } from "../german/dative-verbs-data";
 import { VERB_GOVERNMENT_DATA } from "../german/verb-government-data";
+import { lookupVerbConjugation } from "../german/verb-conjugation-data";
 import { normalizeLessonAnswer } from "./lesson-session";
 import type { LessonDefinition, LessonStep } from "./types";
 import type { DiagnosticCategory, DiagnosticDomain } from "../learner-diagnostics";
@@ -15,6 +16,27 @@ export type LessonDiagnosticDraft = {
 };
 
 const DATIVE_PRONOUNS = ["mir", "dir", "ihm", "ihr", "uns", "euch", "ihnen"] as const;
+
+// A1-safe case pairs: the two forms refer to the same person/number.
+// Other contrasts (e.g. ihn -> mir) change the referent as well as the case.
+const CROSS_CASE_PAIRS = new Set(["mich|mir", "mir|mich", "dich|dir", "dir|dich", "ihn|ihm", "ihm|ihn"]);
+const NON_DITRANSITIVE_A1_DATIVE = new Set(["antworten", "folgen", "gefallen", "gehören", "glauben", "helfen", "raten", "schmecken", "zuhören"]);
+const FIXED_PREPOSITIONS = new Set(["aus", "außer", "bei", "mit", "nach", "seit", "von", "zu", "durch", "für", "gegen", "ohne", "um"]);
+const SEPARABLE_PREFIXES = ["ab", "an", "auf", "aus", "bei", "ein", "mit", "nach", "vor", "zu", "zurück", "weg"];
+
+/** Recognize only sourced inflections; never manufacture a lemma from a word. */
+function hasVerifiedVerbForm(sentenceTokens: readonly string[], lemma: string): boolean {
+  if (lemma.includes(" ")) return false;
+  const paradigm = lookupVerbConjugation(lemma);
+  if (!paradigm) return sentenceTokens.includes(lemma);
+  const forms = [paradigm.infinitive, paradigm.ich, paradigm.du, paradigm.er, paradigm.partizipII]
+    .filter((form): form is string => Boolean(form));
+  // A stripped separable-prefix form (e.g. geht for fremdgehen) is not
+  // independent evidence for that prefixed verb without the prefix.
+  const prefix = SEPARABLE_PREFIXES.find((candidate) => lemma.startsWith(candidate) && lemma.length > candidate.length + 3);
+  return forms.some((form) => sentenceTokens.includes(form) &&
+    (!prefix || form.includes(prefix) || sentenceTokens.includes(prefix)));
+}
 
 function tokens(value: string) {
   return normalizeLessonAnswer(value, false, true)
@@ -98,8 +120,8 @@ export function diagnoseLessonResponse(
     }
   }
 
-  // Verified government: diagnose only a single case-form substitution in an
-  // otherwise identical authored sentence. Never infer from a wrong sentence alone.
+  // Verified government: one aligned case substitution in an otherwise
+  // identical authored answer. We do not parse arbitrary German sentences.
   const caseForms: Record<string, "akkusativ" | "dativ" | "ambiguous"> = {
     mich: "akkusativ", dich: "akkusativ", ihn: "akkusativ", es: "akkusativ",
     mir: "dativ", dir: "dativ", ihm: "dativ", ihr: "dativ", ihnen: "dativ",
@@ -113,27 +135,34 @@ export function diagnoseLessonResponse(
       const change = changes[0];
       const expectedCase = caseForms[change.expected];
       const actualCase = caseForms[change.actual];
-      if (expectedCase && actualCase && expectedCase !== "ambiguous" &&
-          actualCase !== "ambiguous" && expectedCase !== actualCase) {
+      if (expectedCase && actualCase && expectedCase !== actualCase &&
+          expectedCase !== "ambiguous" && actualCase !== "ambiguous" &&
+          CROSS_CASE_PAIRS.has(`${change.expected}|${change.actual}`)) {
         const preceding = expectedTokens[change.index - 1];
+        // Only the immediately adjacent preposition can govern this pronoun.
         const prepFrames = VERB_GOVERNMENT_DATA.filter((entry) =>
           entry.preposition === preceding && entry.case === expectedCase &&
-          // Only a visible infinitive: conjugation/lemma resolution is not reliable here.
-          expectedTokens.includes(entry.verb) && !entry.verb.includes(" "),
+          hasVerifiedVerbForm(expectedTokens, entry.verb),
         );
-        const dativeFrame = expectedCase === "dativ" &&
-          DATIVE_VERB_DATA.some((entry) =>
-            expectedTokens.includes(entry.verb) &&
-            // Ditransitives have both Dativ and Akkusativ objects: do not guess roles.
-            !["geben", "bringen", "schenken", "sagen", "schreiben", "zeigen", "schicken", "verkaufen", "erklären", "erzählen"].includes(entry.verb),
-          );
-        if (prepFrames.length === 1 || dativeFrame) {
+        // A fixed-case preposition governs the phrase, not a nearby verb.
+        // Do not claim a dative verb caused a case error inside a PP.
+        const dativeFrames = expectedCase === "dativ" && !FIXED_PREPOSITIONS.has(preceding ?? "") &&
+          !VERB_GOVERNMENT_DATA.some((entry) => entry.preposition === preceding) ?
+          DATIVE_VERB_DATA.filter((entry) => NON_DITRANSITIVE_A1_DATIVE.has(entry.verb) &&
+            hasVerifiedVerbForm(expectedTokens, entry.verb)) : [];
+        // Multiple candidates or unsupported prepositional roles are ambiguous.
+        if (prepFrames.length === 1 && dativeFrames.length === 0) {
           const frame = prepFrames[0];
-          const targetLabel = frame
-            ? `${frame.verb} + ${frame.preposition} + ${expectedCase === "dativ" ? "Dativ" : "Akkusativ"}`
-            : `Dativ object with ${expectedTokens.find((token) => DATIVE_VERB_DATA.some((entry) => entry.verb === token))}`;
           return {
-            domain: "grammar", category: "lexical_government", targetLabel,
+            domain: "grammar", category: "lexical_government",
+            targetLabel: `${frame.verb} + ${frame.preposition} + ${expectedCase === "dativ" ? "Dativ" : "Akkusativ"}`,
+            confidence: 0.88, independent, support,
+          };
+        }
+        if (prepFrames.length === 0 && dativeFrames.length === 1) {
+          return {
+            domain: "grammar", category: "lexical_government",
+            targetLabel: `${dativeFrames[0].verb} + Dativ`,
             confidence: 0.88, independent, support,
           };
         }
