@@ -22,7 +22,9 @@ test("Karta home, grammar reference and lesson shell remain usable", async ({ pa
   await page.goto("/learn/DE.A1.U01.L01", { waitUntil: "networkidle" });
   await expect(page.getByRole("heading", { name: /You meet someone in a German course/i })).toBeVisible();
   await page.getByRole("button", { name: "Continue", exact: true }).click();
-  await expect(page.getByText("Ich bin Mira.", { exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: germanA1.lessons[0].steps[1].prompt, exact: true })).toBeVisible();
+  await expect(page.locator("blockquote")).toContainText("Ich bin Mira.");
+  await expect(page.getByText("Progress saved", { exact: true })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 
   const viewport = page.viewportSize();
