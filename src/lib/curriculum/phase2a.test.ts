@@ -1,3 +1,4 @@
+import { lessonResumeContractVersion } from "./course-progress";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFileSync } from "node:fs";
@@ -37,7 +38,7 @@ for (const lesson of lessons) {
     );
     assert.deepEqual(lesson.consolidatedSkillIds, []);
     assert.equal(lesson.unitId, unit.id);
-    assert.equal(lesson.resumeContractVersion, 1);
+    assert.ok(Number.isInteger(lesson.resumeContractVersion) && lesson.resumeContractVersion! >= 1);
     assert.equal(lesson.availability, "prototype");
     for (const id of lesson.introducedSkillIds) {
       const skill = germanA1.skills.find((skill) => skill.id === id)!;
@@ -71,7 +72,7 @@ for (const lesson of lessons) {
     const write = (revision: number, action: ProgressCommand["action"]) => ({
       ...COURSE_SCOPE,
       lessonId: lesson.id,
-      resumeContractVersion: 1,
+      resumeContractVersion: lessonResumeContractVersion(lesson),
       expectedRevision: revision,
       operationId: randomUUID(),
       action,
@@ -193,7 +194,7 @@ for (const index of [2, 3])
         await saveCourseProgress(f.db, "u", {
           ...COURSE_SCOPE,
           lessonId: lesson.id,
-          resumeContractVersion: 1,
+          resumeContractVersion: lessonResumeContractVersion(lesson),
           expectedRevision: revision++,
           operationId: randomUUID(),
           action: {
@@ -210,7 +211,7 @@ for (const index of [2, 3])
         await saveCourseProgress(f.db, "u", {
           ...COURSE_SCOPE,
           lessonId: lesson.id,
-          resumeContractVersion: 1,
+          resumeContractVersion: lessonResumeContractVersion(lesson),
           expectedRevision: revision++,
           operationId: randomUUID(),
           action: { type: "continue", stepId: step.id },
@@ -231,7 +232,7 @@ async function finish(f: ReturnType<typeof fakeProgressDb>, index: number) {
     const command = (action: ProgressCommand["action"]) => ({
       ...COURSE_SCOPE,
       lessonId: lesson.id,
-      resumeContractVersion: 1,
+      resumeContractVersion: lessonResumeContractVersion(lesson),
       expectedRevision: revision++,
       operationId: randomUUID(),
       action,
@@ -277,7 +278,7 @@ test("three Unit 2 lessons are incomplete; four finish only Unit 2; restart reta
   await saveCourseProgress(f.db, "u", {
     ...COURSE_SCOPE,
     lessonId: lessons[3].id,
-    resumeContractVersion: 1,
+    resumeContractVersion: lessonResumeContractVersion(lessons[3]),
     expectedRevision: stored.revision,
     operationId: randomUUID(),
     action: { type: "restart" },
@@ -301,7 +302,7 @@ test("three Unit 2 lessons are incomplete; four finish only Unit 2; restart reta
     ),
   );
 });
-test("next guided action follows Unit 1 then Unit 2, independently of assessment; later unauthored lessons unavailable", async () => {
+test("next guided action follows Unit 1 then Unit 2, independently of assessment; later authored lessons allow ahead study; unauthored content is rejected", async () => {
   const f = fakeProgressDb();
   assert.equal(courseLearningAction(germanA1, {}).lesson?.id, germanA1.lessons[0].id);
   for (const index of [0, 1, 2, 3]) await finish(f, index);
@@ -315,12 +316,11 @@ test("next guided action follows Unit 1 then Unit 2, independently of assessment
   });
   assert.equal(attempt.formId, "U01.FORM.A");
   assert.equal(courseLearningAction(germanA1, states).lesson?.id, lessons[0].id);
-  assert.ok(
-    germanA1.lessons
-      .slice(20)
-      .every((lesson) => lesson.availability === "not-authored" && !lesson.steps.length),
-  );
-  assert.throws(() => startLesson(germanA1.id, germanA1.lessons[20]));
+  const later = germanA1.lessons[20];
+  assert.equal(startLesson(germanA1.id, later).status, "in-progress");
+  assert.throws(() => startLesson(germanA1.id, {
+    ...later, availability: "not-authored", steps: [],
+  }));
 });
 test("Unit 2 completion does not unlock Unit 1 check or generate assessment evidence", async () => {
   const f = fakeProgressDb();

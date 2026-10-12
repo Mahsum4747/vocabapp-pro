@@ -1,3 +1,4 @@
+import { lessonResumeContractVersion } from "./course-progress";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
@@ -39,7 +40,7 @@ const command = (
 ): ProgressCommand => ({
   ...COURSE_SCOPE,
   lessonId: lesson.id,
-  resumeContractVersion: 1,
+  resumeContractVersion: lessonResumeContractVersion(lesson),
   expectedRevision: revision,
   operationId: randomUUID(),
   action,
@@ -117,7 +118,7 @@ async function clear(s: ReturnType<typeof fakeProgressDb>, unitId: string, user 
   );
 }
 
-test("Unit 3 exact frozen blueprint, ten steps each, meaningful recall/read/production and original scope", () => {
+test("Unit 3 exact frozen blueprint, eleven steps each, meaningful recall/read/production and original scope", () => {
   assert.deepEqual(validateCurriculum(germanA1), []);
   const rows = readFileSync("GERMAN_A1_BLUEPRINT.md", "utf8")
     .split("\n")
@@ -143,8 +144,8 @@ test("Unit 3 exact frozen blueprint, ten steps each, meaningful recall/read/prod
     );
     assert.deepEqual(lesson.consolidatedSkillIds, []);
     assert.equal(lesson.availability, "prototype");
-    assert.equal(lesson.resumeContractVersion, 1);
-    assert.equal(lesson.steps.length, 10);
+    assert.ok(Number.isInteger(lesson.resumeContractVersion) && lesson.resumeContractVersion! >= 1);
+    assert.equal(lesson.steps.length, 11);
     for (const step of lesson.steps) {
       assert.ok(!ids.has(step.id));
       ids.add(step.id);
@@ -288,7 +289,7 @@ test("Unit 3 stale revisions/idempotency preserve the existing durable schema an
   );
   const row = s.records.get(courseProgressPath(owner, input)) as Record<string, unknown>;
   assert.equal(row.schemaVersion, 2);
-  assert.equal(row.resumeContractVersion, 1);
+  assert.equal(row.resumeContractVersion, input.resumeContractVersion);
   assert.ok(Array.isArray(row.receipts));
 });
 test("challenge-cleared Units 1/2 guide Unit 3; all four lessons finish truthfully, Unit 4 is next, CP1 has separate identity", async () => {

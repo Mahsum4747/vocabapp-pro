@@ -1,3 +1,4 @@
+import { lessonResumeContractVersion } from "./course-progress";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { randomUUID } from "node:crypto";
@@ -74,7 +75,7 @@ function courseProgressFixture() {
         const result = await saveCourseProgress(storage.db, owner, {
           ...COURSE_SCOPE,
           lessonId: lesson.id,
-          resumeContractVersion: 1,
+          resumeContractVersion: lessonResumeContractVersion(lesson),
           expectedRevision: revision,
           operationId: randomUUID(),
           action,
@@ -121,7 +122,7 @@ test("Batch A exactly preserves the frozen registry, prerequisite DAG and skill 
       row[2].split(",").map((h) => ids.get(h)),
     );
     assert.deepEqual(lesson.consolidatedSkillIds, []);
-    assert.equal(lesson.resumeContractVersion, 1);
+    assert.ok(Number.isInteger(lesson.resumeContractVersion) && lesson.resumeContractVersion! >= 1);
     assert(lesson.steps.length >= 9 && lesson.steps.length <= 12);
     for (const skill of lesson.introducedSkillIds)
       assert(
@@ -377,7 +378,7 @@ test("All eight lessons save and reload through existing owned contracts; ahead 
     const input: ProgressCommand = {
       ...COURSE_SCOPE,
       lessonId: lesson.id,
-      resumeContractVersion: 1,
+      resumeContractVersion: lessonResumeContractVersion(lesson),
       expectedRevision: 0,
       operationId: randomUUID(),
       action: { type: "continue", stepId: lesson.steps[0].id },

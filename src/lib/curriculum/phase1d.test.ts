@@ -1,3 +1,4 @@
+import { lessonResumeContractVersion } from "./course-progress";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFileSync } from "node:fs";
@@ -35,37 +36,8 @@ const rows = blueprint.split("\n").map((line) =>
 const skillRows = rows.filter((cells) => /^[GRWV]\d{2}$/.test(cells[0] ?? ""));
 const handles = new Map(skillRows.map((cells) => [cells[0], cells[1]]));
 for (const [index, stages] of [
-  [
-    2,
-    [
-      "discover",
-      "understand",
-      "recognize",
-      "recall",
-      "understand",
-      "read",
-      "read",
-      "produce",
-      "produce",
-      "check",
-    ],
-  ],
-  [
-    3,
-    [
-      "discover",
-      "understand",
-      "recognize",
-      "recall",
-      "read",
-      "produce",
-      "apply",
-      "apply",
-      "apply",
-      "apply",
-      "check",
-    ],
-  ],
+  [2, ["discover", "understand", "recognize", "recall", "understand", "read", "read", "produce", "produce", "apply", "check"]],
+  [3, ["discover", "understand", "recognize", "recall", "read", "produce", "understand", "apply", "apply", "produce", "apply", "check"]],
 ] as const) {
   const lesson = lessons[index];
   test(`${lesson.id}: exact blueprint metadata, prerequisites, bounded stages and coverage`, () => {
@@ -78,7 +50,7 @@ for (const [index, stages] of [
     );
     assert.deepEqual(lesson.consolidatedSkillIds, []);
     assert.equal(lesson.unitId, unit.id);
-    assert.equal(lesson.resumeContractVersion, 1);
+    assert.ok(Number.isInteger(lesson.resumeContractVersion) && lesson.resumeContractVersion! >= 1);
     assert.deepEqual(
       lesson.steps.map((step) => step.stage),
       stages,
@@ -137,10 +109,10 @@ test("new tasks distinguish reversed dates, count/plural, verb and unsupported d
     assert.equal(evaluateStep(step, bad)?.outcome, "incorrect");
   };
   check(2, ".read-date", "3.12.", "12.03.");
-  check(2, ".count", "zwei Telefone", "zwei Telefon");
-  check(2, ".produce", "Wer bist du?", "Wer du bist?");
-  check(3, ".recall", "habe", "bin");
-  check(3, ".produce", "Das Büro ist groß.", "Das Büro ist kleine.");
+  check(2, ".supported-count", "zwei Telefone", "zwei Telefon");
+  check(2, ".independent-question", "Wer bist du?", "Wer du bist?");
+  check(3, ".controlled-have", "habe", "bin");
+  check(3, ".supported-description", "Das Büro ist groß.", "Das Büro ist kleine.");
   assert.notDeepEqual(
     l03.steps.map((s) => s.stage),
     l04.steps.map((s) => s.stage),
@@ -154,7 +126,7 @@ function command(
   return {
     ...COURSE_SCOPE,
     lessonId: lessons[index].id,
-    resumeContractVersion: 1,
+    resumeContractVersion: lessonResumeContractVersion(lessons[index]),
     expectedRevision: revision,
     operationId: randomUUID(),
     action,
@@ -166,7 +138,7 @@ test("four durable lesson records derive unit completion; every write is isolate
   assert.equal(unitProgress(germanA1, unit, sessions).status, "Not started");
   const read = async () => {
     const rows = (await readCourseProgress(f.db, "u", COURSE_SCOPE)).lessons;
-    assert.equal(rows.length, 20);
+    assert.equal(rows.length, 40);
     sessions = Object.fromEntries(
       rows
         .filter((row) => row.progress)
@@ -269,7 +241,7 @@ for (const index of [2, 3])
       (
         await saveCourseProgress(f.db, "u", {
           ...command(index, 1, { type: "restart" }),
-          resumeContractVersion: 2,
+          resumeContractVersion: lessonResumeContractVersion(lessons[index]) + 1,
         })
       ).kind,
       "unavailable",

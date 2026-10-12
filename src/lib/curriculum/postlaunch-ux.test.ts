@@ -1,3 +1,4 @@
+import { lessonResumeContractVersion } from "./course-progress";
 import { lessonHint } from "./lesson-hint";
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -31,8 +32,8 @@ test("German bounded keyboard fallbacks preserve intentional capitalization and 
   ])
     assert.equal(normalizeLessonAnswer(a, false, true), normalizeLessonAnswer(b, false, true));
   assert.notEqual(normalizeLessonAnswer("für"), normalizeLessonAnswer("fuer"));
-  assert.equal(evaluateStep(step("U01.L02.produce"), "ein Buero")?.outcome, "correct");
-  assert.equal(evaluateStep(step("U01.L02.produce"), "ein buero")?.outcome, "incorrect");
+  assert.equal(evaluateStep(step("U01.L02.supported"), "ein Buero")?.outcome, "correct");
+  assert.equal(evaluateStep(step("U01.L02.supported"), "ein buero")?.outcome, "incorrect");
   assert.equal(evaluateStep(step("U02.L04.read"), "gross")?.outcome, "correct");
   assert.equal(
     evaluateStep({ ...step("U02.L04.read"), answerLanguage: undefined } as LessonStep, "gross")
@@ -50,7 +51,7 @@ test("each reviewed sentence blank accepts only its exact taught sentence equiva
     );
   assert.equal(blanks.length, 11);
   for (const s of blanks) {
-    assert.ok(s.prompt.includes("Type only the missing"), s.id);
+    assert.match(s.prompt, /Complete/i, s.id);
     assert.equal(s.acceptedAnswers.length, 2, s.id);
     assert.equal(evaluateStep(s, s.acceptedAnswers[1])?.outcome, "correct", s.id);
     assert.equal(evaluateStep(s, s.acceptedAnswers[1] + " Heute.")?.outcome, "incorrect", s.id);
@@ -135,7 +136,7 @@ test("Home derives start/continue/blocked from existing scoped course progress",
   assert.equal(homeCourseAction(base).lesson?.id, lesson.id);
   const descriptor = {
     lessonId: lesson.id,
-    resumeContractVersion: 1,
+    resumeContractVersion: lessonResumeContractVersion(lesson),
     definitionHash: "0".repeat(64),
     unavailable: false,
     progress: initialProgress(lesson, "0".repeat(64)),

@@ -27,10 +27,10 @@ function hasVerifiedVerbForm(sentenceTokens: readonly string[], lemma: string): 
   if (parts[0] === "sich" && !sentenceTokens.some((token) =>
     ["mich", "dich", "sich", "uns", "euch"].includes(token))) return false;
   if (parts.slice(0, -1).filter((part) => part !== "sich").some((part) =>
-    !sentenceTokens.includes(part))) return false;
+    !sentenceTokens.includes(tokens(part).join(" ")))) return false;
   const verb = parts[parts.length - 1];
   const paradigm = lookupVerbConjugation(verb);
-  if (!paradigm) return sentenceTokens.includes(verb);
+  if (!paradigm) return sentenceTokens.includes(tokens(verb).join(" "));
   const forms = [paradigm.infinitive, paradigm.ich, paradigm.du, paradigm.er, paradigm.partizipII]
     .filter((form): form is string => Boolean(form));
   // A stripped separable-prefix form (e.g. geht for fremdgehen) is not
@@ -42,8 +42,8 @@ function hasVerifiedVerbForm(sentenceTokens: readonly string[], lemma: string): 
     .find((candidate) => verb.startsWith(candidate) && verb.length > candidate.length + 3);
   const prefix = prefixCandidate && !paradigm.er.toLowerCase().startsWith(prefixCandidate)
     ? prefixCandidate : null;
-  return forms.some((form) => sentenceTokens.includes(form) &&
-    (!prefix || form.toLowerCase().includes(prefix) || sentenceTokens.includes(prefix)));
+  return forms.some((form) => sentenceTokens.includes(tokens(form).join(" ")) &&
+    (!prefix || form.toLowerCase().includes(prefix) || sentenceTokens.includes(tokens(prefix).join(" "))));
 }
 
 function tokens(value: string) {

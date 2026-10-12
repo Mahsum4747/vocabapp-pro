@@ -95,26 +95,26 @@ test("reads are reads, empty documents are not created, owner isolation and auth
 for (const lesson of germanA1.lessons.slice(0, 4))
   test(`${lesson.id}: checked-answer reload resume, retry count and exact position`, async () => {
     const f = fakeProgressDb();
-    await saveCourseProgress(f.db, "u", command(lesson));
+    const index = lesson.steps.findIndex((step) => step.kind === "choice");
+    assert.ok(index >= 0);
+    for (const [revision, step] of lesson.steps.slice(0, index).entries()) {
+      assert.equal(step.kind, "explanation");
+      await saveCourseProgress(f.db, "u", command(lesson, revision, { type: "continue", stepId: step.id }));
+    }
     await saveCourseProgress(
       f.db,
       "u",
-      command(lesson, 1, { type: "continue", stepId: lesson.steps[1].id }),
-    );
-    await saveCourseProgress(
-      f.db,
-      "u",
-      command(lesson, 2, { type: "check", stepId: lesson.steps[2].id, response: "wrong" }),
+      command(lesson, index, { type: "check", stepId: lesson.steps[index].id, response: "wrong" }),
     );
     const loaded = (await readCourseProgress(f.db, "u", COURSE_SCOPE)).lessons.find(
       (entry) => entry.lessonId === lesson.id,
     )!.progress!;
     const resumed = resumeProgress(loaded, lesson);
-    assert.equal(resumed.stepIndex, 2);
-    assert.equal(resumed.responses[lesson.steps[2].id], "wrong");
-    assert.equal(resumed.attempts[lesson.steps[2].id], 1);
+    assert.equal(resumed.stepIndex, index);
+    assert.equal(resumed.responses[lesson.steps[index].id], "wrong");
+    assert.equal(resumed.attempts[lesson.steps[index].id], 1);
     assert.equal(resumed.feedback?.outcome, "incorrect");
-    assert.equal(resumed.completedStepIds.length, 2);
+    assert.equal(resumed.completedStepIds.length, index);
     assert.equal(
       (await readCourseProgress(f.db, "u", COURSE_SCOPE)).lessons.find(
         (entry) => entry.lessonId !== lesson.id,
@@ -193,16 +193,16 @@ test("release/track/lesson rejection and changed/withdrawn content keep old reco
     await assert.rejects(saveCourseProgress(f.db, "u", { ...command(), ...extra }));
   assert.equal(f.writes.length, 0);
   assert.equal(
-    (await saveCourseProgress(f.db, "u", { ...command(), resumeContractVersion: 2 })).kind,
+    (await saveCourseProgress(f.db, "u", { ...command(), resumeContractVersion: lessonResumeContractVersion(first) + 1 })).kind,
     "unavailable",
   );
   await saveCourseProgress(f.db, "u", command());
   const path = courseProgressPath("u", command());
   const old = f.records.get(path) as DurableProgress;
-  f.records.set(path, { ...old, resumeContractVersion: 2 });
+  f.records.set(path, { ...old, resumeContractVersion: lessonResumeContractVersion(first) + 1 });
   assert.equal((await readCourseProgress(f.db, "u", COURSE_SCOPE)).lessons[0].unavailable, true);
   assert.equal((await saveCourseProgress(f.db, "u", command(first, 1))).kind, "unavailable");
-  assert.deepEqual(f.records.get(path), { ...old, resumeContractVersion: 2 });
+  assert.deepEqual(f.records.get(path), { ...old, resumeContractVersion: lessonResumeContractVersion(first) + 1 });
 });
 test("skips/forged completed states rejected, bounded answers pruned, open text never stored", async () => {
   const f = fakeProgressDb();
@@ -287,16 +287,16 @@ async function withLesson(lesson: LessonDefinition, run: () => Promise<void>) {
 }
 async function checkedChoice(lesson: LessonDefinition) {
   const f = fakeProgressDb();
-  await saveCourseProgress(f.db, "u", command(lesson));
-  await saveCourseProgress(
-    f.db,
-    "u",
-    command(lesson, 1, { type: "continue", stepId: lesson.steps[1].id }),
-  );
-  const step = lesson.steps[2];
+  const index = lesson.steps.findIndex((step) => step.kind === "choice");
+  assert.ok(index >= 0);
+  for (const [revision, step] of lesson.steps.slice(0, index).entries()) {
+    assert.equal(step.kind, "explanation");
+    await saveCourseProgress(f.db, "u", command(lesson, revision, { type: "continue", stepId: step.id }));
+  }
+  const step = lesson.steps[index];
   assert.equal(step.kind, "choice");
   if (step.kind !== "choice") throw Error("Fixture needs a choice");
-  const check = command(lesson, 2, {
+  const check = command(lesson, index, {
     type: "check",
     stepId: step.id,
     response: step.correctAnswer,
@@ -353,7 +353,7 @@ for (const lesson of germanA1.lessons.slice(0, 4))
       const advanced = await saveCourseProgress(
         f.db,
         "u",
-        command(lesson, 3, { type: "continue", stepId: step.id }),
+        command(lesson, previous.revision, { type: "continue", stepId: step.id }),
       );
       assert.ok(advanced.kind === "saved");
       assert.equal(advanced.progress.revision, previous.revision + 1);

@@ -44,7 +44,7 @@ test("L02 exact approved metadata and distinct authored shape", () => {
   assert.deepEqual(second.consolidatedSkillIds, []);
   assert.deepEqual(
     second.steps.map((s) => s.stage),
-    ["discover", "understand", "recognize", "classify", "recall", "read", "produce", "check"],
+    ["discover", "understand", "understand", "recognize", "classify", "recall", "produce", "read", "apply", "check"],
   );
   assert.notDeepEqual(
     first.steps.map((s) => s.stage),
@@ -53,14 +53,16 @@ test("L02 exact approved metadata and distinct authored shape", () => {
   assert.equal(second.steps.at(-1)?.purpose, "formative-check");
 });
 test("classification, explicit entity reading, capitalization and bounded phrases", () => {
-  for (const [index, correct, wrong] of [
-    [3, "A place", "A person"],
-    [5, "Nora", "Frau"],
-    [4, "eine Frau", "eine frau"],
-    [6, "ein Büro", "ein büro"],
+  for (const [id, correct, wrong] of [
+    ["classify", "A place", "A person"],
+    ["read", "Nora", "Frau"],
+    ["controlled", "eine Frau", "eine frau"],
+    ["supported", "ein Büro", "ein büro"],
   ] as const) {
-    assert.equal(evaluateStep(second.steps[index], correct)?.outcome, "correct");
-    assert.equal(evaluateStep(second.steps[index], wrong)?.outcome, "incorrect");
+    const step = second.steps.find((step) => step.id === `${second.id}.${id}`)!;
+    assert.ok(step, id);
+    assert.equal(evaluateStep(step, correct)?.outcome, "correct");
+    assert.equal(evaluateStep(step, wrong)?.outcome, "incorrect");
   }
   assert.equal(evaluateStep(second.steps[6], "ein Buro")?.outcome, "incorrect");
   assert.equal(evaluateStep(second.steps[6], "ein Büro ist schön")?.outcome, "incorrect");
@@ -69,6 +71,7 @@ test("classification, explicit entity reading, capitalization and bounded phrase
 });
 test("multi-lesson responses, retries, completion and restart are isolated", () => {
   let sessions = updateLessonSession({}, germanA1.id, second, { type: "continue" });
+  sessions = updateLessonSession(sessions, germanA1.id, second, { type: "continue" });
   sessions = updateLessonSession(sessions, germanA1.id, second, { type: "continue" });
   sessions = updateLessonSession(sessions, germanA1.id, second, {
     type: "respond",
@@ -80,7 +83,7 @@ test("multi-lesson responses, retries, completion and restart are isolated", () 
   assert.equal(lessonStatus(germanA1.id, first, sessions), "Finished");
   assert.equal(sessions[sessionKey(germanA1.id, second.id)], secondState);
   assert.equal(secondState.status, "in-progress");
-  assert.equal(secondState.attempts[second.steps[2].id], 1);
+  assert.equal(secondState.attempts[`${second.id}.notice`], 1);
   assert.equal(nextAuthoredLesson(germanA1.lessons, first)?.id, second.id);
   sessions = updateLessonSession(sessions, germanA1.id, first, { type: "restart" });
   assert.equal(sessions[sessionKey(germanA1.id, first.id)].stepIndex, 0);

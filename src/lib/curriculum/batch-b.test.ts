@@ -1,3 +1,4 @@
+import { lessonResumeContractVersion } from "./course-progress";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { randomUUID } from "node:crypto";
@@ -43,7 +44,7 @@ function courseProgressFixture() {
         const result = await saveCourseProgress(storage.db, owner, {
           ...COURSE_SCOPE,
           lessonId: lesson.id,
-          resumeContractVersion: 1,
+          resumeContractVersion: lessonResumeContractVersion(lesson),
           expectedRevision: revision,
           operationId: randomUUID(),
           action,
@@ -135,7 +136,7 @@ test("U6 frozen blueprint, skill membership, prerequisite DAG and truthful autho
     assert.equal(lesson.title, row[1]);
     assert.equal(lesson.outcome, row[3]);
     assert(lesson.steps.length >= 9 && lesson.steps.length <= 12);
-    assert.equal(lesson.resumeContractVersion, 1);
+    assert.ok(Number.isInteger(lesson.resumeContractVersion) && lesson.resumeContractVersion! >= 1);
     const named = row[2].split(",").map((id) => ids.get(id));
     assert.deepEqual([...lesson.introducedSkillIds, ...lesson.consolidatedSkillIds], named);
     for (const id of named)
@@ -252,7 +253,7 @@ test("U6 ahead study persists only actual milestones; all four historical lesson
     {
       ...COURSE_SCOPE,
       lessonId: lessons[0].id,
-      resumeContractVersion: 1,
+      resumeContractVersion: lessonResumeContractVersion(lessons[0]),
       expectedRevision: first.revision,
       operationId: randomUUID(),
       action: { type: "restart" },

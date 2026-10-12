@@ -1,3 +1,4 @@
+import { lessonResumeContractVersion } from "./course-progress";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { randomUUID } from "node:crypto";
@@ -41,7 +42,7 @@ async function fixture() {
           {
             ...COURSE_SCOPE,
             lessonId: lesson.id,
-            resumeContractVersion: 1,
+            resumeContractVersion: lessonResumeContractVersion(lesson),
             expectedRevision: revision,
             operationId: randomUUID(),
             action,

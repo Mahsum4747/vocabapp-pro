@@ -1,3 +1,4 @@
+import { lessonResumeContractVersion } from "./course-progress";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { randomUUID } from "node:crypto";
@@ -51,7 +52,7 @@ function courseProgressFixture() {
         const result = await saveCourseProgress(storage.db, owner, {
           ...COURSE_SCOPE,
           lessonId: lesson.id,
-          resumeContractVersion: 1,
+          resumeContractVersion: lessonResumeContractVersion(lesson),
           expectedRevision: revision,
           operationId: randomUUID(),
           action,
@@ -149,7 +150,7 @@ test("U7/U8 exactly preserve frozen titles/outcomes/skills and DAG; only U9+ rem
       row[2].split(",").map((id) => ids.get(id)),
     );
     assert(lesson.steps.length >= 9 && lesson.steps.length <= 12);
-    assert.equal(lesson.resumeContractVersion, 1);
+    assert.ok(Number.isInteger(lesson.resumeContractVersion) && lesson.resumeContractVersion! >= 1);
     for (const skill of lesson.consolidatedSkillIds)
       assert(
         lesson.steps.some((s) => s.skillIds.includes(skill)),
@@ -265,7 +266,7 @@ for (const lesson of lessons)
     await saveCourseProgress(f.storage.db, owner, {
       ...COURSE_SCOPE,
       lessonId: lesson.id,
-      resumeContractVersion: 1,
+      resumeContractVersion: lessonResumeContractVersion(lesson),
       expectedRevision: progress.revision,
       operationId: randomUUID(),
       action: { type: "restart" },
@@ -461,7 +462,7 @@ test("U7 free original writing remains unassessed and is never accepted as raw d
   const command = {
     ...COURSE_SCOPE,
     lessonId: lesson.id,
-    resumeContractVersion: 1,
+    resumeContractVersion: lessonResumeContractVersion(lesson),
     expectedRevision: progress.revision,
     operationId: randomUUID(),
     action: { type: "check" as const, stepId: step.id },

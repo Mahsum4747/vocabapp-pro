@@ -1,3 +1,4 @@
+import { lessonResumeContractVersion } from "./course-progress";
 import { checkpointAvailable } from "./checkpoint-access";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
@@ -36,7 +37,7 @@ const command = (
 ): ProgressCommand => ({
   ...COURSE_SCOPE,
   lessonId: lesson.id,
-  resumeContractVersion: 1,
+  resumeContractVersion: lessonResumeContractVersion(lesson),
   expectedRevision: revision,
   operationId: randomUUID(),
   action,

@@ -213,6 +213,17 @@ test("diagnoses sourced dative verbs beyond the previous nine-verb allowlist", (
   assert.equal(result?.targetLabel, "danken + Dativ");
 });
 
+test("normalizes sourced umlaut forms like authored German answers", () => {
+  const step: Extract<LessonStep, { kind: "text" }> = {
+    ...helpStep, acceptedAnswers: ["Die Tasche gehört mir."],
+    skillIds: ["DE.A1.GRAMMAR.PRONOUNS.DATIVE"],
+  };
+  for (const response of ["Die Tasche gehört mich.", "Die Tasche gehoert mich."]) {
+    assert.equal(diagnoseLessonResponse(lesson, step, response)?.targetLabel, "gehören + Dativ");
+  }
+  assert.equal(diagnoseLessonResponse(lesson, step, "Die Tasche gehoert mir."), null);
+});
+
 test("diagnoses separated dative verbs only when the prefix is present", () => {
   const step: Extract<LessonStep, { kind: "text" }> = {
     ...helpStep, acceptedAnswers: ["Ich stimme ihm zu"],
