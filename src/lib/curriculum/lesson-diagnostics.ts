@@ -1,5 +1,4 @@
-import { DATIVE_VERB_DATA } from "../german/dative-verbs-data";
-import { VERB_GOVERNMENT_DATA } from "../german/verb-government-data";
+import { eligibleBareDativeFrames, eligiblePrepositionalFrames, isPrepositionToken } from "../german/verb-valency-index";
 import { lookupVerbConjugation } from "../german/verb-conjugation-data";
 import { normalizeLessonAnswer } from "./lesson-session";
 import type { LessonDefinition, LessonStep } from "./types";
@@ -20,15 +19,18 @@ const DATIVE_PRONOUNS = ["mir", "dir", "ihm", "ihr", "uns", "euch", "ihnen"] as 
 // A1-safe case pairs: the two forms refer to the same person/number.
 // Other contrasts (e.g. ihn -> mir) change the referent as well as the case.
 const CROSS_CASE_PAIRS = new Set(["mich|mir", "mir|mich", "dich|dir", "dir|dich", "ihn|ihm", "ihm|ihn"]);
-const NON_DITRANSITIVE_A1_DATIVE = new Set(["antworten", "folgen", "gefallen", "gehören", "glauben", "helfen", "raten", "schmecken", "zuhören"]);
-const FIXED_PREPOSITIONS = new Set(["aus", "außer", "bei", "mit", "nach", "seit", "von", "zu", "durch", "für", "gegen", "ohne", "um"]);
 const SEPARABLE_PREFIXES = ["ab", "an", "auf", "aus", "bei", "ein", "mit", "nach", "vor", "zu", "zurück", "weg"];
 
 /** Recognize only sourced inflections; never manufacture a lemma from a word. */
 function hasVerifiedVerbForm(sentenceTokens: readonly string[], lemma: string): boolean {
-  if (lemma.includes(" ")) return false;
-  const paradigm = lookupVerbConjugation(lemma);
-  if (!paradigm) return sentenceTokens.includes(lemma);
+  const parts = lemma.split(/\s+/);
+  if (parts[0] === "sich" && !sentenceTokens.some((token) =>
+    ["mich", "dich", "sich", "uns", "euch"].includes(token))) return false;
+  if (parts.slice(0, -1).filter((part) => part !== "sich").some((part) =>
+    !sentenceTokens.includes(part))) return false;
+  const verb = parts[parts.length - 1];
+  const paradigm = lookupVerbConjugation(verb);
+  if (!paradigm) return sentenceTokens.includes(verb);
   const forms = [paradigm.infinitive, paradigm.ich, paradigm.du, paradigm.er, paradigm.partizipII]
     .filter((form): form is string => Boolean(form));
   // A stripped separable-prefix form (e.g. geht for fremdgehen) is not
@@ -37,7 +39,7 @@ function hasVerifiedVerbForm(sentenceTokens: readonly string[], lemma: string): 
   // is not separable. A sourced finite form that keeps the prefix confirms
   // the verb is not being used as a stripped separable form.
   const prefixCandidate = [...SEPARABLE_PREFIXES].sort((a, b) => b.length - a.length)
-    .find((candidate) => lemma.startsWith(candidate) && lemma.length > candidate.length + 3);
+    .find((candidate) => verb.startsWith(candidate) && verb.length > candidate.length + 3);
   const prefix = prefixCandidate && !paradigm.er.toLowerCase().startsWith(prefixCandidate)
     ? prefixCandidate : null;
   return forms.some((form) => sentenceTokens.includes(form) &&
@@ -146,29 +148,25 @@ export function diagnoseLessonResponse(
           CROSS_CASE_PAIRS.has(`${change.expected}|${change.actual}`)) {
         const preceding = expectedTokens[change.index - 1];
         // Only the immediately adjacent preposition can govern this pronoun.
-        const prepFrames = VERB_GOVERNMENT_DATA.filter((entry) =>
-          entry.preposition === preceding && entry.case === expectedCase &&
-          hasVerifiedVerbForm(expectedTokens, entry.verb),
-        );
-        // A fixed-case preposition governs the phrase, not a nearby verb.
-        // Do not claim a dative verb caused a case error inside a PP.
-        const dativeFrames = expectedCase === "dativ" && !FIXED_PREPOSITIONS.has(preceding ?? "") &&
-          !VERB_GOVERNMENT_DATA.some((entry) => entry.preposition === preceding) ?
-          DATIVE_VERB_DATA.filter((entry) => NON_DITRANSITIVE_A1_DATIVE.has(entry.verb) &&
-            hasVerifiedVerbForm(expectedTokens, entry.verb)) : [];
+        const prepFrames = eligiblePrepositionalFrames(preceding ?? "", expectedCase)
+          .filter((entry) => hasVerifiedVerbForm(expectedTokens, entry.lemma));
+        // A prepositional object cannot be a bare dative argument.
+        const dativeFrames = expectedCase === "dativ" && !isPrepositionToken(preceding ?? "")
+          ? eligibleBareDativeFrames().filter((entry) => hasVerifiedVerbForm(expectedTokens, entry.lemma))
+          : [];
         // Multiple candidates or unsupported prepositional roles are ambiguous.
         if (prepFrames.length === 1 && dativeFrames.length === 0) {
           const frame = prepFrames[0];
           return {
             domain: "grammar", category: "lexical_government",
-            targetLabel: `${frame.verb} + ${frame.preposition} + ${expectedCase === "dativ" ? "Dativ" : "Akkusativ"}`,
+            targetLabel: `${frame.lemma} + ${frame.preposition} + ${expectedCase === "dativ" ? "Dativ" : "Akkusativ"}`,
             confidence: 0.88, independent, support,
           };
         }
         if (prepFrames.length === 0 && dativeFrames.length === 1) {
           return {
             domain: "grammar", category: "lexical_government",
-            targetLabel: `${dativeFrames[0].verb} + Dativ`,
+            targetLabel: `${dativeFrames[0].lemma} + Dativ`,
             confidence: 0.88, independent, support,
           };
         }

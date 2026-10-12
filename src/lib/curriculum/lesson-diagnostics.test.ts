@@ -202,3 +202,52 @@ test("stripped separable-prefix verb is not accepted without its prefix", () => 
   // It must not invent a different government frame from a bare 'geht'.
   assert.notEqual(result?.targetLabel, "gehen + Dativ");
 });
+
+test("diagnoses sourced dative verbs beyond the previous nine-verb allowlist", () => {
+  const step: Extract<LessonStep, { kind: "text" }> = {
+    ...helpStep, acceptedAnswers: ["Ich danke ihm"],
+    skillIds: ["DE.A1.GRAMMAR.PRONOUNS.DATIVE"],
+  };
+  const result = diagnoseLessonResponse(lesson, step, "Ich danke ihn");
+  assert.equal(result?.category, "lexical_government");
+  assert.equal(result?.targetLabel, "danken + Dativ");
+});
+
+test("diagnoses separated dative verbs only when the prefix is present", () => {
+  const step: Extract<LessonStep, { kind: "text" }> = {
+    ...helpStep, acceptedAnswers: ["Ich stimme ihm zu"],
+    skillIds: ["DE.A1.GRAMMAR.PRONOUNS.DATIVE"],
+  };
+  assert.equal(diagnoseLessonResponse(lesson, step, "Ich stimme ihn zu")?.targetLabel, "zustimmen + Dativ");
+  assert.notEqual(diagnoseLessonResponse(lesson, { ...step, acceptedAnswers: ["Ich stimme ihm"] },
+    "Ich stimme ihn")?.category, "lexical_government");
+});
+
+test("matches sourced reflexive government only with the reflexive pronoun", () => {
+  const step: Extract<LessonStep, { kind: "text" }> = {
+    ...helpStep, acceptedAnswers: ["Ich erinnere mich an ihn"],
+    skillIds: ["DE.A1.GRAMMAR.PRONOUNS.ACCUSATIVE"],
+  };
+  assert.equal(diagnoseLessonResponse(lesson, step, "Ich erinnere mich an ihm")?.targetLabel,
+    "sich erinnern + an + Akkusativ");
+  assert.notEqual(diagnoseLessonResponse(lesson, { ...step, acceptedAnswers: ["Ich erinnere an ihn"] },
+    "Ich erinnere an ihm")?.category, "lexical_government");
+});
+
+test("conflicting curated cases for the same lemma and preposition abstain", () => {
+  const step: Extract<LessonStep, { kind: "text" }> = {
+    ...helpStep, acceptedAnswers: ["Ich schreibe an ihn"],
+    skillIds: ["DE.A1.GRAMMAR.PRONOUNS.ACCUSATIVE"],
+  };
+  assert.notEqual(diagnoseLessonResponse(lesson, step, "Ich schreibe an ihm")?.category,
+    "lexical_government");
+});
+
+test("untagged ditransitive frames are not automatically promoted to diagnostics", () => {
+  const step: Extract<LessonStep, { kind: "text" }> = {
+    ...helpStep, acceptedAnswers: ["Ich gebe ihm das Buch"],
+    skillIds: ["DE.A1.GRAMMAR.PRONOUNS.DATIVE"],
+  };
+  assert.notEqual(diagnoseLessonResponse(lesson, step, "Ich gebe ihn das Buch")?.category,
+    "lexical_government");
+});
