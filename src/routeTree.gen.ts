@@ -30,6 +30,7 @@ import { Route as GrammarModalpartikelnRouteImport } from './routes/grammar.moda
 import { Route as GrammarModalverbenRouteImport } from './routes/grammar.modalverben'
 import { Route as GrammarNichtKeinRouteImport } from './routes/grammar.nicht-kein'
 import { Route as GrammarNominalisierungRouteImport } from './routes/grammar.nominalisierung'
+import { Route as GrammarNotesRouteImport } from './routes/grammar.notes'
 import { Route as GrammarPartizipialRouteImport } from './routes/grammar.partizipial'
 import { Route as GrammarPassivRouteImport } from './routes/grammar.passiv'
 import { Route as GrammarPassiversatzformenRouteImport } from './routes/grammar.passiversatzformen'
@@ -166,6 +167,11 @@ const GrammarNichtKeinRoute = GrammarNichtKeinRouteImport.update({
 const GrammarNominalisierungRoute = GrammarNominalisierungRouteImport.update({
   id: '/nominalisierung',
   path: '/nominalisierung',
+  getParentRoute: () => GrammarRoute,
+} as any)
+const GrammarNotesRoute = GrammarNotesRouteImport.update({
+  id: '/notes',
+  path: '/notes',
   getParentRoute: () => GrammarRoute,
 } as any)
 const GrammarPartizipialRoute = GrammarPartizipialRouteImport.update({
@@ -347,6 +353,7 @@ export interface FileRoutesByFullPath {
   '/grammar/modalverben': typeof GrammarModalverbenRoute
   '/grammar/nicht-kein': typeof GrammarNichtKeinRoute
   '/grammar/nominalisierung': typeof GrammarNominalisierungRoute
+  '/grammar/notes': typeof GrammarNotesRoute
   '/grammar/partizipial': typeof GrammarPartizipialRoute
   '/grammar/passiv': typeof GrammarPassivRoute
   '/grammar/passiversatzformen': typeof GrammarPassiversatzformenRoute
@@ -399,6 +406,7 @@ export interface FileRoutesByTo {
   '/grammar/modalverben': typeof GrammarModalverbenRoute
   '/grammar/nicht-kein': typeof GrammarNichtKeinRoute
   '/grammar/nominalisierung': typeof GrammarNominalisierungRoute
+  '/grammar/notes': typeof GrammarNotesRoute
   '/grammar/partizipial': typeof GrammarPartizipialRoute
   '/grammar/passiv': typeof GrammarPassivRoute
   '/grammar/passiversatzformen': typeof GrammarPassiversatzformenRoute
@@ -453,6 +461,7 @@ export interface FileRoutesById {
   '/grammar/modalverben': typeof GrammarModalverbenRoute
   '/grammar/nicht-kein': typeof GrammarNichtKeinRoute
   '/grammar/nominalisierung': typeof GrammarNominalisierungRoute
+  '/grammar/notes': typeof GrammarNotesRoute
   '/grammar/partizipial': typeof GrammarPartizipialRoute
   '/grammar/passiv': typeof GrammarPassivRoute
   '/grammar/passiversatzformen': typeof GrammarPassiversatzformenRoute
@@ -509,6 +518,7 @@ export interface FileRouteTypes {
     | '/grammar/modalverben'
     | '/grammar/nicht-kein'
     | '/grammar/nominalisierung'
+    | '/grammar/notes'
     | '/grammar/partizipial'
     | '/grammar/passiv'
     | '/grammar/passiversatzformen'
@@ -561,6 +571,7 @@ export interface FileRouteTypes {
     | '/grammar/modalverben'
     | '/grammar/nicht-kein'
     | '/grammar/nominalisierung'
+    | '/grammar/notes'
     | '/grammar/partizipial'
     | '/grammar/passiv'
     | '/grammar/passiversatzformen'
@@ -614,6 +625,7 @@ export interface FileRouteTypes {
     | '/grammar/modalverben'
     | '/grammar/nicht-kein'
     | '/grammar/nominalisierung'
+    | '/grammar/notes'
     | '/grammar/partizipial'
     | '/grammar/passiv'
     | '/grammar/passiversatzformen'
@@ -808,6 +820,13 @@ declare module '@tanstack/react-router' {
       path: '/nominalisierung'
       fullPath: '/grammar/nominalisierung'
       preLoaderRoute: typeof GrammarNominalisierungRouteImport
+      parentRoute: typeof GrammarRoute
+    }
+    '/grammar/notes': {
+      id: '/grammar/notes'
+      path: '/notes'
+      fullPath: '/grammar/notes'
+      preLoaderRoute: typeof GrammarNotesRouteImport
       parentRoute: typeof GrammarRoute
     }
     '/grammar/partizipial': {
@@ -1043,6 +1062,7 @@ interface GrammarRouteChildren {
   GrammarModalverbenRoute: typeof GrammarModalverbenRoute
   GrammarNichtKeinRoute: typeof GrammarNichtKeinRoute
   GrammarNominalisierungRoute: typeof GrammarNominalisierungRoute
+  GrammarNotesRoute: typeof GrammarNotesRoute
   GrammarPartizipialRoute: typeof GrammarPartizipialRoute
   GrammarPassivRoute: typeof GrammarPassivRoute
   GrammarPassiversatzformenRoute: typeof GrammarPassiversatzformenRoute
@@ -1071,6 +1091,7 @@ const GrammarRouteChildren: GrammarRouteChildren = {
   GrammarModalverbenRoute: GrammarModalverbenRoute,
   GrammarNichtKeinRoute: GrammarNichtKeinRoute,
   GrammarNominalisierungRoute: GrammarNominalisierungRoute,
+  GrammarNotesRoute: GrammarNotesRoute,
   GrammarPartizipialRoute: GrammarPartizipialRoute,
   GrammarPassivRoute: GrammarPassivRoute,
   GrammarPassiversatzformenRoute: GrammarPassiversatzformenRoute,

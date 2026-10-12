@@ -234,21 +234,6 @@ export function diagnoseLessonResponse(
     };
   }
 
-  const dativeSkills = new Set([
-    "DE.A1.GRAMMAR.PRONOUNS.DATIVE",
-    "DE.A1.GRAMMAR.VERBS.DATIVE_FRAMES",
-    "DE.A1.GRAMMAR.CASES.DATIVE_ARTICLES",
-  ]);
-  if (step.skillIds.some((id) => dativeSkills.has(id))) {
-    return {
-      domain: "grammar",
-      category: "uncertain",
-      targetLabel: "Dative in this lesson",
-      confidence: 0.35,
-      independent,
-      support,
-    };
-  }
-
+  // A lesson tag alone is no evidence that this response contains a case error.
   return null;
 }

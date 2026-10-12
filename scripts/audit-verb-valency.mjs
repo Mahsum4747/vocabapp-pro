@@ -11,18 +11,22 @@ const curatedGovernment = read("src/lib/german/verb-government-data.ts");
 const extractedFrames = JSON.parse(read("src/content/karta-kaikki-verb-prep-case.json"));
 const transitive = JSON.parse(read("src/content/karta-wiktionary-transitiv-de.json"));
 
-const conjugatedLemmas = new Set([...conjugations.matchAll(/\{ infinitive: "([^"]+)", ich:/g)].map((m) => m[1]));
-const dativeLemmas = new Set([...curatedDative.matchAll(/\{ verb: "([^"]+)"(?:, level: "[^"]+")? \}/g)].map((m) => m[1]));
+const normalize = (lemma) => lemma.trim().toLocaleLowerCase("de-DE");
+const sourceSpellings = [...conjugations.matchAll(/\{ infinitive: "([^"]+)", ich:/g)].map((m) => m[1]);
+const conjugatedLemmas = new Set(sourceSpellings.map(normalize));
+const dativeLemmas = new Set([...curatedDative.matchAll(/\{ verb: "([^"]+)"(?:, level: "[^"]+")? \}/g)].map((m) => normalize(m[1])));
 const governmentRows = [...curatedGovernment.matchAll(/\{ verb: "([^"]+)", preposition: "([^"]+)", case: "(akkusativ|dativ)"/g)]
-  .map((m) => ({ lemma: m[1], preposition: m[2], case: m[3] }));
+  .map((m) => ({ lemma: normalize(m[1]), preposition: m[2], case: m[3] }));
 const governmentLemmas = new Set(governmentRows.map((row) => row.lemma));
-const extractedLemmas = new Set(extractedFrames.frames.map((row) => row.lemma));
-const transitiveLemmas = new Set(transitive.verbs);
+const extractedLemmas = new Set(extractedFrames.frames.map((row) => normalize(row.lemma)));
+const transitiveLemmas = new Set(transitive.verbs.map(normalize));
 const knownLemmas = new Set([...dativeLemmas, ...governmentLemmas, ...extractedLemmas, ...transitiveLemmas]);
 const unaccounted = [...conjugatedLemmas].filter((lemma) => !knownLemmas.has(lemma)).sort();
 
 const report = {
   definition: "source inventory, not confirmed valency coverage",
+  conjugationSourceRecords: sourceSpellings.length,
+  conjugationNormalizationDuplicates: sourceSpellings.length - conjugatedLemmas.size,
   conjugationLemmas: conjugatedLemmas.size,
   curatedDativeLemmas: dativeLemmas.size,
   curatedGovernmentFrames: governmentRows.length,

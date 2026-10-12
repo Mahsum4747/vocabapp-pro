@@ -18,7 +18,7 @@ test("verb source coverage audit accounts for all four existing source families"
 
 test("full audit enumerates each lemma exactly once with explicit unresolved status", () => {
   const report = JSON.parse(execFileSync(process.execPath,
-    ["scripts/audit-verb-valency.mjs", "--full"], { encoding: "utf8" }));
+    ["scripts/audit-verb-valency.mjs", "--full"], { encoding: "utf8", maxBuffer: 8 * 1024 * 1024 }));
   assert.equal(report.lemmaInventory.length, report.conjugationLemmas);
   assert.equal(new Set(report.lemmaInventory.map((row) => row.lemma)).size,
     report.conjugationLemmas);

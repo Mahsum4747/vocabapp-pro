@@ -460,7 +460,7 @@ test("transport uses authenticated session, no input ID and dynamic server bound
   assert.match(source, /middleware\(\[authMiddleware\]\)/);
   assert.match(source, /getSessionUser\(context.bearerToken\)/);
   assert.doesNotMatch(source, /\.validator\(|data\.|userId:/);
-  assert.match(source, /await import\(["\']\.\/learning-signals.server["\']\)/);
+  assert.match(source, /await import\(["']\.\/learning-signals.server["']\)/);
 });
 
 test("existing article/case review miss counters are separate from drill evidence", () => {

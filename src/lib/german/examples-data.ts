@@ -2047,7 +2047,7 @@ heilen	verb			Die Ärzte konnten sie vollständig heilen.	heal|cure
 treiben	verb			Sie trieben die Gefangenen in eine Scheune.|Du treibst mich noch in den Wahnsinn.	drive|bring forth|float|drift	sürmek|açmak|yeşermek|açtırmak	
 freuen	verb			Maria freut sich, Peter endlich wiederzusehen.	be happy|be pleased|rejoice|be glad	mutlu olmak|memnun olmak	
 müssen	verb			Jeder Mensch muss sterben.|Der Mensch muss sein Gehirn gebrauchen, sonst verblödet er.|„Ich habe es nicht müssen, aber ich habe es getan: …“	must|have to		
-schätzen	verb			Er schätzte ihr Alter auf 21 Jahre.|Die Expertin schätzte den Wert auf 500 €.	estimate|to assess|to guess|guess		
+schätzen	verb			Er schätzte ihr Alter auf 21 Jahre.|Die Expertin schätzte den Wert auf 500\u202f€.	estimate|to assess|to guess|guess		
 entlassen	verb			Die Klassenlehrerin entließ ihre Schüler heute früher nach Hause.|Er entließ mich mit der Bitte, morgen um dieselbe Zeit wiederzukommen.	dismiss|release|discharge|fire	çıkmak|serbest kalmak|çıkış yapmak	
 heißen	verb			Er hieß mich einen Dummkopf.|Einen in aller Öffentlichkeit Dummbatz geheißenen Ehemann kann man nur bedauern.	be called|be named|call|mean	adı olmak|ismi olmak|ad vermek|isim vermek	navê ... bûn
 heißen	verb			Wenn Wind aufkommt, werden wir die Segel heißen.			
@@ -2639,7 +2639,7 @@ höflich	adj			Es ist höflich, „bitte“ und „danke“ zu sagen.|„… wen
 negativ	adj			Das wird sich negativ auf ihre Zukunft auswirken.	negative	olumsuz|eksi|negatif	
 zufällig	adj			Zufällig traf ich sie wieder.	by chance|by luck|casual|random		
 hübsch	adj			Ein hübsches Mädchen sitzt dort.	nice|pretty	güzel|sevimli|şirin|yakışıklı	
-warm	adj			Der Sommer war recht warm.|„Damit etwas wärmer wird, muss man Energie zuführen.“|„So ist es seit 1881 in Hamburg etwa 1,7 °C wärmer geworden.“	warm	sıcak|eşcinsel	germ
+warm	adj			Der Sommer war recht warm.|„Damit etwas wärmer wird, muss man Energie zuführen.“|„So ist es seit 1881 in Hamburg etwa 1,7\u2009°C wärmer geworden.“	warm	sıcak|eşcinsel	germ
 reich	adj			Bill Gates ist ein reicher Mann.|Durch Spekulation reich werden zu wollen ist einfach die falsche Idee.	rich|abundant|copious|precious	zengin|muhteşem	dewlemend
 verantwortlich	adj			Eltern sind verantwortlich für ihre Kinder.|Du bist mir für die Reisekasse verantwortlich!	responsible	mesul|sorumlu|mesuliyetli|sorumluluklu	
 notwendig	adj			Die Regierung verabschiedete eine notwendige Gesetzesreform.	necessary	gerekli|lazım|zorunlu	pêwîst

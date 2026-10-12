@@ -1,5 +1,12 @@
 import { VERB_CONJUGATION_DATA, type VerbConjugationEntry } from "./verb-conjugation-data";
 import { lookupVerbValency, type ValencyFrame } from "./verb-valency-index";
+import transitiveSource from "../../content/karta-wiktionary-transitiv-de.json" with { type: "json" };
+import extractedSource from "../../content/karta-kaikki-verb-prep-case.json" with { type: "json" };
+
+export type VerbSourceEvidence = ValencyFrame["source"] | "wiktionary-transitive";
+const normalize = (lemma: string) => lemma.trim().toLocaleLowerCase("de-DE");
+const transitiveLemmas = new Set(transitiveSource.verbs.map(normalize));
+const extractedLemmas = new Set(extractedSource.frames.map((frame) => normalize(frame.lemma)));
 
 /**
  * Canonical inventory of every sourced UniMorph lemma.
@@ -12,24 +19,31 @@ export type VerbLexiconEntry = {
   lemma: string;
   conjugation: VerbConjugationEntry;
   frames: readonly ValencyFrame[];
+  // Source membership is evidence to review, never an inferred case frame.
+  // Raw Kaikki bare-case rows and the noisy transitive category stay here;
+  // only the separately gated runtime frames can support diagnostics.
+  sourceEvidence: readonly VerbSourceEvidence[];
   governmentStatus: "diagnostic-eligible" | "evidence-needs-review" | "unresolved";
 };
 
 const entries = new Map<string, VerbLexiconEntry>();
 for (const conjugation of VERB_CONJUGATION_DATA) {
-  const lemma = conjugation.infinitive.trim().toLocaleLowerCase("de-DE");
+  const lemma = normalize(conjugation.infinitive);
   const frames = lookupVerbValency(lemma);
+  const sourceEvidence = new Set<VerbSourceEvidence>(frames.map((frame) => frame.source));
+  if (extractedLemmas.has(lemma)) sourceEvidence.add("kaikki-extracted");
+  if (transitiveLemmas.has(lemma)) sourceEvidence.add("wiktionary-transitive");
   const governmentStatus = frames.some((frame) => frame.review === "eligible")
     ? "diagnostic-eligible"
-    : frames.length
+    : sourceEvidence.size
       ? "evidence-needs-review"
       : "unresolved";
-  entries.set(lemma, { lemma, conjugation, frames, governmentStatus });
+  entries.set(lemma, { lemma, conjugation, frames, sourceEvidence: [...sourceEvidence], governmentStatus });
 }
 
 /** Lookup by lemma; unknown means unknown, never a guessed case. */
 export function lookupVerbLexicon(lemma: string): VerbLexiconEntry | null {
-  return entries.get(lemma.trim().toLocaleLowerCase("de-DE")) ?? null;
+  return entries.get(normalize(lemma)) ?? null;
 }
 
 /** Enumerate the entire existing verb lexicon for review or progress reports. */
