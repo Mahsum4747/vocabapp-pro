@@ -15,3 +15,15 @@ test("verb source coverage audit accounts for all four existing source families"
   );
   assert.match(report.definition, /not confirmed valency/);
 });
+
+test("full audit enumerates each lemma exactly once with explicit unresolved status", () => {
+  const report = JSON.parse(execFileSync(process.execPath,
+    ["scripts/audit-verb-valency.mjs", "--full"], { encoding: "utf8" }));
+  assert.equal(report.lemmaInventory.length, report.conjugationLemmas);
+  assert.equal(new Set(report.lemmaInventory.map((row) => row.lemma)).size,
+    report.conjugationLemmas);
+  assert.equal(report.lemmaInventory.filter((row) => row.sourceStatus === "unresolved").length,
+    report.conjugatedLemmasWithoutSourceEvidence);
+  assert.ok(report.lemmaInventory.every((row) =>
+    row.sourceStatus === "unresolved" || row.sourceStatus === "evidence-present"));
+});
