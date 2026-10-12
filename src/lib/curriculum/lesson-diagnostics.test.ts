@@ -180,3 +180,25 @@ test("unverified case substitution remains unclassified for lexical government",
   };
   assert.equal(diagnoseLessonResponse(lesson, step, "Ich sehe ihm"), null);
 });
+
+
+test("antworten is not mistaken for a separable an-prefix verb", () => {
+  const step: Extract<LessonStep, { kind: "text" }> = {
+    ...helpStep, acceptedAnswers: ["Ich antworte ihm"],
+    skillIds: ["DE.A1.GRAMMAR.PRONOUNS.DATIVE"],
+  };
+  const result = diagnoseLessonResponse(lesson, step, "Ich antworte ihn");
+  assert.equal(result?.category, "lexical_government");
+  assert.equal(result?.targetLabel, "antworten + Dativ");
+});
+
+test("stripped separable-prefix verb is not accepted without its prefix", () => {
+  const step: Extract<LessonStep, { kind: "text" }> = {
+    ...helpStep, acceptedAnswers: ["Er geht ihm fremd"],
+    skillIds: ["DE.A1.GRAMMAR.PRONOUNS.DATIVE"],
+  };
+  const result = diagnoseLessonResponse(lesson, step, "Er geht ihn fremd");
+  // The current diagnostic has no dependency parser for the split prefix.
+  // It must not invent a different government frame from a bare 'geht'.
+  assert.notEqual(result?.targetLabel, "gehen + Dativ");
+});
