@@ -101,7 +101,7 @@ test("curated dative government diagnoses a verified infinitive frame", () => {
   };
   const result = diagnoseLessonResponse(lesson, step, "Ich will ihn helfen");
   assert.equal(result?.category, "lexical_government");
-  assert.match(result?.targetLabel ?? "", /Dativ object with helfen/);
+  assert.equal(result?.targetLabel, "helfen + Dativ");
 });
 
 test("curated prepositional government diagnoses a verified infinitive frame", () => {
@@ -134,4 +134,49 @@ test("mit rule does not diagnose unrelated changes as an article error", () => {
   };
   const result = diagnoseLessonResponse(lesson, step, "mit der Bahn");
   assert.notEqual(result?.targetId, "DE.GRAMMAR.PREPOSITION.MIT_DAT");
+});
+
+
+test("recognizes curated dative case from a conjugated verb", () => {
+  const step: Extract<LessonStep, { kind: "text" }> = {
+    ...helpStep, acceptedAnswers: ["Ich helfe ihm"],
+    skillIds: ["DE.A1.GRAMMAR.PRONOUNS.DATIVE"],
+  };
+  const result = diagnoseLessonResponse(lesson, step, "Ich helfe ihn");
+  assert.equal(result?.category, "lexical_government");
+  assert.equal(result?.targetLabel, "helfen + Dativ");
+});
+
+test("recognizes conjugated prepositional government", () => {
+  const step: Extract<LessonStep, { kind: "text" }> = {
+    ...helpStep, acceptedAnswers: ["Ich spreche mit ihm"],
+    skillIds: ["DE.A1.GRAMMAR.PRONOUNS.DATIVE"],
+  };
+  const result = diagnoseLessonResponse(lesson, step, "Ich spreche mit ihn");
+  assert.equal(result?.category, "lexical_government");
+  assert.equal(result?.targetLabel, "sprechen + mit + Dativ");
+});
+
+test("does not treat unrelated person substitution as a case error", () => {
+  const step: Extract<LessonStep, { kind: "text" }> = {
+    ...helpStep, acceptedAnswers: ["Ich helfe ihm"],
+    skillIds: ["DE.A1.GRAMMAR.PRONOUNS.DATIVE"],
+  };
+  assert.notEqual(diagnoseLessonResponse(lesson, step, "Ich helfe mich")?.category, "lexical_government");
+});
+
+test("a dative verb elsewhere does not govern a fixed-preposition phrase", () => {
+  const step: Extract<LessonStep, { kind: "text" }> = {
+    ...helpStep, acceptedAnswers: ["Ich helfe mit ihm"],
+    skillIds: ["DE.A1.GRAMMAR.PRONOUNS.DATIVE"],
+  };
+  assert.notEqual(diagnoseLessonResponse(lesson, step, "Ich helfe mit ihn")?.targetLabel, "helfen + Dativ");
+});
+
+test("unverified case substitution remains unclassified for lexical government", () => {
+  const step: Extract<LessonStep, { kind: "text" }> = {
+    ...helpStep, acceptedAnswers: ["Ich sehe ihn"],
+    skillIds: ["DE.A1.GRAMMAR.PRONOUNS.ACCUSATIVE"],
+  };
+  assert.equal(diagnoseLessonResponse(lesson, step, "Ich sehe ihm"), null);
 });
