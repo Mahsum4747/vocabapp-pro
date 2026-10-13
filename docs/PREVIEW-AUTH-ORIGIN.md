@@ -1,0 +1,11 @@
+# Vercel preview authentication origin
+
+The owner confirmed that BETTER_AUTH_URL is a Secret scoped to Production only, with Preview unchecked. Without an explicit base URL, the previous auth configuration accepted Grok sandbox and local origins, but no Vercel deployment origin. This explains the reported preview-origin rejection under that configuration. The deployed environment itself cannot be inspected from this execution environment: Vercel requests are blocked by the outbound proxy, and no Vercel integration/token or authenticated test session is available.
+
+The narrow fix uses the exact platform-generated VERCEL_URL over HTTPS when VERCEL_ENV is preview and BETTER_AUTH_URL is unset. No request Host/Origin header supplies trust; no *.vercel.app wildcard is added. Explicit URLs remain authoritative, Production does not inherit preview trust, and the existing Grok/local fallback stays unchanged. CSRF/origin checks, credentials, cookies, persistence, and ownership are not disabled or changed. Standard Vercel system environment variables must be available in the preview runtime.
+
+Validation: six tests, including real Better Auth request middleware with no database or account creation, accept the current deployment origin and reject sibling deployments, HTTP and foreign origins. Production, explicit custom URLs, malformed hosts and existing local/Grok behavior are covered. Thirty-five focused inherited verb-lexicon/valency/lesson-diagnostic tests pass. Typecheck, scoped lint and diff whitespace pass. Compile validation is recorded in the final task report.
+
+Live verification remains required: create at most one fresh preview for the fix commit, keep Deployment Protection enabled, sign in using the owner's test account, then correct/save/reload/finish/reload a lesson. Hermetic tests are not live Firebase verification. The previous preview at commit 63a144c does not contain this fix. No automatic merge or production release should be inferred from these local validations.
+
+The inherited PR still distinguishes 250 diagnostic-eligible, 2,134 evidence-needs-review and 4,274 unresolved verb entries. Those statuses and the 6,658 canonical keys are inventory/source-review facts, not full sense-level valency verification; this auth fix changes none of them. Issue #17 remains open work.
