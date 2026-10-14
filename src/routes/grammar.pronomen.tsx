@@ -2,16 +2,21 @@ import { createFileRoute } from "@tanstack/react-router";
 import { AuthGate } from "@/components/auth-gate";
 import { GrammarDrillRunner } from "@/components/grammar-drill-runner";
 import { buildPronomenQuestion } from "@/lib/grammar-drills";
+import { sourceValencyPronounQuestions } from "@/lib/german/valency-practice";
+import { shuffle } from "@/lib/utils";
 import { numberSample } from "@/lib/german/grammar-drill-sample";
 
 export const Route = createFileRoute("/grammar/pronomen")({
+  validateSearch: (search: Record<string, unknown>): { verb?: string } => ({
+    verb:
+      typeof search.verb === "string" ? search.verb.trim().toLocaleLowerCase("de-DE") : undefined,
+  }),
   component: PronomenDrillRoute,
 });
 
 /**
- * Set-independent personal-pronoun (Akkusativ/Dativ) drill: fixed table in
- * grammar-drills.ts, same "ignore the sample contents" pattern as
- * Modalverben — see `buildPronomenQuestion`'s doc comment.
+ * Personal-pronoun practice combines the existing pronoun table with already
+ * accepted, sense-scoped source examples. A reference link can focus one verb.
  *
  * Deliberately NOT given a `userEntries` prop, same reasoning as
  * Modalverben's own doc comment: ich/du/er/sie/wir/ihr is a closed,
@@ -19,13 +24,25 @@ export const Route = createFileRoute("/grammar/pronomen")({
  * no card property to match a user's own card against it.
  */
 function PronomenDrillRoute() {
+  const { verb } = Route.useSearch();
   return (
     <AuthGate>
       <GrammarDrillRunner<number>
+        key={verb ?? "all"}
         mode="Pronomen"
         topic="pronomen"
         fetchSample={() => Promise.resolve(numberSample(12))}
-        buildRound={(entries) => entries.map(() => buildPronomenQuestion())}
+        buildRound={(entries) => {
+          const contextual = shuffle(sourceValencyPronounQuestions(verb)).map((question) => ({
+            ...question,
+            options: shuffle(question.options),
+          }));
+          if (verb && contextual.length) return contextual;
+          return shuffle([
+            ...contextual.slice(0, 6),
+            ...entries.slice(0, 6).map(() => buildPronomenQuestion()),
+          ]);
+        }}
       />
     </AuthGate>
   );

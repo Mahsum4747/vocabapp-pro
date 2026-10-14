@@ -54,3 +54,19 @@ describe("lookupVerbGovernment", () => {
     assert.ok(verbGovernmentDatasetSize() > 300);
   });
 });
+
+
+it("does not auto-fill conflicting, generated or regex-only government", () => {
+  assert.deepEqual(lookupVerbGovernment("schreiben").filter((row) => row.preposition === "an"), []);
+  assert.deepEqual(lookupVerbGovernment("liegen").filter((row) => row.preposition === "an"), []);
+  assert.deepEqual(lookupVerbGovernment("abdriften"), []);
+});
+
+it("preserves reflexive scope instead of assigning its government to a bare term", () => {
+  assert.ok(lookupVerbGovernment("sich erinnern").some((row) => row.preposition === "an" && row.case === "akkusativ"));
+  assert.deepEqual(lookupVerbGovernment("erinnern"), []);
+});
+
+it("sentence-scoped primary source evidence does not become unconditional vocabulary auto-fill", () => {
+  assert.deepEqual(lookupVerbGovernment("gehen").filter(frame => frame.preposition === "auf"), []);
+});

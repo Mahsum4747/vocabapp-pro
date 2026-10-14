@@ -40,6 +40,22 @@ had in common; zero case conflicts were found across ~72 overlapping
 entries, including the trickier two-way-preposition cases (e.g.
 `teilnehmen an + Dativ`, a common point of learner error).
 
+## Current trust policy (2026-10-13)
+
+The 66 additions from commit `fadba6d5` now carry per-row
+`provenance: "ai-generated"`. Their identity was reconstructed by exact triple
+comparison with that commit's parent (the original 370 rows), rather than by
+position or CEFR level. They remain traceable reference evidence and do not
+supply diagnostics, case hints or automatic government enrichment. Source
+curated rows with contradictory cases for the same construction/preposition
+(e.g. schreiben + an) are also withheld until sense/context evidence resolves
+the distinction. Neither alternate case is erased from the registry.
+
+Canonical indexing strips only leading `sich` and retains the original
+construction as a mandatory context constraint. It does not collapse noun/verb
+idioms into their last verb. Sense IDs/glosses were not retained in this source;
+the registry records that absence explicitly instead of inventing meanings.
+
 ## Second-pass extension: AI-generated batch (66 entries)
 
 A follow-up batch of 1,605 CSV rows — machine-generated (GPT; the exact

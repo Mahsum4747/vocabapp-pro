@@ -262,3 +262,31 @@ test("untagged ditransitive frames are not automatically promoted to diagnostics
   assert.notEqual(diagnoseLessonResponse(lesson, step, "Ich gebe ihn das Buch")?.category,
     "lexical_government");
 });
+
+
+test("source-curated reflexive dative is linked to its canonical lemma without dropping the reflexive requirement", () => {
+  const step: Extract<LessonStep, { kind: "text" }> = {
+    ...helpStep, acceptedAnswers: ["Ich nähere mich ihm"],
+    skillIds: ["DE.A1.GRAMMAR.PRONOUNS.DATIVE"],
+  };
+  assert.equal(diagnoseLessonResponse(lesson, step, "Ich nähere mich ihn")?.targetLabel, "sich nähern + Dativ");
+  assert.equal(diagnoseLessonResponse(lesson, { ...step, acceptedAnswers: ["Ich nähere ihm"] }, "Ich nähere ihn"), null);
+});
+
+test("generated-only government is not a linguistic diagnostic source", () => {
+  const step: Extract<LessonStep, { kind: "text" }> = {
+    ...helpStep, acceptedAnswers: ["Es liegt an ihm"],
+    skillIds: ["DE.A1.GRAMMAR.PRONOUNS.DATIVE"],
+  };
+  assert.equal(diagnoseLessonResponse(lesson, step, "Es liegt an ihn"), null);
+});
+
+test("independently reviewed current-source dative government is available in bounded authored answers",()=>{
+ const step: Extract<LessonStep,{kind:"text"}>={...helpStep,acceptedAnswers:["Ich huldige ihm"],skillIds:["DE.A1.GRAMMAR.PRONOUNS.DATIVE"]};
+ assert.equal(diagnoseLessonResponse(lesson,step,"Ich huldige ihn")?.targetLabel,"huldigen + Dativ");
+});
+test("current schwanen frame preserves its limited impersonal construction",()=>{
+ const step: Extract<LessonStep,{kind:"text"}>={...helpStep,acceptedAnswers:["Mir schwant nichts Gutes"],skillIds:["DE.A1.GRAMMAR.PRONOUNS.DATIVE"]};
+ assert.equal(diagnoseLessonResponse(lesson,step,"Mich schwant nichts Gutes")?.targetLabel,"schwanen + Dativ");
+ assert.equal(diagnoseLessonResponse(lesson,{...step,acceptedAnswers:["Ich schwane ihm"]},"Ich schwane ihn"),null);
+});

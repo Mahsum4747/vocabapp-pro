@@ -1,0 +1,16 @@
+{
+  "version": "kaikki-en-de-verbs-2026-10-03-downloaded-2026-10-14",
+  "url": "https://kaikki.org/dictionary/German/pos-verb/kaikki.org-dictionary-German-by-pos-verb.jsonl",
+  "retrieved": "2026-10-14",
+  "downloadCompletedAt": "2026-10-14T10:22:52.710415+00:00",
+  "wiktionaryDumpDate": "2026-09-02",
+  "extractionDate": "2026-10-03",
+  "lastModified": "2026-10-03T13:56:53Z",
+  "snapshotSha256": "25a8581ddef225c405493b557bc8a18a816ef7706b1bd0588459dd2efd376141",
+  "bytes": 312729518,
+  "license": "CC-BY-SA-4.0",
+  "licenseURL": "https://en.wiktionary.org/wiki/Wiktionary:Copyrights",
+  "sourcePage": "https://kaikki.org/dictionary/German/pos-verb/index.html",
+  "processing": "official Kaikki postprocessed verb JSONL; not the unprocessed full Wiktextract dump",
+  "exampleRights": "Examples may have external quotation rights; source refs retained; no media downloaded."
+}

@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { AnswerFeedbackSheet } from "@/components/answer-feedback-sheet";
 import { EmptyState } from "@/components/empty-state";
@@ -25,6 +25,11 @@ export const Route = createFileRoute("/sets/$setId/conjugation")({
   component: ConjugationPage,
 });
 
+const VerbValencyReference = lazy(() =>
+  import("@/components/verb-valency-reference").then((module) => ({
+    default: module.VerbValencyReference,
+  })),
+);
 const QUESTION_LIMIT = 12;
 
 /**
@@ -245,6 +250,11 @@ function ConjugationPage() {
           </AnswerFeedbackSheet>
         ) : null}
       </form>
+      {revealed && (
+        <Suspense fallback={null}>
+          <VerbValencyReference term={q.infinitive} />
+        </Suspense>
+      )}
     </StudySessionShell>
   );
 }

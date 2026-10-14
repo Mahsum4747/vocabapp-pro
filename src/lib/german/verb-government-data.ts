@@ -25,6 +25,8 @@ export type VerbGovernmentEntry = {
   preposition: string;
   case: GovernmentCase;
   level?: "A1" | "A2";
+  /** Explicitly lower-trust additions; never promoted by a CEFR tag. */
+  provenance?: "ai-generated";
 };
 
 export const VERB_GOVERNMENT_DATA: readonly VerbGovernmentEntry[] = [
@@ -48,10 +50,10 @@ export const VERB_GOVERNMENT_DATA: readonly VerbGovernmentEntry[] = [
   { verb: "teilnehmen", preposition: "an", case: "dativ", level: "A2" },
   { verb: "zunehmen", preposition: "an", case: "dativ" },
   { verb: "zweifeln", preposition: "an", case: "dativ" },
-  { verb: "fehlen", preposition: "an", case: "dativ" },
-  { verb: "liegen", preposition: "an", case: "dativ", level: "A2" },
-  { verb: "mangeln", preposition: "an", case: "dativ" },
-  { verb: "sich erholen", preposition: "an", case: "dativ" },
+  { verb: "fehlen", preposition: "an", case: "dativ", provenance: "ai-generated" },
+  { verb: "liegen", preposition: "an", case: "dativ", level: "A2", provenance: "ai-generated" },
+  { verb: "mangeln", preposition: "an", case: "dativ", provenance: "ai-generated" },
+  { verb: "sich erholen", preposition: "an", case: "dativ", provenance: "ai-generated" },
 
   // an + Akkusativ
   { verb: "sich anpassen", preposition: "an", case: "akkusativ" },
@@ -68,9 +70,9 @@ export const VERB_GOVERNMENT_DATA: readonly VerbGovernmentEntry[] = [
   { verb: "senden", preposition: "an", case: "akkusativ" },
   { verb: "schreiben", preposition: "an", case: "akkusativ", level: "A1" },
   { verb: "sich wenden", preposition: "an", case: "akkusativ" },
-  { verb: "anknüpfen", preposition: "an", case: "akkusativ" },
-  { verb: "sich anlehnen", preposition: "an", case: "akkusativ", level: "A2" },
-  { verb: "sich anschließen", preposition: "an", case: "akkusativ" },
+  { verb: "anknüpfen", preposition: "an", case: "akkusativ", provenance: "ai-generated" },
+  { verb: "sich anlehnen", preposition: "an", case: "akkusativ", level: "A2", provenance: "ai-generated" },
+  { verb: "sich anschließen", preposition: "an", case: "akkusativ", provenance: "ai-generated" },
 
   // auf + Dativ
   { verb: "basieren", preposition: "auf", case: "dativ" },
@@ -78,7 +80,7 @@ export const VERB_GOVERNMENT_DATA: readonly VerbGovernmentEntry[] = [
   { verb: "beruhen", preposition: "auf", case: "dativ" },
   { verb: "bestehen", preposition: "auf", case: "dativ" },
   { verb: "ruhen", preposition: "auf", case: "dativ" },
-  { verb: "sich berufen", preposition: "auf", case: "dativ" },
+  { verb: "sich berufen", preposition: "auf", case: "dativ", provenance: "ai-generated" },
 
   // auf + Akkusativ
   { verb: "achten", preposition: "auf", case: "akkusativ", level: "A1" },
@@ -123,9 +125,9 @@ export const VERB_GOVERNMENT_DATA: readonly VerbGovernmentEntry[] = [
   { verb: "zählen", preposition: "auf", case: "akkusativ" },
   { verb: "zugehen", preposition: "auf", case: "akkusativ" },
   { verb: "zurückkommen", preposition: "auf", case: "akkusativ" },
-  { verb: "ankommen", preposition: "auf", case: "akkusativ", level: "A2" },
-  { verb: "führen", preposition: "auf", case: "akkusativ" },
-  { verb: "zurückführen", preposition: "auf", case: "akkusativ" },
+  { verb: "ankommen", preposition: "auf", case: "akkusativ", level: "A2", provenance: "ai-generated" },
+  { verb: "führen", preposition: "auf", case: "akkusativ", provenance: "ai-generated" },
+  { verb: "zurückführen", preposition: "auf", case: "akkusativ", provenance: "ai-generated" },
 
   // aus + Dativ
   { verb: "bestehen", preposition: "aus", case: "dativ", level: "A2" },
@@ -153,9 +155,9 @@ export const VERB_GOVERNMENT_DATA: readonly VerbGovernmentEntry[] = [
   { verb: "zugucken", preposition: "bei", case: "dativ" },
   { verb: "zuschauen", preposition: "bei", case: "dativ" },
   { verb: "zusehen", preposition: "bei", case: "dativ" },
-  { verb: "liegen", preposition: "bei", case: "dativ" },
-  { verb: "sich bewerben", preposition: "bei", case: "dativ", level: "A2" },
-  { verb: "sich entschuldigen", preposition: "bei", case: "dativ", level: "A1" },
+  { verb: "liegen", preposition: "bei", case: "dativ", provenance: "ai-generated" },
+  { verb: "sich bewerben", preposition: "bei", case: "dativ", level: "A2", provenance: "ai-generated" },
+  { verb: "sich entschuldigen", preposition: "bei", case: "dativ", level: "A1", provenance: "ai-generated" },
 
   // für + Akkusativ
   { verb: "arbeiten", preposition: "für", case: "akkusativ" },
@@ -210,7 +212,7 @@ export const VERB_GOVERNMENT_DATA: readonly VerbGovernmentEntry[] = [
   { verb: "sich verteidigen", preposition: "gegen", case: "akkusativ" },
   { verb: "sich wehren", preposition: "gegen", case: "akkusativ" },
   { verb: "wechseln", preposition: "gegen", case: "akkusativ", level: "A2" },
-  { verb: "arbeiten", preposition: "gegen", case: "akkusativ" },
+  { verb: "arbeiten", preposition: "gegen", case: "akkusativ", provenance: "ai-generated" },
 
   // in + Dativ
   { verb: "bestehen", preposition: "in", case: "dativ" },
@@ -219,7 +221,7 @@ export const VERB_GOVERNMENT_DATA: readonly VerbGovernmentEntry[] = [
   { verb: "sich üben", preposition: "in", case: "dativ" },
   { verb: "unterrichten", preposition: "in", case: "dativ" },
   { verb: "übertreffen", preposition: "in", case: "dativ" },
-  { verb: "sich verwandeln", preposition: "in", case: "dativ" },
+  { verb: "sich verwandeln", preposition: "in", case: "dativ", provenance: "ai-generated" },
 
   // in + Akkusativ
   { verb: "ausbrechen", preposition: "in", case: "akkusativ" },
@@ -234,15 +236,15 @@ export const VERB_GOVERNMENT_DATA: readonly VerbGovernmentEntry[] = [
   { verb: "sich vertiefen", preposition: "in", case: "akkusativ" },
   { verb: "verwandeln", preposition: "in", case: "akkusativ" },
   { verb: "wechseln", preposition: "in", case: "akkusativ", level: "A2" },
-  { verb: "ausweichen", preposition: "in", case: "akkusativ" },
-  { verb: "bringen", preposition: "in", case: "akkusativ", level: "A2" },
-  { verb: "einsteigen", preposition: "in", case: "akkusativ", level: "A1" },
-  { verb: "gliedern", preposition: "in", case: "akkusativ" },
-  { verb: "sich einfügen", preposition: "in", case: "akkusativ" },
-  { verb: "sich einmischen", preposition: "in", case: "akkusativ" },
-  { verb: "sich wandeln", preposition: "in", case: "akkusativ" },
-  { verb: "übergehen", preposition: "in", case: "akkusativ" },
-  { verb: "unterteilen", preposition: "in", case: "akkusativ" },
+  { verb: "ausweichen", preposition: "in", case: "akkusativ", provenance: "ai-generated" },
+  { verb: "bringen", preposition: "in", case: "akkusativ", level: "A2", provenance: "ai-generated" },
+  { verb: "einsteigen", preposition: "in", case: "akkusativ", level: "A1", provenance: "ai-generated" },
+  { verb: "gliedern", preposition: "in", case: "akkusativ", provenance: "ai-generated" },
+  { verb: "sich einfügen", preposition: "in", case: "akkusativ", provenance: "ai-generated" },
+  { verb: "sich einmischen", preposition: "in", case: "akkusativ", provenance: "ai-generated" },
+  { verb: "sich wandeln", preposition: "in", case: "akkusativ", provenance: "ai-generated" },
+  { verb: "übergehen", preposition: "in", case: "akkusativ", provenance: "ai-generated" },
+  { verb: "unterteilen", preposition: "in", case: "akkusativ", provenance: "ai-generated" },
 
   // mit + Dativ
   { verb: "anfangen", preposition: "mit", case: "dativ", level: "A1" },
@@ -282,17 +284,17 @@ export const VERB_GOVERNMENT_DATA: readonly VerbGovernmentEntry[] = [
   { verb: "vergleichen", preposition: "mit", case: "dativ", level: "A1" },
   { verb: "zusammenarbeiten", preposition: "mit", case: "dativ", level: "A1" },
   { verb: "verbinden", preposition: "mit", case: "dativ", level: "A2" },
-  { verb: "arbeiten", preposition: "mit", case: "dativ", level: "A1" },
-  { verb: "kommunizieren", preposition: "mit", case: "dativ" },
-  { verb: "konkurrieren", preposition: "mit", case: "dativ" },
-  { verb: "kooperieren", preposition: "mit", case: "dativ" },
-  { verb: "korrespondieren", preposition: "mit", case: "dativ" },
-  { verb: "sich abfinden", preposition: "mit", case: "dativ" },
-  { verb: "sich arrangieren", preposition: "mit", case: "dativ" },
-  { verb: "sich auseinandersetzen", preposition: "mit", case: "dativ" },
-  { verb: "sich identifizieren", preposition: "mit", case: "dativ" },
-  { verb: "sich solidarisieren", preposition: "mit", case: "dativ" },
-  { verb: "sich versöhnen", preposition: "mit", case: "dativ" },
+  { verb: "arbeiten", preposition: "mit", case: "dativ", level: "A1", provenance: "ai-generated" },
+  { verb: "kommunizieren", preposition: "mit", case: "dativ", provenance: "ai-generated" },
+  { verb: "konkurrieren", preposition: "mit", case: "dativ", provenance: "ai-generated" },
+  { verb: "kooperieren", preposition: "mit", case: "dativ", provenance: "ai-generated" },
+  { verb: "korrespondieren", preposition: "mit", case: "dativ", provenance: "ai-generated" },
+  { verb: "sich abfinden", preposition: "mit", case: "dativ", provenance: "ai-generated" },
+  { verb: "sich arrangieren", preposition: "mit", case: "dativ", provenance: "ai-generated" },
+  { verb: "sich auseinandersetzen", preposition: "mit", case: "dativ", provenance: "ai-generated" },
+  { verb: "sich identifizieren", preposition: "mit", case: "dativ", provenance: "ai-generated" },
+  { verb: "sich solidarisieren", preposition: "mit", case: "dativ", provenance: "ai-generated" },
+  { verb: "sich versöhnen", preposition: "mit", case: "dativ", provenance: "ai-generated" },
 
   // nach + Dativ
   { verb: "beurteilen", preposition: "nach", case: "dativ" },
@@ -314,7 +316,7 @@ export const VERB_GOVERNMENT_DATA: readonly VerbGovernmentEntry[] = [
   { verb: "sich unterscheiden", preposition: "nach", case: "dativ" },
   { verb: "urteilen", preposition: "nach", case: "dativ" },
   { verb: "verlangen", preposition: "nach", case: "dativ" },
-  { verb: "sich orientieren", preposition: "nach", case: "dativ" },
+  { verb: "sich orientieren", preposition: "nach", case: "dativ", provenance: "ai-generated" },
 
   // über + Akkusativ
   { verb: "sich ärgern", preposition: "über", case: "akkusativ", level: "A2" },
@@ -350,9 +352,9 @@ export const VERB_GOVERNMENT_DATA: readonly VerbGovernmentEntry[] = [
   { verb: "weinen", preposition: "über", case: "akkusativ" },
   { verb: "sich wundern", preposition: "über", case: "akkusativ" },
   { verb: "streiten", preposition: "über", case: "akkusativ", level: "A2" },
-  { verb: "informieren", preposition: "über", case: "akkusativ" },
-  { verb: "sich vergewissern", preposition: "über", case: "akkusativ" },
-  { verb: "wissen", preposition: "über", case: "akkusativ", level: "A2" },
+  { verb: "informieren", preposition: "über", case: "akkusativ", provenance: "ai-generated" },
+  { verb: "sich vergewissern", preposition: "über", case: "akkusativ", provenance: "ai-generated" },
+  { verb: "wissen", preposition: "über", case: "akkusativ", level: "A2", provenance: "ai-generated" },
 
   // um + Akkusativ
   { verb: "sich ängstigen", preposition: "um", case: "akkusativ" },
@@ -377,19 +379,19 @@ export const VERB_GOVERNMENT_DATA: readonly VerbGovernmentEntry[] = [
   { verb: "werben", preposition: "um", case: "akkusativ" },
   { verb: "wetten", preposition: "um", case: "akkusativ" },
   { verb: "wissen", preposition: "um", case: "akkusativ" },
-  { verb: "diskutieren", preposition: "um", case: "akkusativ" },
-  { verb: "steigern", preposition: "um", case: "akkusativ" },
-  { verb: "verringern", preposition: "um", case: "akkusativ" },
+  { verb: "diskutieren", preposition: "um", case: "akkusativ", provenance: "ai-generated" },
+  { verb: "steigern", preposition: "um", case: "akkusativ", provenance: "ai-generated" },
+  { verb: "verringern", preposition: "um", case: "akkusativ", provenance: "ai-generated" },
 
   // unter + Dativ
   { verb: "leiden", preposition: "unter", case: "dativ" },
   { verb: "stehen", preposition: "unter", case: "dativ" },
   { verb: "verstehen", preposition: "unter", case: "dativ" },
-  { verb: "arbeiten", preposition: "unter", case: "dativ" },
-  { verb: "fallen", preposition: "unter", case: "dativ" },
-  { verb: "liegen", preposition: "unter", case: "dativ", level: "A2" },
-  { verb: "sich beugen", preposition: "unter", case: "dativ" },
-  { verb: "versinken", preposition: "unter", case: "dativ" },
+  { verb: "arbeiten", preposition: "unter", case: "dativ", provenance: "ai-generated" },
+  { verb: "fallen", preposition: "unter", case: "dativ", provenance: "ai-generated" },
+  { verb: "liegen", preposition: "unter", case: "dativ", level: "A2", provenance: "ai-generated" },
+  { verb: "sich beugen", preposition: "unter", case: "dativ", provenance: "ai-generated" },
+  { verb: "versinken", preposition: "unter", case: "dativ", provenance: "ai-generated" },
 
   // von + Dativ
   { verb: "abhängen", preposition: "von", case: "dativ" },
@@ -423,9 +425,9 @@ export const VERB_GOVERNMENT_DATA: readonly VerbGovernmentEntry[] = [
   { verb: "verlangen", preposition: "von", case: "dativ" },
   { verb: "verstehen", preposition: "von", case: "dativ" },
   { verb: "wissen", preposition: "von", case: "dativ" },
-  { verb: "ausgehen", preposition: "von", case: "dativ" },
-  { verb: "sich befreien", preposition: "von", case: "dativ" },
-  { verb: "sich überzeugen", preposition: "von", case: "dativ" },
+  { verb: "ausgehen", preposition: "von", case: "dativ", provenance: "ai-generated" },
+  { verb: "sich befreien", preposition: "von", case: "dativ", provenance: "ai-generated" },
+  { verb: "sich überzeugen", preposition: "von", case: "dativ", provenance: "ai-generated" },
 
   // vor + Dativ
   { verb: "sich ängstigen", preposition: "vor", case: "dativ" },
@@ -437,8 +439,8 @@ export const VERB_GOVERNMENT_DATA: readonly VerbGovernmentEntry[] = [
   { verb: "schützen", preposition: "vor", case: "dativ" },
   { verb: "sich verstecken", preposition: "vor", case: "dativ" },
   { verb: "warnen", preposition: "vor", case: "dativ" },
-  { verb: "grauen", preposition: "vor", case: "dativ" },
-  { verb: "stehen", preposition: "vor", case: "dativ" },
+  { verb: "grauen", preposition: "vor", case: "dativ", provenance: "ai-generated" },
+  { verb: "stehen", preposition: "vor", case: "dativ", provenance: "ai-generated" },
 
   // zu + Dativ
   { verb: "anhalten", preposition: "zu", case: "dativ" },
@@ -484,21 +486,21 @@ export const VERB_GOVERNMENT_DATA: readonly VerbGovernmentEntry[] = [
   { verb: "zählen", preposition: "zu", case: "dativ" },
   { verb: "zwingen", preposition: "zu", case: "dativ" },
   { verb: "sich anmelden", preposition: "zu", case: "dativ", level: "A2" },
-  { verb: "anregen", preposition: "zu", case: "dativ" },
-  { verb: "auffordern", preposition: "zu", case: "dativ" },
-  { verb: "aufmuntern", preposition: "zu", case: "dativ" },
-  { verb: "befähigen", preposition: "zu", case: "dativ" },
-  { verb: "bevollmächtigen", preposition: "zu", case: "dativ" },
-  { verb: "ermächtigen", preposition: "zu", case: "dativ" },
-  { verb: "verdammen", preposition: "zu", case: "dativ" },
-  { verb: "verhelfen", preposition: "zu", case: "dativ" },
+  { verb: "anregen", preposition: "zu", case: "dativ", provenance: "ai-generated" },
+  { verb: "auffordern", preposition: "zu", case: "dativ", provenance: "ai-generated" },
+  { verb: "aufmuntern", preposition: "zu", case: "dativ", provenance: "ai-generated" },
+  { verb: "befähigen", preposition: "zu", case: "dativ", provenance: "ai-generated" },
+  { verb: "bevollmächtigen", preposition: "zu", case: "dativ", provenance: "ai-generated" },
+  { verb: "ermächtigen", preposition: "zu", case: "dativ", provenance: "ai-generated" },
+  { verb: "verdammen", preposition: "zu", case: "dativ", provenance: "ai-generated" },
+  { verb: "verhelfen", preposition: "zu", case: "dativ", provenance: "ai-generated" },
 
   // zwischen + Dativ
   { verb: "unterscheiden", preposition: "zwischen", case: "dativ" },
   { verb: "vermitteln", preposition: "zwischen", case: "dativ" },
-  { verb: "liegen", preposition: "zwischen", case: "dativ" },
-  { verb: "pendeln", preposition: "zwischen", case: "dativ", level: "A2" },
-  { verb: "schwanken", preposition: "zwischen", case: "dativ" },
-  { verb: "vergleichen", preposition: "zwischen", case: "dativ" },
-  { verb: "wählen", preposition: "zwischen", case: "dativ", level: "A2" },
+  { verb: "liegen", preposition: "zwischen", case: "dativ", provenance: "ai-generated" },
+  { verb: "pendeln", preposition: "zwischen", case: "dativ", level: "A2", provenance: "ai-generated" },
+  { verb: "schwanken", preposition: "zwischen", case: "dativ", provenance: "ai-generated" },
+  { verb: "vergleichen", preposition: "zwischen", case: "dativ", provenance: "ai-generated" },
+  { verb: "wählen", preposition: "zwischen", case: "dativ", level: "A2", provenance: "ai-generated" },
 ];

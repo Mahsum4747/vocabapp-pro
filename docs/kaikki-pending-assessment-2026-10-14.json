@@ -1,0 +1,67 @@
+{
+  "queueBefore": {
+    "sourceRecords": 606,
+    "uniqueStructures": 542,
+    "uniqueVerbs": 406
+  },
+  "referenceAccepted": {
+    "sourceRecords": 606,
+    "uniqueStructures": 542,
+    "uniqueVerbs": 406
+  },
+  "newDiagnostic": {
+    "sourceRecords": 15,
+    "uniqueStructures": 15,
+    "uniqueVerbs": 15
+  },
+  "diagnosticPending": {
+    "sourceRecords": 591,
+    "uniqueStructures": 532,
+    "uniqueVerbs": 399
+  },
+  "groups": {
+    "contextOnly": {
+      "sourceRecords": 227,
+      "uniqueStructures": 202,
+      "uniqueVerbs": 185
+    },
+    "structureOnly": {
+      "sourceRecords": 25,
+      "uniqueStructures": 24,
+      "uniqueVerbs": 24
+    },
+    "both": {
+      "sourceRecords": 339,
+      "uniqueStructures": 315,
+      "uniqueVerbs": 225
+    },
+    "acceptedDiagnostic": {
+      "sourceRecords": 15,
+      "uniqueStructures": 15,
+      "uniqueVerbs": 15
+    }
+  },
+  "overlappingStructuralReasons": {
+    "compound-or-qualified-template": 234,
+    "additional-object-role": 85,
+    "case-role-not-supported-by-diagnostic": 112,
+    "reflexive-role": 123,
+    "tagged-structural-condition": 15,
+    "ambiguous-sourced-verb-recognition": 2
+  },
+  "allCurrentDiagnostics": {
+    "sourceRecords": 212,
+    "uniqueStructures": 176,
+    "uniqueVerbs": 154
+  },
+  "allCurrentPending": {
+    "sourceRecords": 913,
+    "uniqueStructures": 786,
+    "uniqueVerbs": 505
+  },
+  "allCurrentReferenceAccepted": {
+    "sourceRecords": 803,
+    "uniqueStructures": 703,
+    "uniqueVerbs": 497
+  }
+}
