@@ -14,6 +14,9 @@ export type LessonDiagnosticDraft = {
   support: "hint" | "example" | "reveal" | "choice" | "none";
 };
 
+const uniqueConstructions = <T extends { construction: string }>(frames: readonly T[]): T[] =>
+  frames.filter((frame, index) => frames.findIndex(other => other.construction === frame.construction) === index);
+
 const DATIVE_PRONOUNS = ["mir", "dir", "ihm", "ihr", "uns", "euch", "ihnen"] as const;
 
 // A1-safe case pairs: the two forms refer to the same person/number.
@@ -22,7 +25,7 @@ const CROSS_CASE_PAIRS = new Set(["mich|mir", "mir|mich", "dich|dir", "dir|dich"
 const SEPARABLE_PREFIXES = ["ab", "an", "auf", "aus", "bei", "ein", "mit", "nach", "vor", "zu", "zurück", "weg"];
 
 /** Recognize only sourced inflections; never manufacture a lemma from a word. */
-function hasVerifiedVerbForm(sentenceTokens: readonly string[], lemma: string): boolean {
+export function hasVerifiedVerbForm(sentenceTokens: readonly string[], lemma: string): boolean {
   const parts = lemma.split(/\s+/);
   if (parts[0] === "sich" && !sentenceTokens.some((token) =>
     ["mich", "dich", "sich", "uns", "euch"].includes(token))) return false;
@@ -46,7 +49,8 @@ function hasVerifiedVerbForm(sentenceTokens: readonly string[], lemma: string): 
     (!prefix || form.toLowerCase().includes(prefix) || sentenceTokens.includes(tokens(prefix).join(" "))));
 }
 
-function tokens(value: string) {
+const tokens = (value: string) => valencyDiagnosticTokens(value);
+export function valencyDiagnosticTokens(value: string) {
   return normalizeLessonAnswer(value, false, true)
     .replace(/[,:;()]/g, " ")
     .split(/\s+/)
@@ -148,15 +152,19 @@ export function diagnoseLessonResponse(
           CROSS_CASE_PAIRS.has(`${change.expected}|${change.actual}`)) {
         const preceding = expectedTokens[change.index - 1];
         // Only the immediately adjacent preposition can govern this pronoun.
-        const prepFrames = eligiblePrepositionalFrames(preceding ?? "", expectedCase)
+        const prepFrames = uniqueConstructions(eligiblePrepositionalFrames(preceding ?? "", expectedCase)
           .filter((entry) => hasVerifiedVerbForm(expectedTokens, entry.construction) &&
             (!entry.diagnosticConditions?.allowedNormalizedAnswers ||
-              entry.diagnosticConditions.allowedNormalizedAnswers.includes(expectedTokens.join(" "))));
+              entry.diagnosticConditions.allowedNormalizedAnswers.includes(expectedTokens.join(" "))) &&
+            (!entry.diagnosticConditions?.allowedPronounTargets || entry.diagnosticConditions.allowedPronounTargets.some(
+              target => target.answer === expectedTokens.join(" ") && target.index === change.index))));
         // A prepositional object cannot be a bare dative argument.
         const dativeFrames = expectedCase === "dativ" && !isPrepositionToken(preceding ?? "")
-          ? eligibleBareDativeFrames().filter((entry) => hasVerifiedVerbForm(expectedTokens, entry.construction) &&
+          ? uniqueConstructions(eligibleBareDativeFrames().filter((entry) => hasVerifiedVerbForm(expectedTokens, entry.construction) &&
             (!entry.diagnosticConditions?.allowedNormalizedAnswers ||
-              entry.diagnosticConditions.allowedNormalizedAnswers.includes(expectedTokens.join(" "))))
+              entry.diagnosticConditions.allowedNormalizedAnswers.includes(expectedTokens.join(" "))) &&
+            (!entry.diagnosticConditions?.allowedPronounTargets || entry.diagnosticConditions.allowedPronounTargets.some(
+              target => target.answer === expectedTokens.join(" ") && target.index === change.index))))
           : [];
         // Multiple candidates or unsupported prepositional roles are ambiguous.
         if (prepFrames.length === 1 && dativeFrames.length === 0) {

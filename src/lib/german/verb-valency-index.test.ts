@@ -89,5 +89,5 @@ test("new snapshot remains distinct from legacy and only reviewed source records
  assert.ok(current.some(f=>f.review==="eligible" && f.provenance.method==="source-reviewed"));
  assert.ok(current.every(f=>f.context[0].source.retrieved==="2026-10-14"));
  assert.ok(frames.filter(f=>f.source==="kaikki-extracted").every(f=>f.review!=="eligible"));
- assert.ok(lookupVerbValency("gehen").filter(f=>f.source==="kaikki-current").every(f=>f.review!=="eligible"));
+ assert.ok(lookupVerbValency("gehen").filter(f=>f.source==="kaikki-current" && f.review==="eligible").every(f=>f.diagnosticConditions?.allowedPronounTargets?.length));
 });

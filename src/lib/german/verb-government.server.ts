@@ -25,8 +25,10 @@ export function lookupVerbGovernment(term: string): VerbGovernment[] {
   // Construction-specific lookup: a bare infinitive never inherits reflexive rules.
   return lookupVerbValency(key)
     .filter((frame) => frame.construction === key && frame.review === "eligible"
+      && !frame.diagnosticConditions?.allowedPronounTargets
       && frame.preposition !== null && frame.case !== "genitiv")
-    .map((frame) => ({ preposition: frame.preposition!, case: frame.case as VerbGovernment["case"] }));
+    .map((frame) => ({ preposition: frame.preposition!, case: frame.case as VerbGovernment["case"] }))
+    .filter((frame,index,rows) => rows.findIndex(other => other.preposition === frame.preposition && other.case === frame.case) === index);
 }
 
 /** Records in the loaded dataset. Forces the build; used by tests. */

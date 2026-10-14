@@ -14,7 +14,8 @@ export type ValencyFrame = {
   sense: string | null;
   /** Upstream sense contexts, when restored; never imply eligibility. */
   context: readonly ValencySourceContext[];
-  diagnosticConditions?: { allowedNormalizedAnswers?: readonly string[] };
+  diagnosticConditions?: { allowedNormalizedAnswers?: readonly string[]; allowedPronounTargets?: readonly { answer: string; index: number }[] };
+  referenceAcceptance?: "accepted" | "pending";
   provenance: {
     document: string;
     record: string;
@@ -29,6 +30,7 @@ export type ValencyFrame = {
 const normalized = (s: string) => s.trim().toLocaleLowerCase("de-DE");
 export const canonicalValencyLemma = (construction: string) =>
   normalized(construction).replace(/^sich\s+/, "");
+const normalizedPrep = (s: string) => normalized(s).replace(/[äöüß]/g, c => ({ä:"ae",ö:"oe",ü:"ue",ß:"ss"})[c]!);
 const key = (verb: string, prep: string) => normalized(verb) + "|" + normalized(prep);
 const EXTRA_PREPOSITIONS = [
   "ab", "an", "auf", "aus", "außer", "bei", "bis", "durch", "entlang",
@@ -86,6 +88,7 @@ for (const [index, entry] of currentSource.frames.entries()) {
   frames.push({ lemma: canonicalValencyLemma(entry.lemma), construction: entry.construction,
     sense: context[0].senseId, context, preposition: entry.prep, case: caseNames[entry.case],
     source: "kaikki-current", review: entry.review as ValencyFrame["review"],
+    referenceAcceptance: "referenceAcceptance" in entry ? entry.referenceAcceptance as "accepted" | "pending" : undefined,
     diagnosticConditions: "diagnosticConditions" in entry ? entry.diagnosticConditions : undefined,
     provenance: { document: "docs/KAIKKI-CURRENT-INTEGRATION-2026-10-14.md",
       record: `frames[${index}]@${currentSource.source.snapshotSha256}`,
@@ -96,31 +99,35 @@ for (const [index, entry] of currentSource.frames.entries()) {
 const byLemma = new Map<string, ValencyFrame[]>();
 const eligibleByPrep = new Map<string, ValencyFrame[]>();
 const eligibleDative: ValencyFrame[] = [];
-const prepositions = new Set(EXTRA_PREPOSITIONS);
+const prepositions = new Set(EXTRA_PREPOSITIONS.map(normalizedPrep));
 for (const f of frames) {
   if (!byLemma.has(f.lemma)) byLemma.set(f.lemma, []);
   byLemma.get(f.lemma)!.push(f);
-  if (f.preposition) prepositions.add(f.preposition);
+  if (f.preposition) prepositions.add(normalizedPrep(f.preposition));
   if (f.review !== "eligible") continue;
   if (!f.preposition) {
-    if (!eligibleDative.some((existing) => existing.construction === f.construction)) eligibleDative.push(f);
+    eligibleDative.push(f);
   }
   else {
-    const k = f.preposition + "|" + f.case;
+    const k = normalizedPrep(f.preposition) + "|" + f.case;
     if (!eligibleByPrep.has(k)) eligibleByPrep.set(k, []);
     const list = eligibleByPrep.get(k)!;
-    if (!list.some((v) => v.construction === f.construction)) list.push(f);
+    list.push(f);
   }
 }
 export const lookupVerbValency = (lemma: string): readonly ValencyFrame[] =>
   (byLemma.get(canonicalValencyLemma(lemma)) ?? []).filter((frame) =>
     !normalized(lemma).startsWith("sich ") || frame.construction === normalized(lemma));
 export const eligiblePrepositionalFrames = (prep: string, nounCase: ValencyCase): readonly ValencyFrame[] =>
-  eligibleByPrep.get(normalized(prep) + "|" + nounCase) ?? [];
+  eligibleByPrep.get(normalizedPrep(prep) + "|" + nounCase) ?? [];
 export const eligibleBareDativeFrames = (): readonly ValencyFrame[] => eligibleDative;
-export const isPrepositionToken = (token: string): boolean => prepositions.has(normalized(token));
+export const isPrepositionToken = (token: string): boolean => prepositions.has(normalizedPrep(token));
 export const valencyEvidenceCount = (): number => frames.length;
 
 /** Runtime government facts with independent source provenance, retaining constructions. */
 export const sourcedGovernmentEntries = VERB_GOVERNMENT_DATA.filter((entry) =>
   !entry.provenance && curatedCases.get(key(entry.verb, entry.preposition))?.size === 1);
+
+/** Accepted sourced reference facts retain senses and usage conditions; no diagnostic promise. */
+export const lookupAcceptedValencyReferences = (lemma: string): readonly ValencyFrame[] =>
+  lookupVerbValency(lemma).filter(frame => frame.referenceAcceptance === "accepted");
