@@ -280,3 +280,13 @@ test("generated-only government is not a linguistic diagnostic source", () => {
   };
   assert.equal(diagnoseLessonResponse(lesson, step, "Es liegt an ihn"), null);
 });
+
+test("independently reviewed current-source dative government is available in bounded authored answers",()=>{
+ const step: Extract<LessonStep,{kind:"text"}>={...helpStep,acceptedAnswers:["Ich huldige ihm"],skillIds:["DE.A1.GRAMMAR.PRONOUNS.DATIVE"]};
+ assert.equal(diagnoseLessonResponse(lesson,step,"Ich huldige ihn")?.targetLabel,"huldigen + Dativ");
+});
+test("current schwanen frame preserves its limited impersonal construction",()=>{
+ const step: Extract<LessonStep,{kind:"text"}>={...helpStep,acceptedAnswers:["Mir schwant nichts Gutes"],skillIds:["DE.A1.GRAMMAR.PRONOUNS.DATIVE"]};
+ assert.equal(diagnoseLessonResponse(lesson,step,"Mich schwant nichts Gutes")?.targetLabel,"schwanen + Dativ");
+ assert.equal(diagnoseLessonResponse(lesson,{...step,acceptedAnswers:["Ich schwane ihm"]},"Ich schwane ihn"),null);
+});

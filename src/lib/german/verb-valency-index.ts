@@ -1,6 +1,7 @@
 import { readValencySourceContext, type ValencySourceContext } from "./valency-source-context";
 import { DATIVE_VERB_DATA } from "./dative-verbs-data";
 import { VERB_GOVERNMENT_DATA } from "./verb-government-data";
+import currentSource from "../../content/karta-kaikki-valency-2026-10-03.json" with { type: "json" };
 import extractedSource from "../../content/karta-kaikki-verb-prep-case.json" with { type: "json" };
 
 /** Existing source evidence, not a complete lexical-valency dictionary. */
@@ -10,17 +11,18 @@ export type ValencyFrame = {
   lemma: string;
   construction: string;
   /** Legacy aggregate has no single sense; restored per-sense facts live in context. */
-  sense: null;
+  sense: string | null;
   /** Upstream sense contexts, when restored; never imply eligibility. */
   context: readonly ValencySourceContext[];
+  diagnosticConditions?: { allowedNormalizedAnswers?: readonly string[] };
   provenance: {
     document: string;
     record: string;
-    method: "source-curated" | "generated-unverified" | "gloss-regex";
+    method: "source-curated" | "source-reviewed" | "structured-template" | "generated-unverified" | "gloss-regex";
   };
   preposition: string | null;
   case: ValencyCase;
-  source: "curated-dative" | "curated-government" | "kaikki-extracted";
+  source: "curated-dative" | "curated-government" | "kaikki-extracted" | "kaikki-current";
   review: "eligible" | "context-required" | "conflicted" | "reference-only";
 };
 
@@ -77,6 +79,20 @@ const frames: ValencyFrame[] = [
       ? "conflicted" : "reference-only",
   })),
 ];
+// Different snapshots are separate evidence families, not automatic contradictions.
+for (const [index, entry] of currentSource.frames.entries()) {
+  const context = readValencySourceContext({ lemma: entry.lemma,
+    context: [currentSource.contexts[entry.contextId as keyof typeof currentSource.contexts]] });
+  frames.push({ lemma: canonicalValencyLemma(entry.lemma), construction: entry.construction,
+    sense: context[0].senseId, context, preposition: entry.prep, case: caseNames[entry.case],
+    source: "kaikki-current", review: entry.review as ValencyFrame["review"],
+    diagnosticConditions: "diagnosticConditions" in entry ? entry.diagnosticConditions : undefined,
+    provenance: { document: "docs/KAIKKI-CURRENT-INTEGRATION-2026-10-14.md",
+      record: `frames[${index}]@${currentSource.source.snapshotSha256}`,
+      method: entry.review === "eligible" ? "source-reviewed"
+        : context[0].evidence.kind === "structured-obj-template" ? "structured-template" : "gloss-regex" },
+  });
+}
 const byLemma = new Map<string, ValencyFrame[]>();
 const eligibleByPrep = new Map<string, ValencyFrame[]>();
 const eligibleDative: ValencyFrame[] = [];
@@ -86,7 +102,9 @@ for (const f of frames) {
   byLemma.get(f.lemma)!.push(f);
   if (f.preposition) prepositions.add(f.preposition);
   if (f.review !== "eligible") continue;
-  if (!f.preposition) eligibleDative.push(f);
+  if (!f.preposition) {
+    if (!eligibleDative.some((existing) => existing.construction === f.construction)) eligibleDative.push(f);
+  }
   else {
     const k = f.preposition + "|" + f.case;
     if (!eligibleByPrep.has(k)) eligibleByPrep.set(k, []);

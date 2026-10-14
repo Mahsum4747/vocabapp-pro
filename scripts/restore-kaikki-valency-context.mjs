@@ -22,6 +22,16 @@ export function frameEvidence(gloss, row) {
   return match ? { text: match[0], offset: match.index, kind: "explicit-gloss-grammar" } : null;
 }
 
+export function templateTriples(lemma, argument) {
+  if (typeof argument !== "string") return [];
+  const found = [];
+  for (const m of argument.matchAll(/:([a-zäöüß]+)\((acc|dat|gen)\)/giu))
+    found.push({ lemma, prep: normalize(m[1]), case: m[2].toLowerCase() === "acc" ? "akk" : m[2].toLowerCase(), text: m[0], offset: m.index });
+  for (const m of argument.matchAll(/(?<![\w(:])(acc|dat|gen)(?=<|[;,| ]|$)/gu))
+    found.push({ lemma, prep: null, case: m[1] === "acc" ? "akk" : m[1], text: m[0], offset: m.index });
+  return found;
+}
+
 export function contextsFromEntry(entry, line, rawLine, rows, source) {
   if (entry.pos !== "verb" || (entry.lang_code && entry.lang_code !== "de")) return [];
   const word = typeof entry.word === "string" ? normalize(entry.word) : "";
@@ -35,9 +45,22 @@ export function contextsFromEntry(entry, line, rawLine, rows, source) {
     for (const [index, row] of rows.entries()) {
       const lemma = normalize(row.lemma);
       if (lemma !== word && !(lemma.startsWith("sich ") && lemma.slice(5) === word && reflexive)) continue;
-      for (const [glossIndex, gloss] of glosses.entries()) {
-        const evidence = frameEvidence(gloss, row);
-        if (!evidence) continue;
+      const evidences = [];
+      for (const [sourceField, texts] of [["glosses", glosses], ["raw_glosses", rawGlosses]]) {
+        for (const [glossIndex, gloss] of texts.entries()) {
+          const evidence = frameEvidence(gloss, row);
+          if (evidence) evidences.push({ ...evidence, sourceField, glossIndex });
+        }
+      }
+      for (const [templateIndex, template] of (sense.info_templates ?? []).entries()) {
+        if (template.name !== "+obj" || template.args?.["1"] !== "de") continue;
+        for (const frame of templateTriples(row.lemma, template.args?.["2"])) {
+          if (frame.prep === row.prep && frame.case === row.case)
+            evidences.push({ kind: "structured-obj-template", sourceField: "info_templates",
+              templateIndex, argument: "2", text: frame.text, offset: frame.offset });
+        }
+      }
+      for (const evidence of evidences) {
         result.push({ index, context: {
           source: { ...source, line, recordSha256: hash(rawLine), word: entry.word,
             entryId: typeof entry.id === "string" ? entry.id : null },
@@ -48,7 +71,7 @@ export function contextsFromEntry(entry, line, rawLine, rows, source) {
           glosses, rawGlosses, tags, rawTags: strings(sense.raw_tags), entryTags,
           examples: Array.isArray(sense.examples) ? sense.examples : [],
           requiredReflexive: reflexive ? true : null,
-          evidence: { ...evidence, glossIndex },
+          evidence,
           // Context association is not independent linguistic validation.
           diagnosticEligible: false,
         } });

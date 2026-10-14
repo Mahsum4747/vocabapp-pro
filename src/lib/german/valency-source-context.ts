@@ -13,15 +13,29 @@ export const valencySourceContextSchema = z.object({
   glosses: z.array(z.string()), rawGlosses: z.array(z.string()),
   tags: z.array(z.string()), rawTags: z.array(z.string()), entryTags: z.array(z.string()),
   examples: z.array(z.unknown()), requiredReflexive: z.literal(true).nullable(),
-  evidence: z.object({
-    kind: z.literal("explicit-gloss-grammar"), text: z.string().min(1),
-    offset: z.number().int().nonnegative(), glossIndex: z.number().int().nonnegative(),
-  }),
+  evidence: z.union([
+    z.object({
+      kind: z.literal("explicit-gloss-grammar"), sourceField: z.enum(["glosses", "raw_glosses"]).optional(),
+      text: z.string().min(1), offset: z.number().int().nonnegative(), glossIndex: z.number().int().nonnegative(),
+    }),
+    z.object({
+      kind: z.literal("structured-obj-template"), sourceField: z.literal("info_templates"),
+      templateIndex: z.number().int().nonnegative(), argument: z.literal("2"),
+      text: z.string().min(1), offset: z.number().int().nonnegative(),
+    }),
+  ]),
   diagnosticEligible: z.literal(false),
 }).superRefine((context, ctx) => {
-  const gloss = context.glosses[context.evidence.glossIndex];
-  if (!gloss || gloss.slice(context.evidence.offset, context.evidence.offset + context.evidence.text.length) !== context.evidence.text)
-    ctx.addIssue({ code: "custom", message: "Evidence must point to exact source gloss text" });
+  let text: string | undefined;
+  if (context.evidence.kind === "explicit-gloss-grammar") {
+    text = (context.evidence.sourceField === "raw_glosses" ? context.rawGlosses : context.glosses)[context.evidence.glossIndex];
+  } else {
+    const templates = context.senseMetadata.info_templates;
+    const template = Array.isArray(templates) ? templates[context.evidence.templateIndex] : undefined;
+    if (template?.name === "+obj" && template?.args?.["1"] === "de") text = template.args["2"];
+  }
+  if (!text || text.slice(context.evidence.offset, context.evidence.offset + context.evidence.text.length) !== context.evidence.text)
+    ctx.addIssue({ code: "custom", message: "Evidence must point to exact source grammar text" });
 });
 export type ValencySourceContext = z.infer<typeof valencySourceContextSchema>;
 export function readValencySourceContext(row: { lemma: string; context?: unknown }): readonly ValencySourceContext[] {

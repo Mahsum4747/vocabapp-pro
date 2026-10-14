@@ -1,11 +1,13 @@
 import { VERB_CONJUGATION_DATA, type VerbConjugationEntry } from "./verb-conjugation-data";
 import { canonicalValencyLemma, lookupVerbValency, type ValencyFrame } from "./verb-valency-index";
+import currentSource from "../../content/karta-kaikki-valency-2026-10-03.json" with { type: "json" };
 import transitiveSource from "../../content/karta-wiktionary-transitiv-de.json" with { type: "json" };
 import extractedSource from "../../content/karta-kaikki-verb-prep-case.json" with { type: "json" };
 
 export type VerbSourceEvidence = ValencyFrame["source"] | "wiktionary-transitive";
 const normalize = (lemma: string) => lemma.trim().toLocaleLowerCase("de-DE");
 const transitiveLemmas = new Set(transitiveSource.verbs.map(normalize));
+const currentMatchedLemmas = new Set(currentSource.matchedLemmas);
 const extractedLemmas = new Set(extractedSource.frames.map((frame) => canonicalValencyLemma(frame.lemma)));
 
 /**
@@ -18,6 +20,7 @@ const extractedLemmas = new Set(extractedSource.frames.map((frame) => canonicalV
 export type VerbLexiconEntry = {
   lemma: string;
   conjugation: VerbConjugationEntry;
+  lexicalSourceVersions: readonly string[];
   frames: readonly ValencyFrame[];
   // Source membership is evidence to review, never an inferred case frame.
   // Raw Kaikki bare-case rows and the noisy transitive category stay here;
@@ -38,7 +41,8 @@ for (const conjugation of VERB_CONJUGATION_DATA) {
     : sourceEvidence.size
       ? "evidence-needs-review"
       : "unresolved";
-  entries.set(lemma, { lemma, conjugation, frames, sourceEvidence: [...sourceEvidence], governmentStatus });
+  entries.set(lemma, { lemma, conjugation,
+    lexicalSourceVersions: currentMatchedLemmas.has(lemma) ? [currentSource.source.version] : [], frames, sourceEvidence: [...sourceEvidence], governmentStatus });
 }
 
 /** Lookup by lemma; unknown means unknown, never a guessed case. */

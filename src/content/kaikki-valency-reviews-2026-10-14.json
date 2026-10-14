@@ -1,0 +1,37 @@
+[
+  {
+    "lemma": "huldigen",
+    "construction": "huldigen",
+    "prep": null,
+    "case": "dat",
+    "snapshotSha256": "25a8581ddef225c405493b557bc8a18a816ef7706b1bd0588459dd2efd376141",
+    "recordSha256": "139d5d10f5ad09922875806444cd2720fa5ade913b7e53e4b56409f73fb81eb1",
+    "senseId": "en-huldigen-de-verb-I4iK5muT",
+    "templateArgument": "dat",
+    "referenceURL": "https://www.duden.de/rechtschreibung/huldigen",
+    "checked": "2026-10-14",
+    "reason": "Sense-level +obj explicitly identifies the dative complement; independently corroborated by Duden; only aligned authored-answer case substitutions, never free parsing.",
+    "diagnosticConditions": {}
+  },
+  {
+    "lemma": "schwanen",
+    "construction": "schwanen",
+    "prep": null,
+    "case": "dat",
+    "snapshotSha256": "25a8581ddef225c405493b557bc8a18a816ef7706b1bd0588459dd2efd376141",
+    "recordSha256": "6ff01dc583ae06c7282386d584f2f6144dcaee409e6b9ec23f7ecbe84bf34da0",
+    "senseId": "en-schwanen-de-verb-FZ95hO5K",
+    "templateArgument": "dat<on someone>",
+    "referenceURL": "https://www.duden.de/rechtschreibung/schwanen",
+    "checked": "2026-10-14",
+    "reason": "Sense-level +obj explicitly identifies the dative complement; independently corroborated by Duden; only aligned authored-answer case substitutions, never free parsing.",
+    "diagnosticConditions": {
+      "allowedNormalizedAnswers": [
+        "mir schwant nichts gutes",
+        "ihm schwant nichts gutes",
+        "es schwant mir etwas",
+        "es schwant ihm etwas"
+      ]
+    }
+  }
+]

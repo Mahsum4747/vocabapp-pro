@@ -9,6 +9,7 @@ const conjugations = read("src/lib/german/verb-conjugation-data.ts");
 const curatedDative = read("src/lib/german/dative-verbs-data.ts");
 const curatedGovernment = read("src/lib/german/verb-government-data.ts");
 const extractedFrames = JSON.parse(read("src/content/karta-kaikki-verb-prep-case.json"));
+const current = JSON.parse(read("src/content/karta-kaikki-valency-2026-10-03.json"));
 const transitive = JSON.parse(read("src/content/karta-wiktionary-transitiv-de.json"));
 
 const normalize = (lemma) => lemma.trim().toLocaleLowerCase("de-DE");
@@ -21,7 +22,8 @@ const governmentRows = [...curatedGovernment.matchAll(/\{ verb: "([^"]+)", prepo
 const governmentLemmas = new Set(governmentRows.map((row) => row.lemma));
 const extractedLemmas = new Set(extractedFrames.frames.map((row) => canonical(row.lemma)));
 const transitiveLemmas = new Set(transitive.verbs.map(normalize));
-const knownLemmas = new Set([...dativeLemmas, ...governmentLemmas, ...extractedLemmas, ...transitiveLemmas]);
+const currentLemmas = new Set(current.frames.map((row) => canonical(row.lemma)));
+const knownLemmas = new Set([...currentLemmas,...dativeLemmas, ...governmentLemmas, ...extractedLemmas, ...transitiveLemmas]);
 const unaccounted = [...conjugatedLemmas].filter((lemma) => !knownLemmas.has(lemma)).sort();
 
 const report = {
@@ -55,6 +57,8 @@ if (process.argv.includes("--full")) {
     curatedDative: dativeLemmas.has(lemma),
     curatedGovernment: governmentLemmas.has(lemma),
     extractedKaikki: extractedLemmas.has(lemma),
+    currentKaikki: currentLemmas.has(lemma),
+    currentLexicalSourceMatched: current.matchedLemmas.includes(lemma),
     wiktionaryTransitive: transitiveLemmas.has(lemma),
     sourceStatus: knownLemmas.has(lemma) ? "evidence-present" : "unresolved",
   }));
@@ -70,6 +74,7 @@ if (process.argv.includes("--runtime")) {
     pending: extractedFrames.frames.filter((row) => !Array.isArray(row.context) || row.context.length === 0).length,
     associationIsDiagnosticApproval: false,
   };
+  report.currentKaikkiCoverage = current.summary;
   report.runtimeCoverage = verbLexiconCoverage();
   report.runtimeEvidenceRecords = valencyEvidenceCount();
   if (process.argv.includes("--full")) {

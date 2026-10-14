@@ -149,10 +149,14 @@ export function diagnoseLessonResponse(
         const preceding = expectedTokens[change.index - 1];
         // Only the immediately adjacent preposition can govern this pronoun.
         const prepFrames = eligiblePrepositionalFrames(preceding ?? "", expectedCase)
-          .filter((entry) => hasVerifiedVerbForm(expectedTokens, entry.construction));
+          .filter((entry) => hasVerifiedVerbForm(expectedTokens, entry.construction) &&
+            (!entry.diagnosticConditions?.allowedNormalizedAnswers ||
+              entry.diagnosticConditions.allowedNormalizedAnswers.includes(expectedTokens.join(" "))));
         // A prepositional object cannot be a bare dative argument.
         const dativeFrames = expectedCase === "dativ" && !isPrepositionToken(preceding ?? "")
-          ? eligibleBareDativeFrames().filter((entry) => hasVerifiedVerbForm(expectedTokens, entry.construction))
+          ? eligibleBareDativeFrames().filter((entry) => hasVerifiedVerbForm(expectedTokens, entry.construction) &&
+            (!entry.diagnosticConditions?.allowedNormalizedAnswers ||
+              entry.diagnosticConditions.allowedNormalizedAnswers.includes(expectedTokens.join(" "))))
           : [];
         // Multiple candidates or unsupported prepositional roles are ambiguous.
         if (prepFrames.length === 1 && dativeFrames.length === 0) {

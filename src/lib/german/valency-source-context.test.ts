@@ -16,8 +16,8 @@ test("gloss association cannot mark a record diagnostic-eligible or point outsid
   assert.equal(valencySourceContextSchema.safeParse({ ...context, diagnosticEligible: true }).success, false);
   assert.equal(valencySourceContextSchema.safeParse({ ...context, evidence: { ...context.evidence, offset: 1 } }).success, false);
 });
-test("current dataset has no restored context and retains AI quarantine", () => {
+test("legacy dataset remains untouched while current contexts retain AI quarantine", () => {
   const frames = lookupVerbValency("liegen");
-  assert.ok(frames.every((frame) => frame.context.length === 0));
+  assert.ok(frames.filter((frame) => frame.source !== "kaikki-current").every((frame) => frame.context.length === 0));
   assert.ok(frames.filter((frame) => frame.provenance.method === "generated-unverified").every((frame) => frame.review === "reference-only"));
 });
