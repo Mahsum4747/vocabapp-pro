@@ -43,3 +43,42 @@ test("recognizes fixed and Wechsel prepositions when excluding bare dative", () 
   assert.ok(isPrepositionToken("wegen"));
   assert.equal(isPrepositionToken("helfe"), false);
 });
+
+
+test("canonical lemmas retain reflexive construction constraints and original source records", () => {
+  const frames = lookupVerbValency("erinnern");
+  const frame = frames.find((row) => row.construction === "sich erinnern" && row.review === "eligible");
+  assert.ok(frame);
+  assert.equal(frame.sense, null);
+  assert.equal(frame.provenance.method, "source-curated");
+  assert.match(frame.provenance.record, /^sich erinnern\|an\|akkusativ$/);
+  assert.ok(lookupVerbValency("sich erinnern").every((row) => row.construction === "sich erinnern"));
+});
+
+test("all raw source records, including bare and genitive frames, remain traceable without promotion", async () => {
+  const { default: source } = await import("../../content/karta-kaikki-verb-prep-case.json", { with: { type: "json" } });
+  for (const [index, row] of source.frames.entries()) {
+    const frame = lookupVerbValency(row.lemma).find((f) => f.source === "kaikki-extracted" &&
+      f.provenance.record === `frames[${index}]`);
+    assert.ok(frame, `${index}: ${row.lemma}`);
+    assert.equal(frame.preposition, row.prep);
+    assert.equal(frame.case, ({ akk: "akkusativ", dat: "dativ", gen: "genitiv" })[row.case]);
+    assert.equal(frame.sense, null);
+    assert.notEqual(frame.review, "eligible");
+  }
+  assert.ok(lookupVerbValency("sehen").some((row) => row.preposition === null && row.case === "akkusativ"));
+});
+
+test("AI additions cannot gain source trust from an attached CEFR level", () => {
+  const frame = lookupVerbValency("liegen").find((row) => row.preposition === "an");
+  assert.ok(frame);
+  assert.equal(frame.provenance.method, "generated-unverified");
+  assert.equal(frame.review, "reference-only");
+  assert.equal(eligiblePrepositionalFrames("an", "dativ").some((row) => row.lemma === "liegen"), false);
+});
+
+test("raw two-way conflicts are retained as conflicts, not arbitrarily dropped or resolved", () => {
+  const frames = lookupVerbValency("fesseln").filter((row) => row.source === "kaikki-extracted" && row.preposition === "an");
+  assert.equal(new Set(frames.map((row) => row.case)).size, 2);
+  assert.ok(frames.every((row) => row.review === "conflicted"));
+});

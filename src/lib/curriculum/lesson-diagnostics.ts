@@ -149,24 +149,24 @@ export function diagnoseLessonResponse(
         const preceding = expectedTokens[change.index - 1];
         // Only the immediately adjacent preposition can govern this pronoun.
         const prepFrames = eligiblePrepositionalFrames(preceding ?? "", expectedCase)
-          .filter((entry) => hasVerifiedVerbForm(expectedTokens, entry.lemma));
+          .filter((entry) => hasVerifiedVerbForm(expectedTokens, entry.construction));
         // A prepositional object cannot be a bare dative argument.
         const dativeFrames = expectedCase === "dativ" && !isPrepositionToken(preceding ?? "")
-          ? eligibleBareDativeFrames().filter((entry) => hasVerifiedVerbForm(expectedTokens, entry.lemma))
+          ? eligibleBareDativeFrames().filter((entry) => hasVerifiedVerbForm(expectedTokens, entry.construction))
           : [];
         // Multiple candidates or unsupported prepositional roles are ambiguous.
         if (prepFrames.length === 1 && dativeFrames.length === 0) {
           const frame = prepFrames[0];
           return {
             domain: "grammar", category: "lexical_government",
-            targetLabel: `${frame.lemma} + ${frame.preposition} + ${expectedCase === "dativ" ? "Dativ" : "Akkusativ"}`,
+            targetLabel: `${frame.construction} + ${frame.preposition} + ${expectedCase === "dativ" ? "Dativ" : "Akkusativ"}`,
             confidence: 0.88, independent, support,
           };
         }
         if (prepFrames.length === 0 && dativeFrames.length === 1) {
           return {
             domain: "grammar", category: "lexical_government",
-            targetLabel: `${dativeFrames[0].lemma} + Dativ`,
+            targetLabel: `${dativeFrames[0].construction} + Dativ`,
             confidence: 0.88, independent, support,
           };
         }

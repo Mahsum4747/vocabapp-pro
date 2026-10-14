@@ -1,12 +1,12 @@
 import { VERB_CONJUGATION_DATA, type VerbConjugationEntry } from "./verb-conjugation-data";
-import { lookupVerbValency, type ValencyFrame } from "./verb-valency-index";
+import { canonicalValencyLemma, lookupVerbValency, type ValencyFrame } from "./verb-valency-index";
 import transitiveSource from "../../content/karta-wiktionary-transitiv-de.json" with { type: "json" };
 import extractedSource from "../../content/karta-kaikki-verb-prep-case.json" with { type: "json" };
 
 export type VerbSourceEvidence = ValencyFrame["source"] | "wiktionary-transitive";
 const normalize = (lemma: string) => lemma.trim().toLocaleLowerCase("de-DE");
 const transitiveLemmas = new Set(transitiveSource.verbs.map(normalize));
-const extractedLemmas = new Set(extractedSource.frames.map((frame) => normalize(frame.lemma)));
+const extractedLemmas = new Set(extractedSource.frames.map((frame) => canonicalValencyLemma(frame.lemma)));
 
 /**
  * Canonical inventory of every sourced UniMorph lemma.

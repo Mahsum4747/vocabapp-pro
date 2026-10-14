@@ -1,3 +1,4 @@
+import { lookupVerbValency } from "./verb-valency-index.ts";
 import { VERB_GOVERNMENT_DATA } from "./verb-government-data.ts";
 import type { VerbGovernment } from "../types.ts";
 
@@ -10,25 +11,6 @@ import type { VerbGovernment } from "../types.ts";
  * of the German enrichment pipeline, not because the data is large or secret.
  */
 
-let index: Map<string, VerbGovernment[]> | null = null;
-
-function build(): Map<string, VerbGovernment[]> {
-  const map = new Map<string, VerbGovernment[]>();
-  for (const entry of VERB_GOVERNMENT_DATA) {
-    const key = entry.verb.toLowerCase();
-    const list = map.get(key);
-    const value = { preposition: entry.preposition, case: entry.case };
-    if (list) list.push(value);
-    else map.set(key, [value]);
-  }
-  return map;
-}
-
-function idx(): Map<string, VerbGovernment[]> {
-  index ??= build();
-  return index;
-}
-
 /**
  * Every preposition+case construction a verb governs, or `[]` if the verb
  * isn't in the curated dataset — absence here is a real, common answer (370
@@ -40,7 +22,11 @@ function idx(): Map<string, VerbGovernment[]> {
 export function lookupVerbGovernment(term: string): VerbGovernment[] {
   const key = term.trim().toLowerCase();
   if (!key) return [];
-  return idx().get(key) ?? [];
+  // Construction-specific lookup: a bare infinitive never inherits reflexive rules.
+  return lookupVerbValency(key)
+    .filter((frame) => frame.construction === key && frame.review === "eligible"
+      && frame.preposition !== null && frame.case !== "genitiv")
+    .map((frame) => ({ preposition: frame.preposition!, case: frame.case as VerbGovernment["case"] }));
 }
 
 /** Records in the loaded dataset. Forces the build; used by tests. */

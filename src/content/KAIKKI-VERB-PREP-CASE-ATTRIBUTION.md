@@ -31,30 +31,28 @@ directly as same-lemma-same-preposition rows with conflicting cases (4
 such pairs were found and dropped, see below), and is out of scope for
 this task regardless ("Wechsel yön/konum yok").
 
-## How it's actually used
+## Current runtime integration (2026-10-13)
 
-`verb-case-hint.ts`'s Kaynak A now checks, in this fixed priority order,
-never reordered:
+The canonical valency registry reads all 1,001 raw rows directly, including
+bare-case and Genitiv evidence, with source-document and `frames[index]`
+provenance. Reflexive constructions are linked to their base infinitive while
+retaining the full construction. No sense/gloss survives in the bundled JSON;
+`sense` is explicitly null. These rows remain reference-only; conflicting
+prepositional case alternatives remain conflicted. Bare dat+akk rows alone
+are not declared conflicting: the source cannot distinguish ditransitivity
+from separate readings. No transitive-category tag produces a case frame.
 
-1. `dative-verbs-data.ts` (bare dativ verbs) — unchanged, highest priority.
-2. `verb-government-data.ts` (hand-curated prepositional frames) — unchanged.
-3. **This file** — a `(lemma, preposition)` pair confirms its case only
-   when: `prep` is not `null` (a null-preposition row is already covered
-   by step 1 or step 4, per the task's own instruction — "onlar zaten 1 ve
-   4"); `case` is `akk` or `dat` only (`gen` rows are dropped — out of
-   A1/A2 scope, same as `case-forms.ts`'s own scope); the pair has exactly
-   ONE case across all its rows (a pair appearing with both `akk` and
-   `dat` is treated as unresolved ambiguity, not guessed at — this is
-   also what catches the 4 Wechsel-verb pairs above without any
-   preposition-specific code); and the pair does NOT already exist in
-   `verb-government-data.ts` (hand-curated always wins on conflict, per
-   the task's explicit instruction — kaikki is never the sole source for
-   a construction the hand-curated list already covers, even when they'd
-   agree).
-4. The existing default-Akkusativ negative-control rule — unchanged,
-   still never consults this file (or the transitiv dump) as a gate,
-   still only asks "is there a curated reason to doubt the default", and
-   step 3 above is now itself one more thing checked when answering that.
+Neither lesson diagnostics, automatic verb-government enrichment nor case
+hints promote gloss-regex rows to verified lexical government. Only
+non-conflicting independently sourced curated constructions can do that.
+Fixed-preposition case facts and the existing motion/location heuristic are
+separate from lexical-valency evidence and remain unchanged.
+
+## Historical generated hint subset (superseded)
+
+`verb-prep-case-frames-data.ts` is retained as a historical generated artifact;
+the runtime registry and hints no longer use its lossy subset. The original
+filtering history below describes that earlier artifact, not current trust.
 
 Of 1001 raw frames, 572 have a non-null preposition and a non-genitiv
 case, collapsing to 566 distinct `(lemma, preposition)` pairs; 4 of those
