@@ -5,6 +5,10 @@ import {
   acceptedValencySearchTerms,
   sourceValencyPronounQuestions,
 } from "@/lib/german/valency-practice";
+import {
+  reviewedValencyQuestions,
+  reviewedSourceCorrection,
+} from "@/lib/german/reviewed-valency-practice";
 import { lookupAcceptedValencyReferences } from "@/lib/german/verb-valency-index";
 
 /** Reference acceptance is independent of permission to diagnose an arbitrary answer. */
@@ -44,16 +48,33 @@ export function VerbValencyReference({ term }: { term?: string }) {
       <div className="mt-3 space-y-4">
         {frames.map((frame) => {
           const context = frame.context[0];
+          const correction = reviewedSourceCorrection(context.senseId, context.source.recordSha256);
           return (
             <article key={frame.provenance.record} className="border-t border-border pt-3 text-sm">
               <h3 className="font-medium" lang="de">
                 {frame.construction} + {frame.preposition ? `${frame.preposition} + ` : ""}
-                {frame.case === "akkusativ"
-                  ? "Akkusativ"
-                  : frame.case === "dativ"
-                    ? "Dativ"
-                    : "Genitiv"}
+                {correction?.proposedCase === "akk"
+                  ? "Akkusativ (reviewed correction)"
+                  : frame.case === "akkusativ"
+                    ? "Akkusativ"
+                    : frame.case === "dativ"
+                      ? "Dativ"
+                      : "Genitiv"}
               </h3>
+              {correction && (
+                <p className="mt-2 text-sm">
+                  Source discrepancy: the preserved original record says Dativ.{" "}
+                  <a
+                    className="text-primary-ink underline"
+                    href={correction.sourceURL}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    IDS E-VALBU, sense 5
+                  </a>{" "}
+                  gives auf + Akkusativ. The corrected practice is a separate fixed item.
+                </p>
+              )}
               <p className="mt-1 text-muted">Meaning: {context.glosses.join("; ")}</p>
               {context.requiredReflexive && (
                 <p className="mt-1">
@@ -111,13 +132,28 @@ export function VerbValencyReference({ term }: { term?: string }) {
       </div>
       {verb.trim() && sourceValencyPronounQuestions(verb).length > 0 && (
         <Link
-          className="tap-target mt-3 inline-flex items-center rounded-control bg-primary-soft px-4 py-2 text-primary-ink"
+          className="tap-target mt-3 mr-2 inline-flex items-center rounded-control bg-primary-soft px-4 py-2 text-primary-ink"
           to="/grammar/pronomen"
           search={{ verb: verb.trim().toLocaleLowerCase("de-DE") }}
         >
           Practice pronouns in these examples
         </Link>
       )}
+      {verb.trim() &&
+        (["personal_pronoun_case", "determiner_case"] as const).map((kind) =>
+          reviewedValencyQuestions(verb, kind).length > 0 ? (
+            <Link
+              key={kind}
+              className="tap-target mt-3 mr-2 inline-flex items-center rounded-control bg-primary-soft px-4 py-2 text-primary-ink"
+              to="/grammar/pronomen"
+              search={{ verb: verb.trim().toLocaleLowerCase("de-DE"), practice: "reviewed", kind }}
+            >
+              {kind === "determiner_case"
+                ? "Practice articles · reviewed examples"
+                : "Practice pronouns · reviewed examples"}
+            </Link>
+          ) : null,
+        )}
       {!!frames.length && (
         <p className="mt-3 text-xs text-muted">
           Patterns depend on meaning and usage. Source: Wiktionary via Kaikki, 3 October 2026.{" "}

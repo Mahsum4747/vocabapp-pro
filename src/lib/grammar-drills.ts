@@ -53,6 +53,27 @@ export interface DrillQuestion {
    *  gloss (e.g. Subjektive Modalverben's multi-word answer phrases). */
   glossKey?: string;
   lexicalFeedback?: Record<string, string>;
+  reviewedValencyItem?: {
+    exerciseId: string;
+    version: string;
+    recordId: string;
+    senseId: string;
+    sentence: string;
+    kind: string;
+    instruction: string;
+    meaning: string;
+    warning: string;
+    registerLabels: string[];
+    sourceURL: string;
+    lemma: string;
+    construction: string;
+    case: string | null;
+    preposition: string | null;
+  };
+  checkAnswer?: (
+    question: DrillQuestion,
+    answer: string,
+  ) => { outcome: "correct" | "wrong_case_for_this_item"; feedback: string | null } | null;
   valencyExample?: {
     term: string;
     meaning: string;

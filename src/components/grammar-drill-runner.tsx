@@ -279,14 +279,24 @@ export function GrammarDrillRunner<T = NounEntry>({
 
   const question = questions[index]!;
   const revealed = selected !== null;
-  const isCorrect = revealed && selected === question.correctAnswer;
+  const reviewedResult = selected !== null ? question.checkAnswer?.(question, selected) : undefined;
+  const isCorrect =
+    revealed &&
+    (question.checkAnswer
+      ? reviewedResult?.outcome === "correct"
+      : selected === question.correctAnswer);
   const [before, after] = question.prompt.split("___");
   const filledSlot = revealed ? selected : "___";
 
   function choose(option: string) {
     if (revealed) return;
     setSelected(option);
-    if (option === question.correctAnswer) setCorrectCount((n) => n + 1);
+    if (
+      question.checkAnswer
+        ? question.checkAnswer(question, option)?.outcome === "correct"
+        : option === question.correctAnswer
+    )
+      setCorrectCount((n) => n + 1);
   }
 
   function next() {
@@ -323,6 +333,18 @@ export function GrammarDrillRunner<T = NounEntry>({
         headerRight={ruleButton}
         primaryAction={revealed ? { label: "Continue", onClick: next } : undefined}
       >
+        {question.reviewedValencyItem && (
+          <div className="mb-4 text-sm text-muted">
+            <p>{question.reviewedValencyItem.instruction}</p>
+            <p className="mt-2">AI-written practice · reviewed for this fixed meaning</p>
+            <p className="mt-2">{question.reviewedValencyItem.meaning}</p>
+            {!!question.reviewedValencyItem.registerLabels.length && (
+              <p className="mt-2">
+                Usage: {question.reviewedValencyItem.registerLabels.join(", ")}
+              </p>
+            )}
+          </div>
+        )}
         <p className="font-serif text-2xl font-semibold tracking-tight text-headword text-balance">
           {before}
           <span
@@ -373,6 +395,25 @@ export function GrammarDrillRunner<T = NounEntry>({
             );
           })}
         </div>
+        {revealed && question.reviewedValencyItem && (
+          <div className="mt-4 text-sm" role="status">
+            <p>
+              {reviewedResult?.outcome === "correct"
+                ? "Correct."
+                : (reviewedResult?.feedback ??
+                  "This answer is outside the reviewed target; no case diagnosis is made.")}
+            </p>
+            <p className="mt-2 text-muted">{question.reviewedValencyItem.warning}</p>
+            <a
+              className="tap-target inline-flex items-center text-primary-ink underline"
+              href={question.reviewedValencyItem.sourceURL}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Pattern source · practice sentence written by AI
+            </a>
+          </div>
+        )}
         {revealed && question.valencyExample && (
           <div className="mt-4 text-sm" role="status">
             <p>
