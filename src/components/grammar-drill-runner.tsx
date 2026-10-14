@@ -337,6 +337,9 @@ export function GrammarDrillRunner<T = NounEntry>({
           </span>
           {after}
         </p>
+        {question.valencyExample && (
+          <p className="mt-3 text-sm text-muted">Meaning: {question.valencyExample.meaning}</p>
+        )}
         {question.glossKey && glosses[question.glossKey] ? (
           <p className="mt-1 text-sm text-subtle">
             {pickExplanation(glosses[question.glossKey]!, explanationLanguage)}
@@ -370,6 +373,23 @@ export function GrammarDrillRunner<T = NounEntry>({
             );
           })}
         </div>
+        {revealed && question.valencyExample && (
+          <div className="mt-4 text-sm" role="status">
+            <p>
+              {selected && question.lexicalFeedback?.[selected]
+                ? `In this example: ${question.lexicalFeedback?.[selected ?? ""]}. Use ${question.correctAnswer}.`
+                : `Correct answer: ${question.correctAnswer}.`}
+            </p>
+            <a
+              className="tap-target inline-flex items-center text-primary-ink underline"
+              href={question.valencyExample.sourceURL}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Source and usage
+            </a>
+          </div>
+        )}
       </StudySessionShell>
       <Dialog open={ruleOpen} onOpenChange={setRuleOpen}>
         <DialogContent title={rule?.title ?? ""}>

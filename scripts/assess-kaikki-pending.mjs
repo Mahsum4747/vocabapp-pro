@@ -25,7 +25,7 @@ export function assessPendingFrame(frame, context, source, tools) {
   const targets=[];
   if(accepted) {
     for(const example of context.examples) {
-      if(example.type!=='example' || typeof example.text!=='string' || example.tags?.length || /[\/()\[\]…]|\.\s+\S/.test(example.text)) continue;
+      if(example.type!=='example' || typeof example.text!=='string' || example.tags?.length || /[/()[\]…]|\.\s+\S/.test(example.text)) continue;
       const tokens=tools.tokens(example.text);
       if(!tools.hasVerifiedVerbForm(tokens,frame.construction)) continue;
       const pronouns=frame.case==='dat'?['mir','dir','ihm']:['mich','dich','ihn'];

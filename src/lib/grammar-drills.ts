@@ -52,6 +52,14 @@ export interface DrillQuestion {
    *  comment. Omitted entirely for drills with no single clean word to
    *  gloss (e.g. Subjektive Modalverben's multi-word answer phrases). */
   glossKey?: string;
+  lexicalFeedback?: Record<string, string>;
+  valencyExample?: {
+    term: string;
+    meaning: string;
+    sourceURL: string;
+    expected: string;
+    index: number;
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -269,10 +277,23 @@ export function buildTrennbareVerbenQuestion(
   rng: Rng = Math.random,
 ): TrennbareVerbenQuestion {
   const prefix = separablePrefixOf(entry.infinitive)!;
-  const otherPrefixes = ["an", "auf", "aus", "mit", "zu", "ab", "bei", "ein", "vor", "nach", "zurück", "weg"].filter(
-    (p) => p !== prefix,
+  const otherPrefixes = [
+    "an",
+    "auf",
+    "aus",
+    "mit",
+    "zu",
+    "ab",
+    "bei",
+    "ein",
+    "vor",
+    "nach",
+    "zurück",
+    "weg",
+  ].filter((p) => p !== prefix);
+  const pool = [...new Set([entry.infinitive, ...shuffle(otherPrefixes, rng)])].filter(
+    (c) => c !== prefix,
   );
-  const pool = [...new Set([entry.infinitive, ...shuffle(otherPrefixes, rng)])].filter((c) => c !== prefix);
   const distractors = pool.slice(0, 3);
   const options = shuffle([prefix, ...distractors], rng);
   return {
@@ -625,7 +646,9 @@ export function buildKonjunktivQuestion(
   const extended = lookupVerbConjugationExtended(entry.infinitive);
   const syntheticIch = extended?.konjunktiv2[0];
   const wuerdeForm = `würde ${entry.infinitive}`;
-  const canUseSynthetic = Boolean(syntheticIch && syntheticIch !== `würde ${entry.infinitive}` && syntheticIch !== entry.ich);
+  const canUseSynthetic = Boolean(
+    syntheticIch && syntheticIch !== `würde ${entry.infinitive}` && syntheticIch !== entry.ich,
+  );
   if (canUseSynthetic && rng() < 0.5) {
     const correctAnswer = syntheticIch!;
     const distractors = [wuerdeForm, extended!.konjunktiv1[0], `ich ${entry.ich}`];
@@ -682,7 +705,8 @@ export function buildRelativsatzQuestion(
   const grammaticalCase = pick(CASES, rng);
   const correctAnswer = RELATIVE_PRONOUN[grammaticalCase][genus];
   const pool = new Set<string>();
-  for (const c of CASES) for (const g of ["m", "f", "n", "pl"] as GenusOrPlural[]) pool.add(RELATIVE_PRONOUN[c][g]);
+  for (const c of CASES)
+    for (const g of ["m", "f", "n", "pl"] as GenusOrPlural[]) pool.add(RELATIVE_PRONOUN[c][g]);
   pool.delete(correctAnswer);
   const distractors = shuffle([...pool], rng).slice(0, 3);
   const options = shuffle([correctAnswer, ...distractors], rng);
@@ -744,11 +768,7 @@ export function buildPartizipialQuestion(
     };
   }
   const correctAnswer = `${extended.pastParticiple}e`;
-  const distractors = [
-    extended.pastParticiple,
-    `${extended.presentParticiple}e`,
-    entry.infinitive,
-  ];
+  const distractors = [extended.pastParticiple, `${extended.presentParticiple}e`, entry.infinitive];
   const options = shuffle([correctAnswer, ...distractors], rng);
   return {
     infinitive: entry.infinitive,
@@ -983,8 +1003,18 @@ interface KonjunktivEinsTemplate {
  *  a small, meaning-checked verb pool, so context and injected verb always
  *  stay semantically linked. NOT AI-generated. */
 const KONJUNKTIV_EINS_TEMPLATES: KonjunktivEinsTemplate[] = [
-  { pronoun: "er", reportVerb: "sagt", adverbPhrase: "bald", verbs: ["kommen", "gehen", "schlafen", "essen"] },
-  { pronoun: "sie", reportVerb: "sagt", adverbPhrase: "heute Abend", verbs: ["kochen", "backen", "lesen", "tanzen"] },
+  {
+    pronoun: "er",
+    reportVerb: "sagt",
+    adverbPhrase: "bald",
+    verbs: ["kommen", "gehen", "schlafen", "essen"],
+  },
+  {
+    pronoun: "sie",
+    reportVerb: "sagt",
+    adverbPhrase: "heute Abend",
+    verbs: ["kochen", "backen", "lesen", "tanzen"],
+  },
   {
     pronoun: "er",
     reportVerb: "behauptet",
@@ -997,7 +1027,12 @@ const KONJUNKTIV_EINS_TEMPLATES: KonjunktivEinsTemplate[] = [
     adverbPhrase: "das nicht",
     verbs: ["wissen", "glauben", "verstehen", "mögen", "brauchen"],
   },
-  { pronoun: "sie", reportVerb: "sagt", adverbPhrase: "gern Musik", verbs: ["hören", "machen", "spielen"] },
+  {
+    pronoun: "sie",
+    reportVerb: "sagt",
+    adverbPhrase: "gern Musik",
+    verbs: ["hören", "machen", "spielen"],
+  },
   {
     pronoun: "er",
     reportVerb: "sagt",

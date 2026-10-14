@@ -1,5 +1,5 @@
 import { ArrowLeft, BookOpenText, ChevronDown, ChevronRight, Search } from "lucide-react";
-import { useMemo, useState } from "react";
+import { lazy, Suspense, useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/app-shell";
 import { AuthGate } from "@/components/auth-gate";
@@ -23,10 +23,21 @@ export const Route = createFileRoute("/grammar/rules")({
  * reimport — grammar.index.tsx's CATEGORIES carries icons/eligibility
  * functions this page has no use for).
  */
+const VerbValencyReference = lazy(() =>
+  import("@/components/verb-valency-reference").then((module) => ({
+    default: module.VerbValencyReference,
+  })),
+);
 const RULE_CATEGORIES: { title: string; topics: GrammarRuleTopic[] }[] = [
   { title: "Basics", topics: ["plural", "nicht-kein"] },
-  { title: "Cases & Pronouns", topics: ["possessive", "pronomen", "helfen-dativ", "mit-dativ", "adjektivendungen"] },
-  { title: "Verbs", topics: ["trennbare-verben", "modalverben", "imperativ", "passiv", "konjunktiv"] },
+  {
+    title: "Cases & Pronouns",
+    topics: ["possessive", "pronomen", "helfen-dativ", "mit-dativ", "adjektivendungen"],
+  },
+  {
+    title: "Verbs",
+    topics: ["trennbare-verben", "modalverben", "imperativ", "passiv", "konjunktiv"],
+  },
   { title: "Sentences", topics: ["steigerung", "relativsaetze"] },
   {
     title: "B2/C1",
@@ -59,7 +70,9 @@ function GrammarRulesPage() {
     if (!q) return RULE_CATEGORIES;
     return RULE_CATEGORIES.map((category) => ({
       title: category.title,
-      topics: category.topics.filter((topic) => GRAMMAR_RULES[topic].title.toLowerCase().includes(q)),
+      topics: category.topics.filter((topic) =>
+        GRAMMAR_RULES[topic].title.toLowerCase().includes(q),
+      ),
     })).filter((category) => category.topics.length > 0);
   }, [q]);
 
@@ -87,7 +100,9 @@ function GrammarRulesPage() {
       <div className="mt-5 flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="text-sm font-medium text-primary-ink">Reviewed reference</p>
-          <h1 className="mt-1 font-display text-3xl font-medium tracking-tight">Grammar Reference</h1>
+          <h1 className="mt-1 font-display text-3xl font-medium tracking-tight">
+            Grammar Reference
+          </h1>
           <p className="mt-2 text-muted">
             Reviewed Karta explanations, linked to personal notes and targeted practice.
           </p>
@@ -101,6 +116,9 @@ function GrammarRulesPage() {
         </Link>
       </div>
 
+      <Suspense fallback={<p className="mt-4 text-sm text-muted">Loading verb patterns…</p>}>
+        <VerbValencyReference />
+      </Suspense>
       <div className="relative mt-4">
         <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-subtle" />
         <Input
@@ -119,7 +137,9 @@ function GrammarRulesPage() {
         <div className="mt-section space-y-section">
           {filteredCategories.map((category) => (
             <div key={category.title}>
-              <h2 className="text-sm font-medium tracking-wide text-muted uppercase">{category.title}</h2>
+              <h2 className="text-sm font-medium tracking-wide text-muted uppercase">
+                {category.title}
+              </h2>
               <div className="mt-3 space-y-2">
                 {category.topics.map((topic) => {
                   const rule = GRAMMAR_RULES[topic];
