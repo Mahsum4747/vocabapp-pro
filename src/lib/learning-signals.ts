@@ -341,7 +341,9 @@ export function buildLearningSignals(input: LearningSignalsInput): LearningSigna
       lastSeenAt: latest(times),
     };
   }).filter((e) => e.count > 0);
-  const diagnosticGaps = buildLearnerGapStates(input.diagnostics.filter((row) => row.occurredAt <= now));
+  const diagnosticGaps = buildLearnerGapStates(
+    input.diagnostics.filter((row) => row.occurredAt <= now),
+  );
   const settings = readUserSettings(input.profile);
   const calendar = signalDayKeys(now, settings.timeZone);
   const days = new Map(input.dailyStats.map((r) => [r.date, readDailyStats(r.date, r.data)]));
@@ -372,7 +374,13 @@ export function buildLearningSignals(input: LearningSignalsInput): LearningSigna
     diagnostics: { gaps: diagnosticGaps, observationCount: input.diagnostics.length },
     remediation: {
       recent: input.remediation
-        .filter((row) => row.completedAt <= now && row.totalCount >= 3 && row.correctCount <= row.totalCount)
+        .filter(
+          (row) =>
+            row.completedAt <= now &&
+            (row.totalCount >= 3 || (row.topic === "verb-patterns" && row.totalCount === 1)) &&
+            row.correctCount >= 0 &&
+            row.correctCount <= row.totalCount,
+        )
         .sort((a, b) => b.completedAt - a.completedAt || a.id.localeCompare(b.id))
         .slice(0, 100),
     },

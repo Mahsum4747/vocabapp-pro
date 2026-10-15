@@ -2,12 +2,21 @@ import { createFileRoute } from "@tanstack/react-router";
 import { AuthGate } from "@/components/auth-gate";
 import { GrammarDrillRunner } from "@/components/grammar-drill-runner";
 import { buildPronomenQuestion } from "@/lib/grammar-drills";
+import { ValencyPractice } from "@/components/valency-practice";
 import { sourceValencyPronounQuestions } from "@/lib/german/valency-practice";
 import { shuffle } from "@/lib/utils";
 import { numberSample } from "@/lib/german/grammar-drill-sample";
 
 export const Route = createFileRoute("/grammar/pronomen")({
-  validateSearch: (search: Record<string, unknown>): { verb?: string } => ({
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): {
+    verb?: string;
+    practice?: "reviewed";
+    kind?: "personal_pronoun_case" | "determiner_case";
+  } => ({
+    practice: search.practice === "reviewed" ? "reviewed" : undefined,
+    kind: search.kind === "determiner_case" ? "determiner_case" : "personal_pronoun_case",
     verb:
       typeof search.verb === "string" ? search.verb.trim().toLocaleLowerCase("de-DE") : undefined,
   }),
@@ -24,26 +33,30 @@ export const Route = createFileRoute("/grammar/pronomen")({
  * no card property to match a user's own card against it.
  */
 function PronomenDrillRoute() {
-  const { verb } = Route.useSearch();
+  const { verb, practice, kind } = Route.useSearch();
   return (
     <AuthGate>
-      <GrammarDrillRunner<number>
-        key={verb ?? "all"}
-        mode="Pronomen"
-        topic="pronomen"
-        fetchSample={() => Promise.resolve(numberSample(12))}
-        buildRound={(entries) => {
-          const contextual = shuffle(sourceValencyPronounQuestions(verb)).map((question) => ({
-            ...question,
-            options: shuffle(question.options),
-          }));
-          if (verb && contextual.length) return contextual;
-          return shuffle([
-            ...contextual.slice(0, 6),
-            ...entries.slice(0, 6).map(() => buildPronomenQuestion()),
-          ]);
-        }}
-      />
+      {practice === "reviewed" ? (
+        <ValencyPractice key={`${verb}|${kind}`} verb={verb} kind={kind} />
+      ) : (
+        <GrammarDrillRunner<number>
+          key={`${verb ?? "all"}|${practice ?? "original"}|${kind}`}
+          mode="Pronomen"
+          topic="pronomen"
+          fetchSample={() => Promise.resolve(numberSample(12))}
+          buildRound={(entries) => {
+            const contextual = shuffle(sourceValencyPronounQuestions(verb)).map((question) => ({
+              ...question,
+              options: shuffle(question.options),
+            }));
+            if (verb && contextual.length) return contextual;
+            return shuffle([
+              ...contextual.slice(0, 6),
+              ...entries.slice(0, 6).map(() => buildPronomenQuestion()),
+            ]);
+          }}
+        />
+      )}
     </AuthGate>
   );
 }

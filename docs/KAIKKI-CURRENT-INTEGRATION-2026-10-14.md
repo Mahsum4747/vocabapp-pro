@@ -168,3 +168,37 @@ auth/persistence test, deployment, push or production-data write.
 ## Kalıcı araştırma kopyası
 
 2026-10-14: `/Users/mahsum/Documents/karta-language-data/kaikki-current-2026-10-14` Git dışındadır. 15 dosyanın kaynak/kopya SHA256 eşitliği doğrulandı; `COPY-INTEGRITY.json` dosya bazında hashleri içerir. Ham JSONL SHA256: `25a8581ddef225c405493b557bc8a18a816ef7706b1bd0588459dd2efd376141`.
+
+## Fixed exercise delivery — 2026-10-15
+
+The earlier 227-item review remains versioned separately. Its 211 active fixed
+items are joined with 45 source-example clozes from the remaining 686 candidates
+plus the 16 earlier holds. None of those 16 could safely be resolved. The new
+702-record artifact retains every per-record hold reason, full sense/source
+identity, register/reflexive/argument conditions and rejected example checks.
+Reproduce without downloading: `node scripts/review-remaining-valency.mjs NEW.json`.
+
+All 49 initially extractable candidates were inspected: three subject slots and
+one example missing the specified prepositional argument were rejected. Accepted
+items require a same-sense explicit +obj, an unchanged complete source example,
+one case-marked target, visible reflexive conditions and preserved other
+arguments. Determiners additionally require unambiguous singular noun gender in
+the existing noun source. Alternative-case, historical/rare, gloss-only and
+unsupported Genitiv candidates stay held; reasons may overlap. No CEFR is inferred.
+
+The 256 reviewed exercises (95 pronouns, 161 articles; 234 distinct
+construction/preposition/case structures, 208 lemmas) are reachable from Home,
+Grammar practice and Grammar Reference. The older 15 source-pronoun exercises
+remain available in their original Pronomen flow and are not double-counted here.
+Unknown teaching levels prevent mass insertion into the A1 curriculum. The 657
+held records are separate from accepted reference facts and from lexical
+free-sentence diagnostic permission; the latter indexes are unchanged.
+
+Each fixed-item answer is regraded on the server against exercise ID, content
+version, sense, record ID and exact sentence. Authenticated writes reuse
+`users/{uid}/grammarRemediation` and `learningDiagnostics` in one transaction.
+Operation retries are idempotent; latest valid answers derive the mistake and
+24-hour due queues. Correct retries clear immediate mistakes but add no
+independent mastery evidence or vocabulary FSRS writes. No new collection,
+migration, compatibility layer or production setting is required. Failed saves
+are visible and must be retried before advancing.

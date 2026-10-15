@@ -507,3 +507,22 @@ test("storage adapter never calls a mutation, cleanup, cache or AI API", () => {
   assert.doesNotMatch(source, /\.(set|update|delete|add|runTransaction|batch|recursiveDelete)\(/);
   assert.doesNotMatch(source, /getTodaySummary|getProfile|cleanup|gemini|generateContent/);
 });
+
+test("fixed verb practice enters existing remediation signals without fabricated round evidence", () => {
+  const row = {
+    id: "fixed",
+    topic: "verb-patterns",
+    correctCount: 0,
+    totalCount: 1,
+    completedAt: NOW,
+    nextReviewAt: NOW + DAY,
+  };
+  const result = buildLearningSignals(
+    input({ remediation: [row, { ...row, id: "invalid", topic: "pronomen" }] }),
+  );
+  assert.deepEqual(
+    result.remediation.recent.map((r) => r.id),
+    ["fixed"],
+  );
+  assert.equal(result.diagnostics.observationCount, 0);
+});

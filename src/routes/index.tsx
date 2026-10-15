@@ -276,7 +276,8 @@ function Home() {
             Keep learning with Karta
           </h1>
           <p className="mt-2 max-w-2xl text-muted">
-            Continue your course, strengthen what Karta noticed, then use vocabulary review when it is due.
+            Continue your course, strengthen what Karta noticed, then use vocabulary review when it
+            is due.
           </p>
 
           <Suspense fallback={null}>
@@ -303,7 +304,9 @@ function Home() {
                 <BookOpenText className="size-5 shrink-0 text-primary-ink" />
                 <div>
                   <p className="font-medium">Grammar Reference</p>
-                  <p className="text-sm text-muted">Reviewed rules, personal notes and targeted practice</p>
+                  <p className="text-sm text-muted">
+                    Reviewed rules, personal notes and targeted practice
+                  </p>
                 </div>
               </div>
               <ChevronRight className="size-4 shrink-0 text-subtle" />
@@ -323,6 +326,13 @@ function Home() {
             </Link>
           </div>
 
+          <Link
+            to="/grammar/pronomen"
+            search={{ practice: "reviewed" }}
+            className="tap-target mt-3 flex items-center rounded-card bg-surface p-card text-primary-ink"
+          >
+            Verb patterns · practise pronouns, articles and saved mistakes
+          </Link>
           <div className="mt-4">
             <TodayCta
               isLoaded={isLoaded && todaySummarySettled}

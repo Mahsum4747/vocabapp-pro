@@ -535,6 +535,16 @@ function GrammarPage() {
         </Link>
       </div>
 
+      <Link
+        to="/grammar/pronomen"
+        search={{ practice: "reviewed" }}
+        className="tap-target mt-5 block rounded-card bg-surface p-card text-primary-ink"
+      >
+        <span className="font-medium">Verb patterns · pronouns and articles</span>
+        <span className="mt-1 block text-sm text-muted">
+          Fixed meanings, source conditions and saved mistakes · no assigned CEFR level
+        </span>
+      </Link>
       <div className="mt-section space-y-section">
         {CATEGORIES.map((category) => (
           <div key={category.title}>

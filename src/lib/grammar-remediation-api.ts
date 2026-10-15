@@ -2,10 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { authMiddleware } from "./auth/middleware";
 import { GRAMMAR_RULES, type GrammarRuleTopic } from "@/content/grammar-rules";
-import {
-  isDiagnosticTargetForTopic,
-  remediationNextReviewAt,
-} from "./grammar-remediation";
+import { isDiagnosticTargetForTopic, remediationNextReviewAt } from "./grammar-remediation";
 
 const recordSchema = z.object({
   operationId: z.string().uuid(),
@@ -36,7 +33,10 @@ export const recordGrammarRemediation = createServerFn({ method: "POST" })
     if (!isRuleTopic(data.topic) || data.correctCount > data.totalCount) {
       return { ok: false as const, error: "Invalid grammar practice result." };
     }
-    if (data.diagnosticTargetId && !isDiagnosticTargetForTopic(data.diagnosticTargetId, data.topic)) {
+    if (
+      data.diagnosticTargetId &&
+      !isDiagnosticTargetForTopic(data.diagnosticTargetId, data.topic)
+    ) {
       return { ok: false as const, error: "Practice target does not match the diagnosed topic." };
     }
 
@@ -79,7 +79,10 @@ export const recordGrammarRemediation = createServerFn({ method: "POST" })
         !Number.isFinite(saved.completedAt) ||
         !Number.isFinite(saved.nextReviewAt)
       ) {
-        return { ok: false as const, error: "This practice result was already recorded with different details." };
+        return {
+          ok: false as const,
+          error: "This practice result was already recorded with different details.",
+        };
       }
       return {
         ok: true as const,
@@ -89,4 +92,41 @@ export const recordGrammarRemediation = createServerFn({ method: "POST" })
     }
 
     return { ok: true as const, completedAt, nextReviewAt };
+  });
+
+// Same authenticated remediation history and learning diagnostics as the other grammar drills.
+const valencyAttemptSchema = z.object({
+  operationId: z.string().uuid(),
+  selection: z.object({
+    exerciseId: z.string().max(160),
+    version: z.string().max(80),
+    recordId: z.string().max(120),
+    senseId: z.string().max(300),
+    sentence: z.string().max(3000),
+  }),
+  answer: z.string().max(80),
+});
+export const recordValencyRemediation = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
+  .validator((input: unknown) => valencyAttemptSchema.parse(input))
+  .handler(async ({ context, data }) => {
+    const { getAdminFirestore } = await import("./firebase-admin.server");
+    const { saveValencyAttempt } = await import("./valency-remediation.server");
+    return saveValencyAttempt(getAdminFirestore(), context.userId, data);
+  });
+export const fetchValencyRemediation = createServerFn({ method: "GET" })
+  .middleware([authMiddleware])
+  .handler(async ({ context }) => {
+    const { getAdminFirestore } = await import("./firebase-admin.server");
+    const { valencyReviewQueue } = await import("./valency-remediation.server");
+    const rows = await getAdminFirestore()
+      .collection(`users/${context.userId}/grammarRemediation`)
+      .where("topic", "==", "verb-patterns")
+      .get();
+    return valencyReviewQueue(
+      rows.docs.map((doc) => ({
+        ...doc.data(),
+        id: doc.id,
+      })) as import("./valency-remediation.server").ValencyAttemptRow[],
+    );
   });
