@@ -55,6 +55,7 @@ export interface DrillQuestion {
   lexicalFeedback?: Record<string, string>;
   reviewedValencyItem?: {
     exerciseId: string;
+    sourceQuotation?: boolean;
     version: string;
     recordId: string;
     senseId: string;

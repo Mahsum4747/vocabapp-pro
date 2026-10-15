@@ -1,9 +1,18 @@
 import reviewData from "../../content/kaikki-fixed-item-review-2026-10-14.json" with { type: "json" };
-import { lookupAcceptedValencyReferences } from "./verb-valency-index";
+import remainingData from "../../content/kaikki-remaining-fixed-review-2026-10-15.json" with { type: "json" };
+import { lookupVerbValency } from "./verb-valency-index";
 import type { ValencySourceContext } from "./valency-source-context";
 import type { DrillQuestion } from "../grammar-drills";
 
-type ReviewRecord = (typeof reviewData.records)[number];
+type ReviewRecord = (typeof reviewData.records)[number] | (typeof remainingData.records)[number];
+const records: ReviewRecord[] = [
+  ...new Map(
+    [...reviewData.records, ...remainingData.records].map((record) => [record.recordId, record]),
+  ).values(),
+];
+const sourceReviewedIds = new Set(
+  remainingData.records.filter((r) => r.review.exercise).map((r) => r.recordId),
+);
 export type ReviewedExerciseKind = "personal_pronoun_case" | "determiner_case";
 export type FixedValencySelection = {
   exerciseId: string;
@@ -24,11 +33,12 @@ function sourceArgument(context: ValencySourceContext) {
     : null;
 }
 
-/** An AI review does not grant lexical trust. Match already accepted source evidence exactly. */
+/** Match published fixed reviews to exact source evidence; lexical diagnostic trust stays separate. */
 function sourceMatches(record: ReviewRecord) {
-  return lookupAcceptedValencyReferences(record.lemma).some(
+  return lookupVerbValency(record.lemma).some(
     (frame) =>
       frame.source === "kaikki-current" &&
+      (frame.referenceAcceptance === "accepted" || sourceReviewedIds.has(record.recordId)) &&
       frame.construction === record.construction &&
       frame.preposition === record.preposition &&
       frame.case === caseNames[record.sourceCase] &&
@@ -66,7 +76,7 @@ export function evaluateReviewedValencyAnswer(
   selection: FixedValencySelection,
   answer: string,
 ): { outcome: "correct" | "wrong_case_for_this_item"; feedback: string | null } | null {
-  const record = reviewData.records.find((record) => record.recordId === selection.recordId);
+  const record = records.find((record) => record.recordId === selection.recordId);
   if (!record || !isActivatable(record)) return null;
   const exercise = record.review.exercise!;
   if (
@@ -87,7 +97,7 @@ export function reviewedValencyQuestions(
   kind?: ReviewedExerciseKind,
 ): DrillQuestion[] {
   const normalized = term?.trim().toLocaleLowerCase("de-DE");
-  return reviewData.records.flatMap((record) => {
+  return records.flatMap((record) => {
     if (
       !isActivatable(record) ||
       (normalized && normalized !== record.lemma && normalized !== record.construction)
@@ -110,6 +120,7 @@ export function reviewedValencyQuestions(
         reviewedValencyItem: {
           ...descriptor,
           kind: exercise.kind,
+          sourceQuotation: exercise.sourceQuotation,
           instruction: exercise.instructionTr,
           meaning: exercise.meaningContextTr,
           warning: exercise.alternativeReadingWarning,
@@ -137,7 +148,7 @@ export function reviewedValencyQuestions(
 
 /** Separate visible correction; raw source text and all lexical diagnostic gates stay intact. */
 export function reviewedSourceCorrection(senseId: string | null, recordSha256: string) {
-  const record = reviewData.records.find(
+  const record = records.find(
     (record) =>
       record.senseId === senseId &&
       record.recordSha256 === recordSha256 &&
@@ -145,3 +156,23 @@ export function reviewedSourceCorrection(senseId: string | null, recordSha256: s
   );
   return record && isActivatable(record) ? record.review.sourceCorrection : null;
 }
+
+/** Fixed-source acceptance does not alter the lexical diagnostic indexes. */
+export function reviewedValencyReferences(lemma: string) {
+  return lookupVerbValency(lemma).filter(
+    (frame) =>
+      frame.referenceAcceptance === "accepted" ||
+      records.some(
+        (record) =>
+          record.lemma === frame.lemma &&
+          isActivatable(record) &&
+          record.senseId === frame.sense &&
+          record.construction === frame.construction &&
+          record.preposition === frame.preposition &&
+          caseNames[record.sourceCase] === frame.case,
+      ),
+  );
+}
+export const reviewedValencyTerms = () => [
+  ...new Set(records.filter(isActivatable).map((r) => r.construction)),
+];

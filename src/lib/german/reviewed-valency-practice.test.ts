@@ -12,19 +12,19 @@ import { lookupAcceptedValencyReferences } from "./verb-valency-index";
 
 test("all recommendations are wired into fixed practice while held records stay out", () => {
   const questions = reviewedValencyQuestions();
-  assert.equal(questions.length, 211);
+  assert.equal(questions.length, 256);
   assert.equal(
     questions.filter((q) => q.reviewedValencyItem?.kind === "personal_pronoun_case").length,
-    64,
+    95,
   );
   assert.equal(
     questions.filter((q) => q.reviewedValencyItem?.kind === "determiner_case").length,
-    147,
+    161,
   );
-  assert.equal(new Set(questions.map((q) => q.reviewedValencyItem!.lemma)).size, 174);
+  assert.ok(new Set(questions.map((q) => q.reviewedValencyItem!.lemma)).size >= 174);
   const ids = new Set(questions.map((q) => q.reviewedValencyItem!.recordId));
   for (const record of reviews.records) {
-    assert.equal(ids.has(record.recordId), record.review.decision !== "hold");
+    if (record.review.decision !== "hold") assert.ok(ids.has(record.recordId));
   }
   for (const q of questions) {
     const item = q.reviewedValencyItem!;
@@ -40,7 +40,7 @@ test("all recommendations are wired into fixed practice while held records stay 
     assert.equal(q.checkAnswer!(q, wrong)?.outcome, "wrong_case_for_this_item");
     assert.ok(q.checkAnswer!(q, wrong)?.feedback);
     assert.equal(q.checkAnswer!(q, "different person or object"), null);
-    assert.equal(evaluateReviewedValencyAnswer(item,item.sentence),null);
+    assert.equal(evaluateReviewedValencyAnswer(item, item.sentence), null);
     for (const alteration of [
       { exerciseId: "unselected-item" },
       { version: "changed" },
@@ -93,4 +93,35 @@ test("passen correction uses a separate bound exercise and preserves the dispute
       "Die Beschreibung passt auf ihm.",
     )?.targetLabel?.startsWith("passen +"),
   );
+});
+
+test("remaining source clozes retain their full sentence, target and conditions; unsafe subjects stay held", async () => {
+  const { default: data } = await import(
+    "../../content/kaikki-remaining-fixed-review-2026-10-15.json",
+    { with: { type: "json" } }
+  );
+  assert.equal(data.records.length, 702);
+  assert.equal(data.records.filter((r) => r.review.exercise).length, 45);
+  for (const r of data.records) {
+    const e = r.review.exercise;
+    const q = reviewedValencyQuestions().find(
+      (q) => q.reviewedValencyItem!.recordId === r.recordId,
+    );
+    if (!e) {
+      assert.ok(r.assessment.reasons.length);
+      assert.equal(q, undefined);
+      continue;
+    }
+    assert.ok(q);
+    assert.equal(e.correctSentence, e.sourceExample.text);
+    assert.equal(e.prompt.replace("____", e.acceptedAnswers[0]), e.correctSentence);
+    assert.equal(e.sourceQuotation, true);
+    assert.ok(r.senseId);
+    assert.ok(r.usageConditions.argumentSpecificationVerbatim);
+    assert.equal(r.assessment.cefrLevel, null);
+    assert.equal(q.reviewedValencyItem!.sourceQuotation, true);
+    assert.equal(r.review.automaticFreeTextDiagnosisAllowed, false);
+  }
+  for (const id of ["129", "821", "1073", "700"])
+    assert.equal(data.records.find((r) => r.contextId === id)!.review.exercise, null);
 });

@@ -62,6 +62,8 @@ export function GrammarDrillRunner<T = NounEntry>({
   roundSize = ROUND_SIZE,
   onRoundStart,
   onRoundComplete,
+  onAnswer,
+  onExit,
 }: {
   mode: string;
   /** One of the 26 fixed hub topics, used both as the `grammarProgress`
@@ -114,6 +116,8 @@ export function GrammarDrillRunner<T = NounEntry>({
    *  per-saved-topic accuracy, in `grammarPasteTopics`, see
    *  grammar.paste.tsx and grammar-paste-topics.ts). Most callers omit
    *  this entirely. */
+  onAnswer?: (question: DrillQuestion, answer: string, operationId: string) => Promise<void>;
+  onExit?: () => void;
   onRoundStart?: () => void;
   onRoundComplete?: (correctInRound: number, totalInRound: number) => void;
 }) {
@@ -216,6 +220,21 @@ export function GrammarDrillRunner<T = NounEntry>({
   const [selected, setSelected] = useState<string | null>(null);
   const [correctCount, setCorrectCount] = useState(0);
   const [done, setDone] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState(false);
+  const [operationId, setOperationId] = useState("");
+  async function saveAnswer(question: DrillQuestion, answer: string, id: string) {
+    if (!onAnswer) return;
+    setSaving(true);
+    setSaveError(false);
+    try {
+      await onAnswer(question, answer, id);
+    } catch {
+      setSaveError(true);
+    } finally {
+      setSaving(false);
+    }
+  }
 
   function restart() {
     onRoundStart?.();
@@ -268,6 +287,11 @@ export function GrammarDrillRunner<T = NounEntry>({
           </p>
           <div className="mt-6 flex flex-col gap-2">
             <Button onClick={restart}>Practice again</Button>
+            {onExit && (
+              <Button variant="outline" onClick={onExit}>
+                Verb patterns · review mistakes
+              </Button>
+            )}
             <Button asChild variant="outline">
               <Link to="/grammar">Back to Grammar</Link>
             </Button>
@@ -291,6 +315,9 @@ export function GrammarDrillRunner<T = NounEntry>({
   function choose(option: string) {
     if (revealed) return;
     setSelected(option);
+    const id = crypto.randomUUID();
+    setOperationId(id);
+    void saveAnswer(question, option, id);
     if (
       question.checkAnswer
         ? question.checkAnswer(question, option)?.outcome === "correct"
@@ -331,12 +358,25 @@ export function GrammarDrillRunner<T = NounEntry>({
         index={index}
         total={questions.length}
         headerRight={ruleButton}
-        primaryAction={revealed ? { label: "Continue", onClick: next } : undefined}
+        onBack={onExit}
+        primaryAction={
+          revealed
+            ? {
+                label: saving ? "Saving…" : "Continue",
+                onClick: next,
+                disabled: saving || saveError,
+              }
+            : undefined
+        }
       >
         {question.reviewedValencyItem && (
           <div className="mb-4 text-sm text-muted">
             <p>{question.reviewedValencyItem.instruction}</p>
-            <p className="mt-2">AI-written practice · reviewed for this fixed meaning</p>
+            <p className="mt-2">
+              {question.reviewedValencyItem.sourceQuotation
+                ? "Source example · fixed target"
+                : "AI-written practice · reviewed for this fixed meaning"}
+            </p>
             <p className="mt-2">{question.reviewedValencyItem.meaning}</p>
             {!!question.reviewedValencyItem.registerLabels.length && (
               <p className="mt-2">
@@ -410,9 +450,28 @@ export function GrammarDrillRunner<T = NounEntry>({
               target="_blank"
               rel="noreferrer"
             >
-              Pattern source · practice sentence written by AI
+              {question.reviewedValencyItem.sourceQuotation
+                ? "Source example · Wiktionary / Kaikki · CC BY-SA 4.0"
+                : "Pattern source · practice sentence written by AI"}
             </a>
           </div>
+        )}
+        {saveError && selected && (
+          <div role="alert" className="mt-4 text-sm">
+            <p>Your answer could not be saved. Retry before continuing.</p>
+            <Button
+              variant="outline"
+              disabled={saving}
+              onClick={() => void saveAnswer(question, selected, operationId)}
+            >
+              Retry saving
+            </Button>
+          </div>
+        )}
+        {revealed && onAnswer && !saving && !saveError && (
+          <p className="mt-3 text-sm text-muted" role="status">
+            Saved · mistakes can be practised again. Supported practice is not independent mastery.
+          </p>
         )}
         {revealed && question.valencyExample && (
           <div className="mt-4 text-sm" role="status">

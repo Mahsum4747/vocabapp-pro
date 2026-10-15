@@ -8,14 +8,15 @@ import {
 import {
   reviewedValencyQuestions,
   reviewedSourceCorrection,
+  reviewedValencyReferences,
+  reviewedValencyTerms,
 } from "@/lib/german/reviewed-valency-practice";
-import { lookupAcceptedValencyReferences } from "@/lib/german/verb-valency-index";
 
 /** Reference acceptance is independent of permission to diagnose an arbitrary answer. */
 export function VerbValencyReference({ term }: { term?: string }) {
   const [query, setQuery] = useState("");
   const verb = term ?? query;
-  const frames = lookupAcceptedValencyReferences(verb);
+  const frames = reviewedValencyReferences(verb);
   return (
     <section className="mt-6 rounded-card bg-surface p-4" aria-label="Verb patterns">
       <h2 className="font-display text-lg font-medium">Verb patterns</h2>
@@ -32,9 +33,11 @@ export function VerbValencyReference({ term }: { term?: string }) {
             placeholder="e.g. sehen, sich erinnern"
           />
           <datalist id="valency-verbs">
-            {acceptedValencySearchTerms().map((value) => (
-              <option key={value} value={value} />
-            ))}
+            {[...new Set([...acceptedValencySearchTerms(), ...reviewedValencyTerms()])].map(
+              (value) => (
+                <option key={value} value={value} />
+              ),
+            )}
           </datalist>
         </div>
       )}
